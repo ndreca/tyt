@@ -7,12 +7,13 @@
 //! main and encodes one back. `operations` holds a module per vxl command,
 //! each behind a feature of the same name. `info`, `validate`,
 //! `hierarchy_show`, `palette_list`, and `palette_show` render reports through
-//! treegrid. `mesh` triangulates one object into a meshdoc document under a
-//! record of the run. `node` sets node transforms. `object` edits objects in
-//! place. `object_voxels` moves an object's voxels within its grid. `to`
-//! prunes a main to a chosen set of objects for conversion. `voxelize` turns
-//! a meshdoc document into a main. Neither sees a mesh file format; meshconv
-//! decodes a mesh document into a `MeshMain` and encodes one back.
+//! treegrid. `mesh` triangulates chosen objects into a meshdoc document, each
+//! under a record of the run, placed by the hierarchy reaching them. `node`
+//! sets node transforms. `object` edits objects in place. `object_voxels`
+//! moves an object's voxels within its grid. `to` prunes a main to a chosen
+//! set of objects for conversion. `voxelize` turns a meshdoc document into a
+//! main. Neither sees a mesh file format; meshconv decodes a mesh document
+//! into a `MeshMain` and encodes one back.
 //! `utilities` holds what the operations share: palette reduction, dithering,
 //! color spaces, the object, node, index, and vector selectors, the material
 //! property ranges, and a palette's property names.

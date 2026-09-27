@@ -71,8 +71,8 @@ report, and [`palette quantize`](palette/quantize.md) and
 [`palette remap`](palette/remap.md) which objects to dither, with two
 repeatable options, one per addressing mode, so a value is never parsed as
 either an index or a glob. Selection targets objects; under `mesh` each matched
-object is meshed as pure geometry with no hierarchy-node transform, so a path is
-only the selection key, not placement.
+object becomes one mesh object placed by the hierarchy nodes reaching it, so a
+path is the selection key and the placement follows from the document.
 
 1. `--select-index <index>`: an object index into the document's `objects`,
    a plain integer such as `0` or a range `a-b` such as `2-5`. Repeat the flag
@@ -95,9 +95,8 @@ Both options repeat, and every `--select-index` and `--select` value unions its
 matches. Given neither, every object is selected; given one that matches
 nothing, the command errors rather than quietly selecting nothing. `material`
 outputs the selection, `to` writes it, `info` reports it, and `quantize` and
-`remap` dither it; `mesh` outputs it too but for now requires it to resolve to
-a single object (see [mesh](../../../../ref/mesh/mesh.md)).
+`remap` dither it, and `mesh` outputs it into one mesh, or one per object under
+`--split-files` (see [mesh](../../../../ref/mesh/mesh.md)).
 
-Baking a matched node's subtree and transforms into one larger placed mesh,
-rather than selecting its objects as pure geometry, is a separate mode left for a
-later pass.
+Baking a matched node's subtree and transforms into one flattened mesh, rather
+than carrying the nodes over, is a separate mode left for a later pass.

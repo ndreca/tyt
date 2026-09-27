@@ -4,13 +4,15 @@ use crate::{
 };
 use branded_id::U32Id;
 use meshdoc::{MeshPrimitive, MeshTriangle};
-use ty_math::TyVector3F64;
+use ty_math::{TyVector3F64, TyVector3I32};
 
-/// The primitive drawing `faces` of `geometry` at `voxel_size` meters per
-/// voxel, with its streams read off `atlases`.
+/// The primitive drawing `faces` of `geometry` shifted by the grid `origin`,
+/// at `voxel_size` meters per voxel, with its streams read off `atlases` and
+/// no material yet.
 pub(crate) fn write_primitive(
     geometry: &MeshGeometry,
     faces: &[usize],
+    origin: TyVector3I32,
     voxel_size: f64,
     primitive_record: &PrimitiveRecord,
     stream_list: &[ArrayDomain],
@@ -21,7 +23,7 @@ pub(crate) fn write_primitive(
     let positions = faces
         .iter()
         .flat_map(|&face| &geometry.positions[vertices(face)])
-        .map(|position| TyVector3F64::from(position.as_dvec3() * voxel_size))
+        .map(|position| TyVector3F64::from((origin.as_dvec3() + position.as_dvec3()) * voxel_size))
         .collect();
 
     let triangles = faces
@@ -54,8 +56,6 @@ pub(crate) fn write_primitive(
     if let Some(name) = &primitive_record.name {
         primitive.set_name(name.clone());
     }
-
-    primitive.set_material_id(primitive_record.material_id);
 
     for &domain in stream_list {
         primitive.push_uv_stream(atlases.uvs(domain, faces)?)?;

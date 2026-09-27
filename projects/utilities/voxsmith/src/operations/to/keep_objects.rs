@@ -1,6 +1,6 @@
-use crate::Result;
+use crate::{Result, utilities::placing_nodes};
 use branded_id::U32Id;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use voxcore::{
     BVoxHierarchyNode, BVoxObject, Error as VoxError, VoxExt, VoxHierarchyNode, VoxMain,
 };
@@ -27,17 +27,12 @@ pub fn keep_objects<T: VoxExt>(main: &mut VoxMain<T>, object_ids: &[ObjectId]) -
 
     let kept: HashSet<ObjectId> = object_ids.iter().copied().collect();
 
+    let alive = placing_nodes(main, &kept);
+
     let nodes: Vec<(NodeId, VoxHierarchyNode)> = main
         .iter_hierarchy_nodes()
         .map(|(node_id, node)| (node_id, node.clone()))
         .collect();
-
-    let by_id: HashMap<NodeId, &VoxHierarchyNode> = nodes
-        .iter()
-        .map(|(node_id, node)| (*node_id, node))
-        .collect();
-
-    let alive = alive_nodes(&by_id, &kept);
 
     // A dead root has to leave the roots before it can be released.
     let root_ids: Vec<NodeId> = main
@@ -92,51 +87,6 @@ pub fn keep_objects<T: VoxExt>(main: &mut VoxMain<T>, object_ids: &[ObjectId]) -
     }
 
     Ok(())
-}
-
-/// The nodes whose subtree places a kept object.
-fn alive_nodes(
-    by_id: &HashMap<NodeId, &VoxHierarchyNode>,
-    kept: &HashSet<ObjectId>,
-) -> HashSet<NodeId> {
-    let mut memo = HashMap::with_capacity(by_id.len());
-
-    for &node_id in by_id.keys() {
-        is_alive(node_id, by_id, kept, &mut memo);
-    }
-
-    memo.into_iter()
-        .filter(|(_, alive)| *alive)
-        .map(|(node_id, _)| node_id)
-        .collect()
-}
-
-/// Whether `node_id`'s subtree places a kept object, memoized in `memo` so a
-/// node shared across the DAG is walked once.
-fn is_alive(
-    node_id: NodeId,
-    by_id: &HashMap<NodeId, &VoxHierarchyNode>,
-    kept: &HashSet<ObjectId>,
-    memo: &mut HashMap<NodeId, bool>,
-) -> bool {
-    if let Some(&alive) = memo.get(&node_id) {
-        return alive;
-    }
-
-    let node = by_id[&node_id];
-
-    let alive = node
-        .child_object_ids
-        .iter()
-        .any(|object_id| kept.contains(object_id))
-        || node
-            .child_node_ids
-            .iter()
-            .any(|&child_id| is_alive(child_id, by_id, kept, memo));
-
-    memo.insert(node_id, alive);
-
-    alive
 }
 
 #[cfg(test)]

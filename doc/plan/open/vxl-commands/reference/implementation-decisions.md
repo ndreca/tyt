@@ -952,3 +952,43 @@ added to voxcore in place of a release-everything-and-re-retain rebuild, which
 would have leaned on the id pool's post-`gc` numbering to predict batch ids; a
 checked replacement keeps the invariants at the mutation point like every other
 `VoxMain` edit.
+
+## Multi-object mesh
+
+voxsmith's `mesh` takes a slice of `MeshTarget`s, each an object id beside the
+record it meshes under, instead of one object, and builds one document: a
+private `mesh_object` runs the former body per target into the shared document,
+and `write_hierarchy` then places the objects. The targets carry their own
+records because the only per-object difference is the file names, which vxl
+fills from `{file-stem}` templates, and a template is a vxl concern the record
+never sees. The records have to agree on the voxel size, since the node
+positions scale by one size for the whole document, and a run with no target, a
+target listed twice, or an unknown target errors rather than producing an empty
+or partial document.
+
+The hierarchy is mirrored, not flattened. The nodes whose subtree places a
+target carry over with their names, children, and transforms, in document order
+with the roots in root order, through `retain_hierarchy_nodes` so a batch with
+forward references lands in one call; the reachability walk is `placing_nodes`
+in `utilities`, which `keep_objects` under `to` shares. Node positions scale by
+the voxel size beside the vertices, so the size is a uniform scale of the whole
+document onto meters: a vmax document, whose node positions are in voxels,
+scales as a whole, and a voxelized document, whose node scales already carry
+the voxel size, keeps the default. Each object's vertices shift by its grid
+origin, because the spec puts a voxel at `origin + p` in node space and glTF has
+no per-mesh offset. An object no node places gets a root node of its name, which
+is what the single-object output always was, so a document without a hierarchy
+meshes as before.
+
+vxl plans the run through `MeshRun`: one output holding every selected object,
+or with `--split-files` one output per object named by the output's stem, a
+hyphen, and the object's name under the output's extension. A run over several
+objects, or a split run, qualifies `{file-stem}` the same way, so the objects'
+side files stay apart under one profile, and the plain single-object run keeps
+its stem so existing names hold. The qualifying stem comes from `object_stems`,
+which errors on an empty name, a path separator, or a name two selected objects
+share, in every run that would use it, rather than only when a file happens to
+be written; a predictable rule beats one that depends on the profile. Every
+document meshes before any is saved, so an error writes nothing. A file two
+objects of one document write is caught in voxsmith with a record error naming
+the file, ahead of meshdoc's duplicate-name check.

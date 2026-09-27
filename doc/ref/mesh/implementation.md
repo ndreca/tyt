@@ -562,10 +562,10 @@ evaluated program's end scope.
 
 ### 1. The entry point
 
-`mesh` lands, taking the record, the state, and the object to a
-[document](#meshdoc) with geometry alone, through the kept greedy sweep. This is
-voxsmith's half of the spine: `mesh` and the record exist from here on, and the
-later phases fill in the rest of the document.
+`mesh` lands, taking the state and the targets, each an object beside its
+record, to a [document](#meshdoc) with geometry alone, through the kept greedy
+sweep. This is voxsmith's half of the spine: `mesh` and the record exist from
+here on, and the later phases fill in the rest of the document.
 
 ### 2. The environment
 

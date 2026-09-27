@@ -7,11 +7,11 @@ vxl mesh <input> [output] [options]
 vxl mesh --list-profiles [layout]
 ```
 
-`vxl mesh` triangulates one object's voxels into a mesh. It bakes the object's
-palette materials into values. The values can ride along as textures, material
-fields, and files beside the mesh. The default output path is the input stem
-with the mesh extension. The format comes from `--to`, else the output
-extension, else `.glb`.
+`vxl mesh` triangulates the selected objects' voxels into a mesh, one mesh
+object per voxel object. It bakes each object's palette materials into values.
+The values can ride along as textures, material fields, and files beside the
+mesh. The default output path is the input stem with the mesh extension. The
+format comes from `--to`, else the output extension, else `.glb`.
 
 ```sh
 # turret.glb, geometry only
@@ -22,10 +22,17 @@ vxl mesh turret.voxj
   --profile pbr
 ```
 
-`mesh` writes one object as pure geometry with no hierarchy-node transform.
-`--select` and `--select-index` choose the object. The default `--select *`
-takes every object. The selection must resolve to exactly one object, so a
-multi-object document needs a selector. See
+`--select` and `--select-index` choose the objects, and the default `--select *`
+takes every object. Every selected object meshes under the same flags. The mesh
+mirrors the document one to one: each object's geometry sits at its grid
+origin, and the hierarchy nodes reaching a selected object carry over with
+their names, children, and transforms, so a mesh of several objects opens
+arranged as the document arranges them. A node reaching no selected object is
+dropped, and an object no node places gets a root node of its name. Several
+objects write into one mesh by default, and `--split-files` writes one mesh per
+object instead. Each object writes its own files, told apart by `{file-stem}`
+as `--file-stem` describes, so a file a flag names outright is written by every
+object and errors in a mesh holding several. See
 [Object selectors](../../plan/open/vxl-commands/reference/conventions.md#object-selectors).
 
 ## Options
@@ -77,7 +84,8 @@ multi-object document needs a selector. See
    meters; the writer converts into the target format's native unit. glTF is
    meter-native, so the size passes through. `1.0` opens at one meter per voxel,
    and `0.01` opens at one centimeter. The size applies as a uniform scale to
-   vertex positions.
+   vertex positions and to hierarchy node positions, so a document whose node
+   scales already carry the voxel size keeps the default.
 
 6. `--material-count <count>`
    - Default: derived from use
@@ -180,7 +188,11 @@ multi-object document needs a selector. See
     - Repeatable: no
 
     Replaces `{file-stem}` in profile file templates. An output of `turret.glb`
-    fills `{file-stem}-mse.png` as `turret-mse.png`.
+    fills `{file-stem}-mse.png` as `turret-mse.png`. A run over several objects,
+    or under `--split-files`, joins each object's name to the stem with a
+    hyphen, so the same output fills the `barrel` object's as
+    `turret-barrel-mse.png`; an object without a name, with a path separator in
+    it, or sharing its name with another selected object errors.
 
 15. `--profile <profile>`
     - Repeatable: yes
@@ -224,25 +236,37 @@ multi-object document needs a selector. See
     - Default: `*`, selecting every object
     - Repeatable: yes
 
-    Chooses the object by hierarchy path, with a node path selecting its
-    subtree. Unions with `--select-index`. Any explicit selector replaces the
-    default, so `--select-index` alone never unions with `*`. See
+    Chooses objects by hierarchy path, with a node path selecting its subtree.
+    Unions with `--select-index`. Any explicit selector replaces the default,
+    so `--select-index` alone never unions with `*`. See
     [Object selectors](../../plan/open/vxl-commands/reference/conventions.md#object-selectors).
 
 20. `--select-index <index>`
     - Repeatable: yes
 
-    Chooses the object by position, an integer or an `a-b` range. Unions with
+    Chooses objects by position, an integer or an `a-b` range. Unions with
     `--select`.
 
-21. `--write-file-json-value <dst-file> <dst-name> <src-expr> <linear | srgb>`
+21. `--split-files`
+    - Default: off
+    - Repeatable: no
+
+    Writes one mesh per selected object instead of one holding them all. Each
+    mesh takes the output's stem, a hyphen, and the object's name under the
+    output's extension, so `scene.glb` over `turret` and `base` writes
+    `scene-turret.glb` and `scene-base.glb`, and holds the hierarchy reaching
+    its object alone. `{file-stem}` qualifies the same way, as under
+    `--file-stem`. Every mesh is built before any is written, so an error
+    writes nothing.
+
+22. `--write-file-json-value <dst-file> <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes a value to a JSON file under `<dst-name>` with the specified
     transfer. Each file holds one object, so repeating the flag on one path
     merges into that file; see [JSON files](value-language.md#json-files).
 
-22. `--write-file-png-value <dst-file> <src-expr> <linear | srgb>`
+23. `--write-file-png-value <dst-file> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes a [swatch, voxel, face, or corner](value-language.md#domains) array
@@ -256,7 +280,7 @@ multi-object document needs a selector. See
     1. `linear`: applies no transfer.
     2. `srgb`: applies the sRGB transfer, for an image a viewer reads as color.
 
-23. `--write-material-extra-image-file <material-index> <dst-name> <src-file>`
+24. `--write-material-extra-image-file <material-index> <dst-name> <src-file>`
     - Repeatable: yes
 
     Sets a custom `extras.vxl.values.<dst-name>` entry on the indexed material
@@ -264,7 +288,7 @@ multi-object document needs a selector. See
     points at `<src-file>` by relative path; see
     [Material slots](value-language.md#material-slots).
 
-24. `--write-material-extra-image-value <material-index> <dst-name> <src-expr> <linear | srgb>`
+25. `--write-material-extra-image-value <material-index> <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes an array value as an embedded image. The custom
@@ -272,28 +296,28 @@ multi-object document needs a selector. See
     texture index. A plain value errors; see
     [Material slots](value-language.md#material-slots).
 
-25. `--write-material-extra-json-file <material-index> <dst-name> <src-file>`
+26. `--write-material-extra-json-file <material-index> <dst-name> <src-file>`
     - Repeatable: yes
 
     Sets a custom `extras.vxl.values.<dst-name>` entry on the indexed material
     to a `{ "uri": "<src-file>" }` pointer, the path relative; see
     [Material slots](value-language.md#material-slots).
 
-26. `--write-material-extra-json-value <material-index> <dst-name> <src-expr> <linear | srgb>`
+27. `--write-material-extra-json-value <material-index> <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes a value's numbers into a custom `extras.vxl.values.<dst-name>` entry
     on the indexed material. A plain value writes as its numbers, and an array
     writes as rows; see [Material slots](value-language.md#material-slots).
 
-27. `--write-material-slot-file <material-index> <dst-property> <src-file>`
+28. `--write-material-slot-file <material-index> <dst-property> <src-file>`
     - Repeatable: yes
 
     Sets the texture property `<dst-property>` of the indexed material to
     reference `<src-file>` by relative path; see
     [Material slots](value-language.md#material-slots).
 
-28. `--write-material-slot-value <material-index> <dst-property> <src-expr>`
+29. `--write-material-slot-value <material-index> <dst-property> <src-expr>`
     - Repeatable: yes
 
     Sets the property `<dst-property>` of the indexed material. A plain value
@@ -301,7 +325,7 @@ multi-object document needs a selector. See
     the glb's binary chunk or the `.gltf`'s data URI; see
     [Material slots](value-language.md#material-slots).
 
-29. `--write-mesh-extra-image-file <dst-name> <src-file>`
+30. `--write-mesh-extra-image-file <dst-name> <src-file>`
     - Repeatable: yes
 
     Sets a mesh `extras.vxl.values.<dst-name>` entry to an image reference. The
@@ -309,7 +333,7 @@ multi-object document needs a selector. See
     relative path. The image samples through a stream some primitive writes;
     see [UV streams](#uv-streams) and [Palettes](#palettes).
 
-30. `--write-mesh-extra-image-value <dst-name> <src-expr> <linear | srgb>`
+31. `--write-mesh-extra-image-value <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes an array value as an embedded image. The mesh
@@ -317,21 +341,21 @@ multi-object document needs a selector. See
     samples through a stream some primitive writes; see
     [UV streams](#uv-streams). A plain value errors; see [Palettes](#palettes).
 
-31. `--write-mesh-extra-json-file <dst-name> <src-file>`
+32. `--write-mesh-extra-json-file <dst-name> <src-file>`
     - Repeatable: yes
 
     Sets a mesh `extras.vxl.values.<dst-name>` entry to a
     `{ "uri": "<src-file>" }` pointer, the path relative; see
     [Palettes](#palettes).
 
-32. `--write-mesh-extra-json-value <dst-name> <src-expr> <linear | srgb>`
+33. `--write-mesh-extra-json-value <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes a value's numbers into a mesh `extras.vxl.values.<dst-name>` entry. A
     plain value writes as its numbers. An array writes as rows, one row per
     entry in the domain's order; see [Palettes](#palettes).
 
-33. `--write-primitive-builtin-value <primitive-index> <dst-attribute> <src-expr>`
+34. `--write-primitive-builtin-value <primitive-index> <dst-attribute> <src-expr>`
     - Repeatable: yes
 
     Writes a value to an attribute glTF defines, `COLOR_0`, on the indexed
@@ -341,7 +365,7 @@ multi-object document needs a selector. See
     fixes the encoding. An underscore name errors; see
     [Vertex attributes](value-language.md#vertex-attributes).
 
-34. `--write-primitive-custom-value <primitive-index> <dst-name> <src-expr> <linear | srgb>`
+35. `--write-primitive-custom-value <primitive-index> <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes a value to a custom vertex attribute on the indexed primitive.
@@ -352,7 +376,7 @@ multi-object document needs a selector. See
     an integer errors. A `u32` value errors, glTF forbidding the width on an
     attribute; see [Vertex attributes](value-language.md#vertex-attributes).
 
-35. `--write-primitive-normal <primitive-index> <false | true>`
+36. `--write-primitive-normal <primitive-index> <false | true>`
     - Default: `true`
     - Repeatable: yes
 
@@ -361,7 +385,7 @@ multi-object document needs a selector. See
     flat normals from the triangles. A voxel face is flat, so a conforming
     viewer draws the same pixels either way. `false` drops the stream.
 
-36. `--write-primitive-uv <primitive-index> <corner | face | swatch | voxel>`
+37. `--write-primitive-uv <primitive-index> <corner | face | swatch | voxel>`
     - Default: the material's stream list
     - Repeatable: yes
 

@@ -4,12 +4,14 @@ mod atlas;
 mod geometry;
 #[allow(clippy::module_inception)]
 mod mesh;
+mod mesh_target;
 mod profile_list;
 mod program;
 mod record;
 mod write;
 
 pub use mesh::*;
+pub use mesh_target::*;
 pub use profile_list::*;
 pub use record::*;
 

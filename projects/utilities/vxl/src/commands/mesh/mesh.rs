@@ -2,12 +2,12 @@ use crate::{
     Dependencies, Error, NoneOr, ObjectSelection, PositiveF64, Result, VoxelInput,
     cli_value_parser,
     commands::{
-        MaterialTable, PrimitiveTable, Profile, ProfileSet, ProgramBuilder, ProgramFlag,
+        MaterialTable, MeshRun, PrimitiveTable, Profile, ProfileSet, ProgramBuilder, ProgramFlag,
         ProgramFlags, apply_profile_files, apply_profile_materials, apply_profile_mesh_extras,
         apply_profile_primitives, check_expression, check_image_sources,
         declare_profile_primitives, flag_occurrences, list_profiles, load_profile_set,
         parse_flag_index, parse_flag_value, parse_texture_shape, push_file_write, push_unique,
-        push_uv_stream, resolve_gltf_container, select_one_object, stack_profiles,
+        push_uv_stream, resolve_gltf_container, select_mesh_objects, stack_profiles,
         written_file_name,
     },
 };
@@ -25,13 +25,14 @@ use voxsmith::{
     dependencies::DependenciesImpl as VoxsmithDependenciesImpl,
     operations::mesh::{
         ArrayDomain, AttributeWrite, Computation, ComputedBinding, ExtraForm, ExtraSource,
-        ExtraWrite, FileForm, FileWrite, MeshRecord, Method, PrimitiveRecord, ProfileListLayout,
-        SlotSource, SlotWrite, TextureShape, Transfer, WrittenValue, mesh,
+        ExtraWrite, FileForm, FileWrite, MeshRecord, MeshTarget, Method, PrimitiveRecord,
+        ProfileListLayout, SlotSource, SlotWrite, TextureShape, Transfer, WrittenValue, mesh,
     },
 };
 
-/// Triangulates one object's voxels into a glTF or GLB mesh, baking its
-/// palette materials into values that ride along as textures, material
+/// Triangulates the selected objects' voxels into a glTF or GLB mesh, one
+/// mesh object per voxel object placed by the hierarchy reaching it, baking
+/// the palette materials into values that ride along as textures, material
 /// fields, and files beside the mesh.
 #[derive(Clone, Debug, Parser)]
 #[command(
@@ -78,7 +79,8 @@ pub struct Mesh {
     texture_shape: Option<TextureShape>,
 
     /// The real-world edge length of one voxel in meters, defaulting to `1.0`
-    /// and applied as a uniform scale to every vertex position.
+    /// and applied as a uniform scale to every vertex position and hierarchy
+    /// node position.
     #[arg(value_name = "voxel-size", long)]
     voxel_size: Option<PositiveF64>,
 
@@ -156,7 +158,9 @@ pub struct Mesh {
 
     /// Replaces `{file-stem}` in profile file templates. Defaults to the
     /// output mesh's stem, so an output of `turret.glb` fills
-    /// `{file-stem}-mse.png` as `turret-mse.png`.
+    /// `{file-stem}-mse.png` as `turret-mse.png`. A run over several objects,
+    /// or under `--split-files`, joins each object's name to it with a hyphen:
+    /// the same output fills the `barrel` object's as `turret-barrel-mse.png`.
     #[arg(value_name = "file-stem", long)]
     file_stem: Option<String>,
 
@@ -191,6 +195,13 @@ pub struct Mesh {
 
     #[command(flatten)]
     selection: ObjectSelection,
+
+    /// Writes one mesh per selected object instead of one holding them all.
+    /// Each is named by the output's stem, a hyphen, and the object's name
+    /// under the output's extension, holding the hierarchy reaching that
+    /// object alone.
+    #[arg(value_name = "split-files", long = "split-files")]
+    split_files: bool,
 
     /// Writes a value to a JSON file beside the mesh under the name with the
     /// transfer, `linear` or `srgb`. Each file holds one object, so repeating
@@ -378,17 +389,21 @@ impl Mesh {
             .then(|| load_profile_set(&dependencies))
             .transpose()?;
 
-        let record = self.record(&output, profiles.as_ref())?;
-
         let input = self.input();
 
         let from = input.resolve_format()?;
 
         let main: VoxMain = load(&dependencies, from, &input.path)?;
 
-        let object = select_one_object(&main, &self.selection)?;
+        let object_ids = select_mesh_objects(&main, &self.selection)?;
 
-        let document = mesh(&VoxsmithDependenciesImpl, &main, object, &record)?;
+        let runs = MeshRun::plan(
+            &main,
+            &output,
+            &self.file_stem(&output),
+            &object_ids,
+            self.split_files,
+        )?;
 
         let format = WriteFormat::Gltf(GltfWriteFormat {
             container,
@@ -397,7 +412,35 @@ impl Mesh {
             },
         });
 
-        Ok(save(&dependencies, &format, document, &output)?)
+        // Every document meshes before any is written, so an error writes
+        // nothing.
+        let documents = runs
+            .into_iter()
+            .map(|run| {
+                let records = run
+                    .targets
+                    .iter()
+                    .map(|(_, stem)| self.record(stem, profiles.as_ref()))
+                    .collect::<Result<Vec<_>>>()?;
+
+                let targets: Vec<MeshTarget<'_>> = run
+                    .targets
+                    .iter()
+                    .zip(&records)
+                    .map(|(&(object_id, _), record)| MeshTarget { object_id, record })
+                    .collect();
+
+                let document = mesh(&VoxsmithDependenciesImpl, &main, &targets)?;
+
+                Ok((run.output, document))
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        for (output, document) in documents {
+            save(&dependencies, &format, document, &output)?;
+        }
+
+        Ok(())
     }
 
     /// The input, which every run but `--list-profiles` names.
@@ -441,10 +484,9 @@ impl Mesh {
     /// written twice, the attribute naming rules, every expression parsing,
     /// and every image reference pointing at a written PNG. A flag's element
     /// stands at its destination, and the stack fills the rest. `profiles`
-    /// holds the loaded set when any flag reads a profile.
-    fn record(&self, output: &Path, profiles: Option<&ProfileSet>) -> Result<MeshRecord> {
-        let file_stem = self.file_stem(output);
-
+    /// holds the loaded set when any flag reads a profile. `file_stem` fills
+    /// `{file-stem}` in the profile file templates.
+    fn record(&self, file_stem: &str, profiles: Option<&ProfileSet>) -> Result<MeshRecord> {
         let profile = match self.profile.as_slice() {
             [] => None,
 
@@ -482,7 +524,7 @@ impl Mesh {
                 declared = declare_profile_primitives(&mut materials, profile, origin)?;
             }
 
-            apply_profile_materials(&mut materials, profile, origin, &file_stem)?;
+            apply_profile_materials(&mut materials, profile, origin, file_stem)?;
         }
 
         let materials = materials.finish()?;
@@ -502,8 +544,8 @@ impl Mesh {
         let mut mesh_extras = self.mesh_extras()?;
 
         if let Some((origin, profile)) = &profile {
-            apply_profile_files(&mut files, profile, origin, &file_stem)?;
-            apply_profile_mesh_extras(&mut mesh_extras, profile, origin, &file_stem)?;
+            apply_profile_files(&mut files, profile, origin, file_stem)?;
+            apply_profile_mesh_extras(&mut mesh_extras, profile, origin, file_stem)?;
         }
 
         let mut builder = ProgramBuilder::new(profiles, self.computed_bindings()?);
@@ -1052,7 +1094,7 @@ mod tests {
                     .map(|(depth, layer)| (PathBuf::from(format!("/{depth}/.vxlconfig")), layer)),
             )
         });
-        mesh.record(&output, profiles.as_ref())
+        mesh.record(&mesh.file_stem(&output), profiles.as_ref())
     }
 
     /// The record `args` lower into over the built-ins, or the error they
@@ -1127,6 +1169,12 @@ mod tests {
 
         assert_eq!(parse(&["--to", "gltf"]).to, Some(GltfContainer::Gltf));
         assert!(Mesh::try_parse_from(["mesh", "model.voxj", "--to", "obj"]).is_err());
+    }
+
+    #[test]
+    fn split_files_is_a_bare_flag() {
+        assert!(!parse(&[]).split_files);
+        assert!(parse(&["--split-files"]).split_files);
     }
 
     #[test]

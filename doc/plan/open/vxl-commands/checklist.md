@@ -94,8 +94,9 @@ off as they land.
 
 ### mesh ([ref/mesh](../../../ref/mesh/mesh.md))
 
-- [x] `Mesh` command struct, dispatch, and single-object pure-geometry output;
-      error when the selection is not exactly one object. The mesher lives in
+- [x] `Mesh` command struct, dispatch, and one mesh object per selected object
+      under the hierarchy reaching it, or one mesh per object with
+      `--split-files`. The mesher lives in
       voxsmith (`object_to_mesh_geometry` plus `object_to_glb_bytes` /
       `object_to_gltf_bytes`) behind the `gltf` feature; vxl stays a thin CLI.
 - [x] `--to` / `--from` (`gltf` | `glb`), `--voxel-size` (meters per voxel, default
@@ -240,8 +241,10 @@ Material sampling (see [voxelize](reference/voxelize.md) and
 
 - [ ] Scene-assembly mode: hierarchy-node selection with baked transforms and
       instancing.
-- [ ] Single-object vs whole-document output nuance, and multi-object mesh
-      layout in one file.
+- [x] Single-object vs whole-document output nuance, and multi-object mesh
+      layout in one file. Landed as one mesh object per selected object placed
+      by the mirrored hierarchy, with `--split-files` for one mesh per object.
+      See [implementation decisions](reference/implementation-decisions.md).
 - [ ] stdin / stdout via `-`; dry-run for destructive palette ops.
 - [x] Move the palette reduction from vxl into voxsmith as a general operation
       (public `reduce_palette` + plain enums; vxl maps its clap `ValueEnum`s like

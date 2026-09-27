@@ -8,6 +8,7 @@ mod write_attributes;
 mod write_context;
 mod write_extras;
 mod write_files;
+mod write_hierarchy;
 mod write_materials;
 mod write_primitive;
 
@@ -21,5 +22,6 @@ pub(crate) use write_attributes::*;
 pub(crate) use write_context::*;
 pub(crate) use write_extras::*;
 pub(crate) use write_files::*;
+pub(crate) use write_hierarchy::*;
 pub(crate) use write_materials::*;
 pub(crate) use write_primitive::*;

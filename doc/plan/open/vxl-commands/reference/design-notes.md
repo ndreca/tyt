@@ -85,8 +85,8 @@ design lives in [mesh](../../../../ref/mesh/mesh.md).
 ## Future and nice-to-haves
 
 1. A scene-assembly mode for `mesh` and `material`: selecting hierarchy nodes
-   and baking their transforms and instancing into one larger placed mesh,
-   complementing the pure-geometry object selectors.
+   and baking their transforms and instancing into one flattened mesh,
+   complementing the object selectors that carry the nodes over.
 2. stdin and stdout via `-`, so commands compose in pipelines.
 3. A dry-run or preview mode for the destructive palette operations.
 4. Additional mesh formats beyond glTF, such as `fbx` and `obj`, as needed, for

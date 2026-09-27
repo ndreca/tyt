@@ -45,6 +45,7 @@ voxsmith = { version = "0.3.0", default-features = false, features = [
 
 [dev-dependencies]
 serde_json = "1"
+ty-math = { version = "0.2.0", default-features = false }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

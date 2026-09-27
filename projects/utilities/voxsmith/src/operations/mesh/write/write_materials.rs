@@ -6,9 +6,9 @@ use crate::{
         write_extras,
     },
 };
-use branded_id::U32Id;
+use branded_id::{IdVec, U32Id};
 use meshdoc::{
-    MeshAlphaMode, MeshMain, MeshMaterial, MeshTextureRef,
+    BMeshMaterial, MeshAlphaMode, MeshMain, MeshMaterial, MeshTextureRef,
     material::{
         ALPHA_CUTOFF, COLOR_RANGE, EMISSIVE_STRENGTH, IOR, METALLIC, NORMAL_SCALE,
         OCCLUSION_STRENGTH, ROUGHNESS, TRANSMISSION, scalar_range,
@@ -23,7 +23,7 @@ pub(crate) fn write_materials<D: EncodePng>(
     context: &WriteContext<'_, D>,
     document: &mut MeshMain<()>,
     images: &mut Images,
-) -> Result<()> {
+) -> Result<IdVec<BMeshMaterial, U32Id<BMeshMaterial>>> {
     let WriteContext {
         dependencies,
         record,
@@ -32,6 +32,8 @@ pub(crate) fn write_materials<D: EncodePng>(
         atlases,
         file_ids,
     } = *context;
+
+    let mut document_ids = IdVec::default();
 
     for (index, material_record) in record.materials.iter().enumerate() {
         let material_id = U32Id::from_u32(table_index(index));
@@ -129,15 +131,10 @@ pub(crate) fn write_materials<D: EncodePng>(
             |bake| streams.stream_id(material_id, bake),
         )?;
 
-        let retained_id = document.retain_material(material)?;
-
-        assert_eq!(
-            retained_id, material_id,
-            "the materials retain in table order"
-        );
+        document_ids.push(document.retain_material(material)?);
     }
 
-    Ok(())
+    Ok(document_ids)
 }
 
 /// Points the texture slot `property` of `material` at `texture_ref`.

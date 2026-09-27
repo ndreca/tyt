@@ -2,33 +2,95 @@ use crate::{
     Error, Result,
     dependencies::mesh::EncodePng,
     operations::mesh::{
-        Atlases, FacePartition, Images, MergeRules, MeshElement, MeshRecord, Method, ProgramRun,
-        Streams, Swatches, WriteContext, mesh_slices, object_to_mesh_geometry, table_index,
-        write_attributes, write_extras, write_files, write_materials, write_primitive,
+        Atlases, FacePartition, Images, MergeRules, MeshElement, MeshRecord, MeshTarget, Method,
+        ProgramRun, Streams, Swatches, WriteContext, mesh_slices, object_to_mesh_geometry,
+        table_index, write_attributes, write_extras, write_files, write_hierarchy, write_materials,
+        write_primitive,
     },
 };
 use branded_id::U32Id;
-use meshdoc::{MeshHierarchyNode, MeshMain, MeshObject, MeshPrimitive, MeshProperty};
-use std::collections::HashMap;
-use voxcore::{VoxExt, VoxMain, VoxObject};
+use meshdoc::{BMeshObject, MeshMain, MeshObject};
+use std::collections::{HashMap, HashSet};
+use voxcore::{Error as VoxError, VoxExt, VoxMain, VoxObject};
 
-/// Meshes `object` under `record` into a document of one object under one root
-/// node, both named as `object` is. Positions are in meters on the grid's axes,
-/// which the document shares. `dependencies` encodes the pngs. An error names
-/// the record element it rose from.
+/// Meshes each of `targets` into one document, one object per target under
+/// its record, placed by the hierarchy of `main` narrowed to the nodes reaching
+/// a target. Positions are in meters on the grid's axes, which the document
+/// shares, with each object shifted by its grid origin. The records have to
+/// agree on the voxel size.
 pub fn mesh<D: EncodePng, T: VoxExt>(
+    dependencies: &D,
+    main: &VoxMain<T>,
+    targets: &[MeshTarget<'_>],
+) -> Result<MeshMain<()>> {
+    let [first, ..] = targets else {
+        return Err(Error::invalid("a run meshes at least one object"));
+    };
+
+    let voxel_size = first.record.voxel_size;
+
+    let mut seen = HashSet::new();
+
+    for target in targets {
+        if !seen.insert(target.object_id) {
+            return Err(Error::invalid(format!(
+                "object {} is listed twice",
+                target.object_id.to_u32()
+            )));
+        }
+
+        if main.object(target.object_id).is_none() {
+            return Err(VoxError::UnknownObject {
+                object_id: target.object_id,
+            }
+            .into());
+        }
+
+        if !(target.record.voxel_size.is_finite() && target.record.voxel_size > 0.0) {
+            return Err(Error::mesh_record(
+                MeshElement::VoxelSize,
+                "must be finite and greater than 0",
+            ));
+        }
+
+        if target.record.voxel_size != voxel_size {
+            return Err(Error::mesh_record(
+                MeshElement::VoxelSize,
+                "differs between the objects of one run",
+            ));
+        }
+    }
+
+    let mut document = MeshMain::default();
+
+    let objects = targets
+        .iter()
+        .map(|target| {
+            let object = main
+                .object(target.object_id)
+                .expect("every target is one of the main's objects");
+
+            let mesh_object_id =
+                mesh_object(dependencies, main, object, target.record, &mut document)?;
+
+            Ok((target.object_id, mesh_object_id))
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    write_hierarchy(&mut document, main, &objects, voxel_size)?;
+
+    Ok(document)
+}
+
+/// Meshes `object` under `record` into `document`, returning the retained
+/// object's id.
+fn mesh_object<D: EncodePng, T: VoxExt>(
     dependencies: &D,
     main: &VoxMain<T>,
     object: &VoxObject,
     record: &MeshRecord,
-) -> Result<MeshMain<()>> {
-    if !(record.voxel_size.is_finite() && record.voxel_size > 0.0) {
-        return Err(Error::mesh_record(
-            MeshElement::VoxelSize,
-            "must be finite and greater than 0",
-        ));
-    }
-
+    document: &mut MeshMain<()>,
+) -> Result<U32Id<BMeshObject>> {
     let swatches = Swatches::resolve(main, object)?;
 
     if record.primitives.is_empty() {
@@ -68,11 +130,16 @@ pub fn mesh<D: EncodePng, T: VoxExt>(
 
     let files = write_files(dependencies, record, &run, &streams, &atlases)?;
 
-    let mut document = MeshMain::default();
-
     let file_ids = files
         .into_iter()
         .map(|file| {
+            if document.file_by_name(&file.name).is_some() {
+                return Err(Error::mesh_record(
+                    MeshElement::File { file: file.name },
+                    "is written by two objects",
+                ));
+            }
+
             let name = file.name.clone();
             Ok((name, document.retain_file(file)?))
         })
@@ -89,11 +156,11 @@ pub fn mesh<D: EncodePng, T: VoxExt>(
         file_ids: &file_ids,
     };
 
-    write_materials(&context, &mut document, &mut images)?;
+    let material_ids = write_materials(&context, document, &mut images)?;
 
     let properties = write_extras(
         &context,
-        &mut document,
+        document,
         &mut images,
         &record.mesh_extras,
         |name| MeshElement::MeshExtra {
@@ -102,66 +169,45 @@ pub fn mesh<D: EncodePng, T: VoxExt>(
         |bake| streams.mesh_stream_id(bake),
     )?;
 
-    let primitives = record
-        .primitives
-        .iter()
-        .enumerate()
-        .map(|(index, primitive_record)| {
-            let primitive_id = U32Id::from_u32(table_index(index));
-            let faces = partition.faces(primitive_id);
+    let mut mesh_object = MeshObject::new(object.name().to_owned());
 
-            let mut primitive = write_primitive(
-                &geometry,
-                faces,
-                record.voxel_size,
-                primitive_record,
-                streams.primitive_list(primitive_id),
-                &atlases,
-            )?;
+    for (index, primitive_record) in record.primitives.iter().enumerate() {
+        let primitive_id = U32Id::from_u32(table_index(index));
+        let faces = partition.faces(primitive_id);
 
-            write_attributes(
-                &mut primitive,
-                primitive_id,
-                &primitive_record.attributes,
-                faces,
-                &run,
-                &atlases,
-            )?;
+        let mut primitive = write_primitive(
+            &geometry,
+            faces,
+            object.origin(),
+            record.voxel_size,
+            primitive_record,
+            streams.primitive_list(primitive_id),
+            &atlases,
+        )?;
 
-            Ok(primitive)
-        })
-        .collect::<Result<Vec<_>>>()?;
+        write_attributes(
+            &mut primitive,
+            primitive_id,
+            &primitive_record.attributes,
+            faces,
+            &run,
+            &atlases,
+        )?;
 
-    place(document, object.name(), primitives, properties)
-}
+        // The document's material ids run past the earlier objects'
+        // materials, where the record's start at 0.
+        primitive.set_material_id(
+            primitive_record
+                .material_id
+                .map(|material_id| material_ids[material_id.to_usize_id()]),
+        );
 
-/// `document` with `primitives` and `properties` in one object named
-/// `name`, placed by one root node of the same name.
-fn place(
-    mut document: MeshMain<()>,
-    name: &str,
-    primitives: Vec<MeshPrimitive>,
-    properties: Vec<MeshProperty>,
-) -> Result<MeshMain<()>> {
-    let mut object = MeshObject::new(name.to_owned());
-
-    for primitive in primitives {
-        object.retain_primitive(primitive);
+        mesh_object.retain_primitive(primitive);
     }
 
-    object.set_properties(properties);
+    mesh_object.set_properties(properties);
 
-    let object_id = document.retain_object(object)?;
-
-    let node_id = document.retain_hierarchy_node(MeshHierarchyNode {
-        name: name.to_owned(),
-        child_object_ids: vec![object_id],
-        ..Default::default()
-    })?;
-
-    document.set_root_hierarchy_node_ids(vec![node_id])?;
-
-    Ok(document)
+    Ok(document.retain_object(mesh_object)?)
 }
 
 #[cfg(test)]
@@ -171,8 +217,9 @@ mod tests {
         dependencies::DependenciesImpl,
         operations::mesh::{
             ArrayDomain, AttributeWrite, Computation, ComputedBinding, ExtraForm, ExtraSource,
-            ExtraWrite, FileForm, FileWrite, MaterialRecord, MeshElement, MeshRecord, Method,
-            PrimitiveRecord, SlotSource, SlotWrite, TextureShape, Transfer, WrittenValue, mesh,
+            ExtraWrite, FileForm, FileWrite, MaterialRecord, MeshElement, MeshRecord, MeshTarget,
+            Method, PrimitiveRecord, SlotSource, SlotWrite, TextureShape, Transfer, WrittenValue,
+            mesh,
         },
     };
     use branded_id::{IdVec, U32Id};
@@ -182,15 +229,23 @@ mod tests {
     };
     use png::{ColorType, Decoder, Info};
     use std::io::Cursor;
-    use ty_math::{TyLinSrgbF64, TyLinSrgbaF64, TyVector2F64, TyVector3F64, TyVector3U32};
+    use ty_math::{
+        TyLinSrgbF64, TyLinSrgbaF64, TyTransformF64, TyVector2F64, TyVector3F64, TyVector3I32,
+        TyVector3U32,
+    };
     use voxcore::{
-        VoxMain, VoxObject, VoxPalette, VoxValuePool,
+        BVoxObject, BVoxPalette, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette, VoxValuePool,
         material::{BASE_COLOR, METALLIC},
     };
 
     /// A 2x1x1 bar of two live voxels with no layers.
     fn bar() -> VoxObject {
-        let mut object = VoxObject::new("bar".to_owned(), TyVector3U32::new(2, 1, 1)).unwrap();
+        named_bar("bar")
+    }
+
+    /// The bar named `name`.
+    fn named_bar(name: &str) -> VoxObject {
+        let mut object = VoxObject::new(name.to_owned(), TyVector3U32::new(2, 1, 1)).unwrap();
         for x in 0..2 {
             let voxel_id = object.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap();
             object.retain_voxel(voxel_id, &[]).unwrap();
@@ -198,10 +253,34 @@ mod tests {
         object
     }
 
-    /// A main whose one palette carries `baseColor` and `metallic`, and the
-    /// bar painted with its two materials.
-    fn painted() -> (VoxMain, VoxObject) {
+    /// A main holding the bar alone, unplaced, and the bar's id.
+    fn bare() -> (VoxMain, U32Id<BVoxObject>) {
         let mut main: VoxMain = VoxMain::default();
+        let object_id = main.retain_object(bar()).unwrap();
+        (main, object_id)
+    }
+
+    /// `object_id` of `main` meshed alone under `record`.
+    fn mesh_one(
+        main: &VoxMain,
+        object_id: U32Id<BVoxObject>,
+        record: &MeshRecord,
+    ) -> Result<MeshMain<()>> {
+        mesh(&DependenciesImpl, main, &[MeshTarget { object_id, record }])
+    }
+
+    /// A main whose one palette carries `baseColor` and `metallic`, and the
+    /// id of the bar painted with its two materials, unplaced.
+    fn painted() -> (VoxMain, U32Id<BVoxObject>) {
+        let mut main: VoxMain = VoxMain::default();
+        let palette_id = paint(&mut main);
+        let object_id = main.retain_object(painted_bar(palette_id)).unwrap();
+        (main, object_id)
+    }
+
+    /// Retains into `main` a palette carrying `baseColor` and `metallic` with
+    /// two materials, returning its id.
+    fn paint(main: &mut VoxMain) -> U32Id<BVoxPalette> {
         let colors = main.retain_value_pool(
             VoxValuePool::vec_4_float(vec![[1.0, 0.0, 0.0, 1.0], [0.0, 0.0, 1.0, 1.0]]).unwrap(),
         );
@@ -220,8 +299,11 @@ mod tests {
         palette
             .retain_material(vec![U32Id::from_u32(1), U32Id::from_u32(1)])
             .unwrap();
-        let palette_id = main.retain_palette(palette).unwrap();
+        main.retain_palette(palette).unwrap()
+    }
 
+    /// The bar painted with the two materials of `palette_id`, one per voxel.
+    fn painted_bar(palette_id: U32Id<BVoxPalette>) -> VoxObject {
         let mut object = bar();
         object.retain_layer(palette_id, U32Id::from_u32(0));
         for x in 0..2 {
@@ -231,8 +313,7 @@ mod tests {
                 .retain_voxel(voxel_id, &[U32Id::from_u32(x)])
                 .unwrap();
         }
-
-        (main, object)
+        object
     }
 
     /// The implicit primitive, taking every face with no material.
@@ -264,22 +345,22 @@ mod tests {
 
     /// The bar meshed under `record`.
     fn meshed(record: &MeshRecord) -> MeshMain<()> {
-        let main: VoxMain = VoxMain::default();
-        let document = mesh(&DependenciesImpl, &main, &bar(), record).unwrap();
+        let (main, object_id) = bare();
+        let document = mesh_one(&main, object_id, record).unwrap();
         document.validate().unwrap();
         document
     }
 
     /// The element the bar fails to mesh on under `record`.
     fn failing_element(record: &MeshRecord) -> MeshElement {
-        let main: VoxMain = VoxMain::default();
-        record_error(mesh(&DependenciesImpl, &main, &bar(), record))
+        let (main, object_id) = bare();
+        record_error(mesh_one(&main, object_id, record))
     }
 
     /// The element the painted bar fails to mesh on under `record`.
     fn failing_painted_element(record: &MeshRecord) -> MeshElement {
-        let (main, object) = painted();
-        record_error(mesh(&DependenciesImpl, &main, &object, record))
+        let (main, object_id) = painted();
+        record_error(mesh_one(&main, object_id, record))
     }
 
     /// The element `result`'s record error rose from.
@@ -430,6 +511,244 @@ mod tests {
     }
 
     #[test]
+    fn the_origin_shifts_the_positions_before_the_voxel_size_scales_them() {
+        let mut main: VoxMain = VoxMain::default();
+        let mut object = bar();
+        object.set_origin(TyVector3I32::new(-1, 2, 0));
+        let object_id = main.retain_object(object).unwrap();
+
+        let mut record = record(Method::Greedy);
+        record.voxel_size = 2.0;
+
+        let document = mesh_one(&main, object_id, &record).unwrap();
+
+        let (_, object) = document.iter_objects().next().unwrap();
+        let (_, primitive) = object.iter_primitives().next().unwrap();
+        let min = primitive
+            .positions()
+            .iter()
+            .fold(TyVector3F64::INFINITY, |min, position| min.min(*position));
+        assert_eq!(min, TyVector3F64::new(-2.0, 4.0, 0.0));
+    }
+
+    #[test]
+    fn several_targets_mesh_one_object_each_under_the_nodes_reaching_them() {
+        // `root` places `a` and reaches `b` through `child`. `other` places
+        // only the unmeshed `c`, and no node places `loose`.
+        let mut main: VoxMain = VoxMain::default();
+        let a = main.retain_object(bar()).unwrap();
+        let b = main.retain_object(bar()).unwrap();
+        let c = main.retain_object(bar()).unwrap();
+        let loose = main.retain_object(named_bar("loose")).unwrap();
+        let child = main
+            .retain_hierarchy_node(VoxHierarchyNode {
+                name: "child".to_owned(),
+                transform: TyTransformF64::from_translation(TyVector3F64::new(1.0, 0.0, 0.0)),
+                child_object_ids: vec![b],
+                ..Default::default()
+            })
+            .unwrap();
+        let root = main
+            .retain_hierarchy_node(VoxHierarchyNode {
+                name: "root".to_owned(),
+                transform: TyTransformF64 {
+                    position: TyVector3F64::new(0.0, 3.0, 0.0),
+                    scale: TyVector3F64::splat(2.0),
+                    ..TyTransformF64::IDENTITY
+                },
+                child_node_ids: vec![child],
+                child_object_ids: vec![a],
+            })
+            .unwrap();
+        let other = main
+            .retain_hierarchy_node(VoxHierarchyNode {
+                name: "other".to_owned(),
+                child_object_ids: vec![c],
+                ..Default::default()
+            })
+            .unwrap();
+        main.set_root_hierarchy_node_ids(vec![root, other]).unwrap();
+
+        let mut record = record(Method::Greedy);
+        record.voxel_size = 0.5;
+
+        let document = mesh(
+            &DependenciesImpl,
+            &main,
+            &[
+                MeshTarget {
+                    object_id: b,
+                    record: &record,
+                },
+                MeshTarget {
+                    object_id: a,
+                    record: &record,
+                },
+                MeshTarget {
+                    object_id: loose,
+                    record: &record,
+                },
+            ],
+        )
+        .unwrap();
+        document.validate().unwrap();
+
+        assert_eq!(document.object_count(), 3);
+        assert_eq!(document.hierarchy_node_count(), 3);
+
+        let roots = document.root_hierarchy_node_ids();
+        assert_eq!(roots.len(), 2);
+
+        let root = document.hierarchy_node(roots[0]).unwrap();
+        assert_eq!(root.name, "root");
+        assert_eq!(root.transform.position, TyVector3F64::new(0.0, 1.5, 0.0));
+        assert_eq!(root.transform.scale, TyVector3F64::splat(2.0));
+        assert_eq!(root.child_node_ids.len(), 1);
+        assert_eq!(root.child_object_ids.len(), 1);
+
+        let child = document.hierarchy_node(root.child_node_ids[0]).unwrap();
+        assert_eq!(child.name, "child");
+        assert_eq!(child.transform.position, TyVector3F64::new(0.5, 0.0, 0.0));
+        assert_eq!(child.child_object_ids.len(), 1);
+
+        // The targets set the object order. Each node places the object it
+        // placed in `main`.
+        assert_ne!(root.child_object_ids[0], child.child_object_ids[0]);
+        assert_eq!(child.child_object_ids[0], U32Id::from_u32(0));
+        assert_eq!(root.child_object_ids[0], U32Id::from_u32(1));
+
+        let synthesized = document.hierarchy_node(roots[1]).unwrap();
+        assert_eq!(synthesized.name, "loose");
+        assert_eq!(synthesized.transform, TyTransformF64::IDENTITY);
+        assert_eq!(synthesized.child_object_ids, vec![U32Id::from_u32(2)]);
+
+        let _ = other;
+    }
+
+    #[test]
+    fn a_run_with_no_target_a_target_twice_or_an_unknown_target_errors() {
+        let (main, object_id) = bare();
+        let record = record(Method::Greedy);
+
+        assert!(mesh(&DependenciesImpl, &main, &[]).is_err());
+
+        let twice = MeshTarget {
+            object_id,
+            record: &record,
+        };
+        assert!(mesh(&DependenciesImpl, &main, &[twice, twice]).is_err());
+
+        assert!(mesh_one(&main, U32Id::from_u32(7), &record).is_err());
+    }
+
+    #[test]
+    fn the_targets_share_one_voxel_size() {
+        let mut main: VoxMain = VoxMain::default();
+        let a = main.retain_object(bar()).unwrap();
+        let b = main.retain_object(bar()).unwrap();
+
+        let one = record(Method::Greedy);
+        let mut two = record(Method::Greedy);
+        two.voxel_size = 2.0;
+
+        let error = record_error(mesh(
+            &DependenciesImpl,
+            &main,
+            &[
+                MeshTarget {
+                    object_id: a,
+                    record: &one,
+                },
+                MeshTarget {
+                    object_id: b,
+                    record: &two,
+                },
+            ],
+        ));
+        assert_eq!(error, MeshElement::VoxelSize);
+    }
+
+    #[test]
+    fn a_file_two_targets_write_errors_and_names_the_file() {
+        let mut main: VoxMain = VoxMain::default();
+        let a = main.retain_object(bar()).unwrap();
+        let b = main.retain_object(bar()).unwrap();
+
+        let mut record = record(Method::Greedy);
+        record.files = vec![file_write(
+            "shared.json",
+            Some("size"),
+            "1.0",
+            Transfer::Linear,
+        )];
+
+        let error = record_error(mesh(
+            &DependenciesImpl,
+            &main,
+            &[
+                MeshTarget {
+                    object_id: a,
+                    record: &record,
+                },
+                MeshTarget {
+                    object_id: b,
+                    record: &record,
+                },
+            ],
+        ));
+        assert_eq!(
+            error,
+            MeshElement::File {
+                file: "shared.json".to_owned()
+            }
+        );
+    }
+
+    #[test]
+    fn each_target_draws_its_own_materials_in_the_shared_document() {
+        let mut main: VoxMain = VoxMain::default();
+        let palette_id = paint(&mut main);
+        let a = main.retain_object(painted_bar(palette_id)).unwrap();
+        let b = main.retain_object(painted_bar(palette_id)).unwrap();
+
+        let mut record = record(Method::Greedy);
+        record.materials = materials(vec![value_slot("baseColorTexture", "baseColor")]);
+        record.primitives = IdVec::from_vec(vec![PrimitiveRecord {
+            material_id: Some(U32Id::from_u32(0)),
+            ..implicit_primitive()
+        }]);
+
+        let document = mesh(
+            &DependenciesImpl,
+            &main,
+            &[
+                MeshTarget {
+                    object_id: a,
+                    record: &record,
+                },
+                MeshTarget {
+                    object_id: b,
+                    record: &record,
+                },
+            ],
+        )
+        .unwrap();
+        document.validate().unwrap();
+
+        assert_eq!(document.material_count(), 2);
+        assert_eq!(document.texture_count(), 2);
+
+        let drawn: Vec<_> = document
+            .iter_objects()
+            .map(|(_, object)| {
+                let (_, primitive) = object.iter_primitives().next().unwrap();
+                primitive.material_id().unwrap()
+            })
+            .collect();
+        assert_eq!(drawn, vec![U32Id::from_u32(0), U32Id::from_u32(1)]);
+    }
+
+    #[test]
     fn the_method_sets_the_face_count() {
         for (method, quads) in [
             (Method::Culled, 10),
@@ -458,7 +777,7 @@ mod tests {
 
     #[test]
     fn the_selects_split_the_faces_into_primitives_with_their_own_streams() {
-        let (main, object) = painted();
+        let (main, object_id) = painted();
         let mut record = record(Method::Greedy);
         record.program = "shiny = metallic > 0; dull = !shiny;".to_owned();
         record.primitives = IdVec::from_vec(vec![
@@ -474,7 +793,7 @@ mod tests {
             },
         ]);
 
-        let document = mesh(&DependenciesImpl, &main, &object, &record).unwrap();
+        let document = mesh_one(&main, object_id, &record).unwrap();
         document.validate().unwrap();
         let (_, object) = document.iter_objects().next().unwrap();
         assert_eq!(object.primitive_count(), 2);
@@ -543,6 +862,7 @@ mod tests {
                 .retain_voxel(voxel_id, &[U32Id::from_u32(x)])
                 .unwrap();
         }
+        let object_id = main.retain_object(object).unwrap();
 
         let mut record = record(Method::Greedy);
         record.program = "shiny = metallic > 0; dull = !shiny;".to_owned();
@@ -557,7 +877,7 @@ mod tests {
             },
         ]);
 
-        let document = mesh(&DependenciesImpl, &main, &object, &record).unwrap();
+        let document = mesh_one(&main, object_id, &record).unwrap();
         let (_, object) = document.iter_objects().next().unwrap();
         let primitives: Vec<_> = object
             .iter_primitives()
@@ -619,7 +939,7 @@ mod tests {
 
     #[test]
     fn an_attribute_lands_at_the_corners_with_lower_domains_climbing_in() {
-        let (main, object) = painted();
+        let (main, object_id) = painted();
         let mut record = record(Method::Greedy);
         record.computed_bindings = vec![
             ComputedBinding {
@@ -651,7 +971,7 @@ mod tests {
             },
         ]);
 
-        let document = mesh(&DependenciesImpl, &main, &object, &record).unwrap();
+        let document = mesh_one(&main, object_id, &record).unwrap();
         document.validate().unwrap();
         let (_, object) = document.iter_objects().next().unwrap();
         let primitives: Vec<_> = object
@@ -816,17 +1136,8 @@ mod tests {
     }
 
     #[test]
-    fn a_layer_over_an_unknown_palette_errors() {
-        let main: VoxMain = VoxMain::default();
-        let mut object = bar();
-        object.retain_layer(U32Id::from_u32(9), U32Id::from_u32(0));
-
-        assert!(mesh(&DependenciesImpl, &main, &object, &record(Method::Greedy)).is_err());
-    }
-
-    #[test]
     fn the_program_reads_the_palette_and_the_computed_values() {
-        let (main, object) = painted();
+        let (main, object_id) = painted();
         let mut record = record(Method::Greedy);
         record.computed_bindings = vec![
             ComputedBinding {
@@ -846,7 +1157,7 @@ mod tests {
                           width = max(voxelPosition.x); open = min(ao);"
             .to_owned();
 
-        mesh(&DependenciesImpl, &main, &object, &record)
+        mesh_one(&main, object_id, &record)
             .unwrap()
             .validate()
             .unwrap();
@@ -854,7 +1165,7 @@ mod tests {
 
     #[test]
     fn greedy_splits_where_a_climbed_value_differs_and_nowhere_else() {
-        let (main, object) = painted();
+        let (main, object_id) = painted();
 
         let quads = |program: &str| {
             let mut record = record(Method::Greedy);
@@ -863,7 +1174,7 @@ mod tests {
                 computation: Computation::Occlusion,
             });
             record.program = program.to_owned();
-            let document = mesh(&DependenciesImpl, &main, &object, &record).unwrap();
+            let document = mesh_one(&main, object_id, &record).unwrap();
             let (_, object) = document.iter_objects().next().unwrap();
             let (_, primitive) = object.iter_primitives().next().unwrap();
             primitive.triangle_count() / 2
@@ -879,11 +1190,11 @@ mod tests {
 
     #[test]
     fn a_program_error_names_the_program() {
-        let (main, object) = painted();
+        let (main, object_id) = painted();
         let mut record = record(Method::Greedy);
         record.program = "x = nothing;".to_owned();
 
-        let error = mesh(&DependenciesImpl, &main, &object, &record).unwrap_err();
+        let error = mesh_one(&main, object_id, &record).unwrap_err();
 
         assert!(matches!(
             error,
@@ -902,14 +1213,14 @@ mod tests {
 
     #[test]
     fn a_computed_binding_shadowing_a_property_or_bound_twice_errors() {
-        let (main, object) = painted();
+        let (main, object_id) = painted();
 
         let mut shadowing = record(Method::Greedy);
         shadowing.computed_bindings.push(ComputedBinding {
             name: METALLIC.to_owned(),
             computation: Computation::Occlusion,
         });
-        let error = mesh(&DependenciesImpl, &main, &object, &shadowing).unwrap_err();
+        let error = mesh_one(&main, object_id, &shadowing).unwrap_err();
         assert!(error.to_string().contains("shadows"), "{error}");
 
         let mut twice = record(Method::Greedy);
@@ -923,20 +1234,20 @@ mod tests {
                 computation: Computation::VoxelPosition,
             },
         ];
-        let error = mesh(&DependenciesImpl, &main, &object, &twice).unwrap_err();
+        let error = mesh_one(&main, object_id, &twice).unwrap_err();
         assert!(error.to_string().contains("is bound twice"), "{error}");
     }
 
     #[test]
     fn a_png_file_bakes_at_its_values_domain_under_its_transfer() {
-        let (main, object) = painted();
+        let (main, object_id) = painted();
         let mut record = record(Method::Greedy);
         record.files = vec![
             file_write("bar-metal.png", None, "metallic", Transfer::Linear),
             file_write("bar-color.png", None, "baseColor", Transfer::Srgb),
         ];
 
-        let document = mesh(&DependenciesImpl, &main, &object, &record).unwrap();
+        let document = mesh_one(&main, object_id, &record).unwrap();
         document.validate().unwrap();
         assert_eq!(document.file_count(), 2);
         assert_eq!(document.image_count(), 0);
@@ -1013,7 +1324,7 @@ mod tests {
 
     #[test]
     fn json_entries_on_one_path_merge_in_record_order() {
-        let (main, object) = painted();
+        let (main, object_id) = painted();
         let mut record = record(Method::Greedy);
         record.files = vec![
             file_write("bar.json", Some("metal"), "metallic", Transfer::Linear),
@@ -1022,7 +1333,7 @@ mod tests {
             file_write("bar.json", Some("grey"), "0.5", Transfer::Srgb),
         ];
 
-        let document = mesh(&DependenciesImpl, &main, &object, &record).unwrap();
+        let document = mesh_one(&main, object_id, &record).unwrap();
         let (_, file) = document.file_by_name("bar.json").unwrap();
         let text = String::from_utf8(file.bytes.clone()).unwrap();
 
@@ -1067,7 +1378,7 @@ mod tests {
 
     #[test]
     fn a_slot_value_fills_its_factor_or_embeds_its_texture() {
-        let (main, object) = painted();
+        let (main, object_id) = painted();
         let primitive_id = U32Id::from_u32(0);
         let material_id = U32Id::from_u32(0);
         let mut record = record(Method::Greedy);
@@ -1082,7 +1393,7 @@ mod tests {
         ]);
         record.primitives[primitive_id.to_usize_id()].material_id = Some(material_id);
 
-        let document = mesh(&DependenciesImpl, &main, &object, &record).unwrap();
+        let document = mesh_one(&main, object_id, &record).unwrap();
         document.validate().unwrap();
 
         let material = document.material(material_id).unwrap();
@@ -1113,7 +1424,7 @@ mod tests {
 
     #[test]
     fn two_slots_naming_one_value_share_its_image_and_a_file_slot_references_its_file() {
-        let (main, object) = painted();
+        let (main, object_id) = painted();
         let material_id = U32Id::from_u32(0);
         let mut record = record(Method::Greedy);
         record.program = "orm = rgb(1, 0.5, metallic);".to_owned();
@@ -1133,7 +1444,7 @@ mod tests {
         ]);
         record.primitives[U32Id::from_u32(0).to_usize_id()].material_id = Some(material_id);
 
-        let document = mesh(&DependenciesImpl, &main, &object, &record).unwrap();
+        let document = mesh_one(&main, object_id, &record).unwrap();
         document.validate().unwrap();
 
         let material = document.material(material_id).unwrap();
@@ -1222,7 +1533,7 @@ mod tests {
 
     #[test]
     fn an_extra_lands_typed_and_an_image_extra_samples_through_its_stream() {
-        let (main, object) = painted();
+        let (main, object_id) = painted();
         let material_id = U32Id::from_u32(0);
         let mut record = record(Method::Greedy);
         record.files = vec![
@@ -1254,7 +1565,7 @@ mod tests {
             ),
         ];
 
-        let document = mesh(&DependenciesImpl, &main, &object, &record).unwrap();
+        let document = mesh_one(&main, object_id, &record).unwrap();
         document.validate().unwrap();
 
         let material = document.material(material_id).unwrap();
