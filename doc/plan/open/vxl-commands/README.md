@@ -45,19 +45,19 @@ vocabulary names such as `baseColor`.
 - [`vxl voxelize`](reference/voxelize.md): mesh to voxel grid.
 - [`vxl palette`](reference/palette/README.md): list, show, quantize, and remap
   palettes.
-- [`vxl object`](../vxl-object-commands/README.md#vxl-object): edit object
-  properties, placements, and copies.
-- [`vxl object-voxels`](../vxl-object-commands/README.md#vxl-object-voxels):
+- [`vxl object`](../../closed/vxl-object-commands/README.md#vxl-object): edit
+  object properties, placements, and copies.
+- [`vxl object-voxels`](../../closed/vxl-object-commands/README.md#vxl-object-voxels):
   move voxels within an object's grid.
-- [`vxl node`](../vxl-object-commands/README.md#vxl-node): edit nodes and
-  hierarchy edges.
+- [`vxl node`](../../closed/vxl-object-commands/README.md#vxl-node): edit nodes
+  and hierarchy edges.
 - [`vxl hierarchy show`](reference/hierarchy/README.md): print the scene graph.
 - [`vxl validate`](reference/validate.md): check a document against the spec.
 - [`vxl info`](reference/info.md): report a document's contents.
 
 `vxl to` already ships. The
-[object commands plan](../vxl-object-commands/README.md) covers the object,
-object-voxels, and node commands. This plan covers the rest.
+[object commands plan](../../closed/vxl-object-commands/README.md) covers the
+object, object-voxels, and node commands. This plan covers the rest.
 
 ## Cross-cutting
 

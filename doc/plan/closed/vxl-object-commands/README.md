@@ -1,7 +1,8 @@
 # vxl object, object-voxels, and node commands
 
-Status: **open.** The design was settled 2026-09-26 and is unimplemented. Steps
-are in [checklist.md](checklist.md). Code-level choices are logged in
+Status: **closed.** The design was settled 2026-09-26. Steps S1 through S8
+landed on main by 2026-09-27, ending with the docs in `34163e69`. The steps
+lived in [checklist.md](checklist.md). Code-level choices are logged in
 [implementation-decisions.md](implementation-decisions.md).
 
 ## Model
@@ -34,9 +35,9 @@ or object can have several parents. The root list acts as one more parent.
    `--select-index` counts the node list. A node reached by several paths
    counts once
 5. Every glob follows the shared
-   [glob rules](../vxl-commands/reference/conventions.md#glob-patterns). `!`
-   subtracts a match. As in git, an excluded node blocks re-including anything
-   below it
+   [glob rules](../../open/vxl-commands/reference/conventions.md#glob-patterns).
+   `!` subtracts a match. As in git, an excluded node blocks re-including
+   anything below it
 6. `object set name`, `object reorder`, and `node set name` need exactly one
    match. Every other command applies to every match
 7. `--select-parent <glob>` and `--select-parent-index <index>` pick the

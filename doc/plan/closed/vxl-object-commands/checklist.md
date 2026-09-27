@@ -38,4 +38,4 @@ The design is in the [README](README.md). Each step builds the commands the
       inverts the `to_euler_radians` that `hierarchy show` prints with.
 - [x] **S7. Node graph.** `link` reuses voxcore's cycle check.
 - [x] **S8. Docs.** Add vxl README sections and extend the command list in the
-      [vxl-commands README](../vxl-commands/README.md#commands).
+      [vxl-commands README](../../open/vxl-commands/README.md#commands).
