@@ -256,8 +256,8 @@ order the [implementation notes](implementation.md#ty-preferences) lay out.
 Each profile name is read from the last layer that supplies it, wholesale. The
 layers merge into one namespace before `valuesFrom` resolves, so a config that
 overrides `defaults` changes every profile built on it, including one from an
-outer layer. `vxl mesh --list-profiles` prints the merged namespace, each name
-with the file supplying it.
+outer layer. `vxl mesh --list-profiles` prints the merged namespace grouped by
+the file supplying each name.
 
 The checks split by when they run:
 

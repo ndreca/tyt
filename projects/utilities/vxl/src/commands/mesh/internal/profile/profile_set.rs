@@ -9,6 +9,9 @@ use std::{collections::BTreeMap, path::PathBuf};
 /// remembers that layer as its origin.
 #[derive(Clone, Debug)]
 pub(crate) struct ProfileSet {
+    /// The layers in cascade order, the built-ins first.
+    cascade: Vec<ProfileOrigin>,
+
     profiles: BTreeMap<String, (ProfileOrigin, Profile)>,
 }
 
@@ -24,26 +27,33 @@ impl ProfileSet {
     pub(crate) fn layered(
         layers: impl IntoIterator<Item = (PathBuf, BTreeMap<String, Profile>)>,
     ) -> Self {
+        let mut cascade = vec![ProfileOrigin::BuiltIn];
+
         let mut profiles: BTreeMap<_, _> = built_in_profiles()
             .into_iter()
             .map(|(name, profile)| (name, (ProfileOrigin::BuiltIn, profile)))
             .collect();
 
         for (path, layer) in layers {
+            let origin = ProfileOrigin::File(path);
+
             profiles.extend(
                 layer
                     .into_iter()
-                    .map(|(name, profile)| (name, (ProfileOrigin::File(path.clone()), profile))),
+                    .map(|(name, profile)| (name, (origin.clone(), profile))),
             );
+
+            cascade.push(origin);
         }
 
-        ProfileSet { profiles }
+        ProfileSet { cascade, profiles }
     }
 
     /// A set holding `profiles` alone, as built-ins.
     #[cfg(test)]
     pub(crate) fn from_profiles(profiles: BTreeMap<String, Profile>) -> Self {
         ProfileSet {
+            cascade: vec![ProfileOrigin::BuiltIn],
             profiles: profiles
                 .into_iter()
                 .map(|(name, profile)| (name, (ProfileOrigin::BuiltIn, profile)))
@@ -51,11 +61,24 @@ impl ProfileSet {
         }
     }
 
-    /// Every name with its origin, in name order.
-    pub(crate) fn origins(&self) -> impl Iterator<Item = (&str, &ProfileOrigin)> {
-        self.profiles
+    /// Each origin supplying a name, in cascade order, with the names it
+    /// supplies in name order. An origin every later layer overrode is
+    /// absent.
+    pub(crate) fn by_origin(&self) -> Vec<(&ProfileOrigin, Vec<&str>)> {
+        self.cascade
             .iter()
-            .map(|(name, (origin, _))| (name.as_str(), origin))
+            .map(|origin| {
+                let names = self
+                    .profiles
+                    .iter()
+                    .filter(|(_, (supplier, _))| supplier == origin)
+                    .map(|(name, _)| name.as_str())
+                    .collect::<Vec<_>>();
+
+                (origin, names)
+            })
+            .filter(|(_, names)| !names.is_empty())
+            .collect()
     }
 
     /// The profile `name`, which `origin` asks for.
@@ -78,7 +101,7 @@ impl ProfileSet {
 #[cfg(test)]
 mod tests {
     use super::ProfileSet;
-    use crate::commands::{Profile, ProfileOrigin};
+    use crate::commands::Profile;
     use std::{collections::BTreeMap, path::PathBuf};
 
     /// A layer at `path` holding the profile `name` with `values`.
@@ -107,19 +130,32 @@ mod tests {
         assert!(orm.materials.is_empty());
         assert!(profiles.get("the test", "a").is_ok());
         assert!(profiles.get("the test", "pbr").is_ok());
+    }
 
-        let origins: Vec<_> = profiles.origins().collect();
+    #[test]
+    fn by_origin_runs_the_cascade_and_drops_an_overridden_layer() {
+        let profiles = ProfileSet::layered([
+            layer("/home/.vxlconfig", "orm", &["orm = 1"]),
+            layer("/repo/.vxlconfig", "a", &["a = 1"]),
+            layer("/repo/sub/.vxlconfig", "orm", &["orm = 2"]),
+        ]);
+
+        let groups: Vec<_> = profiles
+            .by_origin()
+            .into_iter()
+            .map(|(origin, names)| (origin.to_string(), names))
+            .collect();
+
         assert_eq!(
-            origins[0],
-            ("a", &ProfileOrigin::File(PathBuf::from("/repo/.vxlconfig")))
-        );
-        assert_eq!(origins[1], ("albedo", &ProfileOrigin::BuiltIn));
-        assert_eq!(
-            origins[4],
-            (
-                "orm",
-                &ProfileOrigin::File(PathBuf::from("/repo/sub/.vxlconfig"))
-            )
+            groups,
+            [
+                (
+                    "built in".to_owned(),
+                    vec!["albedo", "defaults", "emissive", "pbr"]
+                ),
+                ("/repo/.vxlconfig".to_owned(), vec!["a"]),
+                ("/repo/sub/.vxlconfig".to_owned(), vec!["orm"]),
+            ]
         );
     }
 

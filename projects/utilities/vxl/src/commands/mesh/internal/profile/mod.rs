@@ -11,6 +11,7 @@ mod named_cli_value;
 mod primitive_entry;
 #[allow(clippy::module_inception)]
 mod profile;
+mod profile_list_layout;
 mod profile_origin;
 mod profile_set;
 mod slot_entry;

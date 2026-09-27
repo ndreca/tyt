@@ -116,20 +116,18 @@ mod tests {
         assert_eq!(values(&profiles, "orm"), ["orm = 1"]);
         assert!(profiles.get("the test", "pbr").is_ok());
 
-        let origins: Vec<_> = profiles
-            .origins()
-            .map(|(name, origin)| format!("{name} {origin}"))
+        let groups: Vec<_> = profiles
+            .by_origin()
+            .into_iter()
+            .map(|(origin, names)| format!("{origin}: {}", names.join(" ")))
             .collect();
         assert_eq!(
-            origins,
+            groups,
             [
-                "a /repo/.vxlconfig",
-                "albedo built in",
-                "b /repo/sub/.vxlconfig",
-                "defaults built in",
-                "emissive built in",
-                "orm /home/.vxlconfig",
-                "pbr built in",
+                "built in: albedo defaults emissive pbr",
+                "/home/.vxlconfig: orm",
+                "/repo/.vxlconfig: a",
+                "/repo/sub/.vxlconfig: b",
             ]
         );
     }

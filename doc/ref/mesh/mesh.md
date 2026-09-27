@@ -4,7 +4,7 @@ _Part of the [mesh plan](README.md)._
 
 ```sh
 vxl mesh <input> [output] [options]
-vxl mesh --list-profiles
+vxl mesh --list-profiles [layout]
 ```
 
 `vxl mesh` triangulates one object's voxels into a mesh. It bakes the object's
@@ -210,12 +210,15 @@ multi-object document needs a selector. See
     profile's `valuesFrom` imports first. Any writer elements the profile holds
     stay behind. See [profile language](profile-language.md).
 
-18. `--list-profiles`
+18. `--list-profiles [hierarchy | rows | tables | json-pretty | json-compact]`
+    - Default: `hierarchy`
     - Repeatable: no
 
-    Lists the profiles a run can apply and writes no mesh. Each line names a
-    profile and the `.vxlconfig` supplying it, or `built in`. The flag stands
-    alone: any other argument, the input included, errors.
+    Lists the profiles a run can apply and writes no mesh. The profiles group
+    under the `.vxlconfig` supplying each, or `built in`, the groups in
+    cascade order and the names in name order. The optional value picks the
+    layout from the shared `--layout` vocabulary. The flag stands alone: any
+    other argument, the input included, errors.
 
 19. `--select <glob>`
     - Default: `*`, selecting every object

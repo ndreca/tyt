@@ -25,8 +25,8 @@ use voxsmith::{
     dependencies::DependenciesImpl as VoxsmithDependenciesImpl,
     operations::mesh::{
         ArrayDomain, AttributeWrite, Computation, ComputedBinding, ExtraForm, ExtraSource,
-        ExtraWrite, FileForm, FileWrite, MeshRecord, Method, PrimitiveRecord, SlotSource,
-        SlotWrite, TextureShape, Transfer, WrittenValue, mesh,
+        ExtraWrite, FileForm, FileWrite, MeshRecord, Method, PrimitiveRecord, ProfileListLayout,
+        SlotSource, SlotWrite, TextureShape, Transfer, WrittenValue, mesh,
     },
 };
 
@@ -36,7 +36,7 @@ use voxsmith::{
 #[derive(Clone, Debug, Parser)]
 #[command(
     name = "mesh",
-    override_usage = "vxl mesh [OPTIONS] <input> [output]\n       vxl mesh --list-profiles",
+    override_usage = "vxl mesh [OPTIONS] <input> [output]\n       vxl mesh --list-profiles [layout]",
     mut_arg("path", |arg| arg
         .index(1)
         .required(false)
@@ -173,11 +173,18 @@ pub struct Mesh {
     #[arg(value_name = "profile", long, action = ArgAction::Append)]
     profile: Vec<String>,
 
-    /// Lists the profiles a run can apply, each with the `.vxlconfig`
-    /// supplying it or `built in`, and writes no mesh. Takes no other
-    /// argument.
-    #[arg(value_name = "list-profiles", long, exclusive = true)]
-    list_profiles: bool,
+    /// Lists the profiles a run can apply under the `.vxlconfig` supplying
+    /// each, or `built in`, and writes no mesh. Takes no other argument. The
+    /// layout defaults to `hierarchy`.
+    #[arg(
+        value_name = "layout",
+        long,
+        exclusive = true,
+        num_args = 0..=1,
+        default_missing_value = "hierarchy",
+        value_parser = cli_value_parser::<ProfileListLayout>(),
+    )]
+    list_profiles: Option<ProfileListLayout>,
 
     #[command(flatten)]
     program_flags: ProgramFlags,
@@ -358,10 +365,10 @@ pub struct Mesh {
 
 impl Mesh {
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
-        if self.list_profiles {
+        if let Some(layout) = self.list_profiles {
             let profiles = load_profile_set(&dependencies)?;
 
-            return Ok(dependencies.write_stdout(list_profiles(&profiles).as_bytes())?);
+            return Ok(dependencies.write_stdout(list_profiles(&profiles, layout).as_bytes())?);
         }
 
         let (container, output) = self.resolve_output();
@@ -1019,7 +1026,7 @@ mod tests {
     use ty_preferences::{DeserializePrefs, JsoncCodec};
     use voxsmith::operations::mesh::{
         ArrayDomain, AttributeWrite, Computation, ExtraForm, ExtraSource, FileForm, MeshRecord,
-        Method, SlotSource, TextureShape, Transfer, WrittenValue,
+        Method, ProfileListLayout, SlotSource, TextureShape, Transfer, WrittenValue,
     };
 
     /// The command parsed from `args` after the input.
@@ -1096,11 +1103,15 @@ mod tests {
     ];
 
     #[test]
-    fn list_profiles_stands_alone() {
+    fn list_profiles_stands_alone_and_takes_a_layout() {
         let mesh = Mesh::try_parse_from(["mesh", "--list-profiles"]).unwrap();
-        assert!(mesh.list_profiles);
+        assert_eq!(mesh.list_profiles, Some(ProfileListLayout::Hierarchy));
 
-        assert!(!parse(&[]).list_profiles);
+        let mesh = Mesh::try_parse_from(["mesh", "--list-profiles", "json-compact"]).unwrap();
+        assert_eq!(mesh.list_profiles, Some(ProfileListLayout::JsonCompact));
+
+        assert_eq!(parse(&[]).list_profiles, None);
+        assert!(Mesh::try_parse_from(["mesh", "--list-profiles", "columns"]).is_err());
         assert!(Mesh::try_parse_from(["mesh"]).is_err());
         assert!(Mesh::try_parse_from(["mesh", "--from", "voxj"]).is_err());
         assert!(Mesh::try_parse_from(["mesh", "model.voxj", "--list-profiles"]).is_err());

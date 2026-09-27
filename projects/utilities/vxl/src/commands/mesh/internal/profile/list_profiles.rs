@@ -1,18 +1,19 @@
 use crate::commands::ProfileSet;
+use voxsmith::operations::mesh::{ProfileListGroup, ProfileListLayout, profile_list};
 
-/// The profiles of `profiles` as a table, one line per name in name order
-/// with the origin supplying it.
-pub(crate) fn list_profiles(profiles: &ProfileSet) -> String {
-    let width = profiles
-        .origins()
-        .map(|(name, _)| name.len())
-        .max()
-        .unwrap_or(0);
+/// The profiles of `profiles` in `layout`: one group per origin in cascade
+/// order, each holding the names it supplies in name order.
+pub(crate) fn list_profiles(profiles: &ProfileSet, layout: ProfileListLayout) -> String {
+    let groups: Vec<_> = profiles
+        .by_origin()
+        .into_iter()
+        .map(|(origin, names)| ProfileListGroup {
+            origin: origin.to_string(),
+            profiles: names.into_iter().map(str::to_owned).collect(),
+        })
+        .collect();
 
-    profiles
-        .origins()
-        .map(|(name, origin)| format!("{name:width$}  {origin}\n"))
-        .collect()
+    profile_list(&groups, layout)
 }
 
 #[cfg(test)]
@@ -20,9 +21,10 @@ mod tests {
     use super::list_profiles;
     use crate::commands::{Profile, ProfileSet};
     use std::{collections::BTreeMap, path::PathBuf};
+    use voxsmith::operations::mesh::ProfileListLayout;
 
     #[test]
-    fn the_names_sort_and_the_origins_align() {
+    fn the_origins_group_in_cascade_order() {
         let layer = |name: &str| BTreeMap::from([(name.to_owned(), Profile::default())]);
         let profiles = ProfileSet::layered([
             (PathBuf::from("/home/.vxlconfig"), layer("matte")),
@@ -30,13 +32,12 @@ mod tests {
         ]);
 
         assert_eq!(
-            list_profiles(&profiles),
-            "albedo    built in\n\
-             defaults  built in\n\
-             emissive  built in\n\
-             matte     /home/.vxlconfig\n\
-             orm       /repo/.vxlconfig\n\
-             pbr       built in\n"
+            list_profiles(&profiles, ProfileListLayout::Rows),
+            "built in         albedo defaults emissive pbr\n\
+             \n\
+             /home/.vxlconfig matte\n\
+             \n\
+             /repo/.vxlconfig orm\n"
         );
     }
 }

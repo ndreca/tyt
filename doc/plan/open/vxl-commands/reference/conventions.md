@@ -32,7 +32,9 @@ These hold across the commands and match the existing `to` commands.
    `json-pretty`, and `json-compact`. `validate` and `info` offer `tables`
    (their default), `json-pretty`, and `json-compact`, and
    [`palette list`](palette/list.md) adds a `hierarchy` tree to those three
-   and defaults to it.
+   and defaults to it. `mesh --list-profiles` takes the layout as its
+   optional value, `hierarchy`, `rows`, `tables`, `json-pretty`, or
+   `json-compact`, defaulting to `hierarchy`.
 6. Multiple values are passed by repeating the flag, as in
    `--select-index 0 --select-index 3`, not as one comma-separated argument. The
    exception is the `--texture-map` channel list, where the comma-separated RGBA
