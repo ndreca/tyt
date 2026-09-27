@@ -12,6 +12,7 @@ mod json;
 #[cfg(any(
     feature = "render_columns",
     feature = "render_hierarchy",
+    feature = "render_lists",
     feature = "render_rows",
     feature = "render_tables"
 ))]
@@ -20,6 +21,8 @@ mod render;
 mod render_columns;
 #[cfg(feature = "render_hierarchy")]
 mod render_hierarchy;
+#[cfg(feature = "render_lists")]
+mod render_lists;
 #[cfg(feature = "render_rows")]
 mod render_rows;
 #[cfg(feature = "render_tables")]
@@ -45,6 +48,8 @@ pub use json::*;
 pub use render_columns::*;
 #[cfg(feature = "render_hierarchy")]
 pub use render_hierarchy::*;
+#[cfg(feature = "render_lists")]
+pub use render_lists::*;
 #[cfg(feature = "render_rows")]
 pub use render_rows::*;
 #[cfg(feature = "render_tables")]

@@ -47,9 +47,10 @@ let tree = grid.render_hierarchy(
 ```
 
 The other layouts arrange the same grid as aligned columns, markdown
-tables, or JSON, and a label mode decides whether the text layouts
-label data with full dot-joined paths, with leaf segments under nested
-markdown headings, or not at all.
+tables, numbered markdown lists under headings, or JSON, and a label
+mode decides whether the text layouts label data with full dot-joined
+paths, with leaf segments under nested markdown headings, or not at
+all.
 
 Each render method takes only the options its layout consumes, so every
 combination that compiles is valid and rendering always succeeds.
@@ -90,7 +91,7 @@ let tree = grid.render_hierarchy(&TreeGridHierarchyOptions::default());
 
 Each layout rides its own default-on cargo feature named for its
 render module (`render_hierarchy`, `render_rows`, `render_columns`,
-`render_tables`), its render method arriving on a small extension
+`render_tables`, `render_lists`), its render method arriving on a small extension
 trait, so an adopter that renders only one layout can trim the rest. The `json-pretty` / `json-compact` layouts ride the optional
 `json` feature, which pulls in `serde_json`; `TreeGridJsonValue` pairs a
 value with a native JSON form when its text and JSON diverge:

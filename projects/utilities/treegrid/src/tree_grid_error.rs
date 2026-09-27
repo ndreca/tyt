@@ -22,6 +22,10 @@ pub enum TreeGridError {
     /// `header` label mode is invalid there.
     HeaderLabelWithFlatTables,
 
+    /// A list has no inline label slot to carry a path; the `concat`
+    /// label mode is invalid with `lists`.
+    LabelConcatWithLists,
+
     /// A table shape was set on a layout other than `tables`.
     TableShapeWithoutTables,
 
@@ -59,6 +63,9 @@ impl Display for TreeGridError {
             }
             TreeGridError::HeaderLabelWithFlatTables => {
                 write!(f, "the flat table shape requires the concat label mode")
+            }
+            TreeGridError::LabelConcatWithLists => {
+                write!(f, "the lists layout takes the header or none label mode")
             }
             TreeGridError::TableShapeWithoutTables => {
                 write!(f, "a table shape was set, but the layout is not tables")

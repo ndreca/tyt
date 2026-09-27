@@ -1,40 +1,56 @@
 use crate::operations::mesh::{ProfileListGroup, ProfileListLayout};
 use treegrid::{
     TreeGrid, TreeGridHierarchyOptions, TreeGridJsonValue, TreeGridJsonValueCells, TreeGridLabel,
-    TreeGridNestedTableOptions, TreeGridRenderHierarchy, TreeGridRenderJson, TreeGridRenderRows,
-    TreeGridRenderTables, TreeGridRowsOptions, TreeGridTableShape,
+    TreeGridListsOptions, TreeGridNestedTableOptions, TreeGridRenderHierarchy, TreeGridRenderJson,
+    TreeGridRenderLists, TreeGridRenderRows, TreeGridRenderTables, TreeGridRowsOptions,
+    TreeGridTableShape,
 };
 
-/// Renders `groups` in `layout`, one root per group in the given order over
-/// its profiles.
+/// Renders `groups` in `layout`, one node per group in the given order over
+/// its profiles. The lists layout alone titles them `profiles`, putting one
+/// top-level heading over a section per group.
 pub fn profile_list(groups: &[ProfileListGroup], layout: ProfileListLayout) -> String {
-    let grid = build_grid(groups);
-
     match layout {
-        ProfileListLayout::Hierarchy => grid.render_hierarchy(
+        ProfileListLayout::Hierarchy => build_grid(groups, None).render_hierarchy(
             &TreeGridHierarchyOptions::default()
                 .with_bare_roots(true)
                 .with_value_children(true),
         ),
-        ProfileListLayout::Rows => grid.render_rows(&TreeGridRowsOptions::default()),
-        ProfileListLayout::Tables => grid.render_tables(&TreeGridTableShape::Nested(
-            TreeGridNestedTableOptions::default(),
-        )),
-        ProfileListLayout::JsonPretty => grid.render_json_pretty(),
-        ProfileListLayout::JsonCompact => grid.render_json_compact(),
+        ProfileListLayout::Lists => {
+            build_grid(groups, Some("profiles")).render_lists(&TreeGridListsOptions::default())
+        }
+        ProfileListLayout::Rows => {
+            build_grid(groups, None).render_rows(&TreeGridRowsOptions::default())
+        }
+        ProfileListLayout::Tables => build_grid(groups, None).render_tables(
+            &TreeGridTableShape::Nested(TreeGridNestedTableOptions::default()),
+        ),
+        ProfileListLayout::JsonPretty => build_grid(groups, None).render_json_pretty(),
+        ProfileListLayout::JsonCompact => build_grid(groups, None).render_json_compact(),
     }
 }
 
-/// The forest every layout renders: a bare root per group over its profiles
-/// as values.
-fn build_grid(groups: &[ProfileListGroup]) -> TreeGrid<TreeGridJsonValueCells> {
+/// The grid the layouts render: a bare node per group over its profiles as
+/// values. The nodes are roots, or children of a bare `title` root when one
+/// is given.
+fn build_grid(
+    groups: &[ProfileListGroup],
+    title: Option<&str>,
+) -> TreeGrid<TreeGridJsonValueCells> {
     let mut grid = TreeGrid::with_cells(TreeGridJsonValueCells);
 
+    let title_id = title.map(|title| grid.retain_root(TreeGridLabel::bare(title)));
+
     for group in groups {
-        let root_id = grid.retain_root(TreeGridLabel::bare(group.origin.clone()));
+        let label = TreeGridLabel::bare(group.origin.clone());
+
+        let group_id = match title_id {
+            Some(title_id) => grid.retain_child(title_id, label),
+            None => grid.retain_root(label),
+        };
 
         for profile in &group.profiles {
-            grid.push_value(root_id, TreeGridJsonValue::new(profile.clone()));
+            grid.push_value(group_id, TreeGridJsonValue::new(profile.clone()));
         }
     }
 
@@ -75,6 +91,29 @@ mod tests {
              \n\
              /repo/.vxlconfig\n\
              └ orm\n"
+        );
+    }
+
+    #[test]
+    fn lists_head_each_group_over_its_numbered_profiles() {
+        assert_eq!(
+            profile_list(&groups(), ProfileListLayout::Lists),
+            "# profiles\n\
+             \n\
+             ## built in\n\
+             \n\
+             1. albedo\n\
+             2. defaults\n\
+             3. emissive\n\
+             4. pbr\n\
+             \n\
+             ## /home/.vxlconfig\n\
+             \n\
+             1. matte\n\
+             \n\
+             ## /repo/.vxlconfig\n\
+             \n\
+             1. orm\n"
         );
     }
 
@@ -124,6 +163,7 @@ mod tests {
     #[test]
     fn no_groups_render_nothing() {
         assert_eq!(profile_list(&[], ProfileListLayout::Hierarchy), "");
+        assert_eq!(profile_list(&[], ProfileListLayout::Lists), "");
         assert_eq!(profile_list(&[], ProfileListLayout::JsonCompact), "[]\n");
     }
 }

@@ -25,7 +25,7 @@ These hold across the commands and match the existing `to` commands.
    Property keys are the glTF vocabulary names such as `baseColor`.
 5. The read-only reports render with `--layout`, every command drawing its
    values from one shared vocabulary: `hierarchy`, `rows`, `columns`,
-   `tables`, `json-pretty`, and `json-compact`.
+   `tables`, `lists`, `json-pretty`, and `json-compact`.
    [`palette show`](palette/show.md) offers all six, defaults to `rows`, and
    refines them with `--label`, `--header-level`, and `--table-shape`.
    [`hierarchy show`](hierarchy/show.md) offers `hierarchy` (its default),
@@ -33,8 +33,8 @@ These hold across the commands and match the existing `to` commands.
    (their default), `json-pretty`, and `json-compact`, and
    [`palette list`](palette/list.md) adds a `hierarchy` tree to those three
    and defaults to it. `mesh --list-profiles` takes the layout as its
-   optional value, `hierarchy`, `rows`, `tables`, `json-pretty`, or
-   `json-compact`, defaulting to `hierarchy`.
+   optional value, `hierarchy`, `lists`, `rows`, `tables`, `json-pretty`,
+   or `json-compact`, defaulting to `hierarchy`.
 6. Multiple values are passed by repeating the flag, as in
    `--select-index 0 --select-index 3`, not as one comma-separated argument. The
    exception is the `--texture-map` channel list, where the comma-separated RGBA

@@ -56,7 +56,7 @@ amended; after adoption, this spec is the single source of truth.
 - Each layout lives in its own module, named for its render method
   (`render_hierarchy` and kin), behind a default-on cargo feature
   named like the module (`render_hierarchy`, `render_rows`,
-  `render_columns`, `render_tables`; `json` and `ty-math` stay
+  `render_columns`, `render_tables`, `render_lists`; `json` and `ty-math` stay
   non-default): the layout's render method
   rides an extension trait on `TreeGrid` (`TreeGridRenderHierarchy`
   and kin), beside its options payload and its `resolve_*` impl, so
@@ -267,6 +267,23 @@ Today's `palette show --layout row`:
   reject it (`TreeGridError::WidthWithoutRows`).
 - Under `header` mode, label padding is computed per group.
 
+### lists
+
+- Rendered by `render_lists(&TreeGridListsOptions)`, on the
+  `TreeGridRenderLists` trait behind the `render_lists` feature.
+- One numbered list per data node, in pre-order: `{n}. {cell}`, one
+  value per line from `1.`.
+- The label mode is `TreeGridListsLabelMode`, `none` or `header`, unset
+  meaning `header`. `concat` errors with
+  `TreeGridError::LabelConcatWithLists` because a list has no inline
+  label slot.
+  - `header`: every node that bears or leads to data heads its subtree
+    at `header_level + depth`. A data node's heading sits directly over
+    its list, ahead of its children's headings.
+  - `none`: the lists alone.
+- Blocks separate with one blank line. Lines right-trim. Output ends
+  with one `\n`; an empty grid renders as an empty string.
+
 ### columns
 
 Today's `palette show --layout column`:
@@ -364,7 +381,8 @@ by the `TreeGridOptions` `resolve_*` methods; each render method
 takes a payload in which every such combination is unrepresentable,
 and cannot fail. The set is `LabelNoneWithTables`,
 `LabelModeWithoutLabels`, `HeaderLevelWithoutHeaders`,
-`HeaderLabelWithFlatTables`, `TableShapeWithoutTables`,
+`HeaderLabelWithFlatTables`, `LabelConcatWithLists`,
+`TableShapeWithoutTables`,
 `BareRootsWithoutHierarchy`, `ValueChildrenWithoutHierarchy`, and
 `WidthWithoutRows`. Commands map it into their own error types (vxl:
 `ErrorKind::InvalidInput`).

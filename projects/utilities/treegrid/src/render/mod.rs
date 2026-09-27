@@ -6,6 +6,7 @@ mod cell;
 #[cfg(any(
     feature = "render_columns",
     feature = "render_hierarchy",
+    feature = "render_lists",
     feature = "render_rows",
     feature = "render_tables"
 ))]
@@ -18,6 +19,7 @@ mod cell_render;
 mod cell_separator;
 #[cfg(any(
     feature = "render_columns",
+    feature = "render_lists",
     feature = "render_rows",
     feature = "render_tables"
 ))]
@@ -27,6 +29,7 @@ mod visible_width;
 pub(crate) use cell::*;
 #[cfg(any(
     feature = "render_columns",
+    feature = "render_lists",
     feature = "render_rows",
     feature = "render_tables"
 ))]
