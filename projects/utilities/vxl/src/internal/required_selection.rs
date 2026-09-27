@@ -54,7 +54,6 @@ impl RequiredSelection {
 
     /// The ids of the nodes the selectors match in `main`, in document order.
     /// Errors when they match nothing.
-    #[cfg_attr(not(test), expect(dead_code, reason = "node commands use it from S6"))]
     pub fn resolve_nodes<T: VoxExt>(
         &self,
         main: &VoxMain<T>,
@@ -68,6 +67,25 @@ impl RequiredSelection {
         }
 
         Ok(node_ids)
+    }
+
+    /// The one node the selectors match in `main`. Errors unless they match
+    /// exactly one.
+    pub fn resolve_one_node<T: VoxExt>(
+        &self,
+        main: &VoxMain<T>,
+    ) -> Result<U32Id<BVoxHierarchyNode>> {
+        let node_ids = self.resolve_nodes(main)?;
+
+        let [node_id] = node_ids[..] else {
+            return Err(Error::usage(format!(
+                "the selection matched {} nodes but this command needs exactly one; check \
+                 --select and --select-index",
+                node_ids.len()
+            )));
+        };
+
+        Ok(node_id)
     }
 }
 
@@ -144,6 +162,31 @@ mod tests {
         assert!(
             selection(&["--select-index", "0-1"])
                 .resolve_one_object(&main)
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn resolve_one_node_needs_exactly_one_match() {
+        let mut main: VoxMain = VoxMain::default();
+
+        for name in ["a", "b"] {
+            let node = VoxHierarchyNode {
+                name: name.to_owned(),
+                ..Default::default()
+            };
+
+            main.retain_hierarchy_node(node).unwrap();
+        }
+
+        assert!(
+            selection(&["--select", "b"])
+                .resolve_one_node(&main)
+                .is_ok()
+        );
+        assert!(
+            selection(&["--select-index", "0-1"])
+                .resolve_one_node(&main)
                 .is_err()
         );
     }

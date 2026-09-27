@@ -1,6 +1,7 @@
 mod hierarchy;
 mod info;
 mod mesh;
+mod node;
 mod object;
 mod object_voxels;
 mod palette;
@@ -11,6 +12,7 @@ mod voxelize;
 pub use hierarchy::*;
 pub use info::*;
 pub use mesh::*;
+pub use node::*;
 pub use object::*;
 pub use object_voxels::*;
 pub use palette::*;

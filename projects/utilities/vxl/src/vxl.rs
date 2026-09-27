@@ -1,4 +1,6 @@
-use crate::commands::{Hierarchy, Info, Mesh, Object, ObjectVoxels, Palette, Validate, Voxelize};
+use crate::commands::{
+    Hierarchy, Info, Mesh, Node, Object, ObjectVoxels, Palette, Validate, Voxelize,
+};
 use crate::{Dependencies, Result, commands::To};
 use clap::Subcommand;
 
@@ -14,6 +16,8 @@ pub enum Vxl {
     Info(Info),
     #[command(name = "mesh")]
     Mesh(Mesh),
+    #[command(name = "node")]
+    Node(Node),
     #[command(name = "object")]
     Object(Object),
     #[command(name = "object-voxels")]
@@ -34,6 +38,7 @@ impl Vxl {
             Vxl::Hierarchy(hierarchy) => hierarchy.execute(dependencies),
             Vxl::Info(info) => info.execute(dependencies),
             Vxl::Mesh(mesh) => mesh.execute(dependencies),
+            Vxl::Node(node) => node.execute(dependencies),
             Vxl::Object(object) => object.execute(dependencies),
             Vxl::ObjectVoxels(object_voxels) => object_voxels.execute(dependencies),
             Vxl::Palette(palette) => palette.execute(dependencies),

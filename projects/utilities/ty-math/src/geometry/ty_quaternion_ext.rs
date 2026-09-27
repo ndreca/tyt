@@ -9,6 +9,11 @@ pub trait TyQuaternionExt {
     /// single axis reads on that component alone.
     fn to_euler_radians(self) -> TyVector3F64;
 
+    /// The rotation `Rz(z) * Ry(y) * Rx(x)` from euler angles in radians,
+    /// inverting [`to_euler_radians`](TyQuaternionExt::to_euler_radians) away
+    /// from gimbal lock.
+    fn from_euler_radians(euler: TyVector3F64) -> TyQuaternionF64;
+
     /// A rotation from the upper-left 3x3 of `matrix`, taking its first three
     /// columns as the right, up, and forward basis vectors and normalizing each to
     /// strip embedded scale. `None` for a degenerate matrix with a near-zero
@@ -58,6 +63,10 @@ impl TyQuaternionExt for TyQuaternionF64 {
     fn to_euler_radians(self) -> TyVector3F64 {
         let (x, y, z) = self.to_euler(EulerRot::XYZEx);
         TyVector3F64::new(x, y, z)
+    }
+
+    fn from_euler_radians(euler: TyVector3F64) -> TyQuaternionF64 {
+        TyQuaternionF64::from_euler(EulerRot::XYZEx, euler.x, euler.y, euler.z)
     }
 
     fn from_rotation_matrix(matrix: TyMatrix4x4F64) -> Option<TyQuaternionF64> {
@@ -174,6 +183,21 @@ mod tests {
                 close_vec(got, want),
                 "euler mismatch: got {got:?} want {want:?}"
             );
+        }
+    }
+
+    #[test]
+    fn from_euler_radians_inverts_to_euler_radians() {
+        for euler in [
+            TyVector3F64::ZERO,
+            TyVector3F64::new(0.0, 37.0_f64.to_radians(), 0.0),
+            TyVector3F64::new(0.4, -1.1, 2.9),
+            TyVector3F64::new(-3.0, 0.2, -0.7),
+        ] {
+            let q = TyQuaternionF64::from_euler_radians(euler);
+
+            assert!(close_vec(q.to_euler_radians(), euler), "{euler:?}");
+            assert!(close(q.length(), 1.0));
         }
     }
 

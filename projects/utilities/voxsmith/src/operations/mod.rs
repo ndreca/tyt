@@ -9,6 +9,9 @@ pub mod info;
 #[cfg(feature = "mesh")]
 pub mod mesh;
 
+#[cfg(feature = "node")]
+pub mod node;
+
 #[cfg(feature = "object")]
 pub mod object;
 

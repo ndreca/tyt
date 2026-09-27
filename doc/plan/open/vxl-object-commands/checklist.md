@@ -34,7 +34,7 @@ The design is in the [README](README.md). Each step builds the commands the
       palette, material, and value pool ids from the source.
 - [x] **S5. `object-voxels`.** Tests check that four turns and two flips leave
       an object unchanged.
-- [ ] **S6. Node setters.** `glam`'s `DQuat::from_euler(EulerRot::XYZEx, ...)`
+- [x] **S6. Node setters.** `glam`'s `DQuat::from_euler(EulerRot::XYZEx, ...)`
       inverts the `to_euler_radians` that `hierarchy show` prints with.
 - [ ] **S7. Node graph.** `link` reuses voxcore's cycle check.
 - [ ] **S8. Docs.** Add vxl README sections and extend the command list in the

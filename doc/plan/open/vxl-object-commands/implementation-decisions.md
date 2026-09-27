@@ -159,3 +159,23 @@ vmax, goxl, and mvox refreshes.
   grid.
 - The three commands check and remap one object at a time, as S3's do. vxl
   writes nothing when any object errors.
+
+## S6. Node setters
+
+- voxsmith gains a `node` feature for `operations/node/`. `set_node_positions`,
+  `set_node_rotations`, and `set_node_scales` each replace one transform
+  field. `node set name` calls voxcore's setter directly, as `object set name`
+  does.
+- The setters check the value and every node id before changing anything.
+  Their errors name the value the user gave, where voxcore's name a node id.
+- ty-math gains `TyQuaternionExt::from_euler_radians`, the inverse of
+  `to_euler_radians`, so the `XYZEx` order lives in one place. It also gains
+  `TyAngleUnit`, which vxl names `deg` and `rad` through `CliValue`.
+- vxl parses every `f64` vector component through `parse_finite_f64`, so NaN
+  and infinities fail at parse. `--rotation` would otherwise turn a NaN into a
+  non-unit quaternion error.
+- `--quaternion` is stored as given, without normalizing, once it is within
+  `UNIT_ROTATION_TOLERANCE`.
+- `--unit` conflicts with `--quaternion`. clap skips `requires` on an argument
+  with a default.
+- `RequiredSelection` gains `resolve_one_node` for `node set name`.
