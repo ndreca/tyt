@@ -22,8 +22,10 @@ vxl object remove scene.vmax --select 'debris/**'
 `set origin` moves an object's grid within its node. `set edit-bounds` and
 `trim` resize the grid without moving a voxel in the scene. `link` and `unlink`
 add or drop one placement. `duplicate` copies objects within the document. `add`
-copies objects from another file along with their palettes. `mesh` writes the
-selected objects as a glTF mesh. The
+copies objects from another file along with their palettes. `downsample` and
+`upsample` change the grid's resolution by a whole-number factor per axis,
+scaling `origin` and `bounds` with it, so `node set scale` keeps the object's
+size in the scene. `mesh` writes the selected objects as a glTF mesh. The
 [mesh reference](../../../doc/ref/mesh/mesh.md) covers its flags.
 
 ```sh
@@ -32,6 +34,12 @@ vxl object add scene.voxj --source props.voxj --select-index 0-2 --select-parent
 
 # Grows the crate's edit box from [-2 -6 0]..[2 2 4] by 2 voxels on -x and -z.
 vxl object set edit-bounds scene.voxj --select crate --min -4 -6 -2 --max 2 2 4
+
+# Merges the crate's voxels two per axis, keeping a block at least half live.
+vxl object downsample scene.voxj --select crate --factor 2
+
+# Splits each of the crate's voxels into ten per axis.
+vxl object upsample scene.voxj --select crate --factor 10
 ```
 
 ## Object Voxels

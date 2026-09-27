@@ -152,6 +152,19 @@ impl VoxExt for HookRecorder {
         Ok(())
     }
 
+    fn object_voxels_did_resample(
+        &mut self,
+        _state: &VoxState,
+        object_id: U32Id<BVoxObject>,
+        _old_bounds: TyVector3U32,
+        _old_voxel_ids: &[U32Id<BVoxVoxel>],
+    ) -> Result<()> {
+        self.0
+            .push(format!("object {} voxels resampled", object_id.to_u32()));
+
+        Ok(())
+    }
+
     fn palette_did_retain(
         &mut self,
         _state: &VoxState,

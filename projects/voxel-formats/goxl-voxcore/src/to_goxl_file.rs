@@ -594,6 +594,31 @@ mod tests {
         assert_eq!(reloaded.ext(), &expected);
     }
 
+    /// A voxel resample onto a grid moves the stamps as a remap onto that
+    /// grid does.
+    #[test]
+    fn a_voxel_resample_moves_the_stamps_like_a_remap() {
+        let mut remapped = from_goxl_file(&placed_blocks_file()).unwrap();
+
+        remapped
+            .remap_object_voxels(object(1), TyVector3U32::new(16, 16, 18), |p| p.as_ivec3())
+            .unwrap();
+
+        let mut resampled = from_goxl_file(&placed_blocks_file()).unwrap();
+
+        resampled
+            .resample_object_voxels(object(1), TyVector3U32::new(16, 16, 18), |p| {
+                (p.z < 16).then_some(p)
+            })
+            .unwrap();
+
+        assert_eq!(resampled.ext(), remapped.ext());
+        assert_eq!(
+            resampled.ext().layers[&node(1)].placements,
+            [placement(1, [0, 14, 0])]
+        );
+    }
+
     /// Each setter moves the stamps it affects by as much as the stamped box
     /// moved. A children change stamps a new object once and drops a removed
     /// one.

@@ -64,6 +64,13 @@ pub enum Error {
         other_voxel_id: U32Id<BVoxVoxel>,
     },
 
+    /// A voxel resample drew a cell from `position`, outside the old grid of
+    /// `bounds`.
+    ResampleSourceOutsideGrid {
+        position: TyVector3U32,
+        bounds: TyVector3U32,
+    },
+
     /// A color read resolved `baseColor` to a property whose value pool holds
     /// no colors.
     NonColorProperty {
@@ -358,6 +365,11 @@ impl Display for Error {
                 "voxels {} and {} would move onto one cell",
                 other_voxel_id.to_u32(),
                 voxel_id.to_u32()
+            ),
+            Error::ResampleSourceOutsideGrid { position, bounds } => write!(
+                f,
+                "a resampled cell draws from [{}, {}, {}], outside the {} x {} x {} grid",
+                position.x, position.y, position.z, bounds.x, bounds.y, bounds.z
             ),
             Error::NonColorProperty {
                 palette_id,

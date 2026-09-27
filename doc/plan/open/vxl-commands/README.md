@@ -52,6 +52,8 @@ Every command sits under the noun it addresses, then its verb.
   only.
 - [`vxl object`](../../closed/vxl-object-commands/README.md#vxl-object): edit
   object properties, placements, and copies.
+- [`vxl object downsample` and `vxl object upsample`](../vxl-resample-commands/README.md):
+  change an object's grid resolution by a whole-number factor.
 - [`vxl object-voxels`](../../closed/vxl-object-commands/README.md#vxl-object-voxels):
   move voxels within an object's grid.
 - [`vxl node`](../../closed/vxl-object-commands/README.md#vxl-node): edit nodes

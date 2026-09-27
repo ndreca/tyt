@@ -159,6 +159,19 @@ impl VoxExt for CompositeVoxExt {
         Ok(())
     }
 
+    fn object_voxels_did_resample(
+        &mut self,
+        main: &VoxState,
+        object_id: U32Id<BVoxObject>,
+        old_bounds: TyVector3U32,
+        old_voxel_ids: &[U32Id<BVoxVoxel>],
+    ) -> Result<()> {
+        for ext in &mut self.exts {
+            ext.object_voxels_did_resample(main, object_id, old_bounds, old_voxel_ids)?;
+        }
+        Ok(())
+    }
+
     fn palette_did_retain(
         &mut self,
         main: &VoxState,
@@ -348,6 +361,17 @@ mod tests {
             self.0.push("object voxels");
             Ok(())
         }
+
+        fn object_voxels_did_resample(
+            &mut self,
+            _state: &VoxState,
+            _object_id: U32Id<BVoxObject>,
+            _old_bounds: TyVector3U32,
+            _old_voxel_ids: &[U32Id<BVoxVoxel>],
+        ) -> Result<()> {
+            self.0.push("object resample");
+            Ok(())
+        }
     }
 
     /// Every setter hook reaches every entry through the boxed composite.
@@ -388,6 +412,9 @@ mod tests {
         main.remap_object_voxels(object_id, TyVector3U32::splat(2), |p| p.as_ivec3())
             .unwrap();
 
+        main.resample_object_voxels(object_id, TyVector3U32::splat(1), Some)
+            .unwrap();
+
         let composite: &dyn VoxconvExt = main.ext().as_ref();
 
         let composite = composite.downcast_ref::<CompositeVoxExt>().unwrap();
@@ -404,6 +431,7 @@ mod tests {
                     "object name",
                     "object origin",
                     "object voxels",
+                    "object resample",
                 ]
             );
         }

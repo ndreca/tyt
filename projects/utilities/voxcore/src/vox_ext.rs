@@ -147,6 +147,18 @@ pub trait VoxExt {
         Ok(())
     }
 
+    /// The grid of object `object_id` was rebuilt from a grid of `old_bounds`
+    /// live at `old_voxel_ids`, every voxel id renumbered.
+    fn object_voxels_did_resample(
+        &mut self,
+        _state: &VoxState,
+        _object_id: U32Id<BVoxObject>,
+        _old_bounds: TyVector3U32,
+        _old_voxel_ids: &[U32Id<BVoxVoxel>],
+    ) -> Result<()> {
+        Ok(())
+    }
+
     /// Palette `palette_id` was retained.
     fn palette_did_retain(
         &mut self,
@@ -423,6 +435,22 @@ mod tests {
             Ok(())
         }
 
+        fn object_voxels_did_resample(
+            &mut self,
+            state: &VoxState,
+            object_id: U32Id<BVoxObject>,
+            old_bounds: TyVector3U32,
+            old_voxel_ids: &[U32Id<BVoxVoxel>],
+        ) -> Result<()> {
+            let bounds = state.object(object_id).unwrap().bounds();
+            let old_ids: Vec<u32> = old_voxel_ids.iter().map(|id| id.to_u32()).collect();
+            self.0.push(format!(
+                "voxels resampled {} {old_bounds} to {bounds} from {old_ids:?}",
+                object_id.to_u32()
+            ));
+            Ok(())
+        }
+
         fn palette_did_retain(
             &mut self,
             _state: &VoxState,
@@ -605,12 +633,18 @@ mod tests {
         })
         .unwrap();
 
+        main.resample_object_voxels(object_id, TyVector3U32::new(1, 1, 4), |p| {
+            Some(TyVector3U32::new(0, 0, p.z / 2))
+        })
+        .unwrap();
+
         assert_eq!(
             events(&main)[1..],
             [
                 "object renamed 0 a to b",
                 "object origin 0 [0, 0, 0] to [1, 2, 3]",
                 "voxels remapped 0 [2, 1, 1] to [1, 1, 2] [(0, 1)]",
+                "voxels resampled 0 [1, 1, 2] to [1, 1, 4] from [1]",
             ]
         );
     }

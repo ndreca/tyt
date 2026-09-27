@@ -121,6 +121,23 @@ fn shift_object_placements(
     }
 }
 
+impl GoxlExt {
+    /// Moves each placement of object `object_id` by as much as its stamped
+    /// box moved off a grid of `old_bounds`.
+    fn follow_bounds(
+        &mut self,
+        state: &VoxState,
+        object_id: U32Id<BVoxObject>,
+        old_bounds: TyVector3U32,
+    ) {
+        let object = state.object(object_id).expect("a regridded object is live");
+        shift_object_placements(&mut self.layers, state, object_id, |node_position| {
+            stamp_position(node_position, object.origin(), object.bounds())
+                - stamp_position(node_position, object.origin(), old_bounds)
+        });
+    }
+}
+
 /// A node another entry clones refuses its release, because the clone's
 /// `base_id` would dangle. A node transform, object origin, or object bounds
 /// change shifts each affected placement by as much as the stamped box moved,
@@ -272,11 +289,18 @@ impl VoxExt for GoxlExt {
         old_bounds: TyVector3U32,
         _voxel_ids: &HashMap<U32Id<BVoxVoxel>, U32Id<BVoxVoxel>>,
     ) -> VoxResult<()> {
-        let object = state.object(object_id).expect("a remapped object is live");
-        shift_object_placements(&mut self.layers, state, object_id, |node_position| {
-            stamp_position(node_position, object.origin(), object.bounds())
-                - stamp_position(node_position, object.origin(), old_bounds)
-        });
+        self.follow_bounds(state, object_id, old_bounds);
+        Ok(())
+    }
+
+    fn object_voxels_did_resample(
+        &mut self,
+        state: &VoxState,
+        object_id: U32Id<BVoxObject>,
+        old_bounds: TyVector3U32,
+        _old_voxel_ids: &[U32Id<BVoxVoxel>],
+    ) -> VoxResult<()> {
+        self.follow_bounds(state, object_id, old_bounds);
         Ok(())
     }
 

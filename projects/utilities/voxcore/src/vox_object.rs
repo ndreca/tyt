@@ -421,18 +421,24 @@ impl VoxObject {
     /// Grid position of `id`, or `None` if outside the grid. Inverse of
     /// [`voxel_id`](Self::voxel_id).
     pub fn voxel_position(&self, id: U32Id<BVoxVoxel>) -> Option<TyVector3U32> {
+        Self::raster_position(self.bounds, id)
+    }
+
+    /// The position of the raster id `id` on a grid of `bounds`, or `None` if
+    /// outside it. `bounds` is within the cell cap, which keeps the arithmetic
+    /// within u32.
+    fn raster_position(bounds: TyVector3U32, id: U32Id<BVoxVoxel>) -> Option<TyVector3U32> {
         let raster = id.to_u32();
-        if (raster as u64) >= Self::volume_of(self.bounds) {
+        if (raster as u64) >= Self::volume_of(bounds) {
             return None;
         }
 
-        // The volume cap in `new` keeps `plane` within u32. A non-zero volume
-        // guarantees both divisors below are non-zero.
-        let plane = self.bounds.y * self.bounds.z;
+        // A non-zero volume guarantees both divisors below are non-zero.
+        let plane = bounds.y * bounds.z;
         Some(TyVector3U32::new(
             raster / plane,
-            (raster % plane) / self.bounds.z,
-            raster % self.bounds.z,
+            (raster % plane) / bounds.z,
+            raster % bounds.z,
         ))
     }
 
@@ -500,6 +506,64 @@ impl VoxObject {
         self.bounds = bounds;
         self.liveness = liveness;
         Ok(new_ids)
+    }
+
+    /// Rebuilds the grid at `bounds`. Each new cell draws from the old cell
+    /// `source` picks for it: a live source makes the cell live with the
+    /// source's samples, and a dead source or `None` leaves it empty. Several
+    /// cells may draw from one source. Layers and `origin` stay. Returns the
+    /// ids the old grid had live. Errors, changing nothing, if:
+    ///
+    /// 1. the grid would exceed [`MAX_GRID_CELLS`](Self::MAX_GRID_CELLS)
+    /// 2. `source` picks a cell outside the old grid
+    pub fn resample_voxels(
+        &mut self,
+        bounds: TyVector3U32,
+        source: impl Fn(TyVector3U32) -> Option<TyVector3U32>,
+    ) -> Result<Vec<U32Id<BVoxVoxel>>> {
+        let volume = Self::volume_of(bounds);
+        if volume > Self::MAX_GRID_CELLS {
+            return Err(Error::GridCellCap { cells: volume });
+        }
+
+        // Per live new cell, the live old cell it copies.
+        let mut liveness = VoxLiveness::new(volume as usize);
+        let mut sources = Vec::new();
+        for raster in 0..volume as u32 {
+            let new_id = U32Id::from_u32(raster);
+            let position =
+                Self::raster_position(bounds, new_id).expect("a raster index is within the grid");
+            let Some(old_position) = source(position) else {
+                continue;
+            };
+            let Some(old_id) = Self::raster_id(self.bounds, old_position) else {
+                return Err(Error::ResampleSourceOutsideGrid {
+                    position: old_position,
+                    bounds: self.bounds,
+                });
+            };
+            if self.liveness.is_live(old_id) {
+                liveness.set_live(new_id, true);
+                sources.push((new_id, old_id));
+            }
+        }
+
+        // Non-live cells are ignored filler, so material 0 stands in.
+        let layer_ids: Vec<_> = self.layer_ids.iter().collect();
+        for layer_id in layer_ids {
+            // Safety: retained layer ids have a sample column.
+            let column = unsafe { self.samples.get_mut(layer_id) };
+            let mut drawn = IdVec::from_vec(vec![U32Id::from_u32(0); volume as usize]);
+            for &(new_id, old_id) in &sources {
+                drawn[new_id.to_usize_id()] = column[old_id.to_usize_id()];
+            }
+            *column = drawn;
+        }
+
+        let old_ids = self.liveness.iter_live().collect();
+        self.bounds = bounds;
+        self.liveness = liveness;
+        Ok(old_ids)
     }
 
     /// This object turned from Z-up to Y-up axes, `+z` to `+y` and `+y` to
@@ -727,6 +791,71 @@ mod tests {
         );
         assert!(matches!(
             object.remap_voxels(TyVector3U32::splat(1 << 10), |p| p.as_ivec3()),
+            Err(Error::GridCellCap { .. })
+        ));
+
+        assert_eq!(object.bounds(), TyVector3U32::new(1, 2, 3));
+        assert_eq!(live_cells(&object), before);
+    }
+
+    #[test]
+    fn resample_voxels_draws_each_cell_from_its_source() {
+        let mut object = seated_object();
+
+        // Double the grid along y, each old cell filling two new ones.
+        let old_ids = object
+            .resample_voxels(TyVector3U32::new(1, 4, 3), |p| {
+                Some(TyVector3U32::new(p.x, p.y / 2, p.z))
+            })
+            .unwrap();
+
+        assert_eq!(object.bounds(), TyVector3U32::new(1, 4, 3));
+        assert_eq!(object.origin(), TyVector3I32::new(5, 6, 7));
+        assert_eq!(
+            live_cells(&object),
+            vec![
+                (
+                    TyVector3U32::new(0, 0, 2),
+                    vec![material_id(5), material_id(6)]
+                ),
+                (
+                    TyVector3U32::new(0, 1, 2),
+                    vec![material_id(5), material_id(6)]
+                ),
+                (
+                    TyVector3U32::new(0, 2, 0),
+                    vec![material_id(3), material_id(4)]
+                ),
+                (
+                    TyVector3U32::new(0, 3, 0),
+                    vec![material_id(3), material_id(4)]
+                ),
+            ]
+        );
+        assert_eq!(old_ids, [U32Id::from_u32(2), U32Id::from_u32(3)]);
+
+        // A `None` source leaves its cell empty.
+        object
+            .resample_voxels(TyVector3U32::splat(1), |_| None)
+            .unwrap();
+
+        assert!(live_cells(&object).is_empty());
+    }
+
+    #[test]
+    fn resample_voxels_rejects_a_bad_source_without_changing_state() {
+        let mut object = seated_object();
+        let before = live_cells(&object);
+
+        assert_eq!(
+            object.resample_voxels(TyVector3U32::new(1, 2, 3), |p| Some(p + TyVector3U32::Z)),
+            Err(Error::ResampleSourceOutsideGrid {
+                position: TyVector3U32::new(0, 0, 3),
+                bounds: TyVector3U32::new(1, 2, 3),
+            })
+        );
+        assert!(matches!(
+            object.resample_voxels(TyVector3U32::splat(1 << 10), Some),
             Err(Error::GridCellCap { .. })
         ));
 

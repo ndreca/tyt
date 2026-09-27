@@ -595,6 +595,33 @@ mod tests {
         assert_eq!(object_state.uuid, uuid);
     }
 
+    /// A voxel resample moves the object's camera target by as much as the
+    /// content center moved, as a remap does.
+    #[test]
+    fn a_voxel_resample_moves_the_camera_target_with_the_content() {
+        let mut main = from_vmax_file(&sample()).unwrap();
+        let palette_id = U32Id::<BVoxPalette>::from_u32(0);
+        let mut object = VoxObject::new(String::new(), TyVector3U32::splat(1)).unwrap();
+        object.retain_layer(palette_id, U32Id::<BVoxMaterial>::from_u32(0));
+        object
+            .retain_voxel(U32Id::from_u32(0), &[U32Id::<BVoxMaterial>::from_u32(0)])
+            .unwrap();
+        let object_id = main.retain_object(object).unwrap();
+
+        // The same regrid the remap test makes: the canvas widens by 2 and
+        // the one voxel lands 2 up, so the content center moves 1 along x.
+        main.resample_object_voxels(object_id, TyVector3U32::new(3, 1, 1), |p| {
+            (p.x == 2).then_some(TyVector3U32::ZERO)
+        })
+        .unwrap();
+
+        let object_state = &main.ext().object_states[&object_id];
+        assert_eq!(
+            object_state.cam.as_ref().map(|cam| cam.o),
+            Some([128.5, 127.5, 0.5])
+        );
+    }
+
     /// A node rotated after the load writes its live rotation on Voxel Max's
     /// Z-up axes, a turn about voxcore's `+y` landing on `+z`. An unrotated
     /// node keeps the preserved spelling.

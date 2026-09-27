@@ -871,6 +871,28 @@ impl<T: VoxExt> VoxMain<T> {
             .object_voxels_did_remap(&self.state, object_id, old_bounds, &voxel_ids)
     }
 
+    /// Rebuilds the grid of object `object_id` at `bounds` through
+    /// [`VoxObject::resample_voxels`], which renumbers the voxel ids. Errors,
+    /// changing nothing, if `object_id` is not one of this state's or the
+    /// resample errors.
+    pub fn resample_object_voxels(
+        &mut self,
+        object_id: U32Id<BVoxObject>,
+        bounds: TyVector3U32,
+        source: impl Fn(TyVector3U32) -> Option<TyVector3U32>,
+    ) -> Result<()> {
+        if !self.state.object_ids.is_retained(object_id) {
+            return Err(Error::UnknownObject { object_id });
+        }
+
+        // Safety: the object id is retained.
+        let object = unsafe { self.state.objects.get_mut(object_id) };
+        let old_bounds = object.bounds();
+        let old_voxel_ids = object.resample_voxels(bounds, source)?;
+        self.ext
+            .object_voxels_did_resample(&self.state, object_id, old_bounds, &old_voxel_ids)
+    }
+
     /// Retains a shared palette at the end of the listing, returning its id.
     /// Errors, changing nothing, if:
     ///

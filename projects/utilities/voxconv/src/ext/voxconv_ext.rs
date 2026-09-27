@@ -143,6 +143,16 @@ impl VoxExt for Box<dyn VoxconvExt> {
         (**self).object_voxels_did_remap(main, object_id, old_bounds, voxel_ids)
     }
 
+    fn object_voxels_did_resample(
+        &mut self,
+        main: &VoxState,
+        object_id: U32Id<BVoxObject>,
+        old_bounds: TyVector3U32,
+        old_voxel_ids: &[U32Id<BVoxVoxel>],
+    ) -> Result<()> {
+        (**self).object_voxels_did_resample(main, object_id, old_bounds, old_voxel_ids)
+    }
+
     fn palette_did_retain(
         &mut self,
         main: &VoxState,

@@ -1,8 +1,8 @@
 use crate::{
     Dependencies, Result,
     commands::{
-        ObjectAdd, ObjectDuplicate, ObjectLink, ObjectMesh, ObjectRemove, ObjectReorder, ObjectSet,
-        ObjectTrim, ObjectUnlink,
+        ObjectAdd, ObjectDownsample, ObjectDuplicate, ObjectLink, ObjectMesh, ObjectRemove,
+        ObjectReorder, ObjectSet, ObjectTrim, ObjectUnlink, ObjectUpsample,
     },
 };
 use clap::Subcommand;
@@ -15,6 +15,8 @@ use clap::Subcommand;
 pub enum ObjectCommand {
     #[command(name = "add")]
     ObjectAdd(ObjectAdd),
+    #[command(name = "downsample")]
+    ObjectDownsample(ObjectDownsample),
     #[command(name = "duplicate")]
     ObjectDuplicate(ObjectDuplicate),
     #[command(name = "link")]
@@ -31,12 +33,15 @@ pub enum ObjectCommand {
     ObjectTrim(ObjectTrim),
     #[command(name = "unlink")]
     ObjectUnlink(ObjectUnlink),
+    #[command(name = "upsample")]
+    ObjectUpsample(ObjectUpsample),
 }
 
 impl ObjectCommand {
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             ObjectCommand::ObjectAdd(add) => add.execute(dependencies),
+            ObjectCommand::ObjectDownsample(downsample) => downsample.execute(dependencies),
             ObjectCommand::ObjectDuplicate(duplicate) => duplicate.execute(dependencies),
             ObjectCommand::ObjectLink(link) => link.execute(dependencies),
             ObjectCommand::ObjectMesh(mesh) => mesh.execute(dependencies),
@@ -45,6 +50,7 @@ impl ObjectCommand {
             ObjectCommand::ObjectSet(set) => set.execute(dependencies),
             ObjectCommand::ObjectTrim(trim) => trim.execute(dependencies),
             ObjectCommand::ObjectUnlink(unlink) => unlink.execute(dependencies),
+            ObjectCommand::ObjectUpsample(upsample) => upsample.execute(dependencies),
         }
     }
 }
