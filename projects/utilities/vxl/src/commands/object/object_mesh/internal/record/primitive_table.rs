@@ -2,7 +2,7 @@ use crate::{Error, Result};
 use branded_id::{IdVec, U32Id};
 use meshdoc::BMeshPrimitive;
 use std::collections::HashSet;
-use voxsmith::operations::mesh::PrimitiveRecord;
+use voxsmith::operations::object::PrimitiveRecord;
 
 /// The primitives the flags fill by index: the declarations in order, else
 /// the implicit whole-mesh primitive. An index at or above the count errors.
@@ -79,7 +79,7 @@ impl PrimitiveTable {
 mod tests {
     use crate::commands::PrimitiveTable;
     use branded_id::U32Id;
-    use voxsmith::operations::mesh::PrimitiveRecord;
+    use voxsmith::operations::object::PrimitiveRecord;
 
     /// A declared primitive with no material selecting `select`.
     fn declared(select: &str) -> PrimitiveRecord {

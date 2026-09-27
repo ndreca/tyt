@@ -4,7 +4,7 @@ use crate::{
         MeshProfile, check_expression, fill_file_template, push_file_write, written_file_name,
     },
 };
-use voxsmith::operations::mesh::{FileForm, FileWrite, WrittenValue};
+use voxsmith::operations::object::{FileForm, FileWrite, WrittenValue};
 
 /// Fills every file write of `profile`, which `origin` applies, whose
 /// destination no flag claimed, each template filled with `file_stem`. A
@@ -75,7 +75,7 @@ pub(crate) fn apply_profile_files(
 mod tests {
     use super::apply_profile_files;
     use crate::commands::MeshProfile;
-    use voxsmith::operations::mesh::{FileForm, FileWrite, Transfer, WrittenValue};
+    use voxsmith::operations::object::{FileForm, FileWrite, Transfer, WrittenValue};
 
     fn profile(json: &str) -> MeshProfile {
         serde_json::from_str(json).unwrap()

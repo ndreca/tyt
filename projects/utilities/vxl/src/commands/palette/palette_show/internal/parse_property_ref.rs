@@ -1,5 +1,5 @@
 use crate::CliValue;
-use voxsmith::{operations::palette_show::PropertyRef, utilities::VectorComponent};
+use voxsmith::{operations::palette::PropertyRef, utilities::VectorComponent};
 
 /// Parses the property field of a `--property` selector: `*` for every
 /// property, else a key with an optional trailing `.r`/`.g`/`.b`/`.a` or
@@ -30,7 +30,7 @@ pub fn parse_property_ref(text: &str) -> Result<PropertyRef, String> {
 #[cfg(test)]
 mod tests {
     use crate::commands::parse_property_ref;
-    use voxsmith::{operations::palette_show::PropertyRef, utilities::VectorComponent};
+    use voxsmith::{operations::palette::PropertyRef, utilities::VectorComponent};
 
     #[test]
     fn parses_a_star() {

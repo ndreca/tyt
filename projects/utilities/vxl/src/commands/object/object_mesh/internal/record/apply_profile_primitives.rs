@@ -2,7 +2,7 @@ use crate::{
     Error, Result,
     commands::{MeshProfile, PrimitiveTable, check_expression, parse_uv_list},
 };
-use voxsmith::operations::mesh::{AttributeWrite, WrittenValue};
+use voxsmith::operations::object::{AttributeWrite, WrittenValue};
 
 /// Fills every per-primitive element of `profile`, which `origin` applies,
 /// whose destination no flag claimed. A flag's element stands at its
@@ -98,7 +98,7 @@ pub(crate) fn apply_profile_primitives(
 mod tests {
     use super::apply_profile_primitives;
     use crate::commands::{MeshProfile, PrimitiveTable};
-    use voxsmith::operations::mesh::{ArrayDomain, AttributeWrite};
+    use voxsmith::operations::object::{ArrayDomain, AttributeWrite};
 
     fn profile(json: &str) -> MeshProfile {
         serde_json::from_str(json).unwrap()

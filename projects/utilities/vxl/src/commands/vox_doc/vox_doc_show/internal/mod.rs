@@ -1,1 +1,1 @@
-mod info_layout;
+mod vox_doc_show_layout;

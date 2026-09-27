@@ -1,5 +1,5 @@
 use crate::CliValue;
-use voxsmith::operations::mesh::Transfer;
+use voxsmith::operations::object::Transfer;
 
 impl CliValue for Transfer {
     const VARIANTS: &'static [Self] = &[Transfer::Linear, Transfer::Srgb];

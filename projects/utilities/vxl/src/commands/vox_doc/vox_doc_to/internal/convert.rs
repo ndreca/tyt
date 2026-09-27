@@ -5,7 +5,7 @@ use voxconv::{
     ext::{load_with_ext, save_with_ext},
 };
 use voxsmith::Error as VoxsmithError;
-use voxsmith::operations::to::keep_objects;
+use voxsmith::operations::vox_doc::keep_objects;
 
 /// Converts the document at `input`, read as `from`, into the document at
 /// `output`, written as `to`. A `selection` narrows the written document to

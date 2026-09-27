@@ -3,7 +3,7 @@ use clap::Parser;
 use std::io::{Error as IOError, ErrorKind};
 use voxconv::{check_document_files, read_document_files};
 use voxcore::check;
-use voxsmith::operations::validate::{ValidateLayout, validate};
+use voxsmith::operations::vox_doc::{ValidateLayout, validate};
 
 /// Checks a voxel document against its format's spec.
 #[derive(Clone, Debug, Parser)]

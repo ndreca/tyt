@@ -1,5 +1,5 @@
 use crate::{CliValue, Result, commands::push_unique};
-use voxsmith::operations::mesh::ArrayDomain;
+use voxsmith::operations::object::ArrayDomain;
 
 /// Pushes `domain` onto a stream list. A domain listed twice errors with a
 /// message `lists` opens.

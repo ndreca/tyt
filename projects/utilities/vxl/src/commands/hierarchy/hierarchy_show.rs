@@ -3,7 +3,7 @@ use clap::Parser;
 use std::io::{Error as IOError, ErrorKind};
 use voxconv::load;
 use voxcore::VoxMain;
-use voxsmith::operations::hierarchy_show::{
+use voxsmith::operations::hierarchy::{
     HierarchyShowLayout, HierarchyShowOptions, HierarchyViews, OriginView, PatternView,
     TransformView, hierarchy_show,
 };
@@ -240,7 +240,7 @@ mod tests {
         hierarchy::hierarchy_show::{parse_origin_view, parse_precision_arg, parse_transform_view},
     };
     use clap::Parser;
-    use voxsmith::operations::hierarchy_show::HierarchyShowLayout;
+    use voxsmith::operations::hierarchy::HierarchyShowLayout;
 
     fn strings(values: &[&str]) -> Vec<String> {
         values.iter().map(|value| value.to_string()).collect()

@@ -5,7 +5,7 @@ use crate::{
         parse_uv_list,
     },
 };
-use voxsmith::operations::mesh::{SlotSource, SlotWrite};
+use voxsmith::operations::object::{SlotSource, SlotWrite};
 
 /// Fills every material element of `profile`, which `origin` applies, whose
 /// destination no flag claimed. A flag's element stands at its destination,
@@ -79,7 +79,7 @@ pub(crate) fn apply_profile_materials(
 mod tests {
     use super::apply_profile_materials;
     use crate::commands::{MaterialTable, MeshProfile};
-    use voxsmith::operations::mesh::{ArrayDomain, SlotSource, SlotWrite};
+    use voxsmith::operations::object::{ArrayDomain, SlotSource, SlotWrite};
 
     fn profile() -> MeshProfile {
         serde_json::from_str(

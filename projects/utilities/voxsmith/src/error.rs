@@ -1,5 +1,5 @@
-#[cfg(feature = "mesh")]
-use crate::operations::mesh::MeshElement;
+#[cfg(feature = "object")]
+use crate::operations::object::MeshElement;
 use meshdoc::Error as MeshError;
 use pathspec::Error as PathSpecError;
 use std::{
@@ -23,7 +23,7 @@ pub enum Error {
     Mesh(MeshError),
 
     /// A mesh record element the run could not mesh.
-    #[cfg(feature = "mesh")]
+    #[cfg(feature = "object")]
     MeshRecord {
         /// The element the error rose from.
         element: MeshElement,
@@ -33,11 +33,11 @@ pub enum Error {
     },
 
     /// An image could not be encoded as PNG.
-    #[cfg(feature = "mesh")]
+    #[cfg(feature = "object")]
     Png(String),
 
     /// An image of the mesh document could not be decoded.
-    #[cfg(feature = "voxelize")]
+    #[cfg(feature = "mesh_doc")]
     DecodeImage(String),
 
     /// A report layout rejected an option it does not consume.
@@ -55,7 +55,7 @@ impl Error {
     }
 
     /// Builds an [`Error::MeshRecord`] from the element and its reason.
-    #[cfg(feature = "mesh")]
+    #[cfg(feature = "object")]
     pub(crate) fn mesh_record(element: MeshElement, reason: impl Display) -> Self {
         Error::MeshRecord {
             element,
@@ -70,11 +70,11 @@ impl Display for Error {
             Error::Invalid(message) => write!(f, "{message}"),
             Error::Vox(error) => error.fmt(f),
             Error::Mesh(error) => error.fmt(f),
-            #[cfg(feature = "mesh")]
+            #[cfg(feature = "object")]
             Error::MeshRecord { element, reason } => write!(f, "{element} {reason}"),
-            #[cfg(feature = "mesh")]
+            #[cfg(feature = "object")]
             Error::Png(message) => write!(f, "could not encode PNG: {message}"),
-            #[cfg(feature = "voxelize")]
+            #[cfg(feature = "mesh_doc")]
             Error::DecodeImage(message) => write!(f, "could not decode image: {message}"),
             #[cfg(feature = "_treegrid")]
             Error::TreeGrid(error) => error.fmt(f),
@@ -89,11 +89,11 @@ impl StdError for Error {
             Error::Invalid(_) => None,
             Error::Vox(error) => Some(error),
             Error::Mesh(error) => Some(error),
-            #[cfg(feature = "mesh")]
+            #[cfg(feature = "object")]
             Error::MeshRecord { .. } => None,
-            #[cfg(feature = "mesh")]
+            #[cfg(feature = "object")]
             Error::Png(_) => None,
-            #[cfg(feature = "voxelize")]
+            #[cfg(feature = "mesh_doc")]
             Error::DecodeImage(_) => None,
             #[cfg(feature = "_treegrid")]
             Error::TreeGrid(error) => Some(error),

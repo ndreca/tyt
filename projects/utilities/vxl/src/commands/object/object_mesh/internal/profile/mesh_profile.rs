@@ -4,7 +4,7 @@ use crate::commands::{
 };
 use serde::Deserialize;
 use std::collections::BTreeMap;
-use voxsmith::operations::mesh::Method;
+use voxsmith::operations::object::Method;
 
 /// A profile, each element mirroring an `object mesh` flag. An unknown key
 /// errors at load.
@@ -52,7 +52,7 @@ pub(crate) struct MeshProfile {
 mod tests {
     use super::MeshProfile;
     use crate::commands::{ExtraEntry, NamedCliValue, SlotEntry, TextureShapeEntry, ValueEntry};
-    use voxsmith::operations::mesh::{Method, TextureShape, Transfer};
+    use voxsmith::operations::object::{Method, TextureShape, Transfer};
 
     #[test]
     fn every_key_reads_into_its_element() {

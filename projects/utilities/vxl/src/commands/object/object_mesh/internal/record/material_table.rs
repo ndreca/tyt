@@ -2,7 +2,7 @@ use crate::{Error, Result};
 use branded_id::IdVec;
 use meshdoc::BMeshMaterial;
 use std::collections::BTreeMap;
-use voxsmith::operations::mesh::MaterialRecord;
+use voxsmith::operations::object::MaterialRecord;
 
 /// The materials the flags fill by index. A declared count, from
 /// `--material-count` or a profile's materials list, caps the indices: one at

@@ -1,4 +1,4 @@
-use voxsmith::operations::mesh::TextureShape;
+use voxsmith::operations::object::TextureShape;
 
 /// Parses a `--texture-shape` value: the keyword `fit`, `line`, `pot`, or
 /// `square`, else a positive side in cells.
@@ -25,7 +25,7 @@ pub(crate) fn parse_texture_shape(text: &str) -> Result<TextureShape, String> {
 #[cfg(test)]
 mod tests {
     use crate::commands::parse_texture_shape;
-    use voxsmith::operations::mesh::TextureShape;
+    use voxsmith::operations::object::TextureShape;
 
     #[test]
     fn parses_each_keyword_and_a_side() {

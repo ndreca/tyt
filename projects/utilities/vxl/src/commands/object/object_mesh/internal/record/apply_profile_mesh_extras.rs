@@ -2,7 +2,7 @@ use crate::{
     Result,
     commands::{MeshProfile, extra_write},
 };
-use voxsmith::operations::mesh::ExtraWrite;
+use voxsmith::operations::object::ExtraWrite;
 
 /// Fills every mesh extra of `profile`, which `origin` applies, whose name no
 /// flag claimed. A flag's extra stands under its name, so the profile's
@@ -33,7 +33,7 @@ pub(crate) fn apply_profile_mesh_extras(
 mod tests {
     use super::apply_profile_mesh_extras;
     use crate::commands::MeshProfile;
-    use voxsmith::operations::mesh::{ExtraForm, ExtraSource, ExtraWrite};
+    use voxsmith::operations::object::{ExtraForm, ExtraSource, ExtraWrite};
 
     #[test]
     fn the_flags_extra_stands_and_the_rest_fills() {

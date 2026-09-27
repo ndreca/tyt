@@ -1,6 +1,6 @@
 use crate::commands::BoundNames;
 use serde::Deserialize;
-use voxsmith::operations::mesh::ArrayDomain;
+use voxsmith::operations::object::ArrayDomain;
 
 /// A profile's `computeIndex`, each domain key holding its bound names.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq)]

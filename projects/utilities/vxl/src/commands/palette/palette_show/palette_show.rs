@@ -9,7 +9,7 @@ use std::{
 };
 use voxconv::load;
 use voxcore::VoxMain;
-use voxsmith::operations::palette_show::{
+use voxsmith::operations::palette::{
     PaletteShowLabel, PaletteShowLayout, PaletteShowOptions, PaletteShowTableShape,
     PropertySelector, palette_show,
 };

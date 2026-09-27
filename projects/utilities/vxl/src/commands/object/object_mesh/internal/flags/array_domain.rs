@@ -1,5 +1,5 @@
 use crate::CliValue;
-use voxsmith::operations::mesh::ArrayDomain;
+use voxsmith::operations::object::ArrayDomain;
 
 impl CliValue for ArrayDomain {
     const VARIANTS: &'static [Self] = &[

@@ -22,7 +22,7 @@ use voxconv::load;
 use voxcore::VoxMain;
 use voxsmith::{
     dependencies::DependenciesImpl as VoxsmithDependenciesImpl,
-    operations::mesh::{
+    operations::object::{
         ArrayDomain, AttributeWrite, Computation, ComputedBinding, ExtraForm, ExtraSource,
         ExtraWrite, FileForm, FileWrite, MeshRecord, MeshTarget, Method, PrimitiveRecord,
         SlotSource, SlotWrite, TextureShape, Transfer, WrittenValue, mesh,
@@ -1031,7 +1031,7 @@ mod tests {
     use meshconv::gltf::GltfContainer;
     use std::{collections::BTreeMap, path::PathBuf};
     use ty_preferences::{DeserializePrefs, JsoncCodec};
-    use voxsmith::operations::mesh::{
+    use voxsmith::operations::object::{
         ArrayDomain, AttributeWrite, Computation, ExtraForm, ExtraSource, FileForm, MeshRecord,
         Method, SlotSource, TextureShape, Transfer, WrittenValue,
     };

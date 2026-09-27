@@ -3,7 +3,7 @@ use clap::{ArgAction, Parser};
 use voxconv::load;
 use voxcore::VoxMain;
 use voxsmith::{
-    operations::palette_list::{PaletteListFields, PaletteListLayout, palette_list},
+    operations::palette::{PaletteListFields, PaletteListLayout, palette_list},
     utilities::IndexRange,
 };
 

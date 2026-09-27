@@ -1,13 +1,10 @@
-//! One module per vxl command, each behind a feature of the same name.
+//! One module per vxl command group, each behind a feature of the same name.
 
-#[cfg(feature = "hierarchy_show")]
-pub mod hierarchy_show;
+#[cfg(feature = "hierarchy")]
+pub mod hierarchy;
 
-#[cfg(feature = "info")]
-pub mod info;
-
-#[cfg(feature = "mesh")]
-pub mod mesh;
+#[cfg(feature = "mesh_doc")]
+pub mod mesh_doc;
 
 #[cfg(feature = "node")]
 pub mod node;
@@ -18,17 +15,11 @@ pub mod object;
 #[cfg(feature = "object_voxels")]
 pub mod object_voxels;
 
-#[cfg(feature = "palette_list")]
-pub mod palette_list;
+#[cfg(feature = "palette")]
+pub mod palette;
 
-#[cfg(feature = "palette_show")]
-pub mod palette_show;
+#[cfg(feature = "profile")]
+pub mod profile;
 
-#[cfg(feature = "to")]
-pub mod to;
-
-#[cfg(feature = "validate")]
-pub mod validate;
-
-#[cfg(feature = "voxelize")]
-pub mod voxelize;
+#[cfg(feature = "vox_doc")]
+pub mod vox_doc;

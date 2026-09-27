@@ -1,5 +1,5 @@
 use crate::{Error, Result};
-use voxsmith::operations::mesh::{
+use voxsmith::operations::object::{
     ExtraForm, ExtraSource, ExtraWrite, FileForm, MeshRecord, SlotSource,
 };
 

@@ -1,5 +1,5 @@
 use crate::CliValue;
-use voxsmith::operations::mesh::ProfileListLayout;
+use voxsmith::operations::profile::ProfileListLayout;
 
 impl CliValue for ProfileListLayout {
     const VARIANTS: &'static [Self] = &[

@@ -1,5 +1,5 @@
 use crate::CliValue;
-use voxsmith::operations::voxelize::ResolutionReference;
+use voxsmith::operations::mesh_doc::ResolutionReference;
 
 impl CliValue for ResolutionReference {
     const VARIANTS: &'static [Self] = &[

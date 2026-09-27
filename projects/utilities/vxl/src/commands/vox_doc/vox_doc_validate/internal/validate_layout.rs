@@ -1,5 +1,5 @@
 use crate::CliValue;
-use voxsmith::operations::validate::ValidateLayout;
+use voxsmith::operations::vox_doc::ValidateLayout;
 
 impl CliValue for ValidateLayout {
     const VARIANTS: &'static [Self] = &[

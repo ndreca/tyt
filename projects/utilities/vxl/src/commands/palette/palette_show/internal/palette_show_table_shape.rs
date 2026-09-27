@@ -1,5 +1,5 @@
 use crate::CliValue;
-use voxsmith::operations::palette_show::PaletteShowTableShape;
+use voxsmith::operations::palette::PaletteShowTableShape;
 
 impl CliValue for PaletteShowTableShape {
     const VARIANTS: &'static [Self] = &[

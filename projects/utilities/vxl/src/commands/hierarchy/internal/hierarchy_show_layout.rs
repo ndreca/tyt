@@ -1,5 +1,5 @@
 use crate::CliValue;
-use voxsmith::operations::hierarchy_show::HierarchyShowLayout;
+use voxsmith::operations::hierarchy::HierarchyShowLayout;
 
 impl CliValue for HierarchyShowLayout {
     const VARIANTS: &'static [Self] = &[

@@ -3,7 +3,7 @@ use crate::{
     commands::{ProfileSet, parse_fragment},
 };
 use std::collections::HashSet;
-use voxsmith::operations::mesh::{Computation, ComputedBinding};
+use voxsmith::operations::object::{Computation, ComputedBinding};
 
 /// Joins the program from its fragments and gathers the computed bindings,
 /// the flags' first and then each landed profile's. A profile lands once, at
@@ -146,7 +146,7 @@ mod tests {
         BASE_COLOR, EMISSIVE_COLOR, EMISSIVE_STRENGTH, IOR, METALLIC, OCCLUSION_STRENGTH,
         ROUGHNESS, TRANSMISSION,
     };
-    use voxsmith::operations::mesh::{ArrayDomain, Computation, ComputedBinding};
+    use voxsmith::operations::object::{ArrayDomain, Computation, ComputedBinding};
 
     /// A set of the built-ins under the profiles `entries` defines as json.
     fn profiles(entries: &[(&str, &str)]) -> ProfileSet {

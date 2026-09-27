@@ -12,7 +12,7 @@ use voxconv::{
 };
 use voxsmith::{
     dependencies::DependenciesImpl as VoxsmithDependenciesImpl,
-    operations::voxelize::{
+    operations::mesh_doc::{
         FillMode, GridResolution, MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelFrame,
         VoxelScale, VoxelizeOptions, voxelize,
     },

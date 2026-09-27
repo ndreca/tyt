@@ -1,5 +1,5 @@
 use crate::CliValue;
-use voxsmith::operations::voxelize::OutOfRangeProperty;
+use voxsmith::operations::mesh_doc::OutOfRangeProperty;
 
 impl CliValue for OutOfRangeProperty {
     const VARIANTS: &'static [Self] = &[OutOfRangeProperty::Error, OutOfRangeProperty::Clamp];

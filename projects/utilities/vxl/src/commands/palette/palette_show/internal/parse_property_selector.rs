@@ -2,7 +2,7 @@ use crate::{
     CliValue,
     commands::{parse_palette_ref, parse_property_ref},
 };
-use voxsmith::operations::palette_show::{
+use voxsmith::operations::palette::{
     PaletteShowPresentation, PaletteShowReading, PropertySelector,
 };
 
@@ -27,7 +27,7 @@ pub fn parse_property_selector(
 mod tests {
     use crate::commands::parse_property_selector;
     use voxsmith::{
-        operations::palette_show::{
+        operations::palette::{
             PaletteRef, PaletteShowPresentation, PaletteShowReading, PropertyRef,
         },
         utilities::VectorComponent,

@@ -3,7 +3,7 @@ use crate::{
     commands::{list_profiles, load_profile_set},
 };
 use clap::Parser;
-use voxsmith::operations::mesh::ProfileListLayout;
+use voxsmith::operations::profile::ProfileListLayout;
 
 /// Lists the profiles `object mesh --profile` can apply, grouped by the
 /// `.vxlconfig` that supplies each. Built-in profiles group under `built in`.
@@ -32,7 +32,7 @@ impl ProfileObjectMeshList {
 mod tests {
     use super::ProfileObjectMeshList;
     use clap::Parser;
-    use voxsmith::operations::mesh::ProfileListLayout;
+    use voxsmith::operations::profile::ProfileListLayout;
 
     #[test]
     fn the_layout_defaults_to_a_box_hierarchy() {

@@ -1,5 +1,5 @@
 use crate::{Error, Result};
-use voxsmith::operations::mesh::{FileForm, FileWrite};
+use voxsmith::operations::object::{FileForm, FileWrite};
 
 /// Pushes `write`, which `origin` holds, onto `files`. A PNG written twice
 /// errors, as does a JSON entry named twice in one file or a path holding
@@ -44,7 +44,7 @@ pub(crate) fn push_file_write(
 #[cfg(test)]
 mod tests {
     use crate::commands::push_file_write;
-    use voxsmith::operations::mesh::{FileForm, FileWrite, Transfer, WrittenValue};
+    use voxsmith::operations::object::{FileForm, FileWrite, Transfer, WrittenValue};
 
     /// A write of `x` to `file` in `form`.
     fn write(file: &str, form: FileForm) -> FileWrite {

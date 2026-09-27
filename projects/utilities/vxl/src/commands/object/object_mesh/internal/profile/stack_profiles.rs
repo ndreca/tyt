@@ -188,7 +188,7 @@ mod tests {
     use super::stack_profiles;
     use crate::commands::{MeshProfile, NamedCliValue, ProfileSet, SlotEntry};
     use std::collections::BTreeMap;
-    use voxsmith::operations::mesh::Method;
+    use voxsmith::operations::object::Method;
 
     /// A set holding the profiles `entries` defines as json.
     fn profiles(entries: &[(&str, &str)]) -> ProfileSet {

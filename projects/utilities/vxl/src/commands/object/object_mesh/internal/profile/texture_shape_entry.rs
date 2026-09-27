@@ -1,6 +1,6 @@
 use crate::commands::parse_texture_shape;
 use serde::Deserialize;
-use voxsmith::operations::mesh::TextureShape;
+use voxsmith::operations::object::TextureShape;
 
 /// A profile's `textureShape`, a keyword or a side in cells.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
@@ -30,7 +30,7 @@ impl TryFrom<TextureShapeRepr> for TextureShapeEntry {
 #[cfg(test)]
 mod tests {
     use super::TextureShapeEntry;
-    use voxsmith::operations::mesh::TextureShape;
+    use voxsmith::operations::object::TextureShape;
 
     #[test]
     fn a_keyword_or_a_side_shapes_the_texture() {

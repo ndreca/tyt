@@ -29,18 +29,15 @@ vox-value-language = "0.1.0"
 voxconv = "0.1.0"
 voxcore = { version = "0.2.1", default-features = false }
 voxsmith = { version = "0.3.0", default-features = false, features = [
-    "hierarchy_show",
+    "hierarchy",
     "impl",
-    "info",
-    "mesh",
+    "mesh_doc",
     "node",
     "object",
     "object_voxels",
-    "palette_list",
-    "palette_show",
-    "to",
-    "validate",
-    "voxelize",
+    "palette",
+    "profile",
+    "vox_doc",
 ] }
 
 [dev-dependencies]

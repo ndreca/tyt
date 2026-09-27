@@ -6,7 +6,7 @@ use voxconv::{
     read_document_files,
     voxj::{ext::voxj_vox_ext_from_ext, voxj_version_from_bytes},
 };
-use voxsmith::operations::info::{InfoDocument, InfoLayout, info};
+use voxsmith::operations::vox_doc::{VoxDocShowDocument, VoxDocShowLayout, vox_doc_show};
 
 /// Reports what a document contains, surfacing the format internals.
 #[derive(Clone, Debug, Parser)]
@@ -20,9 +20,9 @@ pub struct VoxDocShow {
         value_name = "layout",
         long,
         default_value = "md-tables",
-        value_parser = cli_value_parser::<InfoLayout>()
+        value_parser = cli_value_parser::<VoxDocShowLayout>()
     )]
-    layout: InfoLayout,
+    layout: VoxDocShowLayout,
 
     #[command(flatten)]
     selection: ObjectSelection,
@@ -53,7 +53,7 @@ impl VoxDocShow {
 
         let name = file_name(&self.input.path);
 
-        let document = InfoDocument {
+        let document = VoxDocShowDocument {
             name: &name,
             format: from.name(),
             format_version,
@@ -62,7 +62,7 @@ impl VoxDocShow {
 
         let object_ids = self.selection.resolve(&main)?;
 
-        let output = info(&main, &object_ids, &document, self.layout);
+        let output = vox_doc_show(&main, &object_ids, &document, self.layout);
 
         Ok(dependencies.write_stdout(output.as_bytes())?)
     }

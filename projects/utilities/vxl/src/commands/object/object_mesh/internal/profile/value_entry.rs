@@ -1,6 +1,6 @@
 use crate::commands::NamedCliValue;
 use serde::Deserialize;
-use voxsmith::operations::mesh::Transfer;
+use voxsmith::operations::object::Transfer;
 
 /// A profile's written value, an expression with its transfer.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]

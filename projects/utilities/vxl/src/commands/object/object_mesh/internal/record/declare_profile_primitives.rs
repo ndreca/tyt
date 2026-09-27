@@ -3,7 +3,7 @@ use crate::{
     commands::{MaterialTable, MeshProfile, check_expression},
 };
 use branded_id::U32Id;
-use voxsmith::operations::mesh::PrimitiveRecord;
+use voxsmith::operations::object::PrimitiveRecord;
 
 /// The primitive declarations `profile`, which `origin` applies, holds in
 /// list order, each drawing with the material it mentions in `materials` or

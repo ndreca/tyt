@@ -1,5 +1,5 @@
 use crate::CliValue;
-use voxsmith::operations::voxelize::SurfaceMode;
+use voxsmith::operations::mesh_doc::SurfaceMode;
 
 impl CliValue for SurfaceMode {
     const VARIANTS: &'static [Self] = &[SurfaceMode::CenterInside, SurfaceMode::TriangleCover];

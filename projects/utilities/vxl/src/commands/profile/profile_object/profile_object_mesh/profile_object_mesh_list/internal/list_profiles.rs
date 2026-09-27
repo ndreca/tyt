@@ -1,5 +1,5 @@
 use crate::commands::ProfileSet;
-use voxsmith::operations::mesh::{ProfileListGroup, ProfileListLayout, profile_list};
+use voxsmith::operations::profile::{ProfileListGroup, ProfileListLayout, profile_list};
 
 /// The profiles of `profiles` in `layout`: one group per origin in cascade
 /// order, each holding the names it supplies in name order.
@@ -21,7 +21,7 @@ mod tests {
     use super::list_profiles;
     use crate::commands::{MeshProfile, ProfileSet};
     use std::{collections::BTreeMap, path::PathBuf};
-    use voxsmith::operations::mesh::ProfileListLayout;
+    use voxsmith::operations::profile::ProfileListLayout;
 
     #[test]
     fn the_origins_group_in_cascade_order() {

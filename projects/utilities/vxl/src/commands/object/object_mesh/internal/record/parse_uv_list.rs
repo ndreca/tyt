@@ -2,7 +2,7 @@ use crate::{
     Result,
     commands::{parse_flag_value, push_uv_stream},
 };
-use voxsmith::operations::mesh::ArrayDomain;
+use voxsmith::operations::object::ArrayDomain;
 
 /// The stream list `uvs`, which `origin` declares, each domain a known name
 /// listed once.
@@ -21,7 +21,7 @@ pub(crate) fn parse_uv_list(origin: &str, uvs: &[String]) -> Result<Vec<ArrayDom
 #[cfg(test)]
 mod tests {
     use super::parse_uv_list;
-    use voxsmith::operations::mesh::ArrayDomain;
+    use voxsmith::operations::object::ArrayDomain;
 
     #[test]
     fn a_list_parses_in_order_and_repeats_no_domain() {

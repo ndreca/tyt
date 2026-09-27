@@ -1,5 +1,5 @@
 use crate::CliValue;
-use voxsmith::operations::voxelize::VoxelScale;
+use voxsmith::operations::mesh_doc::VoxelScale;
 
 impl CliValue for VoxelScale {
     const VARIANTS: &'static [Self] = &[VoxelScale::Bake, VoxelScale::Keep];

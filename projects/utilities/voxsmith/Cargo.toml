@@ -27,31 +27,25 @@ zune-jpeg = { version = "0.5", optional = true }
 
 [features]
 default = [
-    "hierarchy_show",
+    "hierarchy",
     "impl",
-    "info",
-    "mesh",
+    "mesh_doc",
     "node",
     "object",
     "object_voxels",
-    "palette_list",
-    "palette_show",
-    "to",
-    "validate",
-    "voxelize",
+    "palette",
+    "profile",
+    "vox_doc",
 ]
 
-hierarchy_show = ["_treegrid", "dep:treeselect"]
-info = ["_treegrid"]
-mesh = ["_treegrid", "dep:serde_json", "dep:vox-value-language"]
+hierarchy = ["_treegrid", "dep:treeselect"]
+mesh_doc = []
 node = []
-object = []
+object = ["dep:serde_json", "dep:vox-value-language"]
 object_voxels = []
-palette_list = ["_treegrid"]
-palette_show = ["_treegrid", "dep:serde_json"]
-to = []
-validate = ["_treegrid"]
-voxelize = []
+palette = ["_treegrid", "dep:serde_json"]
+profile = ["_treegrid"]
+vox_doc = ["_treegrid"]
 
 impl = ["dep:png", "dep:zune-jpeg"]
 

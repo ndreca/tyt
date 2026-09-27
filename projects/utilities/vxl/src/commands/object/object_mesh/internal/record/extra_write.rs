@@ -2,7 +2,7 @@ use crate::{
     Result,
     commands::{ExtraEntry, check_expression, fill_file_template},
 };
-use voxsmith::operations::mesh::{ExtraForm, ExtraSource, ExtraWrite, Transfer, WrittenValue};
+use voxsmith::operations::object::{ExtraForm, ExtraSource, ExtraWrite, Transfer, WrittenValue};
 
 /// The extras write `entry` describes under `name`, which `origin` holds, its
 /// file template filled with `file_stem`.
@@ -53,7 +53,7 @@ fn value_source(origin: &str, value: &str, transfer: Transfer) -> Result<ExtraSo
 mod tests {
     use super::extra_write;
     use crate::commands::ExtraEntry;
-    use voxsmith::operations::mesh::{ExtraForm, ExtraSource, Transfer};
+    use voxsmith::operations::object::{ExtraForm, ExtraSource, Transfer};
 
     #[test]
     fn each_kind_lowers_to_its_form_and_source() {
