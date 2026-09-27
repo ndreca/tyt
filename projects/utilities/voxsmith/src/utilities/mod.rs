@@ -3,11 +3,13 @@ mod check_material_range;
 mod color_space;
 mod dither;
 mod index_range;
+mod node_paths;
 mod order_palette_colors;
 mod palette_reduction;
 mod property_names;
 mod reduce_palette;
 mod reduction_method;
+mod select_nodes;
 mod select_objects;
 mod vector_component;
 
@@ -21,5 +23,8 @@ pub use palette_reduction::*;
 pub use property_names::*;
 pub use reduce_palette::*;
 pub use reduction_method::*;
+pub use select_nodes::*;
 pub use select_objects::*;
 pub use vector_component::*;
+
+pub(crate) use node_paths::*;

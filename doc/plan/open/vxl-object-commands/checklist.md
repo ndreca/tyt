@@ -19,7 +19,7 @@ The design is in the [README](README.md). Each step builds the commands the
       mvox exts refresh on them. `set_object_origin` and `move_object` exist
       and only need hooks. Move voxsmith's `keep_objects` onto the children
       setter.
-- [ ] **S2. Edit scaffolding.** Model the load-edit-gc-save helper on vxl's
+- [x] **S2. Edit scaffolding.** Model the load-edit-gc-save helper on vxl's
       `commands/to/internal/convert.rs`. Give `ObjectSelection` a required
       variant that node commands reuse. Add the `<parent>` group. Build
       `select_nodes` beside voxsmith's `select_objects`, reusing its node

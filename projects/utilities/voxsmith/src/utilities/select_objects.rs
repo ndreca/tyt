@@ -1,4 +1,7 @@
-use crate::{Result, utilities::IndexRange};
+use crate::{
+    Result,
+    utilities::{IndexRange, node_paths},
+};
 use branded_id::U32Id;
 use pathspec::{GitIgnoreRegex, is_file_path_match};
 use voxcore::{BVoxHierarchyNode, BVoxObject, VoxExt, VoxMain};
@@ -77,55 +80,6 @@ fn select_by_path<T: VoxExt>(
     }
 
     Ok(())
-}
-
-/// Every hierarchy node's path strings, one per placement (a node reached
-/// through several parents gets one path each), a chain of node names from a
-/// root.
-fn node_paths<T: VoxExt>(main: &VoxMain<T>) -> Vec<(NodeId, String)> {
-    let mut paths = Vec::new();
-
-    let mut stack = Vec::new();
-
-    for &root_id in main.root_hierarchy_node_ids() {
-        walk_node_paths(main, root_id, "", &mut stack, &mut paths);
-    }
-
-    paths
-}
-
-/// Records `node_id`'s path (built from `prefix`), then recurses into its child
-/// nodes. `stack` is the current root-to-node chain and guards against a cycle.
-fn walk_node_paths<T: VoxExt>(
-    main: &VoxMain<T>,
-    node_id: NodeId,
-    prefix: &str,
-    stack: &mut Vec<NodeId>,
-    paths: &mut Vec<(NodeId, String)>,
-) {
-    if stack.contains(&node_id) {
-        return;
-    }
-
-    let Some(node) = main.hierarchy_node(node_id) else {
-        return;
-    };
-
-    let path = if prefix.is_empty() {
-        node.name.clone()
-    } else {
-        format!("{prefix}/{}", node.name)
-    };
-
-    paths.push((node_id, path.clone()));
-
-    stack.push(node_id);
-
-    for &child_id in &node.child_node_ids {
-        walk_node_paths(main, child_id, &path, stack, paths);
-    }
-
-    stack.pop();
 }
 
 /// Every object's path strings, one per placement (a placing node's path plus
@@ -268,6 +222,20 @@ mod tests {
         assert_eq!(
             select_objects(&main, &globs(&["group"]), &[]).unwrap(),
             vec![a_id, b_id]
+        );
+    }
+
+    #[test]
+    fn an_unplaced_node_carries_its_objects_path() {
+        let mut main = VoxMain::default();
+
+        let a_id = object_id(&mut main, "a");
+
+        node_id(&mut main, "loose", vec![], vec![a_id]);
+
+        assert_eq!(
+            select_objects(&main, &globs(&["loose"]), &[]).unwrap(),
+            vec![a_id]
         );
     }
 

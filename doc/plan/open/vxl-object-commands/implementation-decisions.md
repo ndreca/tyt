@@ -51,3 +51,43 @@ vmax, goxl, and mvox refreshes.
 - The mvox writer ignores object `origin`, and the loader never sets one, so an
   `origin` or bounds change has nothing to refresh there. This is existing
   behavior outside the plan.
+
+## S2. Edit scaffolding
+
+- S2 lands `object remove`, the one command the table marks S2, so the
+  scaffolding has a caller.
+- vxl's `edit_document(dependencies, input, output, edit)` loads with the ext,
+  runs the edit closure, calls `gc`, and saves as voxj. It lives in the crate
+  `internal` because the `object`, `object-voxels`, and `node` groups share
+  it.
+- `VoxjOutput` flattens `[output]`, `VoxjEncodingOptions`, `--ext`, and
+  `--edit-state`. `to voxj` moves onto it, and `EditStateMode`'s `CliValue`
+  moves to the crate `internal`.
+- `resolve_output` takes the container from `--format`, else the output
+  extension, else the input extension, else compact JSON. This covers
+  `to voxj` too, so `to voxj scene.voxjz` now rewrites `scene.voxjz` instead
+  of writing `scene.voxj`. `voxelize` reads a mesh, so it keeps compact JSON.
+- The required variant is `RequiredSelection`, a clap group with
+  `required = true, multiple = true`. It carries `resolve_objects` and
+  `resolve_nodes`, each of which errors on an empty match. The help text
+  covers both readings.
+- `ParentSelection::resolve` returns `None` for the root list when no selector
+  is given. `object link` and `object unlink` require a parent and will
+  check for `None`.
+- `ParentSelection` and `resolve_nodes` have no caller until S4 and S6. They
+  carry `cfg_attr(not(test), expect(...))` marks that fail once a caller
+  lands, so the marks cannot linger.
+- `node_paths` moves out of `select_objects` into a crate-internal file that
+  `select_nodes` shares. It also walks each node that neither the roots nor
+  a node lists, taking its bare name as the path, so an unlinked node stays
+  selectable. An object under such a node now matches through that node's
+  path instead of by its bare name.
+- `select_nodes` selects a node when the node's own path matches as a
+  directory and no ancestor is excluded. `is_directory_path_match` would
+  carry an ancestor's match down, which suits objects but not nodes.
+- voxsmith gains an `object` feature for `operations/object/`.
+  `remove_objects` sets the roots, then the child lists, then releases the
+  nodes and the objects, each pass in listing order, so the hooks fire
+  deterministically.
+- voxsmith tests share a `HookRecorder` ext under a `cfg(test)`
+  `test_utilities` module. It logs the node and object hooks.

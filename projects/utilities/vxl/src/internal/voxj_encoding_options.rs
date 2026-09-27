@@ -7,8 +7,8 @@ use voxconv::voxj::{PositionEncoding, SampleEncoding, VoxjSerialization, VoxjWri
 /// write a voxj document.
 #[derive(Clone, Debug, Args)]
 pub struct VoxjEncodingOptions {
-    /// Output container and printing form. Defaults to compact JSON, or the
-    /// container inferred from the output extension.
+    /// Output container and printing form. Defaults to the container the
+    /// output extension implies, else the input's, else compact JSON.
     #[arg(
         value_name = "format",
         long,
@@ -38,7 +38,7 @@ impl VoxjEncodingOptions {
         input: &Path,
         output: Option<PathBuf>,
     ) -> (VoxjSerialization, VoxjWriteOptions, PathBuf) {
-        let serialization = self.resolve_serialization(output.as_deref());
+        let serialization = self.resolve_serialization(input, output.as_deref());
 
         let path = output.unwrap_or_else(|| input.with_extension(serialization.extension()));
 
@@ -59,12 +59,12 @@ impl VoxjEncodingOptions {
         (serialization, options, path)
     }
 
-    /// Resolves the serialization from `--format`, else `output`'s extension,
-    /// else compact JSON.
-    fn resolve_serialization(&self, output: Option<&Path>) -> VoxjSerialization {
+    /// Resolves the serialization from `--format`, else the extension of
+    /// `output`, or of `input` when no output is given, else compact JSON.
+    fn resolve_serialization(&self, input: &Path, output: Option<&Path>) -> VoxjSerialization {
         self.format
             .or_else(|| {
-                let extension = output?.extension()?.to_str()?;
+                let extension = output.unwrap_or(input).extension()?.to_str()?;
 
                 VoxjSerialization::from_extension(extension)
             })
@@ -109,5 +109,59 @@ fn sample_encoding(encoding: VoxjSampleEncoding) -> Option<SampleEncoding> {
         VoxjSampleEncoding::RawJson => Some(SampleEncoding::RawJson),
         VoxjSampleEncoding::RleJson => Some(SampleEncoding::RleJson),
         VoxjSampleEncoding::PackedBase64 => Some(SampleEncoding::PackedBase64),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::VoxjEncodingOptions;
+    use clap::Parser;
+    use std::path::{Path, PathBuf};
+    use voxconv::voxj::VoxjSerialization;
+
+    #[derive(Debug, Parser)]
+    struct Cli {
+        #[command(flatten)]
+        encoding_options: VoxjEncodingOptions,
+    }
+
+    fn resolve(args: &[&str], input: &str, output: Option<&str>) -> (VoxjSerialization, PathBuf) {
+        let mut argv = vec!["cli"];
+        argv.extend_from_slice(args);
+
+        let (serialization, _, path) = Cli::try_parse_from(argv)
+            .unwrap()
+            .encoding_options
+            .resolve_output(Path::new(input), output.map(PathBuf::from));
+
+        (serialization, path)
+    }
+
+    #[test]
+    fn the_output_defaults_to_the_input_container() {
+        assert_eq!(
+            resolve(&[], "scene.voxjz", None),
+            (VoxjSerialization::Zip, PathBuf::from("scene.voxjz"))
+        );
+        assert_eq!(
+            resolve(&[], "scene.voxj", None),
+            (VoxjSerialization::Compact, PathBuf::from("scene.voxj"))
+        );
+        assert_eq!(
+            resolve(&[], "scene.vmax", None),
+            (VoxjSerialization::Compact, PathBuf::from("scene.voxj"))
+        );
+    }
+
+    #[test]
+    fn the_output_extension_and_format_override_the_input() {
+        assert_eq!(
+            resolve(&[], "scene.voxjz", Some("out.voxj")).0,
+            VoxjSerialization::Compact
+        );
+        assert_eq!(
+            resolve(&["--format", "pretty"], "scene.voxjz", None),
+            (VoxjSerialization::Pretty, PathBuf::from("scene.voxj"))
+        );
     }
 }
