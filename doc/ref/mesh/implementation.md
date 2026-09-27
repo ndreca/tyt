@@ -659,8 +659,8 @@ and trailing commas, and its loaders take the file name and the section key. The
 layers load in application order, the user's `~/.vxlconfig` first and then every
 directory from the git root down to the working directory. Outside a git
 repository only the user layer loads. [Loading](profile-language.md#loading)
-sets how profiles read through the layers, and vxl passes `.vxlconfig` and the
-`mesh` key its envelope defines.
+sets how profiles read through the layers. vxl passes `.vxlconfig` and the
+`object` key, then reads the `mesh` entry beneath it.
 
 ## The close
 

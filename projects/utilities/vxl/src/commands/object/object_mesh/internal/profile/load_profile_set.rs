@@ -1,6 +1,6 @@
 use crate::{
     ResolvePrefsPaths, Result,
-    commands::{MeshConfig, ProfileSet},
+    commands::{ObjectConfig, ProfileSet},
 };
 use std::io::Error as IOError;
 use ty_preferences::{Dependencies as PreferencesDependencies, JsoncCodec, load_application_prefs};
@@ -12,12 +12,12 @@ pub(crate) fn load_profile_set(
 ) -> Result<ProfileSet> {
     let paths = dependencies.resolve_prefs_paths()?;
 
-    let layers = load_application_prefs::<MeshConfig>(
+    let layers = load_application_prefs::<ObjectConfig>(
         dependencies,
         &JsoncCodec,
         &paths,
         ".vxlconfig",
-        "mesh",
+        "object",
     )
     .map_err(|error| {
         IOError::new(
@@ -27,7 +27,7 @@ pub(crate) fn load_profile_set(
     })?;
 
     Ok(ProfileSet::layered(layers.into_iter().map(|layer| {
-        (layer.dir.join(".vxlconfig"), layer.prefs.profiles)
+        (layer.dir.join(".vxlconfig"), layer.prefs.mesh.profiles)
     })))
 }
 
@@ -93,18 +93,18 @@ mod tests {
             &[
                 (
                     "/home/.vxlconfig",
-                    r#"{ "mesh": { "profiles": {
+                    r#"{ "object": { "mesh": { "profiles": {
                         "a": { "values": ["a = 1"] },
                         "orm": { "values": ["orm = 1"] },
-                    } } }"#,
+                    } } } }"#,
                 ),
                 (
                     "/repo/.vxlconfig",
-                    r#"{ "mesh": { "profiles": { "a": { "values": ["a = 2"] } } } }"#,
+                    r#"{ "object": { "mesh": { "profiles": { "a": { "values": ["a = 2"] } } } } }"#,
                 ),
                 (
                     "/repo/sub/.vxlconfig",
-                    r#"{ "mesh": { "profiles": { "b": { "values": ["b = a"] } } } }"#,
+                    r#"{ "object": { "mesh": { "profiles": { "b": { "values": ["b = a"] } } } } }"#,
                 ),
             ],
         );
@@ -139,11 +139,11 @@ mod tests {
             &[
                 (
                     "/home/.vxlconfig",
-                    r#"{ "mesh": { "profiles": { "a": { "values": ["a = 1"] } } } }"#,
+                    r#"{ "object": { "mesh": { "profiles": { "a": { "values": ["a = 1"] } } } } }"#,
                 ),
                 (
                     "/repo/sub/.vxlconfig",
-                    r#"{ "mesh": { "profiles": { "b": { "values": ["b = a"] } } } }"#,
+                    r#"{ "object": { "mesh": { "profiles": { "b": { "values": ["b = a"] } } } } }"#,
                 ),
             ],
         );
@@ -166,8 +166,8 @@ mod tests {
     #[test]
     fn a_broken_layer_errors_naming_the_file() {
         for text in [
-            r#"{ "mesh": { "profiles": { "a": { "slot": 1 } } } }"#,
-            r#"{ "mesh": { "profiles": { "a": } } }"#,
+            r#"{ "object": { "mesh": { "profiles": { "a": { "slot": 1 } } } } }"#,
+            r#"{ "object": { "mesh": { "profiles": { "a": } } } }"#,
         ] {
             let cascade = Cascade::new(true, &[("/repo/.vxlconfig", text)]);
 

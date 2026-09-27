@@ -111,9 +111,11 @@ taken:
 ```jsonc
 // .vxlconfig
 {
-  "mesh": {
-    "profiles": {
-      "geometry": {},
+  "object": {
+    "mesh": {
+      "profiles": {
+        "geometry": {},
+      },
     },
   },
 }
@@ -319,27 +321,32 @@ riding the config too:
 
 ```jsonc
 {
-  "mesh": {
-    "profiles": {
-      "matte": {
-        "valuesFrom": ["defaults"],
-        "values": ["albedo = baseColor"],
-        "voxelSize": 0.1,
-        "files": {
-          "png": {
-            "{file-stem}-albedo.png": { "transfer": "srgb", "value": "albedo" },
-          },
-        },
-        "materials": [
-          {
-            "slots": {
-              "baseColorTexture": {
-                "kind": "file",
-                "file": "{file-stem}-albedo.png",
+  "object": {
+    "mesh": {
+      "profiles": {
+        "matte": {
+          "valuesFrom": ["defaults"],
+          "values": ["albedo = baseColor"],
+          "voxelSize": 0.1,
+          "files": {
+            "png": {
+              "{file-stem}-albedo.png": {
+                "transfer": "srgb",
+                "value": "albedo",
               },
             },
           },
-        ],
+          "materials": [
+            {
+              "slots": {
+                "baseColorTexture": {
+                  "kind": "file",
+                  "file": "{file-stem}-albedo.png",
+                },
+              },
+            },
+          ],
+        },
       },
     },
   },
@@ -421,23 +428,28 @@ primitive, no materials at all.
 ```jsonc
 // .vxlconfig
 {
-  "mesh": {
-    "profiles": {
-      "palette": {
-        "valuesFrom": ["albedo"],
-        "computeIndex": { "swatch": "swatchIndex" },
-        "primitives": [
-          {
-            "customs": {
-              "_PALETTE": { "value": "u8(swatchIndex)", "transfer": "linear" },
+  "object": {
+    "mesh": {
+      "profiles": {
+        "palette": {
+          "valuesFrom": ["albedo"],
+          "computeIndex": { "swatch": "swatchIndex" },
+          "primitives": [
+            {
+              "customs": {
+                "_PALETTE": {
+                  "value": "u8(swatchIndex)",
+                  "transfer": "linear",
+                },
+              },
             },
-          },
-        ],
-        "meshExtras": {
-          "albedo": {
-            "kind": "json-value",
-            "value": "albedo",
-            "transfer": "linear",
+          ],
+          "meshExtras": {
+            "albedo": {
+              "kind": "json-value",
+              "value": "albedo",
+              "transfer": "linear",
+            },
           },
         },
       },
@@ -526,18 +538,20 @@ palette layout: flat per face through the
 ```jsonc
 // .vxlconfig: one profile binds the computation and bakes it
 {
-  "mesh": {
-    "profiles": {
-      "flat-ao": {
-        "computeOcclusion": "computedOcclusion",
-        "values": ["ao = faceAvg(computedOcclusion)"],
-        "materials": [
-          {
-            "slots": {
-              "occlusionTexture": { "kind": "value", "value": "ao" },
+  "object": {
+    "mesh": {
+      "profiles": {
+        "flat-ao": {
+          "computeOcclusion": "computedOcclusion",
+          "values": ["ao = faceAvg(computedOcclusion)"],
+          "materials": [
+            {
+              "slots": {
+                "occlusionTexture": { "kind": "value", "value": "ao" },
+              },
             },
-          },
-        ],
+          ],
+        },
       },
     },
   },
@@ -685,18 +699,20 @@ textureless:
 ```jsonc
 // .vxlconfig
 {
-  "mesh": {
-    "profiles": {
-      "lightmap": {
-        "valuesFrom": ["albedo"],
-        "materials": [
-          {
-            "slots": {
-              "baseColorTexture": { "kind": "value", "value": "albedo" },
+  "object": {
+    "mesh": {
+      "profiles": {
+        "lightmap": {
+          "valuesFrom": ["albedo"],
+          "materials": [
+            {
+              "slots": {
+                "baseColorTexture": { "kind": "value", "value": "albedo" },
+              },
             },
-          },
-        ],
-        "primitives": [{ "material": 0, "uvs": ["swatch", "face"] }],
+          ],
+          "primitives": [{ "material": 0, "uvs": ["swatch", "face"] }],
+        },
       },
     },
   },
@@ -790,21 +806,23 @@ face. The occlusion already lives there:
 ```jsonc
 // .vxlconfig
 {
-  "mesh": {
-    "profiles": {
-      "one-uv": {
-        "valuesFrom": ["albedo"],
-        "computeOcclusion": "computedOcclusion",
-        "values": ["ao = faceAvg(computedOcclusion)"],
-        "materials": [
-          {
-            "uvs": ["face"],
-            "slots": {
-              "baseColorTexture": { "kind": "value", "value": "albedo" },
-              "occlusionTexture": { "kind": "value", "value": "ao" },
+  "object": {
+    "mesh": {
+      "profiles": {
+        "one-uv": {
+          "valuesFrom": ["albedo"],
+          "computeOcclusion": "computedOcclusion",
+          "values": ["ao = faceAvg(computedOcclusion)"],
+          "materials": [
+            {
+              "uvs": ["face"],
+              "slots": {
+                "baseColorTexture": { "kind": "value", "value": "albedo" },
+                "occlusionTexture": { "kind": "value", "value": "ao" },
+              },
             },
-          },
-        ],
+          ],
+        },
       },
     },
   },
@@ -958,29 +976,31 @@ missing material would never pull in:
 ```jsonc
 // .vxlconfig
 {
-  "mesh": {
-    "profiles": {
-      "crevice-split": {
-        "valuesFrom": ["albedo"],
-        "computeOcclusion": "computedOcclusion",
-        "values": [
-          "ao = faceAvg(computedOcclusion)",
-          "crevice = ao < 0.9",
-          "open = !crevice",
-        ],
-        "materials": [
-          {
-            "uvs": ["face", "swatch"],
-            "slots": {
-              "baseColorTexture": { "kind": "value", "value": "albedo" },
-              "occlusionTexture": { "kind": "value", "value": "ao" },
+  "object": {
+    "mesh": {
+      "profiles": {
+        "crevice-split": {
+          "valuesFrom": ["albedo"],
+          "computeOcclusion": "computedOcclusion",
+          "values": [
+            "ao = faceAvg(computedOcclusion)",
+            "crevice = ao < 0.9",
+            "open = !crevice",
+          ],
+          "materials": [
+            {
+              "uvs": ["face", "swatch"],
+              "slots": {
+                "baseColorTexture": { "kind": "value", "value": "albedo" },
+                "occlusionTexture": { "kind": "value", "value": "ao" },
+              },
             },
-          },
-        ],
-        "primitives": [
-          { "material": 0, "select": "open" },
-          { "select": "crevice", "uvs": ["face"] },
-        ],
+          ],
+          "primitives": [
+            { "material": 0, "select": "open" },
+            { "select": "crevice", "uvs": ["face"] },
+          ],
+        },
       },
     },
   },
@@ -1188,21 +1208,23 @@ profile computes the mode from the palette itself:
 ```jsonc
 // .vxlconfig; JSON escapes the inner quotes
 {
-  "mesh": {
-    "profiles": {
-      "glass": {
-        "valuesFrom": ["albedo"],
-        "values": [
-          "mode = mix(\"OPAQUE\", \"BLEND\", min(baseColor.a) < 1)",
-        ],
-        "materials": [
-          {
-            "slots": {
-              "baseColorTexture": { "kind": "value", "value": "albedo" },
-              "alphaMode": { "kind": "value", "value": "mode" },
+  "object": {
+    "mesh": {
+      "profiles": {
+        "glass": {
+          "valuesFrom": ["albedo"],
+          "values": [
+            "mode = mix(\"OPAQUE\", \"BLEND\", min(baseColor.a) < 1)",
+          ],
+          "materials": [
+            {
+              "slots": {
+                "baseColorTexture": { "kind": "value", "value": "albedo" },
+                "alphaMode": { "kind": "value", "value": "mode" },
+              },
             },
-          },
-        ],
+          ],
+        },
       },
     },
   },

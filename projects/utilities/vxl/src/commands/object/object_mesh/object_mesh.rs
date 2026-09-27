@@ -1024,7 +1024,7 @@ mod tests {
     use super::ObjectMesh;
     use crate::{
         Result,
-        commands::{MeshConfig, MeshProfile, ProfileSet},
+        commands::{MeshProfile, ObjectConfig, ProfileSet},
     };
     use branded_id::U32Id;
     use clap::Parser;
@@ -1070,10 +1070,13 @@ mod tests {
 
     /// The profiles the `.vxlconfig` text supplies.
     fn config_layer(text: &str) -> BTreeMap<String, MeshProfile> {
-        let config: Option<MeshConfig> = JsoncCodec
-            .deserialize_prefs(text.as_bytes(), "mesh")
+        let config: Option<ObjectConfig> = JsoncCodec
+            .deserialize_prefs(text.as_bytes(), "object")
             .unwrap();
-        config.expect("the text holds a mesh section").profiles
+        config
+            .expect("the text holds an object section")
+            .mesh
+            .profiles
     }
 
     /// The record `args` lower into.
@@ -1780,11 +1783,11 @@ mod tests {
     #[test]
     fn a_config_layer_overriding_defaults_changes_the_profiles_built_on_it() {
         let layer = config_layer(
-            r#"{ "mesh": { "profiles": {
+            r#"{ "object": { "mesh": { "profiles": {
                 "defaults": {
                     "values": ["baseColor = swatch(default(baseColor, rgba(0, 0, 0, 1)))"],
                 },
-            } } }"#,
+            } } } }"#,
         );
 
         let record = try_record_over(vec![layer], &["--profile", "albedo"]).unwrap();
@@ -1795,15 +1798,16 @@ mod tests {
     #[test]
     fn a_later_layer_replaces_a_profile_wholesale() {
         let outer = config_layer(
-            r#"{ "mesh": { "profiles": { "orm": {
+            r#"{ "object": { "mesh": { "profiles": { "orm": {
                 "values": ["orm = 1"],
                 "materials": [
                     { "slots": { "occlusionTexture": { "kind": "value", "value": "orm" } } },
                 ],
-            } } } }"#,
+            } } } } }"#,
         );
-        let inner =
-            config_layer(r#"{ "mesh": { "profiles": { "orm": { "values": ["orm = 2"] } } } }"#);
+        let inner = config_layer(
+            r#"{ "object": { "mesh": { "profiles": { "orm": { "values": ["orm = 2"] } } } } }"#,
+        );
 
         let record = try_record_over(vec![outer, inner], &["--profile", "orm"]).unwrap();
 
@@ -1815,42 +1819,44 @@ mod tests {
     fn a_config_profile_lands_its_primitives_files_and_mesh_extras() {
         let layer = config_layer(
             r#"{
-  "mesh": {
-    "profiles": {
-      "split": {
-        "valuesFrom": ["defaults"],
-        "values": ["albedo = baseColor", "heat = emissiveStrength"],
-        "materials": [
-          {
-            "name": "body",
-            "slots": { "baseColorTexture": { "kind": "value", "value": "albedo" } },
+  "object": {
+    "mesh": {
+      "profiles": {
+        "split": {
+          "valuesFrom": ["defaults"],
+          "values": ["albedo = baseColor", "heat = emissiveStrength"],
+          "materials": [
+            {
+              "name": "body",
+              "slots": { "baseColorTexture": { "kind": "value", "value": "albedo" } },
+            },
+            {
+              "name": "glow",
+              "slots": { "emissiveTexture": { "kind": "file", "file": "{file-stem}-heat.png" } },
+            },
+          ],
+          "primitives": [
+            { "name": "body", "select": "heat == 0", "material": 0 },
+            {
+              "name": "glow",
+              "select": "heat > 0",
+              "material": 1,
+              "normal": false,
+              "uvs": ["swatch"],
+              "builtins": { "COLOR_0": "albedo" },
+              "customs": { "_heat": { "transfer": "linear", "value": "heat" } },
+            },
+          ],
+          "files": {
+            "json": {
+              "{file-stem}-palette.json": { "rows": { "transfer": "linear", "value": "albedo" } },
+            },
+            "png": { "{file-stem}-heat.png": { "transfer": "linear", "value": "heat" } },
           },
-          {
-            "name": "glow",
-            "slots": { "emissiveTexture": { "kind": "file", "file": "{file-stem}-heat.png" } },
+          "meshExtras": {
+            "heat": { "kind": "image-file", "file": "{file-stem}-heat.png" },
+            "meta": { "kind": "json-value", "transfer": "linear", "value": "1" },
           },
-        ],
-        "primitives": [
-          { "name": "body", "select": "heat == 0", "material": 0 },
-          {
-            "name": "glow",
-            "select": "heat > 0",
-            "material": 1,
-            "normal": false,
-            "uvs": ["swatch"],
-            "builtins": { "COLOR_0": "albedo" },
-            "customs": { "_heat": { "transfer": "linear", "value": "heat" } },
-          },
-        ],
-        "files": {
-          "json": {
-            "{file-stem}-palette.json": { "rows": { "transfer": "linear", "value": "albedo" } },
-          },
-          "png": { "{file-stem}-heat.png": { "transfer": "linear", "value": "heat" } },
-        },
-        "meshExtras": {
-          "heat": { "kind": "image-file", "file": "{file-stem}-heat.png" },
-          "meta": { "kind": "json-value", "transfer": "linear", "value": "1" },
         },
       },
     },

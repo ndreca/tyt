@@ -1,3 +1,5 @@
+// Public API
+
 #[allow(clippy::module_inception)]
 mod object;
 mod object_add;
@@ -22,3 +24,8 @@ pub use object_reorder::*;
 pub use object_set::*;
 pub use object_trim::*;
 pub use object_unlink::*;
+
+// Internal API
+
+mod internal;
+pub(crate) use internal::*;

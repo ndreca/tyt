@@ -5,14 +5,14 @@ _Part of the [mesh plan](README.md)._
 A profile is a named piece of configuration whose elements stand for
 [`vxl object mesh`](mesh.md) flags. `--profile` applies a profile whole, and
 `--values-from` applies only a profile's values. Repeated `--profile` flags
-[stack](#stacking) their profiles.
-[Built-in profiles](#built-in-profiles) ship in the binary. Default profiles
-like `--profile pbr` work before any `.vxlconfig` exists. The rest are
-user-defined under `.vxlconfig`'s `mesh.profiles` key. A config profile sharing
-a built-in's name replaces it wholesale. A profile can include another profile's
-values with `valuesFrom`. Hyphenated profile names take camel-case value names
-because `-` is subtraction in the [value language](value-language.md): a
-`metallic-smoothness` profile would bake `metallicSmoothness`.
+[stack](#stacking) their profiles. [Built-in profiles](#built-in-profiles) ship
+in the binary. Default profiles like `--profile pbr` work before any
+`.vxlconfig` exists. The rest are user-defined under `.vxlconfig`'s
+`object.mesh.profiles` key. A config profile sharing a built-in's name replaces
+it wholesale. A profile can include another profile's values with `valuesFrom`.
+Hyphenated profile names take camel-case value names because `-` is subtraction
+in the [value language](value-language.md): a `metallic-smoothness` profile
+would bake `metallicSmoothness`.
 
 ## Schema
 
@@ -23,10 +23,13 @@ notation, and the doc comments tie each element to the flag it mirrors.
 ```ts
 /** The `.vxlconfig` shape `vxl object mesh` reads. */
 interface VxlConfig {
-  /** The `mesh` command's slice of `.vxlconfig`. */
-  mesh?: {
-    /** The user-defined profiles, by name. */
-    profiles?: Record<string, Profile>;
+  /** The `object` commands' slice of `.vxlconfig`. */
+  object?: {
+    /** The `object mesh` command's slice. */
+    mesh?: {
+      /** The user-defined profiles, by name. */
+      profiles?: Record<string, Profile>;
+    };
   };
 }
 
@@ -162,75 +165,77 @@ a profile writes its names and expressions.
 
 ```jsonc
 {
-  "mesh": {
-    "profiles": {
-      "<name>": {
-        "valuesFrom": ["<profile>"],
-        "values": ["<name> = <expr>"],
-        "computeIndex": { "<domain>": "<dst-name>" },
-        "computeOcclusion": "<dst-name>",
-        "computeVoxelPosition": "<dst-name>",
+  "object": {
+    "mesh": {
+      "profiles": {
+        "<name>": {
+          "valuesFrom": ["<profile>"],
+          "values": ["<name> = <expr>"],
+          "computeIndex": { "<domain>": "<dst-name>" },
+          "computeOcclusion": "<dst-name>",
+          "computeVoxelPosition": "<dst-name>",
 
-        "voxelSize": 1.0,
-        "method": "<culled | greedy | naive>",
-        "textureShape": "<fit | line | pot | square | n>",
+          "voxelSize": 1.0,
+          "method": "<culled | greedy | naive>",
+          "textureShape": "<fit | line | pot | square | n>",
 
-        "files": {
-          "png": {
-            "<template>": {
-              "transfer": "<linear | srgb>",
+          "files": {
+            "png": {
+              "<template>": {
+                "transfer": "<linear | srgb>",
+                "value": "<expr>",
+              },
+            },
+            "json": {
+              "<template>": {
+                "<key>": {
+                  "transfer": "<linear | srgb>",
+                  "value": "<expr>",
+                },
+              },
+            },
+          },
+
+          "materials": [
+            {
+              "name": "<name>",
+              "uvs": ["swatch", "face"],
+              "slots": {
+                "<property>": { "kind": "value", "value": "<expr>" },
+              },
+              "extras": {
+                "<name>": {
+                  "kind": "image-value",
+                  "value": "<expr>",
+                  "transfer": "<linear | srgb>",
+                },
+              },
+            },
+          ],
+
+          "primitives": [
+            {
+              "name": "<name>",
+              "select": "<expr>",
+              "material": 0,
+              "normal": true,
+              "uvs": ["swatch", "face"],
+              "builtins": { "<ATTRIBUTE>": "<expr>" },
+              "customs": {
+                "<_NAME>": {
+                  "value": "<expr>",
+                  "transfer": "<linear | srgb>",
+                },
+              },
+            },
+          ],
+
+          "meshExtras": {
+            "<name>": {
+              "kind": "json-value",
               "value": "<expr>",
+              "transfer": "<linear | srgb>",
             },
-          },
-          "json": {
-            "<template>": {
-              "<key>": {
-                "transfer": "<linear | srgb>",
-                "value": "<expr>",
-              },
-            },
-          },
-        },
-
-        "materials": [
-          {
-            "name": "<name>",
-            "uvs": ["swatch", "face"],
-            "slots": {
-              "<property>": { "kind": "value", "value": "<expr>" },
-            },
-            "extras": {
-              "<name>": {
-                "kind": "image-value",
-                "value": "<expr>",
-                "transfer": "<linear | srgb>",
-              },
-            },
-          },
-        ],
-
-        "primitives": [
-          {
-            "name": "<name>",
-            "select": "<expr>",
-            "material": 0,
-            "normal": true,
-            "uvs": ["swatch", "face"],
-            "builtins": { "<ATTRIBUTE>": "<expr>" },
-            "customs": {
-              "<_NAME>": {
-                "value": "<expr>",
-                "transfer": "<linear | srgb>",
-              },
-            },
-          },
-        ],
-
-        "meshExtras": {
-          "<name>": {
-            "kind": "json-value",
-            "value": "<expr>",
-            "transfer": "<linear | srgb>",
           },
         },
       },
@@ -381,8 +386,8 @@ would error on the first material above 1.
 
 ## User-defined profiles
 
-Every other profile lives under `.vxlconfig`'s `mesh.profiles` key, in the same
-schema, and may build on the built-ins. Seven examples follow:
+Every other profile lives under `.vxlconfig`'s `object.mesh.profiles` key, in
+the same schema, and may build on the built-ins. Seven examples follow:
 
 1. `mse` packs metallic, smoothness, and normalized emissive strength into one
    mask
@@ -398,164 +403,172 @@ schema, and may build on the built-ins. Seven examples follow:
 
 ```jsonc
 {
-  "mesh": {
-    "profiles": {
-      // emissiveStrength is unbounded, so the mask normalizes by the
-      // palette's strongest strength and the raw intensity rides the
-      // material slot. No slot samples the mask, so the material names
-      // the swatch stream for the engine that does.
-      "mse": {
-        "valuesFrom": ["defaults"],
-        "values": [
-          "smoothness = 1 - roughness",
-          "maxStrength = max(emissiveStrength)",
-          "mse = rgb(metallic, smoothness, emissiveStrength / max(maxStrength, 0.001))",
-        ],
-        "files": {
-          "png": {
-            "{file-stem}-mse.png": { "transfer": "linear", "value": "mse" },
-          },
-        },
-        "materials": [
-          {
-            "uvs": ["swatch"],
-            "slots": {
-              "emissiveStrength": { "kind": "value", "value": "maxStrength" },
+  "object": {
+    "mesh": {
+      "profiles": {
+        // emissiveStrength is unbounded, so the mask normalizes by the
+        // palette's strongest strength and the raw intensity rides the
+        // material slot. No slot samples the mask, so the material names
+        // the swatch stream for the engine that does.
+        "mse": {
+          "valuesFrom": ["defaults"],
+          "values": [
+            "smoothness = 1 - roughness",
+            "maxStrength = max(emissiveStrength)",
+            "mse = rgb(metallic, smoothness, emissiveStrength / max(maxStrength, 0.001))",
+          ],
+          "files": {
+            "png": {
+              "{file-stem}-mse.png": { "transfer": "linear", "value": "mse" },
             },
           },
-        ],
-      },
-
-      // kind file references the written png where kind value would
-      // embed.
-      "orm-files": {
-        "valuesFrom": ["orm"],
-        "files": {
-          "png": {
-            "{file-stem}-orm.png": { "transfer": "linear", "value": "orm" },
-          },
-        },
-        "materials": [
-          {
-            "slots": {
-              "occlusionTexture": {
-                "kind": "file",
-                "file": "{file-stem}-orm.png",
-              },
-              "metallicRoughnessTexture": {
-                "kind": "file",
-                "file": "{file-stem}-orm.png",
+          "materials": [
+            {
+              "uvs": ["swatch"],
+              "slots": {
+                "emissiveStrength": { "kind": "value", "value": "maxStrength" },
               },
             },
-          },
-        ],
-      },
-
-      // A per-swatch heat mask and one accent color, entries a
-      // runtime of your own looks up under extras.vxl.values. The
-      // heat png writes and its extra references it; the plain accent
-      // inlines its numbers.
-      "heat": {
-        "valuesFrom": ["defaults"],
-        "values": [
-          "heat = step(0.001, emissiveStrength)",
-          "accent = avg(baseColor.rgb)",
-        ],
-        "files": {
-          "png": {
-            "{file-stem}-heat.png": { "transfer": "linear", "value": "heat" },
-          },
+          ],
         },
-        "materials": [
-          {
-            "extras": {
-              "heat": { "kind": "image-file", "file": "{file-stem}-heat.png" },
-              "accent": {
-                "kind": "json-value",
-                "value": "accent",
-                "transfer": "srgb",
+
+        // kind file references the written png where kind value would
+        // embed.
+        "orm-files": {
+          "valuesFrom": ["orm"],
+          "files": {
+            "png": {
+              "{file-stem}-orm.png": { "transfer": "linear", "value": "orm" },
+            },
+          },
+          "materials": [
+            {
+              "slots": {
+                "occlusionTexture": {
+                  "kind": "file",
+                  "file": "{file-stem}-orm.png",
+                },
+                "metallicRoughnessTexture": {
+                  "kind": "file",
+                  "file": "{file-stem}-orm.png",
+                },
               },
             },
-          },
-        ],
-      },
+          ],
+        },
 
-      // The palette pattern: rows under the mesh's extras.vxl.values,
-      // the index they are read by on the primitive, no material at
-      // all.
-      "palette": {
-        "valuesFrom": ["albedo"],
-        "computeIndex": { "swatch": "swatchIndex" },
-        "primitives": [
-          {
-            "customs": {
-              "_PALETTE": { "value": "u8(swatchIndex)", "transfer": "linear" },
+        // A per-swatch heat mask and one accent color, entries a
+        // runtime of your own looks up under extras.vxl.values. The
+        // heat png writes and its extra references it; the plain accent
+        // inlines its numbers.
+        "heat": {
+          "valuesFrom": ["defaults"],
+          "values": [
+            "heat = step(0.001, emissiveStrength)",
+            "accent = avg(baseColor.rgb)",
+          ],
+          "files": {
+            "png": {
+              "{file-stem}-heat.png": { "transfer": "linear", "value": "heat" },
             },
           },
-        ],
-        "meshExtras": {
-          "albedo": {
-            "kind": "json-value",
-            "value": "albedo",
-            "transfer": "linear",
+          "materials": [
+            {
+              "extras": {
+                "heat": {
+                  "kind": "image-file",
+                  "file": "{file-stem}-heat.png",
+                },
+                "accent": {
+                  "kind": "json-value",
+                  "value": "accent",
+                  "transfer": "srgb",
+                },
+              },
+            },
+          ],
+        },
+
+        // The palette pattern: rows under the mesh's extras.vxl.values,
+        // the index they are read by on the primitive, no material at
+        // all.
+        "palette": {
+          "valuesFrom": ["albedo"],
+          "computeIndex": { "swatch": "swatchIndex" },
+          "primitives": [
+            {
+              "customs": {
+                "_PALETTE": {
+                  "value": "u8(swatchIndex)",
+                  "transfer": "linear",
+                },
+              },
+            },
+          ],
+          "meshExtras": {
+            "albedo": {
+              "kind": "json-value",
+              "value": "albedo",
+              "transfer": "linear",
+            },
           },
         },
-      },
 
-      // No textures: base color rides the vertices as COLOR_0, no
-      // material at all.
-      "vertex-colors": {
-        "valuesFrom": ["albedo"],
-        "primitives": [{ "builtins": { "COLOR_0": "albedo" } }],
-      },
+        // No textures: base color rides the vertices as COLOR_0, no
+        // material at all.
+        "vertex-colors": {
+          "valuesFrom": ["albedo"],
+          "primitives": [{ "builtins": { "COLOR_0": "albedo" } }],
+        },
 
-      // Occlusion floored at 0.2 and baked whole into the standard
-      // slot: a corner texture, the corner UV stream deriving. It
-      // reads no palette property, so no defaults mixin.
-      "baked-ao": {
-        "computeOcclusion": "computedOcclusion",
-        "values": ["ao = max(computedOcclusion, 0.2)"],
-        "materials": [
-          {
-            "slots": {
-              "occlusionTexture": { "kind": "value", "value": "ao" },
+        // Occlusion floored at 0.2 and baked whole into the standard
+        // slot: a corner texture, the corner UV stream deriving. It
+        // reads no palette property, so no defaults mixin.
+        "baked-ao": {
+          "computeOcclusion": "computedOcclusion",
+          "values": ["ao = max(computedOcclusion, 0.2)"],
+          "materials": [
+            {
+              "slots": {
+                "occlusionTexture": { "kind": "value", "value": "ao" },
+              },
             },
-          },
-        ],
-      },
+          ],
+        },
 
-      // Two materials, two primitives: the solid swatches drawn plain,
-      // the glowing swatches with the emissive surface. valuesFrom
-      // emissive supplies maxStrength, emissive, and white.
-      "glow-split": {
-        "valuesFrom": ["emissive"],
-        "values": [
-          "glowing = emissiveStrength > 0",
-          "solid = !glowing",
-          "albedo = baseColor",
-          "opaqueWhite = rgba(1, 1, 1, 1)",
-        ],
-        "materials": [
-          {
-            "name": "body",
-            "slots": {
-              "baseColorTexture": { "kind": "value", "value": "albedo" },
+        // Two materials, two primitives: the solid swatches drawn plain,
+        // the glowing swatches with the emissive surface. valuesFrom
+        // emissive supplies maxStrength, emissive, and white.
+        "glow-split": {
+          "valuesFrom": ["emissive"],
+          "values": [
+            "glowing = emissiveStrength > 0",
+            "solid = !glowing",
+            "albedo = baseColor",
+            "opaqueWhite = rgba(1, 1, 1, 1)",
+          ],
+          "materials": [
+            {
+              "name": "body",
+              "slots": {
+                "baseColorTexture": { "kind": "value", "value": "albedo" },
+              },
             },
-          },
-          {
-            "name": "glow",
-            "slots": {
-              "baseColorFactor": { "kind": "value", "value": "opaqueWhite" },
-              "emissiveTexture": { "kind": "value", "value": "emissive" },
-              "emissiveFactor": { "kind": "value", "value": "white" },
-              "emissiveStrength": { "kind": "value", "value": "maxStrength" },
+            {
+              "name": "glow",
+              "slots": {
+                "baseColorFactor": { "kind": "value", "value": "opaqueWhite" },
+                "emissiveTexture": { "kind": "value", "value": "emissive" },
+                "emissiveFactor": { "kind": "value", "value": "white" },
+                "emissiveStrength": { "kind": "value", "value": "maxStrength" },
+              },
             },
-          },
-        ],
-        "primitives": [
-          { "name": "body", "select": "solid", "material": 0 },
-          { "name": "glow", "select": "glowing", "material": 1 },
-        ],
+          ],
+          "primitives": [
+            { "name": "body", "select": "solid", "material": 0 },
+            { "name": "glow", "select": "glowing", "material": 1 },
+          ],
+        },
       },
     },
   },
