@@ -4,17 +4,17 @@ use voxsmith::operations::palette_list::PaletteListLayout;
 impl CliValue for PaletteListLayout {
     const VARIANTS: &'static [Self] = &[
         PaletteListLayout::Hierarchy,
-        PaletteListLayout::Tables,
-        PaletteListLayout::JsonPretty,
         PaletteListLayout::JsonCompact,
+        PaletteListLayout::JsonPretty,
+        PaletteListLayout::MdTables,
     ];
 
     fn name(self) -> &'static str {
         match self {
             PaletteListLayout::Hierarchy => "hierarchy",
-            PaletteListLayout::Tables => "tables",
-            PaletteListLayout::JsonPretty => "json-pretty",
             PaletteListLayout::JsonCompact => "json-compact",
+            PaletteListLayout::JsonPretty => "json-pretty",
+            PaletteListLayout::MdTables => "md-tables",
         }
     }
 
@@ -23,11 +23,11 @@ impl CliValue for PaletteListLayout {
             PaletteListLayout::Hierarchy => {
                 "Indented tree, one palette per branch, like `hierarchy show`"
             }
-            PaletteListLayout::Tables => {
+            PaletteListLayout::JsonCompact => "Compact, single-line JSON",
+            PaletteListLayout::JsonPretty => "Pretty-printed, multi-line JSON",
+            PaletteListLayout::MdTables => {
                 "A `# palettes` heading over one aligned record table, one row per palette"
             }
-            PaletteListLayout::JsonPretty => "Pretty-printed, multi-line JSON",
-            PaletteListLayout::JsonCompact => "Compact, single-line JSON",
         }
     }
 }

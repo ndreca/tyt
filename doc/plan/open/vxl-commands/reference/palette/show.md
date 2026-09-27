@@ -141,7 +141,7 @@ layouts emit the records directly and ignore the presentation.
    values with a single space.
 3. `columns`: each collection is its own column beneath its label, padded to a
    common width so a `value` rendering reads straight down.
-4. `tables`: the collections fill aligned markdown tables led by a `#` column
+4. `md-tables`: the collections fill aligned markdown tables led by a `#` column
    of 0-based material indices, one column per collection headed by its label,
    and one row per material index. A shorter palette leaves its column blank
    past its last material. `--table-shape` picks the shape: `nested` (default)
@@ -158,15 +158,15 @@ width of a cell, since the swatch escape codes carry no width of their own.
 
 ## Labels
 
-`--label` chooses how the text layouts `rows`, `columns`, and `tables` label
+`--label` chooses how the text layouts `rows`, `columns`, and `md-tables` label
 each collection. The `hierarchy` and JSON layouts carry the labels
 structurally, so setting `--label` with them is an error rather than a silent
 no-op.
 
-1. `none`: no labels. An error under `tables`, whose columns cannot be headed
+1. `none`: no labels. An error under `md-tables`, whose columns cannot be headed
    by nothing.
 2. `concat` (default): the full dot-joined path, as in `0."baseColor".a`.
-   Inline on `rows` and `columns`; under `tables` the headings nest exactly
+   Inline on `rows` and `columns`; under `md-tables` the headings nest exactly
    like `header` but each carries its full path.
 3. `header`: the ancestor path becomes nested markdown headings, `# 0` and
    `## "baseColor"`, and each collection beneath is labeled by its leaf
@@ -175,7 +175,7 @@ no-op.
 `--header-level` sets the markdown level of the shallowest heading, so
 embedded output sits at the right depth under a host document's headings; the
 headings start at `#` when it is omitted. It applies to the renders that emit
-headings, `--label header` and the nested and records `tables` shapes, and is
+headings, `--label header` and the nested and records `md-tables` shapes, and is
 an error on a render that emits none. A heading that would nest past markdown's level 6
 renders as a bold `**label**` line instead.
 

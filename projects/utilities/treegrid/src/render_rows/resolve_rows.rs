@@ -62,7 +62,7 @@ mod tests {
 
         assert_eq!(
             options.resolve_rows(),
-            Err(TreeGridError::TableShapeWithoutTables)
+            Err(TreeGridError::TableShapeWithoutMdTables)
         );
     }
 

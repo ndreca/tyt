@@ -3,26 +3,26 @@ use voxsmith::operations::info::InfoLayout;
 
 impl CliValue for InfoLayout {
     const VARIANTS: &'static [Self] = &[
-        InfoLayout::Tables,
-        InfoLayout::JsonPretty,
         InfoLayout::JsonCompact,
+        InfoLayout::JsonPretty,
+        InfoLayout::MdTables,
     ];
 
     fn name(self) -> &'static str {
         match self {
-            InfoLayout::Tables => "tables",
-            InfoLayout::JsonPretty => "json-pretty",
             InfoLayout::JsonCompact => "json-compact",
+            InfoLayout::JsonPretty => "json-pretty",
+            InfoLayout::MdTables => "md-tables",
         }
     }
 
     fn help(self) -> &'static str {
         match self {
-            InfoLayout::Tables => {
+            InfoLayout::JsonCompact => "Compact, single-line JSON",
+            InfoLayout::JsonPretty => "Pretty-printed, multi-line JSON",
+            InfoLayout::MdTables => {
                 "A file-name title over `Document`, `Palettes`, and `Objects` record tables"
             }
-            InfoLayout::JsonPretty => "Pretty-printed, multi-line JSON",
-            InfoLayout::JsonCompact => "Compact, single-line JSON",
         }
     }
 }

@@ -13,8 +13,8 @@ use std::result::Result as StdResult;
 use treegrid::{
     BTreeGridNode, TreeGrid, TreeGridCellFormat, TreeGridError, TreeGridJsonValue,
     TreeGridJsonValueCells, TreeGridLabel, TreeGridLabelKind, TreeGridOptions,
-    TreeGridRenderColumns, TreeGridRenderHierarchy, TreeGridRenderJson, TreeGridRenderRows,
-    TreeGridRenderTables, TreeGridSwatch, TreeGridTableShapeKind,
+    TreeGridRenderColumns, TreeGridRenderHierarchy, TreeGridRenderJson, TreeGridRenderMdTables,
+    TreeGridRenderRows, TreeGridSwatch, TreeGridTableShapeKind,
 };
 use ty_math::{TyLinSrgbF64, TyLinSrgbaF64, TySrgbF64, TySrgbaF64};
 use voxcore::{
@@ -646,28 +646,33 @@ fn render(grid: &TreeGrid<TreeGridJsonValueCells>, options: &PaletteShowOptions)
         });
     }
     Ok(match layout {
+        PaletteShowLayout::Columns => {
+            grid.render_columns(&resolve_options(options.resolve_columns())?)
+        }
+
         PaletteShowLayout::Hierarchy => {
             grid.render_hierarchy(&resolve_options(options.resolve_hierarchy())?)
         }
+
+        PaletteShowLayout::JsonCompact => {
+            resolve_options(options.resolve_json())?;
+            grid.render_json_compact()
+        }
+
+        PaletteShowLayout::JsonPretty => {
+            resolve_options(options.resolve_json())?;
+            grid.render_json_pretty()
+        }
+
+        PaletteShowLayout::MdTables => {
+            grid.render_md_tables(&resolve_options(options.resolve_md_tables())?)
+        }
+
         PaletteShowLayout::Rows => {
             if let Some(columns) = width {
                 options = options.with_width(columns);
             }
             grid.render_rows(&resolve_options(options.resolve_rows())?)
-        }
-        PaletteShowLayout::Columns => {
-            grid.render_columns(&resolve_options(options.resolve_columns())?)
-        }
-        PaletteShowLayout::Tables => {
-            grid.render_tables(&resolve_options(options.resolve_tables())?)
-        }
-        PaletteShowLayout::JsonPretty => {
-            resolve_options(options.resolve_json())?;
-            grid.render_json_pretty()
-        }
-        PaletteShowLayout::JsonCompact => {
-            resolve_options(options.resolve_json())?;
-            grid.render_json_compact()
         }
     })
 }
@@ -1132,7 +1137,7 @@ mod tests {
         let output = show(
             &main,
             &[("*", "baseColor", "value", "auto")],
-            PaletteShowLayout::Tables,
+            PaletteShowLayout::MdTables,
         );
         assert_eq!(
             output,
@@ -1158,7 +1163,7 @@ mod tests {
             &main,
             &selectors(&[("*", "baseColor", "value", "auto")]),
             &PaletteShowOptions {
-                layout: PaletteShowLayout::Tables,
+                layout: PaletteShowLayout::MdTables,
                 label: None,
                 header_level: None,
                 table_shape: Some(PaletteShowTableShape::Flat),
@@ -1182,7 +1187,7 @@ mod tests {
             &main,
             &selectors(&[("*", "baseColor", "value", "auto")]),
             &PaletteShowOptions {
-                layout: PaletteShowLayout::Tables,
+                layout: PaletteShowLayout::MdTables,
                 label: None,
                 header_level: None,
                 table_shape: Some(PaletteShowTableShape::Records),
@@ -1216,7 +1221,7 @@ mod tests {
                 ("0", "baseColor.a", "value", "auto"),
             ]),
             &PaletteShowOptions {
-                layout: PaletteShowLayout::Tables,
+                layout: PaletteShowLayout::MdTables,
                 label: None,
                 header_level: None,
                 table_shape: Some(PaletteShowTableShape::Records),

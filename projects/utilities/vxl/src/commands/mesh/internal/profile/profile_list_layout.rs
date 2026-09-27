@@ -4,21 +4,21 @@ use voxsmith::operations::mesh::ProfileListLayout;
 impl CliValue for ProfileListLayout {
     const VARIANTS: &'static [Self] = &[
         ProfileListLayout::Hierarchy,
-        ProfileListLayout::Lists,
-        ProfileListLayout::Rows,
-        ProfileListLayout::Tables,
-        ProfileListLayout::JsonPretty,
         ProfileListLayout::JsonCompact,
+        ProfileListLayout::JsonPretty,
+        ProfileListLayout::MdLists,
+        ProfileListLayout::MdTables,
+        ProfileListLayout::Rows,
     ];
 
     fn name(self) -> &'static str {
         match self {
             ProfileListLayout::Hierarchy => "hierarchy",
-            ProfileListLayout::Lists => "lists",
-            ProfileListLayout::Rows => "rows",
-            ProfileListLayout::Tables => "tables",
-            ProfileListLayout::JsonPretty => "json-pretty",
             ProfileListLayout::JsonCompact => "json-compact",
+            ProfileListLayout::JsonPretty => "json-pretty",
+            ProfileListLayout::MdLists => "md-lists",
+            ProfileListLayout::MdTables => "md-tables",
+            ProfileListLayout::Rows => "rows",
         }
     }
 
@@ -27,14 +27,16 @@ impl CliValue for ProfileListLayout {
             ProfileListLayout::Hierarchy => {
                 "A box-glyph tree, one branch per origin over its profiles"
             }
-            ProfileListLayout::Lists => {
-                "A `# profiles` heading over one section per origin, each a numbered list of its \
-                 profiles"
+            ProfileListLayout::JsonCompact => "Compact, single-line JSON",
+            ProfileListLayout::JsonPretty => "Pretty-printed, multi-line JSON",
+            ProfileListLayout::MdLists => {
+                "A `# profiles` heading over one section per origin, each a numbered markdown \
+                 list of its profiles"
+            }
+            ProfileListLayout::MdTables => {
+                "One markdown table, a column per origin over its profiles"
             }
             ProfileListLayout::Rows => "One row per origin, its profiles beside it",
-            ProfileListLayout::Tables => "One table, a column per origin over its profiles",
-            ProfileListLayout::JsonPretty => "Pretty-printed, multi-line JSON",
-            ProfileListLayout::JsonCompact => "Compact, single-line JSON",
         }
     }
 }

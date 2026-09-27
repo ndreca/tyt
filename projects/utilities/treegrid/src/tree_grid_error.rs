@@ -7,9 +7,9 @@ use std::{
 /// [`TreeGridOptions`](crate::TreeGridOptions) `resolve_*` methods.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TreeGridError {
-    /// The `tables` layout cannot head its columns with nothing; label
+    /// The `md-tables` layout cannot head its columns with nothing; label
     /// mode `none` is invalid there.
-    LabelNoneWithTables,
+    LabelNoneWithMdTables,
 
     /// A label mode was set, but the layout carries its labels
     /// structurally and takes no mode.
@@ -23,11 +23,11 @@ pub enum TreeGridError {
     HeaderLabelWithFlatTables,
 
     /// A list has no inline label slot to carry a path; the `concat`
-    /// label mode is invalid with `lists`.
-    LabelConcatWithLists,
+    /// label mode is invalid with `md-lists`.
+    LabelConcatWithMdLists,
 
-    /// A table shape was set on a layout other than `tables`.
-    TableShapeWithoutTables,
+    /// A table shape was set on a layout other than `md-tables`.
+    TableShapeWithoutMdTables,
 
     /// Bare roots were requested on a layout other than `hierarchy`.
     BareRootsWithoutHierarchy,
@@ -43,10 +43,10 @@ pub enum TreeGridError {
 impl Display for TreeGridError {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
-            TreeGridError::LabelNoneWithTables => {
+            TreeGridError::LabelNoneWithMdTables => {
                 write!(
                     f,
-                    "the tables layout requires labels, but the label mode is none"
+                    "the markdown tables layout requires labels, but the label mode is none"
                 )
             }
             TreeGridError::LabelModeWithoutLabels => {
@@ -64,11 +64,17 @@ impl Display for TreeGridError {
             TreeGridError::HeaderLabelWithFlatTables => {
                 write!(f, "the flat table shape requires the concat label mode")
             }
-            TreeGridError::LabelConcatWithLists => {
-                write!(f, "the lists layout takes the header or none label mode")
+            TreeGridError::LabelConcatWithMdLists => {
+                write!(
+                    f,
+                    "the markdown lists layout takes the header or none label mode"
+                )
             }
-            TreeGridError::TableShapeWithoutTables => {
-                write!(f, "a table shape was set, but the layout is not tables")
+            TreeGridError::TableShapeWithoutMdTables => {
+                write!(
+                    f,
+                    "a table shape was set, but the layout is not markdown tables"
+                )
             }
             TreeGridError::BareRootsWithoutHierarchy => {
                 write!(

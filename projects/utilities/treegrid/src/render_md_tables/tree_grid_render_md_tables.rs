@@ -2,19 +2,19 @@ use crate::{
     BTreeGridNode, TreeGrid, TreeGridCells, TreeGridNestedTableOptions,
     TreeGridRecordsTableOptions, TreeGridTableLabelMode, TreeGridTableShape,
     render::{self, Cell},
-    render_tables,
+    render_md_tables,
 };
 use branded_id::U32Id;
 
-/// The `tables` render.
-pub trait TreeGridRenderTables {
-    /// Renders the `tables` layout: aligned markdown tables in the
+/// The `md-tables` render.
+pub trait TreeGridRenderMdTables {
+    /// Renders the `md-tables` layout: aligned markdown tables in the
     /// given shape.
-    fn render_tables(&self, shape: &TreeGridTableShape) -> String;
+    fn render_md_tables(&self, shape: &TreeGridTableShape) -> String;
 }
 
-impl<C: TreeGridCells> TreeGridRenderTables for TreeGrid<C> {
-    fn render_tables(&self, shape: &TreeGridTableShape) -> String {
+impl<C: TreeGridCells> TreeGridRenderMdTables for TreeGrid<C> {
+    fn render_md_tables(&self, shape: &TreeGridTableShape) -> String {
         let blocks = match shape {
             TreeGridTableShape::Nested(options) => self.nested_blocks(options),
             TreeGridTableShape::Flat => self.flat_blocks(),
@@ -152,8 +152,8 @@ impl<C: TreeGridCells> TreeGrid<C> {
                 cells
             })
             .collect();
-        let mut table = render_tables::markdown_table(&headers, &table_rows);
-        // markdown_table ends its last line with `\n`; the block join
+        let mut table = render_md_tables::md_table(&headers, &table_rows);
+        // md_table ends its last line with `\n`; the block join
         // re-adds it.
         table.pop();
         table
@@ -240,8 +240,8 @@ impl<C: TreeGridCells> TreeGrid<C> {
                 cells
             })
             .collect();
-        let mut table = render_tables::markdown_table(&headers, &rows);
-        // markdown_table ends its last line with `\n`; the block join
+        let mut table = render_md_tables::md_table(&headers, &rows);
+        // md_table ends its last line with `\n`; the block join
         // re-adds it.
         table.pop();
         table
@@ -257,7 +257,7 @@ fn table_cell(cell: Cell) -> Cell {
     }
     Cell {
         width: cell.width + cell.rendered.matches('|').count(),
-        rendered: render_tables::markdown_cell(&cell.rendered),
+        rendered: render_md_tables::md_cell(&cell.rendered),
         bare_visual: false,
     }
 }
@@ -266,7 +266,7 @@ fn table_cell(cell: Cell) -> Cell {
 mod tests {
     use crate::{
         TreeGrid, TreeGridCellFormat, TreeGridLabel, TreeGridNestedTableOptions,
-        TreeGridRecordsTableOptions, TreeGridRenderTables, TreeGridTableLabelMode,
+        TreeGridRecordsTableOptions, TreeGridRenderMdTables, TreeGridTableLabelMode,
         TreeGridTableShape, TreeGridValue,
     };
     use std::num::NonZeroU8;
@@ -315,12 +315,15 @@ mod tests {
     #[test]
     fn an_empty_grid_renders_the_empty_string() {
         assert_eq!(
-            TreeGrid::new().render_tables(&TreeGridTableShape::default()),
+            TreeGrid::new().render_md_tables(&TreeGridTableShape::default()),
             ""
         );
-        assert_eq!(TreeGrid::new().render_tables(&TreeGridTableShape::Flat), "");
         assert_eq!(
-            TreeGrid::new().render_tables(&TreeGridTableShape::Records(
+            TreeGrid::new().render_md_tables(&TreeGridTableShape::Flat),
+            ""
+        );
+        assert_eq!(
+            TreeGrid::new().render_md_tables(&TreeGridTableShape::Records(
                 TreeGridRecordsTableOptions::default()
             )),
             ""
@@ -330,7 +333,7 @@ mod tests {
     #[test]
     fn nested_concat_headings_carry_full_paths() {
         assert_eq!(
-            worked_example().render_tables(&TreeGridTableShape::default()),
+            worked_example().render_md_tables(&TreeGridTableShape::default()),
             "# 0\n\
              \n\
              | #   | \"baseColorFactor\" | \"metallicFactor\" |\n\
@@ -354,7 +357,7 @@ mod tests {
             TreeGridNestedTableOptions::default().with_label(TreeGridTableLabelMode::Header),
         );
         assert_eq!(
-            worked_example().render_tables(&shape),
+            worked_example().render_md_tables(&shape),
             "# 0\n\
              \n\
              | #   | \"baseColorFactor\" | \"metallicFactor\" |\n\
@@ -378,7 +381,7 @@ mod tests {
             TreeGridNestedTableOptions::default().with_label(TreeGridTableLabelMode::Header),
         );
         assert_eq!(
-            hierarchy_example().render_tables(&shape),
+            hierarchy_example().render_md_tables(&shape),
             "# root\n\
              \n\
              | #   | \"energy-tank-1\" | \"energy-tank-2\" |\n\
@@ -402,7 +405,7 @@ mod tests {
     #[test]
     fn concat_paths_accumulate_down_the_branch_chain() {
         assert_eq!(
-            hierarchy_example().render_tables(&TreeGridTableShape::default()),
+            hierarchy_example().render_md_tables(&TreeGridTableShape::default()),
             "# root\n\
              \n\
              | #   | \"energy-tank-1\" | \"energy-tank-2\" |\n\
@@ -434,7 +437,7 @@ mod tests {
         grid.push_value(metallic, TreeGridValue::unorm(0.2));
 
         assert_eq!(
-            grid.render_tables(&TreeGridTableShape::default()),
+            grid.render_md_tables(&TreeGridTableShape::default()),
             "| #   | materialCount |\n\
              | --- | ------------- |\n\
              | 0   | 2             |\n\
@@ -466,7 +469,7 @@ mod tests {
         // The heading path stack stays bare, so `sub`'s concat
         // heading skips its parent's annotation.
         assert_eq!(
-            grid.render_tables(&TreeGridTableShape::default()),
+            grid.render_md_tables(&TreeGridTableShape::default()),
             "# 0\n\
              \n\
              | #   | \"emissiveStrength\" (scalar) |\n\
@@ -496,7 +499,7 @@ mod tests {
         grid.push_value(strength, TreeGridValue::float(2.0));
 
         assert_eq!(
-            grid.render_tables(&TreeGridTableShape::Flat),
+            grid.render_md_tables(&TreeGridTableShape::Flat),
             "| #   | 0.\"emissiveStrength\" (scalar) |\n\
              | --- | ----------------------------- |\n\
              | 0   | 2                             |\n"
@@ -509,7 +512,7 @@ mod tests {
             TreeGridNestedTableOptions::default().with_level(NonZeroU8::new(6).unwrap()),
         );
         assert_eq!(
-            worked_example().render_tables(&shape),
+            worked_example().render_md_tables(&shape),
             "###### 0\n\
              \n\
              | #   | \"baseColorFactor\" | \"metallicFactor\" |\n\
@@ -530,7 +533,7 @@ mod tests {
     #[test]
     fn flat_tables_compare_across_the_forest() {
         assert_eq!(
-            worked_example().render_tables(&TreeGridTableShape::Flat),
+            worked_example().render_md_tables(&TreeGridTableShape::Flat),
             "| #   | 0.\"baseColorFactor\" | 0.\"metallicFactor\" | 1.\"baseColorFactor\".a |\n\
              | --- | ------------------- | ------------------ | --------------------- |\n\
              | 0   | #FF0000FF           | 1                  | 255                   |\n\
@@ -547,7 +550,7 @@ mod tests {
         grid.push_value(attribute, TreeGridValue::new("x|y"));
 
         assert_eq!(
-            grid.render_tables(&TreeGridTableShape::default()),
+            grid.render_md_tables(&TreeGridTableShape::default()),
             "# 0\n\
              \n\
              | #   | \"a\\|b\" |\n\
@@ -559,7 +562,7 @@ mod tests {
     #[test]
     fn records_transpose_one_row_per_entity() {
         assert_eq!(
-            hierarchy_example().render_tables(&TreeGridTableShape::Records(
+            hierarchy_example().render_md_tables(&TreeGridTableShape::Records(
                 TreeGridRecordsTableOptions::default()
             )),
             "# root\n\
@@ -589,7 +592,7 @@ mod tests {
         }
 
         assert_eq!(
-            grid.render_tables(&TreeGridTableShape::Records(
+            grid.render_md_tables(&TreeGridTableShape::Records(
                 TreeGridRecordsTableOptions::default()
             )),
             "# palettes\n\
@@ -611,7 +614,7 @@ mod tests {
         grid.push_value(ext, TreeGridValue::new("no"));
 
         assert_eq!(
-            grid.render_tables(&TreeGridTableShape::Records(
+            grid.render_md_tables(&TreeGridTableShape::Records(
                 TreeGridRecordsTableOptions::default().with_level(NonZeroU8::new(2).unwrap())
             )),
             "## Document\n\
@@ -636,7 +639,7 @@ mod tests {
         grid.push_value(materials, TreeGridValue::int(1));
 
         assert_eq!(
-            grid.render_tables(&TreeGridTableShape::Records(
+            grid.render_md_tables(&TreeGridTableShape::Records(
                 TreeGridRecordsTableOptions::default()
             )),
             "| label | value | deep |\n\
@@ -661,7 +664,7 @@ mod tests {
         grid.push_value(base, TreeGridValue::srgba8([0, 255, 0, 128]));
 
         assert_eq!(
-            grid.render_tables(&TreeGridTableShape::Records(
+            grid.render_md_tables(&TreeGridTableShape::Records(
                 TreeGridRecordsTableOptions::default()
             )),
             "# 0\n\
@@ -685,7 +688,7 @@ mod tests {
         grid.push_value(alpha, TreeGridValue::unorm8(128));
 
         assert_eq!(
-            grid.render_tables(&TreeGridTableShape::Records(
+            grid.render_md_tables(&TreeGridTableShape::Records(
                 TreeGridRecordsTableOptions::default()
             )),
             "# palettes\n\
@@ -707,7 +710,7 @@ mod tests {
         grid.push_value(second, TreeGridValue::int(2));
 
         assert_eq!(
-            grid.render_tables(&TreeGridTableShape::Records(
+            grid.render_md_tables(&TreeGridTableShape::Records(
                 TreeGridRecordsTableOptions::default()
             )),
             "# r\n\
@@ -726,7 +729,7 @@ mod tests {
         grid.push_value(color, TreeGridValue::srgba8([255, 0, 0, 255]));
 
         assert_eq!(
-            grid.render_tables(&TreeGridTableShape::default()),
+            grid.render_md_tables(&TreeGridTableShape::default()),
             "# 0\n\
              \n\
              | #   | \"c\"          |\n\

@@ -5,7 +5,7 @@ use crate::render::Cell;
 /// separator stays valid markdown. A row shorter than the headers leaves its
 /// trailing columns blank. Width is each cell's declared visible width, so
 /// visual cells line up too.
-pub(crate) fn markdown_table(headers: &[Cell], rows: &[Vec<Cell>]) -> String {
+pub(crate) fn md_table(headers: &[Cell], rows: &[Vec<Cell>]) -> String {
     let mut widths: Vec<usize> = headers.iter().map(|header| header.width.max(3)).collect();
     for row in rows {
         for (column, cell) in row.iter().enumerate().take(widths.len()) {
@@ -44,7 +44,7 @@ fn table_row(cells: &[Cell], widths: &[usize]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::{render::Cell, render_tables};
+    use crate::{render::Cell, render_md_tables};
 
     #[test]
     fn aligns_columns_to_the_widest_cell() {
@@ -55,7 +55,7 @@ mod tests {
         ];
 
         assert_eq!(
-            render_tables::markdown_table(&headers, &rows),
+            render_md_tables::md_table(&headers, &rows),
             "| #   | name        |\n\
              | --- | ----------- |\n\
              | 0   | energy-tank |\n\
@@ -69,7 +69,7 @@ mod tests {
         let rows = [vec![Cell::text("0"), Cell::text("x")]];
 
         assert_eq!(
-            render_tables::markdown_table(&headers, &rows),
+            render_md_tables::md_table(&headers, &rows),
             "| #   | a   | b   |\n\
              | --- | --- | --- |\n\
              | 0   | x   |     |\n"
@@ -85,7 +85,7 @@ mod tests {
         };
 
         assert_eq!(
-            render_tables::markdown_table(&[Cell::text("color")], &[vec![cell]]),
+            render_md_tables::md_table(&[Cell::text("color")], &[vec![cell]]),
             "| color |\n\
              | ----- |\n\
              | \x1b[48;2;255;0;0m  \x1b[0m    |\n"

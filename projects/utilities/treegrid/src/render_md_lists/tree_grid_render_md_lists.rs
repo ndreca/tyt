@@ -1,19 +1,19 @@
 use crate::{
-    BTreeGridNode, TreeGrid, TreeGridCells, TreeGridListsLabelMode, TreeGridListsOptions,
+    BTreeGridNode, TreeGrid, TreeGridCells, TreeGridMdListsLabelMode, TreeGridMdListsOptions,
     render::{self, Cell},
 };
 use branded_id::U32Id;
 
-/// The `lists` render.
-pub trait TreeGridRenderLists {
-    /// Renders the `lists` layout: each data node's values as a
+/// The `md-lists` render.
+pub trait TreeGridRenderMdLists {
+    /// Renders the `md-lists` layout: each data node's values as a
     /// numbered list, in pre-order, under the headings the label mode
     /// emits, with a blank line between blocks.
-    fn render_lists(&self, options: &TreeGridListsOptions) -> String;
+    fn render_md_lists(&self, options: &TreeGridMdListsOptions) -> String;
 }
 
-impl<C: TreeGridCells> TreeGridRenderLists for TreeGrid<C> {
-    fn render_lists(&self, options: &TreeGridListsOptions) -> String {
+impl<C: TreeGridCells> TreeGridRenderMdLists for TreeGrid<C> {
+    fn render_md_lists(&self, options: &TreeGridMdListsOptions) -> String {
         let mut blocks: Vec<String> = Vec::new();
         for &root in self.roots() {
             self.collect_list_blocks(root, 0, options, &mut blocks);
@@ -34,7 +34,7 @@ impl<C: TreeGridCells> TreeGrid<C> {
         &self,
         id: U32Id<BTreeGridNode>,
         depth: usize,
-        options: &TreeGridListsOptions,
+        options: &TreeGridMdListsOptions,
         blocks: &mut Vec<String>,
     ) {
         let node = self.node(id);
@@ -42,7 +42,7 @@ impl<C: TreeGridCells> TreeGrid<C> {
         if !bears_data && !self.leads_to_data(id) {
             return;
         }
-        if let TreeGridListsLabelMode::Header(header) = options.label {
+        if let TreeGridMdListsLabelMode::Header(header) = options.label {
             blocks.push(render::heading(
                 header.level,
                 depth,
@@ -77,8 +77,8 @@ impl<C: TreeGridCells> TreeGrid<C> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        TreeGrid, TreeGridCellFormat, TreeGridHeaderOptions, TreeGridLabel, TreeGridListsLabelMode,
-        TreeGridListsOptions, TreeGridRenderLists, TreeGridValue,
+        TreeGrid, TreeGridCellFormat, TreeGridHeaderOptions, TreeGridLabel,
+        TreeGridMdListsLabelMode, TreeGridMdListsOptions, TreeGridRenderMdLists, TreeGridValue,
     };
     use std::num::NonZeroU8;
 
@@ -105,7 +105,7 @@ mod tests {
     #[test]
     fn an_empty_grid_renders_the_empty_string() {
         assert_eq!(
-            TreeGrid::new().render_lists(&TreeGridListsOptions::default()),
+            TreeGrid::new().render_md_lists(&TreeGridMdListsOptions::default()),
             ""
         );
     }
@@ -113,7 +113,7 @@ mod tests {
     #[test]
     fn header_labels_head_every_node_on_the_way_to_data() {
         assert_eq!(
-            worked_example().render_lists(&TreeGridListsOptions::default()),
+            worked_example().render_md_lists(&TreeGridMdListsOptions::default()),
             "# 0\n\
              \n\
              ## \"baseColorFactor\"\n\
@@ -138,9 +138,9 @@ mod tests {
 
     #[test]
     fn none_labels_leave_the_lists_alone() {
-        let options = TreeGridListsOptions::default().with_label(TreeGridListsLabelMode::None);
+        let options = TreeGridMdListsOptions::default().with_label(TreeGridMdListsLabelMode::None);
         assert_eq!(
-            worked_example().render_lists(&options),
+            worked_example().render_md_lists(&options),
             "1. #FF0000FF\n\
              2. #00FF0080\n\
              \n\
@@ -162,11 +162,12 @@ mod tests {
         grid.push_value(config, TreeGridValue::new("matte"));
         grid.retain_root(TreeGridLabel::bare("empty"));
 
-        let options = TreeGridListsOptions::default().with_label(TreeGridListsLabelMode::Header(
-            TreeGridHeaderOptions::default().with_level(NonZeroU8::new(2).unwrap()),
-        ));
+        let options =
+            TreeGridMdListsOptions::default().with_label(TreeGridMdListsLabelMode::Header(
+                TreeGridHeaderOptions::default().with_level(NonZeroU8::new(2).unwrap()),
+            ));
         assert_eq!(
-            grid.render_lists(&options),
+            grid.render_md_lists(&options),
             "## built in\n\
              \n\
              1. albedo\n\
@@ -187,7 +188,7 @@ mod tests {
         grid.push_value(child, TreeGridValue::new("deep"));
 
         assert_eq!(
-            grid.render_lists(&TreeGridListsOptions::default()),
+            grid.render_md_lists(&TreeGridMdListsOptions::default()),
             "# root\n\
              \n\
              1. own\n\

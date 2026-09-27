@@ -7,7 +7,7 @@ use branded_id::U32Id;
 use treegrid::{
     BTreeGridNode, TreeGrid, TreeGridHierarchyOptions, TreeGridJsonValue, TreeGridJsonValueCells,
     TreeGridLabel, TreeGridRecordsTableOptions, TreeGridRenderHierarchy, TreeGridRenderJson,
-    TreeGridRenderTables, TreeGridTableShape, TreeGridValue,
+    TreeGridRenderMdTables, TreeGridTableShape, TreeGridValue,
 };
 use voxcore::{BVoxPalette, VoxExt, VoxMain, VoxPalette};
 
@@ -59,13 +59,13 @@ fn render<T: VoxExt>(
     layout: PaletteListLayout,
 ) -> String {
     match layout {
-        PaletteListLayout::Tables => build_records_grid(main, palettes, fields).render_tables(
-            &TreeGridTableShape::Records(TreeGridRecordsTableOptions::default()),
-        ),
         PaletteListLayout::Hierarchy => build_grid(main, palettes, fields)
             .render_hierarchy(&TreeGridHierarchyOptions::default().with_bare_roots(true)),
-        PaletteListLayout::JsonPretty => build_grid(main, palettes, fields).render_json_pretty(),
         PaletteListLayout::JsonCompact => build_grid(main, palettes, fields).render_json_compact(),
+        PaletteListLayout::JsonPretty => build_grid(main, palettes, fields).render_json_pretty(),
+        PaletteListLayout::MdTables => build_records_grid(main, palettes, fields).render_md_tables(
+            &TreeGridTableShape::Records(TreeGridRecordsTableOptions::default()),
+        ),
     }
 }
 
@@ -293,7 +293,7 @@ mod tests {
     #[test]
     fn tables_lists_one_row_per_palette() {
         assert_eq!(
-            render_all(&shared_main(), PaletteListLayout::Tables),
+            render_all(&shared_main(), PaletteListLayout::MdTables),
             "# palettes\n\
              \n\
              | label | properties                  | materials | objects |\n\
@@ -311,7 +311,7 @@ mod tests {
             materials: true,
             objects: false,
         };
-        let output = palette_list(&main, &[], fields, PaletteListLayout::Tables).unwrap();
+        let output = palette_list(&main, &[], fields, PaletteListLayout::MdTables).unwrap();
         assert_eq!(
             output,
             "# palettes\n\
@@ -405,7 +405,7 @@ mod tests {
         let main = shared_main();
         let filters = [IndexRange::new(1, 1).unwrap()];
         let output =
-            palette_list(&main, &filters, all_fields(), PaletteListLayout::Tables).unwrap();
+            palette_list(&main, &filters, all_fields(), PaletteListLayout::MdTables).unwrap();
         assert_eq!(
             output,
             "# palettes\n\
@@ -421,7 +421,7 @@ mod tests {
         let main = shared_main();
         let filters = [IndexRange::new(0, 5).unwrap()];
         let output =
-            palette_list(&main, &filters, all_fields(), PaletteListLayout::Tables).unwrap();
+            palette_list(&main, &filters, all_fields(), PaletteListLayout::MdTables).unwrap();
         assert!(output.contains("\n| 0     |"));
         assert!(output.contains("\n| 1     |"));
     }
@@ -430,7 +430,7 @@ mod tests {
     fn a_filter_matching_no_palette_errors() {
         let main = shared_main();
         let filters = [IndexRange::new(9, 9).unwrap()];
-        assert!(palette_list(&main, &filters, all_fields(), PaletteListLayout::Tables).is_err());
+        assert!(palette_list(&main, &filters, all_fields(), PaletteListLayout::MdTables).is_err());
     }
 
     #[test]
@@ -450,7 +450,7 @@ mod tests {
         main.retain_palette(palette).unwrap();
 
         assert_eq!(
-            render_all(&main, PaletteListLayout::Tables),
+            render_all(&main, PaletteListLayout::MdTables),
             "# palettes\n\
              \n\
              | label | properties | materials | objects |\n\

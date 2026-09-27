@@ -8,9 +8,9 @@ use voxcore::check::{VoxCheck, VoxCheckStatus, failed_check_count};
 /// document's `name`.
 pub fn validate(checks: &[VoxCheck], name: &str, layout: ValidateLayout) -> String {
     match layout {
-        ValidateLayout::Tables => render_markdown(checks, name),
-        ValidateLayout::JsonPretty => build_json_grid(checks, name).render_json_pretty(),
         ValidateLayout::JsonCompact => build_json_grid(checks, name).render_json_compact(),
+        ValidateLayout::JsonPretty => build_json_grid(checks, name).render_json_pretty(),
+        ValidateLayout::MdTables => render_markdown(checks, name),
     }
 }
 
@@ -112,7 +112,7 @@ mod tests {
 
     #[test]
     fn tables_lists_each_check_and_a_failure_summary() {
-        let output = validate(&checks(), "model.voxj", ValidateLayout::Tables);
+        let output = validate(&checks(), "model.voxj", ValidateLayout::MdTables);
         assert_eq!(
             output,
             "# model.voxj\n\n\
@@ -136,7 +136,7 @@ mod tests {
                 status: VoxCheckStatus::Unverifiable,
             },
         ];
-        let output = validate(&checks, "ok.voxj", ValidateLayout::Tables);
+        let output = validate(&checks, "ok.voxj", ValidateLayout::MdTables);
         assert!(output.ends_with("\nAll checks passed.\n"));
     }
 

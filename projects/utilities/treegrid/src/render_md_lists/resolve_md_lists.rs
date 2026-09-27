@@ -1,42 +1,42 @@
 use crate::{
-    TreeGridError, TreeGridHeaderOptions, TreeGridLabelKind, TreeGridListsLabelMode,
-    TreeGridListsOptions, TreeGridOptions,
+    TreeGridError, TreeGridHeaderOptions, TreeGridLabelKind, TreeGridMdListsLabelMode,
+    TreeGridMdListsOptions, TreeGridOptions,
 };
 
 impl TreeGridOptions {
     /// The lists render's options, rejecting every option it does not
     /// consume. An unset label means `header`.
-    pub fn resolve_lists(&self) -> Result<TreeGridListsOptions, TreeGridError> {
+    pub fn resolve_md_lists(&self) -> Result<TreeGridMdListsOptions, TreeGridError> {
         self.no_hierarchy_options()?;
         self.no_width()?;
         self.no_table_shape()?;
         let label = match self.label.unwrap_or(TreeGridLabelKind::Header) {
             TreeGridLabelKind::None => {
                 self.no_header_level()?;
-                TreeGridListsLabelMode::None
+                TreeGridMdListsLabelMode::None
             }
-            TreeGridLabelKind::Concat => return Err(TreeGridError::LabelConcatWithLists),
-            TreeGridLabelKind::Header => TreeGridListsLabelMode::Header(TreeGridHeaderOptions {
+            TreeGridLabelKind::Concat => return Err(TreeGridError::LabelConcatWithMdLists),
+            TreeGridLabelKind::Header => TreeGridMdListsLabelMode::Header(TreeGridHeaderOptions {
                 level: self.level(),
             }),
         };
-        Ok(TreeGridListsOptions { label })
+        Ok(TreeGridMdListsOptions { label })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{
-        TreeGridError, TreeGridHeaderOptions, TreeGridLabelKind, TreeGridListsLabelMode,
-        TreeGridListsOptions, TreeGridOptions, TreeGridTableShapeKind,
+        TreeGridError, TreeGridHeaderOptions, TreeGridLabelKind, TreeGridMdListsLabelMode,
+        TreeGridMdListsOptions, TreeGridOptions, TreeGridTableShapeKind,
     };
     use std::num::NonZeroU8;
 
     #[test]
     fn default_options_resolve_to_header_lists() {
         assert_eq!(
-            TreeGridOptions::default().resolve_lists(),
-            Ok(TreeGridListsOptions::default())
+            TreeGridOptions::default().resolve_md_lists(),
+            Ok(TreeGridMdListsOptions::default())
         );
     }
 
@@ -47,9 +47,9 @@ mod tests {
             .with_header_level(NonZeroU8::new(3).unwrap());
 
         assert_eq!(
-            options.resolve_lists(),
+            options.resolve_md_lists(),
             Ok(
-                TreeGridListsOptions::default().with_label(TreeGridListsLabelMode::Header(
+                TreeGridMdListsOptions::default().with_label(TreeGridMdListsLabelMode::Header(
                     TreeGridHeaderOptions::default().with_level(NonZeroU8::new(3).unwrap())
                 ))
             )
@@ -61,8 +61,8 @@ mod tests {
         let options = TreeGridOptions::default().with_label(TreeGridLabelKind::None);
 
         assert_eq!(
-            options.resolve_lists(),
-            Ok(TreeGridListsOptions::default().with_label(TreeGridListsLabelMode::None))
+            options.resolve_md_lists(),
+            Ok(TreeGridMdListsOptions::default().with_label(TreeGridMdListsLabelMode::None))
         );
     }
 
@@ -71,8 +71,8 @@ mod tests {
         let options = TreeGridOptions::default().with_label(TreeGridLabelKind::Concat);
 
         assert_eq!(
-            options.resolve_lists(),
-            Err(TreeGridError::LabelConcatWithLists)
+            options.resolve_md_lists(),
+            Err(TreeGridError::LabelConcatWithMdLists)
         );
     }
 
@@ -83,7 +83,7 @@ mod tests {
             .with_header_level(NonZeroU8::new(2).unwrap());
 
         assert_eq!(
-            options.resolve_lists(),
+            options.resolve_md_lists(),
             Err(TreeGridError::HeaderLevelWithoutHeaders)
         );
     }
@@ -91,19 +91,19 @@ mod tests {
     #[test]
     fn options_of_other_layouts_are_rejected() {
         assert_eq!(
-            TreeGridOptions::default().with_width(72).resolve_lists(),
+            TreeGridOptions::default().with_width(72).resolve_md_lists(),
             Err(TreeGridError::WidthWithoutRows)
         );
         assert_eq!(
             TreeGridOptions::default()
                 .with_table_shape(TreeGridTableShapeKind::Nested)
-                .resolve_lists(),
-            Err(TreeGridError::TableShapeWithoutTables)
+                .resolve_md_lists(),
+            Err(TreeGridError::TableShapeWithoutMdTables)
         );
         assert_eq!(
             TreeGridOptions::default()
                 .with_value_children(true)
-                .resolve_lists(),
+                .resolve_md_lists(),
             Err(TreeGridError::ValueChildrenWithoutHierarchy)
         );
     }

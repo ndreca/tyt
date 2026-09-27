@@ -1,12 +1,12 @@
 use crate::TreeGridHeaderOptions;
 
-/// How `lists` headings spend the ancestor path.
+/// How `md-lists` headings spend the ancestor path.
 ///
 /// A data node's label heads its list or is dropped because a list has
 /// no inline slot for the `Concat` path of
 /// [`TreeGridLabelMode`](crate::TreeGridLabelMode).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum TreeGridListsLabelMode {
+pub enum TreeGridMdListsLabelMode {
     /// No headings anywhere.
     None,
 
@@ -15,8 +15,8 @@ pub enum TreeGridListsLabelMode {
     Header(TreeGridHeaderOptions),
 }
 
-impl Default for TreeGridListsLabelMode {
+impl Default for TreeGridMdListsLabelMode {
     fn default() -> Self {
-        TreeGridListsLabelMode::Header(TreeGridHeaderOptions::default())
+        TreeGridMdListsLabelMode::Header(TreeGridHeaderOptions::default())
     }
 }

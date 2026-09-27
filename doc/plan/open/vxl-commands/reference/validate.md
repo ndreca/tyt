@@ -30,8 +30,8 @@ checklist and exits non-zero on any failure. The checks include:
 The one item a validator cannot confirm, that sample order matches the position
 block's voxel order, is reported as unverifiable.
 
-1. `--layout` `tables` | `json-pretty` | `json-compact` (default `tables`):
-   how to render the report. `tables` is a human-readable per-check list; the
+1. `--layout` `md-tables` | `json-pretty` | `json-compact` (default `md-tables`):
+   how to render the report. `md-tables` is a human-readable per-check list; the
    JSON forms emit the report in the shared read-command envelope, one
    `{"label", "annotation"?, "values"?, "children"?}` record per node: `name`
    and `valid` roots, then a `checks` root with one child per check bearing

@@ -5,13 +5,13 @@ pub enum PaletteListLayout {
     /// Indented tree, one palette per branch.
     Hierarchy,
 
-    /// A `# palettes` heading over one aligned record table, one row per
-    /// palette.
-    Tables,
+    /// Compact, single-line JSON.
+    JsonCompact,
 
     /// Pretty-printed, multi-line JSON.
     JsonPretty,
 
-    /// Compact, single-line JSON.
-    JsonCompact,
+    /// A `# palettes` heading over one aligned record table, one row per
+    /// palette.
+    MdTables,
 }

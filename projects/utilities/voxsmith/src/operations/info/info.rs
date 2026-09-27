@@ -6,7 +6,7 @@ use branded_id::U32Id;
 use std::num::NonZeroU8;
 use treegrid::{
     BTreeGridNode, TreeGrid, TreeGridJsonValue, TreeGridJsonValueCells, TreeGridLabel,
-    TreeGridRecordsTableOptions, TreeGridRenderJson, TreeGridRenderTables, TreeGridTableShape,
+    TreeGridRecordsTableOptions, TreeGridRenderJson, TreeGridRenderMdTables, TreeGridTableShape,
     TreeGridValue,
 };
 use voxcore::{BVoxObject, VoxExt, VoxMain, VoxObject};
@@ -24,25 +24,26 @@ pub fn info<T: VoxExt>(
     layout: InfoLayout,
 ) -> String {
     match layout {
-        InfoLayout::Tables => render_tables(main, object_ids, document),
-        InfoLayout::JsonPretty => build_json_grid(main, object_ids, document).render_json_pretty(),
         InfoLayout::JsonCompact => {
             build_json_grid(main, object_ids, document).render_json_compact()
         }
+        InfoLayout::JsonPretty => build_json_grid(main, object_ids, document).render_json_pretty(),
+        InfoLayout::MdTables => render_md_tables(main, object_ids, document),
     }
 }
 
 /// The report as a file-name heading over three record-table sections:
 /// document, palettes, objects.
-fn render_tables<T: VoxExt>(
+fn render_md_tables<T: VoxExt>(
     main: &VoxMain<T>,
     object_ids: &[U32Id<BVoxObject>],
     document: &InfoDocument<'_>,
 ) -> String {
-    let tables =
-        build_records_grid(main, object_ids, document).render_tables(&TreeGridTableShape::Records(
+    let tables = build_records_grid(main, object_ids, document).render_md_tables(
+        &TreeGridTableShape::Records(
             TreeGridRecordsTableOptions::default().with_level(SECTION_LEVEL),
-        ));
+        ),
+    );
     format!("# {}\n\n{tables}", document.name)
 }
 
@@ -403,7 +404,7 @@ mod tests {
         let output = info_all(
             &tight_main(),
             &voxj_document("test.voxj", 2),
-            InfoLayout::Tables,
+            InfoLayout::MdTables,
         );
         assert_eq!(
             output,
@@ -473,7 +474,7 @@ mod tests {
             format_version: None,
             has_ext: false,
         };
-        let tables = info_all(&tight_main(), &document, InfoLayout::Tables);
+        let tables = info_all(&tight_main(), &document, InfoLayout::MdTables);
         assert!(tables.contains("| format   | mvox  |\n"));
         assert!(!tables.contains("format_version"));
 
@@ -492,7 +493,7 @@ mod tests {
         main.retain_object(object).unwrap();
 
         let document = voxj_document("sample.voxj", 1);
-        let tables = info_all(&main, &document, InfoLayout::Tables);
+        let tables = info_all(&main, &document, InfoLayout::MdTables);
         assert!(tables.contains("| has_edit       | yes   |\n"));
         // Content 1x1x1, edit build volume 3x1x1, origin spaced.
         assert!(
@@ -542,7 +543,7 @@ mod tests {
         main.retain_object(object).unwrap();
 
         let document = voxj_document("layered.voxj", 1);
-        let tables = info_all(&main, &document, InfoLayout::Tables);
+        let tables = info_all(&main, &document, InfoLayout::MdTables);
         assert!(tables.contains("| 0     | emissiveStrength | 1         |\n"));
         assert!(tables.contains("| 1     | baseColor        | 1         |\n"));
 
@@ -562,7 +563,7 @@ mod tests {
         let second_id = main.retain_object(object).unwrap();
 
         let document = voxj_document("test.voxj", 2);
-        let tables = info(&main, &[second_id], &document, InfoLayout::Tables);
+        let tables = info(&main, &[second_id], &document, InfoLayout::MdTables);
 
         // Only the selected object appears, under its document index. The
         // palettes section stays whole.

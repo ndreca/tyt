@@ -2,13 +2,13 @@
 /// report.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ValidateLayout {
-    /// A file-name heading over one line per check and a closing pass/fail
-    /// summary.
-    Tables,
+    /// Compact, single-line JSON.
+    JsonCompact,
 
     /// Pretty-printed, multi-line JSON.
     JsonPretty,
 
-    /// Compact, single-line JSON.
-    JsonCompact,
+    /// A file-name heading over one line per check and a closing pass/fail
+    /// summary.
+    MdTables,
 }

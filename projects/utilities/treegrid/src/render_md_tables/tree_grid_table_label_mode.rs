@@ -1,4 +1,4 @@
-/// How `tables` headings spend the ancestor path.
+/// How `md-tables` headings spend the ancestor path.
 ///
 /// Tables cannot head their columns with nothing, so unlike
 /// [`TreeGridLabelMode`](crate::TreeGridLabelMode) there is no `None`.

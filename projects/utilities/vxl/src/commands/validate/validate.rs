@@ -16,7 +16,7 @@ pub struct Validate {
     #[arg(
         value_name = "layout",
         long,
-        default_value = "tables",
+        default_value = "md-tables",
         value_parser = cli_value_parser::<ValidateLayout>()
     )]
     layout: ValidateLayout,

@@ -1,14 +1,14 @@
 use crate::operations::mesh::{ProfileListGroup, ProfileListLayout};
 use treegrid::{
     TreeGrid, TreeGridHierarchyOptions, TreeGridJsonValue, TreeGridJsonValueCells, TreeGridLabel,
-    TreeGridListsOptions, TreeGridNestedTableOptions, TreeGridRenderHierarchy, TreeGridRenderJson,
-    TreeGridRenderLists, TreeGridRenderRows, TreeGridRenderTables, TreeGridRowsOptions,
-    TreeGridTableShape,
+    TreeGridMdListsOptions, TreeGridNestedTableOptions, TreeGridRenderHierarchy,
+    TreeGridRenderJson, TreeGridRenderMdLists, TreeGridRenderMdTables, TreeGridRenderRows,
+    TreeGridRowsOptions, TreeGridTableShape,
 };
 
 /// Renders `groups` in `layout`, one node per group in the given order over
-/// its profiles. The lists layout alone titles them `profiles`, putting one
-/// top-level heading over a section per group.
+/// its profiles. The markdown lists layout alone titles them `profiles`,
+/// putting one top-level heading over a section per group.
 pub fn profile_list(groups: &[ProfileListGroup], layout: ProfileListLayout) -> String {
     match layout {
         ProfileListLayout::Hierarchy => build_grid(groups, None).render_hierarchy(
@@ -16,17 +16,17 @@ pub fn profile_list(groups: &[ProfileListGroup], layout: ProfileListLayout) -> S
                 .with_bare_roots(true)
                 .with_value_children(true),
         ),
-        ProfileListLayout::Lists => {
-            build_grid(groups, Some("profiles")).render_lists(&TreeGridListsOptions::default())
+        ProfileListLayout::JsonCompact => build_grid(groups, None).render_json_compact(),
+        ProfileListLayout::JsonPretty => build_grid(groups, None).render_json_pretty(),
+        ProfileListLayout::MdLists => {
+            build_grid(groups, Some("profiles")).render_md_lists(&TreeGridMdListsOptions::default())
         }
+        ProfileListLayout::MdTables => build_grid(groups, None).render_md_tables(
+            &TreeGridTableShape::Nested(TreeGridNestedTableOptions::default()),
+        ),
         ProfileListLayout::Rows => {
             build_grid(groups, None).render_rows(&TreeGridRowsOptions::default())
         }
-        ProfileListLayout::Tables => build_grid(groups, None).render_tables(
-            &TreeGridTableShape::Nested(TreeGridNestedTableOptions::default()),
-        ),
-        ProfileListLayout::JsonPretty => build_grid(groups, None).render_json_pretty(),
-        ProfileListLayout::JsonCompact => build_grid(groups, None).render_json_compact(),
     }
 }
 
@@ -97,7 +97,7 @@ mod tests {
     #[test]
     fn lists_head_each_group_over_its_numbered_profiles() {
         assert_eq!(
-            profile_list(&groups(), ProfileListLayout::Lists),
+            profile_list(&groups(), ProfileListLayout::MdLists),
             "# profiles\n\
              \n\
              ## built in\n\
@@ -132,7 +132,7 @@ mod tests {
     #[test]
     fn tables_give_each_group_a_column() {
         assert_eq!(
-            profile_list(&groups(), ProfileListLayout::Tables),
+            profile_list(&groups(), ProfileListLayout::MdTables),
             "| #   | built in | /home/.vxlconfig | /repo/.vxlconfig |\n\
              | --- | -------- | ---------------- | ---------------- |\n\
              | 0   | albedo   | matte            | orm              |\n\
@@ -163,7 +163,7 @@ mod tests {
     #[test]
     fn no_groups_render_nothing() {
         assert_eq!(profile_list(&[], ProfileListLayout::Hierarchy), "");
-        assert_eq!(profile_list(&[], ProfileListLayout::Lists), "");
+        assert_eq!(profile_list(&[], ProfileListLayout::MdLists), "");
         assert_eq!(profile_list(&[], ProfileListLayout::JsonCompact), "[]\n");
     }
 }

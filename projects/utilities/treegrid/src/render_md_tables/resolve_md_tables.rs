@@ -7,11 +7,11 @@ use crate::{
 impl TreeGridOptions {
     /// The tables render's shape, rejecting every option it does not
     /// consume.
-    pub fn resolve_tables(&self) -> Result<TreeGridTableShape, TreeGridError> {
+    pub fn resolve_md_tables(&self) -> Result<TreeGridTableShape, TreeGridError> {
         self.no_hierarchy_options()?;
         self.no_width()?;
         let label = match self.label.unwrap_or(TreeGridLabelKind::Concat) {
-            TreeGridLabelKind::None => return Err(TreeGridError::LabelNoneWithTables),
+            TreeGridLabelKind::None => return Err(TreeGridError::LabelNoneWithMdTables),
             TreeGridLabelKind::Concat => TreeGridTableLabelMode::Concat,
             TreeGridLabelKind::Header => TreeGridTableLabelMode::Header,
         };
@@ -56,7 +56,7 @@ mod tests {
             .with_header_level(NonZeroU8::new(2).unwrap());
 
         assert_eq!(
-            options.resolve_tables(),
+            options.resolve_md_tables(),
             Ok(TreeGridTableShape::Nested(
                 TreeGridNestedTableOptions::default()
                     .with_label(TreeGridTableLabelMode::Header)
@@ -69,7 +69,7 @@ mod tests {
     fn flat_tables_resolve_with_concat_labels() {
         let options = TreeGridOptions::default().with_table_shape(TreeGridTableShapeKind::Flat);
 
-        assert_eq!(options.resolve_tables(), Ok(TreeGridTableShape::Flat));
+        assert_eq!(options.resolve_md_tables(), Ok(TreeGridTableShape::Flat));
     }
 
     #[test]
@@ -77,8 +77,8 @@ mod tests {
         let options = TreeGridOptions::default().with_label(TreeGridLabelKind::None);
 
         assert_eq!(
-            options.resolve_tables(),
-            Err(TreeGridError::LabelNoneWithTables)
+            options.resolve_md_tables(),
+            Err(TreeGridError::LabelNoneWithMdTables)
         );
     }
 
@@ -89,7 +89,7 @@ mod tests {
             .with_header_level(NonZeroU8::new(2).unwrap());
 
         assert_eq!(
-            options.resolve_tables(),
+            options.resolve_md_tables(),
             Ok(TreeGridTableShape::Records(
                 TreeGridRecordsTableOptions::default().with_level(NonZeroU8::new(2).unwrap())
             ))
@@ -103,10 +103,10 @@ mod tests {
         assert_eq!(
             records
                 .with_label(TreeGridLabelKind::Concat)
-                .resolve_tables(),
+                .resolve_md_tables(),
             records
                 .with_label(TreeGridLabelKind::Header)
-                .resolve_tables()
+                .resolve_md_tables()
         );
     }
 
@@ -117,7 +117,7 @@ mod tests {
             .with_table_shape(TreeGridTableShapeKind::Flat);
 
         assert_eq!(
-            options.resolve_tables(),
+            options.resolve_md_tables(),
             Err(TreeGridError::HeaderLabelWithFlatTables)
         );
     }

@@ -210,7 +210,7 @@ multi-object document needs a selector. See
     profile's `valuesFrom` imports first. Any writer elements the profile holds
     stay behind. See [profile language](profile-language.md).
 
-18. `--list-profiles [hierarchy | lists | rows | tables | json-pretty | json-compact]`
+18. `--list-profiles [hierarchy | json-compact | json-pretty | md-lists | md-tables | rows]`
     - Default: `hierarchy`
     - Repeatable: no
 

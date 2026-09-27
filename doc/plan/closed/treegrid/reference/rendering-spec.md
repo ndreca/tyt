@@ -56,7 +56,7 @@ amended; after adoption, this spec is the single source of truth.
 - Each layout lives in its own module, named for its render method
   (`render_hierarchy` and kin), behind a default-on cargo feature
   named like the module (`render_hierarchy`, `render_rows`,
-  `render_columns`, `render_tables`, `render_lists`; `json` and `ty-math` stay
+  `render_columns`, `render_md_tables`, `render_md_lists`; `json` and `ty-math` stay
   non-default): the layout's render method
   rides an extension trait on `TreeGrid` (`TreeGridRenderHierarchy`
   and kin), beside its options payload and its `resolve_*` impl, so
@@ -146,11 +146,11 @@ Behind the `ty-math` feature, over the component-generic color family
   `TreeGridOptions::label` kind into them, unset meaning `concat`. A label mode with the
   `hierarchy` or JSON renders, which carry labels structurally, is
   `TreeGridError::LabelModeWithoutLabels`:
-  - `none`: no labels anywhere. Under `tables` this is
-    `TreeGridError::LabelNoneWithTables`.
+  - `none`: no labels anywhere. Under `md-tables` this is
+    `TreeGridError::LabelNoneWithMdTables`.
   - `concat` (default): each data node is labeled by its full path. On
     `rows` and `columns` the label sits inline on the row or column
-    head, with no headings. On `tables`, which cannot spend a column
+    head, with no headings. On `md-tables`, which cannot spend a column
     header on a long path, the headings follow the same nested walk as
     `header` -- same positions, same increasing levels -- but each
     heading's text is that branch's full concat path instead of its
@@ -161,7 +161,7 @@ Behind the `ty-math` feature, over the component-generic color family
     and each branch's group block sits directly under its heading,
     before any deeper subsection headings. Group content is labeled by
     leaf segment alone.
-- **Grouping and order** (concat `tables`, and every `header` render): a
+- **Grouping and order** (concat `md-tables`, and every `header` render): a
   group is one branch's direct data children, in insertion order.
   Groups emit in a depth-first walk -- a branch's own group first, then
   its child branches recursively -- so a group never lands inside a
@@ -267,15 +267,15 @@ Today's `palette show --layout row`:
   reject it (`TreeGridError::WidthWithoutRows`).
 - Under `header` mode, label padding is computed per group.
 
-### lists
+### md-lists
 
-- Rendered by `render_lists(&TreeGridListsOptions)`, on the
-  `TreeGridRenderLists` trait behind the `render_lists` feature.
+- Rendered by `render_md_lists(&TreeGridMdListsOptions)`, on the
+  `TreeGridRenderMdLists` trait behind the `render_md_lists` feature.
 - One numbered list per data node, in pre-order: `{n}. {cell}`, one
   value per line from `1.`.
-- The label mode is `TreeGridListsLabelMode`, `none` or `header`, unset
+- The label mode is `TreeGridMdListsLabelMode`, `none` or `header`, unset
   meaning `header`. `concat` errors with
-  `TreeGridError::LabelConcatWithLists` because a list has no inline
+  `TreeGridError::LabelConcatWithMdLists` because a list has no inline
   label slot.
   - `header`: every node that bears or leads to data heads its subtree
     at `header_level + depth`. A data node's heading sits directly over
@@ -296,17 +296,17 @@ Today's `palette show --layout column`:
 - Shorter columns leave trailing blanks. Under `header` mode each group
   is its own column block, blocks separated per the header rules.
 
-### tables
+### md-tables
 
-Rendered by `render_tables(&TreeGridTableShape)`, on the
-`TreeGridRenderTables` trait behind the `render_tables` feature.
+Rendered by `render_md_tables(&TreeGridTableShape)`, on the
+`TreeGridRenderMdTables` trait behind the `render_md_tables` feature.
 `TreeGridTableShape` picks the shape:
 `Nested(TreeGridNestedTableOptions)`, carrying the heading label mode
 and level, `Flat`, or `Records(TreeGridRecordsTableOptions)`,
-carrying the heading level alone. `resolve_tables` maps the loose
+carrying the heading level alone. `resolve_md_tables` maps the loose
 `TreeGridOptions::table_shape` kind into it, unset meaning `Nested`;
 the other `resolve_*` methods reject a set shape as
-`TreeGridError::TableShapeWithoutTables`, not a silent no-op.
+`TreeGridError::TableShapeWithoutMdTables`, not a silent no-op.
 
 - `Nested`: tables group (see Labels), under nested headings whose text
   is the branch's full path (`concat`) or its leaf segment (`header`):
@@ -338,9 +338,9 @@ the other `resolve_*` methods reject a set shape as
   its own beside the own-value column. A node's values join into one
   cell with its separator rule, and a row without data at a column
   leaves the cell blank. Chosen explicitly, never inferred.
-- `markdown_table` rules: every column pads to its widest cell, minimum
+- `md_table` rules: every column pads to its widest cell, minimum
   width 3 so the dash separator stays valid markdown; cell text escapes
-  pipes and flattens newlines (`markdown_cell`); width is visible
+  pipes and flattens newlines (`md_cell`); width is visible
   width, so swatch cells align.
 - `none` label mode is an error (see Labels).
 
@@ -379,10 +379,10 @@ the other `resolve_*` methods reject a set shape as
 `TreeGridError`, one variant per invalid option combination, returned
 by the `TreeGridOptions` `resolve_*` methods; each render method
 takes a payload in which every such combination is unrepresentable,
-and cannot fail. The set is `LabelNoneWithTables`,
+and cannot fail. The set is `LabelNoneWithMdTables`,
 `LabelModeWithoutLabels`, `HeaderLevelWithoutHeaders`,
-`HeaderLabelWithFlatTables`, `LabelConcatWithLists`,
-`TableShapeWithoutTables`,
+`HeaderLabelWithFlatTables`, `LabelConcatWithMdLists`,
+`TableShapeWithoutMdTables`,
 `BareRootsWithoutHierarchy`, `ValueChildrenWithoutHierarchy`, and
 `WidthWithoutRows`. Commands map it into their own error types (vxl:
 `ErrorKind::InvalidInput`).
@@ -427,7 +427,7 @@ TreeGrid
   a 255
   ```
 
-- `tables` + `concat` -- nested, full-path heading text; `# 1` prints
+- `md-tables` + `concat` -- nested, full-path heading text; `# 1` prints
   bare because the structure needs it even though its group is empty:
 
   ```text
@@ -447,10 +447,10 @@ TreeGrid
   | 0   | 255 |
   ```
 
-- `tables` + `header`: identical structure; the deep heading reads
+- `md-tables` + `header`: identical structure; the deep heading reads
   `## "baseColorFactor"` instead of `## 1."baseColorFactor"`.
 
-- `tables` + `concat` + `table_shape: Flat` -- the comparison view, one
+- `md-tables` + `concat` + `table_shape: Flat` -- the comparison view, one
   table over everything with concat column headers:
 
   ```text
@@ -487,7 +487,7 @@ carrying a tag value, a `transform` branch (`position` / `rotation` /
 `scale`, one pre-formatted value each), and a tag-valued object child.
 Every data node is single-valued, so every table has one data row.
 
-`tables` + `header` (default `header_level` 1; the first node shown, the
+`md-tables` + `header` (default `header_level` 1; the first node shown, the
 other three repeat the same shape):
 
 ```text
@@ -519,7 +519,7 @@ over its own; the object table precedes `### transform` because a
 branch's own group emits before its child branches (`transform` is a
 branch, the object a direct data child).
 
-`tables` + `concat` is the same walk at the same levels; only the
+`md-tables` + `concat` is the same walk at the same levels; only the
 heading text changes, each carrying its full path:
 
 ```text
@@ -567,7 +567,7 @@ root."energy-tank-1" root."energy-tank-1".transform.position root."energy-tank-1
 {node: 0}            [12.50, 0.50, 10.00]                    [0.00, 0.00, 0.00]                      ...
 ```
 
-`tables` + `Records` is the shape this data actually wants: one row
+`md-tables` + `Records` is the shape this data actually wants: one row
 per node, descendant paths flattened relative to the row, the prefix
 living in the row label:
 

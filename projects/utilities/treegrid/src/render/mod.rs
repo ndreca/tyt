@@ -6,22 +6,22 @@ mod cell;
 #[cfg(any(
     feature = "render_columns",
     feature = "render_hierarchy",
-    feature = "render_lists",
+    feature = "render_md_lists",
     feature = "render_rows",
-    feature = "render_tables"
+    feature = "render_md_tables"
 ))]
 mod cell_render;
 #[cfg(any(
     feature = "render_hierarchy",
     feature = "render_rows",
-    feature = "render_tables"
+    feature = "render_md_tables"
 ))]
 mod cell_separator;
 #[cfg(any(
     feature = "render_columns",
-    feature = "render_lists",
+    feature = "render_md_lists",
     feature = "render_rows",
-    feature = "render_tables"
+    feature = "render_md_tables"
 ))]
 mod label;
 mod visible_width;
@@ -29,9 +29,9 @@ mod visible_width;
 pub(crate) use cell::*;
 #[cfg(any(
     feature = "render_columns",
-    feature = "render_lists",
+    feature = "render_md_lists",
     feature = "render_rows",
-    feature = "render_tables"
+    feature = "render_md_tables"
 ))]
 pub(crate) use label::*;
 pub(crate) use visible_width::*;

@@ -4,15 +4,15 @@ use voxsmith::operations::hierarchy_show::HierarchyShowLayout;
 impl CliValue for HierarchyShowLayout {
     const VARIANTS: &'static [Self] = &[
         HierarchyShowLayout::Hierarchy,
-        HierarchyShowLayout::JsonPretty,
         HierarchyShowLayout::JsonCompact,
+        HierarchyShowLayout::JsonPretty,
     ];
 
     fn name(self) -> &'static str {
         match self {
             HierarchyShowLayout::Hierarchy => "hierarchy",
-            HierarchyShowLayout::JsonPretty => "json-pretty",
             HierarchyShowLayout::JsonCompact => "json-compact",
+            HierarchyShowLayout::JsonPretty => "json-pretty",
         }
     }
 
@@ -22,8 +22,8 @@ impl CliValue for HierarchyShowLayout {
                 "The scene graph as a box-glyph tree, each entity's tag and view rows inline on \
                  its nodes"
             }
-            HierarchyShowLayout::JsonPretty => "The scene graph as indented JSON records",
             HierarchyShowLayout::JsonCompact => "The scene graph as single-line JSON records",
+            HierarchyShowLayout::JsonPretty => "The scene graph as indented JSON records",
         }
     }
 }

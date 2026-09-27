@@ -14,7 +14,7 @@ and `cargo test --workspace` all pass. The per-step keyboard record is
 in
 [reference/implementation-decisions.md](reference/implementation-decisions.md).
 One future option stays deferred, not blocking: whether `hierarchy
-show` / vmax / fbx expose the `rows` / `columns` / `tables` layouts,
+show` / vmax / fbx expose the `rows` / `columns` / `md-tables` layouts,
 once someone wants them.
 
 Four commands orbit the same idea -- a hierarchical collection whose nodes
@@ -41,7 +41,7 @@ carry data, rendered as text -- and each one re-implements the rendering:
 
 Beside them, `vxl palette list`, `vxl info`, and `vxl validate` render
 markdown tables and JSON reports from the same kind of data, sharing
-`markdown_table`, `tree_glyphs`, `text_width`, `quote_name`, and
+`md_table`, `tree_glyphs`, `text_width`, `quote_name`, and
 `to_json_string` inside vxl's `implementation/` where no other crate can
 reach them.
 
@@ -74,7 +74,7 @@ pairs it with a native JSON form -- together exactly the shape of
 `visual-text` / `text`) applies to its values; unset, the policy
 picks per value. One
 render method per layout (`render_hierarchy`, `render_rows`,
-`render_columns`, `render_tables`, `render_json_pretty`,
+`render_columns`, `render_md_tables`, `render_json_pretty`,
 `render_json_compact`) arranges the same populated grid, each taking
 only the options its layout consumes and returning `String`
 infallibly, and a label mode (`none` / `concat` / `header`) decides
@@ -101,7 +101,7 @@ JSON layouts (JSON-rendering adopters enable it), and `ty-math` gates
 the typed-color value constructors (vxl enables it at no cost; it
 already depends on ty-math). Each layout also rides its own
 default-on feature named for its render module (`render_hierarchy`,
-`render_rows`, `render_columns`, `render_tables`) whose
+`render_rows`, `render_columns`, `render_md_tables`) whose
 module holds that layout's render extension trait
 (`TreeGridRenderHierarchy` and kin), its options payload, and its
 `resolve_*` impl, so an adopter can trim to the layouts it renders
@@ -118,7 +118,7 @@ follow house style: one per file, `TreeGrid` prefix (`TreeGrid`,
 `TreeGridVisual`,
 `TreeGridCellFormat`, the render extension traits
 (`TreeGridRenderHierarchy`, `TreeGridRenderRows`,
-`TreeGridRenderColumns`, `TreeGridRenderTables`,
+`TreeGridRenderColumns`, `TreeGridRenderMdTables`,
 `TreeGridRenderJson`), the per-layout option payloads
 (`TreeGridHierarchyOptions`, `TreeGridRowsOptions`, and kin),
 `TreeGridLabelMode`, `TreeGridTableShape`, the loose
@@ -167,7 +167,7 @@ in [reference/rendering-spec.md](reference/rendering-spec.md):
    today's `palette show --layout row`.
 3. `columns`: each data-bearing node is one padded column under its label
    -- today's `column`.
-4. `tables`: aligned markdown tables led by a `#` index column, shaped
+4. `md-tables`: aligned markdown tables led by a `#` index column, shaped
    by `TreeGridOptions::table_shape`: `nested` (default) groups one
    table per parent path under `concat` or `header` headings; `flat`
    keeps today's `markdown` -- one table over everything with concat
@@ -183,16 +183,16 @@ on order.
 
 ### Label modes
 
-`TreeGridLabelMode`, consumed by `rows`, `columns`, and `tables`; the
+`TreeGridLabelMode`, consumed by `rows`, `columns`, and `md-tables`; the
 `hierarchy` and JSON layouts carry the labels structurally and reject
 a set mode:
 
-1. `none`: no labels. Errors under `tables`, which cannot head its columns
+1. `none`: no labels. Errors under `md-tables`, which cannot head its columns
    with nothing.
 2. `concat` (default): the full path joined with `.`, each `Quoted`
    segment quoted -- `0."baseColorFactor".a`. Inline on `rows` /
    `columns`, matching the current `row` / `column` headers (quoting
-   landed in 82e803a); on `tables`, headings nest exactly like `header`
+   landed in 82e803a); on `md-tables`, headings nest exactly like `header`
    -- same positions, same increasing levels -- but each carries its
    full path.
 3. `header`: the ancestor chain becomes nested markdown headings --
@@ -209,7 +209,7 @@ a set mode:
    deeper `#` run. This fixes the motivating
    case: `palette show --layout markdown` on
    `tyt-assets/src/vmax/energy-reactor.vmax` today emits one 16-column
-   table interleaving palettes 0 and 1; under `tables` it becomes two
+   table interleaving palettes 0 and 1; under `md-tables` it becomes two
    per-palette tables under `# 0` and `# 1`.
 
 ### Boundaries -- what stays in the commands
@@ -274,7 +274,7 @@ current flags until the phase 6 consistency pass renames
 | `vxl palette list` | selection, field gathering | `render_hierarchy` + `tree_glyphs` | 3 |
 | `tyt vmax hierarchy` | scene load, `select_nodes`, transform resolve | `Renderer` | 4 |
 | `tyt fbx hierarchy` | flag parsing, Blender data extraction | the tree-printing half of `FBX_HIERARCHY_PY` | 5 |
-| `vxl info` / `validate` / `list` tables + JSON | -- | `markdown_table`, `to_json_string` | 6 |
+| `vxl info` / `validate` / `list` tables + JSON | -- | `md_table`, `to_json_string` | 6 |
 
 Phases 2-4 each end with byte-identical default output (only flag values
 change in phase 2). Phase 5 is the big one -- `tyt fbx hierarchy` renders
@@ -358,7 +358,7 @@ third; it closes the plan.
    styles: connectored roots (vmax, collapsed-ancestors lists) versus bare
    section headers (`root` / `unplaced` in `hierarchy show`, `palettes` in
    `palette list`).
-10. **Layout value names**: `hierarchy`, `rows`, `columns`, `tables`,
+10. **Layout value names**: `hierarchy`, `rows`, `columns`, `md-tables`,
    `json-pretty`, `json-compact`; label modes `none`, `concat`, `header`.
    `json-*` prefixes group the serializations together in `--help` and
    completions.

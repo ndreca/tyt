@@ -2,9 +2,9 @@
     feature = "render_columns",
     feature = "render_hierarchy",
     feature = "json",
-    feature = "render_lists",
+    feature = "render_md_lists",
     feature = "render_rows",
-    feature = "render_tables"
+    feature = "render_md_tables"
 ))]
 use crate::TreeGridError;
 #[cfg(any(feature = "render_columns", feature = "render_rows"))]
@@ -19,8 +19,9 @@ use std::num::NonZeroU8;
 /// does not consume.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct TreeGridOptions {
-    /// The label mode, consumed by the rows, columns, tables, and
-    /// lists renders; unset means `concat` there, `header` on lists.
+    /// The label mode, consumed by the rows, columns, markdown tables, and
+    /// markdown lists renders; unset means `concat` there, `header` on
+    /// markdown lists.
     pub label: Option<TreeGridLabelKind>,
 
     /// The wrap budget, consumed by the rows render.
@@ -37,7 +38,7 @@ pub struct TreeGridOptions {
     /// render.
     pub value_children: bool,
 
-    /// The table shape, consumed by the tables render; unset means
+    /// The table shape, consumed by the markdown tables render; unset means
     /// `nested` there.
     pub table_shape: Option<TreeGridTableShapeKind>,
 }
@@ -100,9 +101,9 @@ impl TreeGridOptions {
 
     #[cfg(any(
         feature = "render_columns",
-        feature = "render_lists",
+        feature = "render_md_lists",
         feature = "render_rows",
-        feature = "render_tables"
+        feature = "render_md_tables"
     ))]
     pub(crate) fn level(&self) -> NonZeroU8 {
         self.header_level.unwrap_or(NonZeroU8::MIN)
@@ -120,8 +121,8 @@ impl TreeGridOptions {
         feature = "render_columns",
         feature = "render_hierarchy",
         feature = "json",
-        feature = "render_lists",
-        feature = "render_tables"
+        feature = "render_md_lists",
+        feature = "render_md_tables"
     ))]
     pub(crate) fn no_width(&self) -> Result<(), TreeGridError> {
         if self.width.is_some() {
@@ -134,9 +135,9 @@ impl TreeGridOptions {
         feature = "render_columns",
         feature = "render_hierarchy",
         feature = "json",
-        feature = "render_lists",
+        feature = "render_md_lists",
         feature = "render_rows",
-        feature = "render_tables"
+        feature = "render_md_tables"
     ))]
     pub(crate) fn no_header_level(&self) -> Result<(), TreeGridError> {
         if self.header_level.is_some() {
@@ -149,12 +150,12 @@ impl TreeGridOptions {
         feature = "render_columns",
         feature = "render_hierarchy",
         feature = "json",
-        feature = "render_lists",
+        feature = "render_md_lists",
         feature = "render_rows"
     ))]
     pub(crate) fn no_table_shape(&self) -> Result<(), TreeGridError> {
         if self.table_shape.is_some() {
-            return Err(TreeGridError::TableShapeWithoutTables);
+            return Err(TreeGridError::TableShapeWithoutMdTables);
         }
         Ok(())
     }
@@ -162,9 +163,9 @@ impl TreeGridOptions {
     #[cfg(any(
         feature = "render_columns",
         feature = "json",
-        feature = "render_lists",
+        feature = "render_md_lists",
         feature = "render_rows",
-        feature = "render_tables"
+        feature = "render_md_tables"
     ))]
     pub(crate) fn no_hierarchy_options(&self) -> Result<(), TreeGridError> {
         if self.bare_roots {

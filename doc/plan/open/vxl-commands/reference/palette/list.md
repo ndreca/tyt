@@ -58,7 +58,7 @@ branch in the tree, and the other two behave the same way.
 
 ## Layout
 
-`--layout` `hierarchy` | `tables` | `json-pretty` | `json-compact` (default
+`--layout` `hierarchy` | `md-tables` | `json-pretty` | `json-compact` (default
 `hierarchy`): how to render the listing.
 
 1. `hierarchy` (default): the indented tree above, in the
@@ -67,7 +67,7 @@ branch in the tree, and the other two behave the same way.
    leaf and
    `properties` and `objects` as subtrees. Property keys and object names are
    user-entered, so they print quoted.
-2. `tables`: a `# palettes` heading over one aligned record table, one row
+2. `md-tables`: a `# palettes` heading over one aligned record table, one row
    per palette labeled by its index and one column per enabled field:
 
    ```

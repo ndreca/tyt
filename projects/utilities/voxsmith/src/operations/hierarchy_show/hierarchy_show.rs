@@ -64,9 +64,9 @@ pub fn hierarchy_show<T: VoxExt>(
             walk.grid.render_hierarchy(&hierarchy)
         }
 
-        HierarchyShowLayout::JsonPretty => walk.grid.render_json_pretty(),
-
         HierarchyShowLayout::JsonCompact => walk.grid.render_json_compact(),
+
+        HierarchyShowLayout::JsonPretty => walk.grid.render_json_pretty(),
     })
 }
 

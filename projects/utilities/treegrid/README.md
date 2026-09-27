@@ -1,7 +1,7 @@
 # treegrid
 
-Hierarchical-data rendering: populate a forest of labeled, data-bearing
-nodes, then render it under a chosen layout and label mode.
+Hierarchical-data rendering: populate a forest of labeled, data-bearing nodes,
+then render it under a chosen layout and label mode.
 
 ```rust
 let mut grid = TreeGrid::new();
@@ -46,26 +46,25 @@ let tree = grid.render_hierarchy(
     └ 0.2
 ```
 
-The other layouts arrange the same grid as aligned columns, markdown
-tables, numbered markdown lists under headings, or JSON, and a label
-mode decides whether the text layouts label data with full dot-joined
-paths, with leaf segments under nested markdown headings, or not at
-all.
+The other layouts arrange the same grid as aligned columns, markdown tables,
+numbered markdown lists under headings, or JSON, and a label mode decides
+whether the text layouts label data with full dot-joined paths, with leaf
+segments under nested markdown headings, or not at all.
 
 Each render method takes only the options its layout consumes, so every
-combination that compiles is valid and rendering always succeeds.
-Options can also be gathered loosely, one field at a time; the one
-fallible step is the matching `resolve_*` method, which rejects any
-option that render does not consume:
+combination that compiles is valid and rendering always succeeds. Options can
+also be gathered loosely, one field at a time; the one fallible step is the
+matching `resolve_*` method, which rejects any option that render does not
+consume:
 
 ```rust
 let options = TreeGridOptions::default().with_value_children(true);
 let tree = grid.render_hierarchy(&options.resolve_hierarchy()?);
 ```
 
-Values can be any type: a cell policy (`TreeGridCells`) turns them into
-cells. The default policy reads the pre-rendered `TreeGridValue`s above;
-a custom policy renders the caller's own type:
+Values can be any type: a cell policy (`TreeGridCells`) turns them into cells.
+The default policy reads the pre-rendered `TreeGridValue`s above; a custom
+policy renders the caller's own type:
 
 ```rust
 struct TextCells;
@@ -89,12 +88,13 @@ let tree = grid.render_hierarchy(&TreeGridHierarchyOptions::default());
 └ position: [12.5, 0.5, 10.0]
 ```
 
-Each layout rides its own default-on cargo feature named for its
-render module (`render_hierarchy`, `render_rows`, `render_columns`,
-`render_tables`, `render_lists`), its render method arriving on a small extension
-trait, so an adopter that renders only one layout can trim the rest. The `json-pretty` / `json-compact` layouts ride the optional
-`json` feature, which pulls in `serde_json`; `TreeGridJsonValue` pairs a
-value with a native JSON form when its text and JSON diverge:
+Each layout rides its own default-on cargo feature named for its render module
+(`render_hierarchy`, `render_rows`, `render_columns`, `render_md_tables`,
+`render_md_lists`), its render method arriving on a small extension trait, so an
+adopter that renders only one layout can trim the rest. The `json-pretty` /
+`json-compact` layouts ride the optional `json` feature, which pulls in
+`serde_json`; `TreeGridJsonValue` pairs a value with a native JSON form when its
+text and JSON diverge:
 
 ```rust
 let mut grid = TreeGrid::with_cells(TreeGridJsonValueCells);
@@ -108,17 +108,15 @@ let json = grid.render_json_compact();
 [{"label":"metallicFactor","values":[1.0]}]
 ```
 
-Float-component colors ride the optional `ty-math` feature: `srgb` /
-`srgba` / `lin_srgb` / `lin_srgba` constructors take the
-component-generic ty-math color family and render functional-notation
-text with a quantized (for linear colors, transfer-encoded) swatch,
-all color math through ty-math:
+Float-component colors ride the optional `ty-math` feature: `srgb` / `srgba` /
+`lin_srgb` / `lin_srgba` constructors take the component-generic ty-math color
+family and render functional-notation text with a quantized (for linear colors,
+transfer-encoded) swatch, all color math through ty-math:
 
 ```rust
 let value = TreeGridValue::lin_srgba(TyLinSrgbaF64::new(2.0, 1.0, 0.5, 1.0));
 // text "lin_srgba(2, 1, 0.5, 1)", HDR red clamped in the swatch alone
 ```
 
-Selection, value sampling, precision policy, terminal-width detection,
-and IO stay with the caller: the crate only arranges and serializes
-what it is handed.
+Selection, value sampling, precision policy, terminal-width detection, and IO
+stay with the caller: the crate only arranges and serializes what it is handed.

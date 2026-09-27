@@ -1,6 +1,6 @@
 use crate::{TreeGridNestedTableOptions, TreeGridRecordsTableOptions};
 
-/// The `tables` layout's shape.
+/// The `md-tables` layout's shape.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TreeGridTableShape {
     /// One table per parent-path group, under nested headings.

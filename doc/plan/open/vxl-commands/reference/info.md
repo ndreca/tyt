@@ -12,8 +12,8 @@ layer count, and the position and sample encodings in use; each palette's
 property set and material count; whether `editState` and `ext` namespaces are
 present; and the root, instanced, and unplaced nodes in the hierarchy.
 
-1. `--layout` `tables` | `json-pretty` | `json-compact` (default `tables`):
-   how to render the report. `tables` is the human-readable form, a
+1. `--layout` `md-tables` | `json-pretty` | `json-compact` (default `md-tables`):
+   how to render the report. `md-tables` is the human-readable form, a
    `# {input}` title over `## Document`, `## Palettes`, and `## Objects`
    record tables, each row labeled under the fixed `label` column. The JSON
    forms emit the same report in the shared read-command envelope, one

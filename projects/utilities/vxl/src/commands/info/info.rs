@@ -19,7 +19,7 @@ pub struct Info {
     #[arg(
         value_name = "layout",
         long,
-        default_value = "tables",
+        default_value = "md-tables",
         value_parser = cli_value_parser::<InfoLayout>()
     )]
     layout: InfoLayout,

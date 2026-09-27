@@ -7,9 +7,9 @@ pub enum HierarchyShowLayout {
     #[default]
     Hierarchy,
 
-    /// The scene graph as indented JSON records.
-    JsonPretty,
-
     /// The scene graph as single-line JSON records.
     JsonCompact,
+
+    /// The scene graph as indented JSON records.
+    JsonPretty,
 }

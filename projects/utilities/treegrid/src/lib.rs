@@ -12,21 +12,21 @@ mod json;
 #[cfg(any(
     feature = "render_columns",
     feature = "render_hierarchy",
-    feature = "render_lists",
+    feature = "render_md_lists",
     feature = "render_rows",
-    feature = "render_tables"
+    feature = "render_md_tables"
 ))]
 mod render;
 #[cfg(feature = "render_columns")]
 mod render_columns;
 #[cfg(feature = "render_hierarchy")]
 mod render_hierarchy;
-#[cfg(feature = "render_lists")]
-mod render_lists;
+#[cfg(feature = "render_md_lists")]
+mod render_md_lists;
+#[cfg(feature = "render_md_tables")]
+mod render_md_tables;
 #[cfg(feature = "render_rows")]
 mod render_rows;
-#[cfg(feature = "render_tables")]
-mod render_tables;
 mod tree_grid;
 mod tree_grid_cell_format;
 mod tree_grid_cells;
@@ -48,12 +48,12 @@ pub use json::*;
 pub use render_columns::*;
 #[cfg(feature = "render_hierarchy")]
 pub use render_hierarchy::*;
-#[cfg(feature = "render_lists")]
-pub use render_lists::*;
+#[cfg(feature = "render_md_lists")]
+pub use render_md_lists::*;
+#[cfg(feature = "render_md_tables")]
+pub use render_md_tables::*;
 #[cfg(feature = "render_rows")]
 pub use render_rows::*;
-#[cfg(feature = "render_tables")]
-pub use render_tables::*;
 pub use tree_grid::*;
 pub use tree_grid_cell_format::*;
 pub use tree_grid_cells::*;
