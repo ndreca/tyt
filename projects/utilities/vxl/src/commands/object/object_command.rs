@@ -1,13 +1,15 @@
 use crate::{
     Dependencies, Result,
     commands::{
-        ObjectAdd, ObjectDuplicate, ObjectLink, ObjectRemove, ObjectReorder, ObjectSet, ObjectTrim,
-        ObjectUnlink,
+        ObjectAdd, ObjectDuplicate, ObjectLink, ObjectMesh, ObjectRemove, ObjectReorder, ObjectSet,
+        ObjectTrim, ObjectUnlink,
     },
 };
 use clap::Subcommand;
 
 /// The `object` command group.
+// The command line parses once, so the variants' sizes never matter.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 pub enum ObjectCommand {
@@ -17,6 +19,8 @@ pub enum ObjectCommand {
     ObjectDuplicate(ObjectDuplicate),
     #[command(name = "link")]
     ObjectLink(ObjectLink),
+    #[command(name = "mesh")]
+    ObjectMesh(ObjectMesh),
     #[command(name = "remove")]
     ObjectRemove(ObjectRemove),
     #[command(name = "reorder")]
@@ -35,6 +39,7 @@ impl ObjectCommand {
             ObjectCommand::ObjectAdd(add) => add.execute(dependencies),
             ObjectCommand::ObjectDuplicate(duplicate) => duplicate.execute(dependencies),
             ObjectCommand::ObjectLink(link) => link.execute(dependencies),
+            ObjectCommand::ObjectMesh(mesh) => mesh.execute(dependencies),
             ObjectCommand::ObjectRemove(remove) => remove.execute(dependencies),
             ObjectCommand::ObjectReorder(reorder) => reorder.execute(dependencies),
             ObjectCommand::ObjectSet(set) => set.execute(dependencies),

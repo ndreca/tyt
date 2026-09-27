@@ -1,24 +1,23 @@
-# `vxl mesh`
+# `vxl object mesh`
 
 _Part of the [mesh plan](README.md)._
 
 ```sh
-vxl mesh <input> [output] [options]
-vxl mesh --list-profiles [layout]
+vxl object mesh <input> [output] [options]
 ```
 
-`vxl mesh` triangulates the selected objects' voxels into a mesh, one mesh
-object per voxel object. It bakes each object's palette materials into values.
-The values can ride along as textures, material fields, and files beside the
-mesh. The default output path is the input stem with the mesh extension. The
+`vxl object mesh` triangulates the selected objects' voxels into a mesh, one
+mesh object per voxel object. It bakes each object's palette materials into
+values. The values can ride along as textures, material fields, and files beside
+the mesh. The default output path is the input stem with the mesh extension. The
 format comes from `--to`, else the output extension, else `.glb`.
 
 ```sh
 # turret.glb, geometry only
-vxl mesh turret.voxj
+vxl object mesh turret.voxj
 
 # + embedded albedo, orm, and emissive maps
-vxl mesh turret.voxj
+vxl object mesh turret.voxj
   --profile pbr
 ```
 
@@ -201,10 +200,10 @@ object and errors in a mesh holding several. See
     applying first. Wherever the flag sits on the line, the profile's values
     join the program ahead of every `--value` and `--values-from` binding, so a
     hand binding can read or redefine a profile value. Repeated, the profiles
-    stack in line order. The material and primitive lists merge by position,
-    and an element two profiles set errors. An explicit flag replaces the
-    element it collides with; see the
-    [profile language](profile-language.md#stacking).
+    stack in line order. The material and primitive lists merge by position, and
+    an element two profiles set errors. An explicit flag replaces the element it
+    collides with; see the [profile language](profile-language.md#stacking).
+    `vxl profile object-mesh list` lists the profiles a run can apply.
 
 16. `--value <bindings>`
     - Repeatable: yes
@@ -222,17 +221,7 @@ object and errors in a mesh holding several. See
     profile's `valuesFrom` imports first. Any writer elements the profile holds
     stay behind. See [profile language](profile-language.md).
 
-18. `--list-profiles [box-hierarchy | box-tables | json-compact | json-pretty | md-lists | md-tables | text-rows]`
-    - Default: `box-hierarchy`
-    - Repeatable: no
-
-    Lists the profiles a run can apply and writes no mesh. The profiles group
-    under the `.vxlconfig` supplying each, or `built in`, the groups in
-    cascade order and the names in name order. The optional value picks the
-    layout from the shared `--layout` vocabulary. The flag stands alone: any
-    other argument, the input included, errors.
-
-19. `--select <glob>`
+18. `--select <glob>`
     - Default: `*`, selecting every object
     - Repeatable: yes
 
@@ -241,13 +230,13 @@ object and errors in a mesh holding several. See
     so `--select-index` alone never unions with `*`. See
     [Object selectors](../../plan/open/vxl-commands/reference/conventions.md#object-selectors).
 
-20. `--select-index <index>`
+19. `--select-index <index>`
     - Repeatable: yes
 
     Chooses objects by position, an integer or an `a-b` range. Unions with
     `--select`.
 
-21. `--split-files`
+20. `--split-files`
     - Default: off
     - Repeatable: no
 
@@ -259,14 +248,14 @@ object and errors in a mesh holding several. See
     `--file-stem`. Every mesh is built before any is written, so an error
     writes nothing.
 
-22. `--write-file-json-value <dst-file> <dst-name> <src-expr> <linear | srgb>`
+21. `--write-file-json-value <dst-file> <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes a value to a JSON file under `<dst-name>` with the specified
     transfer. Each file holds one object, so repeating the flag on one path
     merges into that file; see [JSON files](value-language.md#json-files).
 
-23. `--write-file-png-value <dst-file> <src-expr> <linear | srgb>`
+22. `--write-file-png-value <dst-file> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes a [swatch, voxel, face, or corner](value-language.md#domains) array
@@ -280,7 +269,7 @@ object and errors in a mesh holding several. See
     1. `linear`: applies no transfer.
     2. `srgb`: applies the sRGB transfer, for an image a viewer reads as color.
 
-24. `--write-material-extra-image-file <material-index> <dst-name> <src-file>`
+23. `--write-material-extra-image-file <material-index> <dst-name> <src-file>`
     - Repeatable: yes
 
     Sets a custom `extras.vxl.values.<dst-name>` entry on the indexed material
@@ -288,7 +277,7 @@ object and errors in a mesh holding several. See
     points at `<src-file>` by relative path; see
     [Material slots](value-language.md#material-slots).
 
-25. `--write-material-extra-image-value <material-index> <dst-name> <src-expr> <linear | srgb>`
+24. `--write-material-extra-image-value <material-index> <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes an array value as an embedded image. The custom
@@ -296,28 +285,28 @@ object and errors in a mesh holding several. See
     texture index. A plain value errors; see
     [Material slots](value-language.md#material-slots).
 
-26. `--write-material-extra-json-file <material-index> <dst-name> <src-file>`
+25. `--write-material-extra-json-file <material-index> <dst-name> <src-file>`
     - Repeatable: yes
 
     Sets a custom `extras.vxl.values.<dst-name>` entry on the indexed material
     to a `{ "uri": "<src-file>" }` pointer, the path relative; see
     [Material slots](value-language.md#material-slots).
 
-27. `--write-material-extra-json-value <material-index> <dst-name> <src-expr> <linear | srgb>`
+26. `--write-material-extra-json-value <material-index> <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes a value's numbers into a custom `extras.vxl.values.<dst-name>` entry
     on the indexed material. A plain value writes as its numbers, and an array
     writes as rows; see [Material slots](value-language.md#material-slots).
 
-28. `--write-material-slot-file <material-index> <dst-property> <src-file>`
+27. `--write-material-slot-file <material-index> <dst-property> <src-file>`
     - Repeatable: yes
 
     Sets the texture property `<dst-property>` of the indexed material to
     reference `<src-file>` by relative path; see
     [Material slots](value-language.md#material-slots).
 
-29. `--write-material-slot-value <material-index> <dst-property> <src-expr>`
+28. `--write-material-slot-value <material-index> <dst-property> <src-expr>`
     - Repeatable: yes
 
     Sets the property `<dst-property>` of the indexed material. A plain value
@@ -325,7 +314,7 @@ object and errors in a mesh holding several. See
     the glb's binary chunk or the `.gltf`'s data URI; see
     [Material slots](value-language.md#material-slots).
 
-30. `--write-mesh-extra-image-file <dst-name> <src-file>`
+29. `--write-mesh-extra-image-file <dst-name> <src-file>`
     - Repeatable: yes
 
     Sets a mesh `extras.vxl.values.<dst-name>` entry to an image reference. The
@@ -333,7 +322,7 @@ object and errors in a mesh holding several. See
     relative path. The image samples through a stream some primitive writes;
     see [UV streams](#uv-streams) and [Palettes](#palettes).
 
-31. `--write-mesh-extra-image-value <dst-name> <src-expr> <linear | srgb>`
+30. `--write-mesh-extra-image-value <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes an array value as an embedded image. The mesh
@@ -341,21 +330,21 @@ object and errors in a mesh holding several. See
     samples through a stream some primitive writes; see
     [UV streams](#uv-streams). A plain value errors; see [Palettes](#palettes).
 
-32. `--write-mesh-extra-json-file <dst-name> <src-file>`
+31. `--write-mesh-extra-json-file <dst-name> <src-file>`
     - Repeatable: yes
 
     Sets a mesh `extras.vxl.values.<dst-name>` entry to a
     `{ "uri": "<src-file>" }` pointer, the path relative; see
     [Palettes](#palettes).
 
-33. `--write-mesh-extra-json-value <dst-name> <src-expr> <linear | srgb>`
+32. `--write-mesh-extra-json-value <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes a value's numbers into a mesh `extras.vxl.values.<dst-name>` entry. A
     plain value writes as its numbers. An array writes as rows, one row per
     entry in the domain's order; see [Palettes](#palettes).
 
-34. `--write-primitive-builtin-value <primitive-index> <dst-attribute> <src-expr>`
+33. `--write-primitive-builtin-value <primitive-index> <dst-attribute> <src-expr>`
     - Repeatable: yes
 
     Writes a value to an attribute glTF defines, `COLOR_0`, on the indexed
@@ -365,7 +354,7 @@ object and errors in a mesh holding several. See
     fixes the encoding. An underscore name errors; see
     [Vertex attributes](value-language.md#vertex-attributes).
 
-35. `--write-primitive-custom-value <primitive-index> <dst-name> <src-expr> <linear | srgb>`
+34. `--write-primitive-custom-value <primitive-index> <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes a value to a custom vertex attribute on the indexed primitive.
@@ -376,7 +365,7 @@ object and errors in a mesh holding several. See
     an integer errors. A `u32` value errors, glTF forbidding the width on an
     attribute; see [Vertex attributes](value-language.md#vertex-attributes).
 
-36. `--write-primitive-normal <primitive-index> <false | true>`
+35. `--write-primitive-normal <primitive-index> <false | true>`
     - Default: `true`
     - Repeatable: yes
 
@@ -385,7 +374,7 @@ object and errors in a mesh holding several. See
     flat normals from the triangles. A voxel face is flat, so a conforming
     viewer draws the same pixels either way. `false` drops the stream.
 
-37. `--write-primitive-uv <primitive-index> <corner | face | swatch | voxel>`
+36. `--write-primitive-uv <primitive-index> <corner | face | swatch | voxel>`
     - Default: the material's stream list
     - Repeatable: yes
 
@@ -410,8 +399,8 @@ the image lives and nothing else.
 
 A glTF mesh holds primitives. A primitive is one draw with its own vertex data,
 its own triangle list, and at most one material. Two materials on one mesh means
-two primitives, each holding the faces it draws. `vxl mesh` starts with an
-implicit whole-mesh primitive. The first `--primitive` replaces it, and each
+two primitives, each holding the faces it draws. `vxl object mesh` starts with
+an implicit whole-mesh primitive. The first `--primitive` replaces it, and each
 further flag adds another. Everything is 0-indexed. A primitive flag naming an
 index at or above the count errors rather than growing it.
 
@@ -449,7 +438,7 @@ The selects split the model. Every face draws once with its swatch's material:
 
 ```sh
 # split: solid swatches with material 0, glowing swatches with material 1
-vxl mesh turret.voxj
+vxl object mesh turret.voxj
   --value "glowing = emissiveStrength > 0"
   --value "solid = !glowing"
   --primitive 0 solid
@@ -489,7 +478,7 @@ geometry, so a threshold on it sends the crevice faces to a second material:
 
 ```sh
 # dirt in the creases: material 1 takes the occluded faces
-vxl mesh statue.vox
+vxl object mesh statue.vox
   --compute-occlusion computedOcclusion
   --value "crevice = faceAvg(computedOcclusion) < 0.7"
   --value "open = !crevice"
@@ -522,7 +511,7 @@ nothing to combine, gets one texel per material its voxels use. Each swatch map
 bakes its own value into the same texels, so
 
 ```sh
-vxl mesh turret.voxj
+vxl object mesh turret.voxj
   --to gltf
   --profile pbr
 ```
@@ -554,7 +543,7 @@ them:
 
 ```sh
 # horizontal bands, baked into the albedo
-vxl mesh turret.voxj
+vxl object mesh turret.voxj
   --compute-voxel-position voxelPosition
   --value "bands = mod(voxelPosition.y, 2)"
   --value "albedo = baseColor * lerp(0.8, 1, f32(bands))"
@@ -587,7 +576,7 @@ the blend reproduces keeps the merge; see
 The layout serves corner values written whole, such as computed occlusion:
 
 ```sh
-vxl mesh statue.vox
+vxl object mesh statue.vox
   --compute-occlusion computedOcclusion
   --write-material-slot-value 0 occlusionTexture computedOcclusion
 ```
@@ -624,7 +613,7 @@ at two positions claim one destination twice and error. No flag sets a
 `texCoord` by hand:
 
 ```jsonc
-// vxl mesh turret.voxj
+// vxl object mesh turret.voxj
 //   --profile albedo
 //   --compute-occlusion computedOcclusion
 //   --value "ao = faceAvg(computedOcclusion)"
@@ -687,7 +676,7 @@ effective palette, so every rows entry shares the one index. A shader reads
 plain data the runtime can replace at will:
 
 ```jsonc
-// vxl mesh turret.voxj
+// vxl object mesh turret.voxj
 //   --profile pbr
 //   --value "rawEmissive = emissiveColor * emissiveStrength"
 //   --write-mesh-extra-json-value albedo albedo linear
@@ -748,7 +737,7 @@ while a sidecar pairs `--write-file-json-value` with a
 JSON file beside the mesh:
 
 ```jsonc
-// vxl mesh turret.voxj
+// vxl object mesh turret.voxj
 //   --profile pbr
 //   --write-file-json-value turret-values.json albedo albedo linear
 //   --write-mesh-extra-json-file albedo turret-values.json
@@ -833,7 +822,7 @@ instead of per swatch:
 ```
 
 ```sh
-vxl mesh turret.voxj
+vxl object mesh turret.voxj
   --profile pbr
   --write-mesh-extra-json-value colorId colorId linear
   --compute-index swatch swatchIndex

@@ -2,11 +2,11 @@
 
 _Part of the [mesh plan](README.md)._
 
-The expression language behind `vxl mesh`'s material values. A binding,
+The expression language behind `vxl object mesh`'s material values. A binding,
 `name = expr`, defines a named value, and a run gathers every binding it is
 given into one [program](#programs). The writer and slot flags listed in
-[`vxl mesh`](mesh.md#options) take expressions too, landing the results in
-images, JSON files, and the mesh's material. Every property of the
+[`vxl object mesh`](mesh.md#options) take expressions too, landing the results
+in images, JSON files, and the mesh's material. Every property of the
 [effective palette](mesh.md#the-palette-atlas) enters the program as a name.
 
 A value sits on three axes, each with a section below:

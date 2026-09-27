@@ -3,7 +3,7 @@
 _Part of the [mesh plan](README.md)._
 
 A profile is a named piece of configuration whose elements stand for
-[`vxl mesh`](mesh.md) flags. `--profile` applies a profile whole, and
+[`vxl object mesh`](mesh.md) flags. `--profile` applies a profile whole, and
 `--values-from` applies only a profile's values. Repeated `--profile` flags
 [stack](#stacking) their profiles.
 [Built-in profiles](#built-in-profiles) ship in the binary. Default profiles
@@ -21,7 +21,7 @@ notation, and the doc comments tie each element to the flag it mirrors.
 [Loading](#loading) holds the checks that enforce the schema.
 
 ```ts
-/** The `.vxlconfig` shape `vxl mesh` reads. */
+/** The `.vxlconfig` shape `vxl object mesh` reads. */
 interface VxlConfig {
   /** The `mesh` command's slice of `.vxlconfig`. */
   mesh?: {
@@ -45,7 +45,7 @@ type FileTemplate = string;
 /** The writer flags' `<linear | srgb>` argument. */
 type Transfer = "linear" | "srgb";
 
-/** A profile; each element mirrors a `vxl mesh` flag. */
+/** A profile; each element mirrors a `vxl object mesh` flag. */
 interface Profile {
   /** Mirrors `--values-from` per entry; writers never travel. */
   valuesFrom?: string[];
@@ -244,7 +244,7 @@ a profile writes its names and expressions.
 A profile's values come from its `values` list, its `valuesFrom` list, and the
 `computeIndex`, `computeOcclusion`, and `computeVoxelPosition` keys. The compute
 keys define new values and bind ahead of the `values` list. The mirrored
-[`vxl mesh` flags](mesh.md#options) define how bindings join the
+[`vxl object mesh` flags](mesh.md#options) define how bindings join the
 [program](value-language.md#programs). `valuesFrom` imports append depth-first
 in list order, ahead of the profile's own values. A profile lands in the
 program once, at its first arrival, however many flags or imports name it.
@@ -252,12 +252,12 @@ program once, at its first arrival, however many flags or imports name it.
 ## Loading
 
 The profiles resolve as a cascade: the built-ins, then each `.vxlconfig` in the
-order the [implementation notes](implementation.md#ty-preferences) lay out.
-Each profile name is read from the last layer that supplies it, wholesale. The
-layers merge into one namespace before `valuesFrom` resolves, so a config that
+order the [implementation notes](implementation.md#ty-preferences) lay out. Each
+profile name is read from the last layer that supplies it, wholesale. The layers
+merge into one namespace before `valuesFrom` resolves, so a config that
 overrides `defaults` changes every profile built on it, including one from an
-outer layer. `vxl mesh --list-profiles` prints the merged namespace grouped by
-the file supplying each name.
+outer layer. `vxl profile object-mesh list` prints the merged namespace grouped
+by the file supplying each name.
 
 The checks split by when they run:
 
@@ -633,7 +633,7 @@ material replaces all of it, and a geometry flag replaces its key the same way:
 Repeating `--profile` stacks the profiles in line order, so
 
 ```sh
-vxl mesh turret.voxj
+vxl object mesh turret.voxj
   --profile albedo
   --profile orm
 ```

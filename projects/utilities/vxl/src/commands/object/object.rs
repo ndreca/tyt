@@ -1,7 +1,7 @@
 use crate::{Dependencies, Result, commands::ObjectCommand};
 use clap::Parser;
 
-/// Edits objects, writing Voxel JSON.
+/// Edits objects into Voxel JSON or meshes them into glTF.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "object")]
 pub struct Object {

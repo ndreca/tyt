@@ -29,14 +29,14 @@ it. [The close](#the-close) waits on everything.
 ## One record
 
 Flags and profiles meet in one record. Every profile element and every option of
-[`vxl mesh`](mesh.md#options) but `--to` and `--from` lowers into the same
-element of the record. An explicit flag replaces the profile element it collides
-with. `--to` and `--from` stay in vxl, which reads and writes the files, so the
-record carries no file format. vxl only combines: it parses the flags, loads and
-expands the profiles, resolves the `{file-stem}` templates, joins the value
-fragments into the program, and hands the record over. voxsmith defines the
-record beside the entry point that takes it. The call pairs the record with the
-loaded state and the selected object.
+[`vxl object mesh`](mesh.md#options) but `--to` and `--from` lowers into the
+same element of the record. An explicit flag replaces the profile element it
+collides with. `--to` and `--from` stay in vxl, which reads and writes the
+files, so the record carries no file format. vxl only combines: it parses the
+flags, loads and expands the profiles, resolves the `{file-stem}` templates,
+joins the value fragments into the program, and hands the record over. voxsmith
+defines the record beside the entry point that takes it. The call pairs the
+record with the loaded state and the selected object.
 
 The record is plain data. Expressions ride as text until the entry point parses
 them, and no element remembers the flag or the profile entry it came from:
@@ -634,10 +634,10 @@ The command runs end to end from here on, geometry only.
 
 ### 3. The flags
 
-The full surface of [`vxl mesh`](mesh.md#options) lands in clap, each flag but
-`--to` and `--from` lowering into its element of the record. vxl checks what
-flags alone decide, and the entry point errors on an element it cannot mesh yet
-and says which, so the whole surface lands ahead of the meshing work.
+The full surface of [`vxl object mesh`](mesh.md#options) lands in clap, each
+flag but `--to` and `--from` lowering into its element of the record. vxl checks
+what flags alone decide, and the entry point errors on an element it cannot mesh
+yet and says which, so the whole surface lands ahead of the meshing work.
 
 ### 4. The profiles
 
@@ -748,9 +748,9 @@ bridge's image storage. A new format adds a bridge crate and a feature here.
 
 ### The command tail
 
-`vxl mesh` loads through voxconv, meshes into a document, and saves through
-meshconv, with `--to` picking the container. An embedded image lands in a
-buffer view, and a written file lands beside the mesh. vxl depends on meshconv
+`vxl object mesh` loads through voxconv, meshes into a document, and saves
+through meshconv, with `--to` picking the container. An embedded image lands in
+a buffer view, and a written file lands beside the mesh. vxl depends on meshconv
 and meshdoc and never on a bridge.
 
 ### The retired maps listing

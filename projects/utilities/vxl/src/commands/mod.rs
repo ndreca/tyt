@@ -1,21 +1,17 @@
 mod hierarchy;
-mod info;
-mod mesh;
+mod mesh_doc;
 mod node;
 mod object;
 mod object_voxels;
 mod palette;
-mod to;
-mod validate;
-mod voxelize;
+mod profile;
+mod vox_doc;
 
 pub use hierarchy::*;
-pub use info::*;
-pub use mesh::*;
+pub use mesh_doc::*;
 pub use node::*;
 pub use object::*;
 pub use object_voxels::*;
 pub use palette::*;
-pub use to::*;
-pub use validate::*;
-pub use voxelize::*;
+pub use profile::*;
+pub use vox_doc::*;

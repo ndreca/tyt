@@ -5,10 +5,11 @@ A command-line tool for working with voxels.
 ## Editing
 
 The `object`, `object-voxels`, and `node` commands edit a document. Each reads
-any format voxconv reads and writes Voxel JSON, beside the input by default.
-`--select` takes a hierarchy-path glob. `--select-index` takes an index or a
-range. Both repeat and pick what the command acts on. `--select-parent` and
-`--select-parent-index` pick the one node at the parent end of an edge.
+any format voxconv reads and writes Voxel JSON beside the input by default.
+`object mesh` writes a mesh instead. `--select` takes a hierarchy-path glob.
+`--select-index` takes an index or a range. Both repeat and pick what the
+command acts on. `--select-parent` and `--select-parent-index` pick the one node
+at the parent end of an edge.
 
 ```sh
 # Reads Voxel Max and writes scene.voxj beside it.
@@ -17,11 +18,13 @@ vxl object remove scene.vmax --select 'debris/**'
 
 ## Objects
 
-`object` commands write object properties and move the voxels along when
-needed. `set origin` moves an object's grid within its node. `set edit-bounds`
-and `trim` resize the grid without moving a voxel in the scene. `link` and
-`unlink` add or drop one placement. `duplicate` copies objects within the
-document. `add` copies objects from another file along with their palettes.
+`object` commands write object properties and move the voxels along when needed.
+`set origin` moves an object's grid within its node. `set edit-bounds` and
+`trim` resize the grid without moving a voxel in the scene. `link` and `unlink`
+add or drop one placement. `duplicate` copies objects within the document. `add`
+copies objects from another file along with their palettes. `mesh` writes the
+selected objects as a glTF mesh. The
+[mesh reference](../../../doc/ref/mesh/mesh.md) covers its flags.
 
 ```sh
 # Copies the first three props under the one node matching house.

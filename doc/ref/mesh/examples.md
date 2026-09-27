@@ -124,10 +124,10 @@ see the [implementation notes](implementation.md#ty-preferences).
 
 ```sh
 # the bare run
-vxl mesh lamp.voxj
+vxl object mesh lamp.voxj
 
 # the same file
-vxl mesh lamp.voxj
+vxl object mesh lamp.voxj
   --profile geometry
 ```
 
@@ -202,7 +202,7 @@ The `pbr` profile ships [built in](profile-language.md#built-in-profiles), so no
 ```
 
 ```sh
-vxl mesh lamp.voxj
+vxl object mesh lamp.voxj
   --profile pbr
 ```
 
@@ -210,7 +210,7 @@ or expanded into its flags, the slots listed in the profile's key order
 because the write order sets the image order:
 
 ```sh
-vxl mesh lamp.voxj
+vxl object mesh lamp.voxj
   --values-from albedo
   --values-from orm
   --values-from emissive
@@ -347,7 +347,7 @@ riding the config too:
 ```
 
 ```sh
-vxl mesh lamp.voxj
+vxl object mesh lamp.voxj
   --to gltf
   --profile matte
 ```
@@ -355,7 +355,7 @@ vxl mesh lamp.voxj
 or expanded into its flags, the file templates already filled:
 
 ```sh
-vxl mesh lamp.voxj
+vxl object mesh lamp.voxj
   --to gltf
   --voxel-size 0.1
   --values-from matte
@@ -447,7 +447,7 @@ primitive, no materials at all.
 ```
 
 ```sh
-vxl mesh lamp.voxj
+vxl object mesh lamp.voxj
   --profile palette
 ```
 
@@ -455,7 +455,7 @@ or expanded into its flags, the primitives entry firing the explicit no-material
 primitive:
 
 ```sh
-vxl mesh lamp.voxj
+vxl object mesh lamp.voxj
   --values-from albedo
   --compute-index swatch swatchIndex
   --primitive none true
@@ -545,14 +545,14 @@ palette layout: flat per face through the
 ```
 
 ```sh
-vxl mesh step.voxj
+vxl object mesh step.voxj
   --profile flat-ao
 ```
 
 or by hand:
 
 ```sh
-vxl mesh step.voxj
+vxl object mesh step.voxj
   --compute-occlusion computedOcclusion
   --value "ao = faceAvg(computedOcclusion)"
   --write-material-slot-value 0 occlusionTexture ao
@@ -613,7 +613,7 @@ Written whole, the corner value skips the reduction and bakes the
 [corner atlas](mesh.md#the-corner-atlas) instead:
 
 ```sh
-vxl mesh step.voxj
+vxl object mesh step.voxj
   --compute-occlusion computedOcclusion
   --write-material-slot-value 0 occlusionTexture computedOcclusion
 ```
@@ -704,14 +704,14 @@ textureless:
 ```
 
 ```sh
-vxl mesh step.voxj
+vxl object mesh step.voxj
   --profile lightmap
 ```
 
 or expanded into its flags:
 
 ```sh
-vxl mesh step.voxj
+vxl object mesh step.voxj
   --values-from albedo
   --primitive 0 true
   --write-material-slot-value 0 baseColorTexture albedo
@@ -812,14 +812,14 @@ face. The occlusion already lives there:
 ```
 
 ```sh
-vxl mesh step.voxj
+vxl object mesh step.voxj
   --profile one-uv
 ```
 
 or expanded into its flags:
 
 ```sh
-vxl mesh step.voxj
+vxl object mesh step.voxj
   --values-from albedo
   --compute-occlusion computedOcclusion
   --value "ao = faceAvg(computedOcclusion)"
@@ -988,14 +988,14 @@ missing material would never pull in:
 ```
 
 ```sh
-vxl mesh step.voxj
+vxl object mesh step.voxj
   --profile crevice-split
 ```
 
 or expanded into its flags:
 
 ```sh
-vxl mesh step.voxj
+vxl object mesh step.voxj
   --values-from albedo
   --compute-occlusion computedOcclusion
   --value "ao = faceAvg(computedOcclusion)"
@@ -1210,7 +1210,7 @@ profile computes the mode from the palette itself:
 ```
 
 ```sh
-vxl mesh lamp.voxj
+vxl object mesh lamp.voxj
   --profile glass
 ```
 
@@ -1219,7 +1219,7 @@ profile they build on, the shell's single quotes carrying the inner double
 quotes through:
 
 ```sh
-vxl mesh lamp.voxj
+vxl object mesh lamp.voxj
   --values-from albedo
   --value 'mode = mix("OPAQUE", "BLEND", min(baseColor.a) < 1)'
   --write-material-slot-value 0 baseColorTexture albedo

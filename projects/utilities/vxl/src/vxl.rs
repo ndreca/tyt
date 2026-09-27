@@ -1,7 +1,7 @@
-use crate::commands::{
-    Hierarchy, Info, Mesh, Node, Object, ObjectVoxels, Palette, Validate, Voxelize,
+use crate::{
+    Dependencies, Result,
+    commands::{Hierarchy, MeshDoc, Node, Object, ObjectVoxels, Palette, Profile, VoxDoc},
 };
-use crate::{Dependencies, Result, commands::To};
 use clap::Subcommand;
 
 /// A command-line tool for working with voxels.
@@ -12,10 +12,8 @@ use clap::Subcommand;
 pub enum Vxl {
     #[command(name = "hierarchy")]
     Hierarchy(Hierarchy),
-    #[command(name = "info")]
-    Info(Info),
-    #[command(name = "mesh")]
-    Mesh(Mesh),
+    #[command(name = "mesh-doc")]
+    MeshDoc(MeshDoc),
     #[command(name = "node")]
     Node(Node),
     #[command(name = "object")]
@@ -24,27 +22,23 @@ pub enum Vxl {
     ObjectVoxels(ObjectVoxels),
     #[command(name = "palette")]
     Palette(Palette),
-    #[command(name = "to")]
-    To(To),
-    #[command(name = "validate")]
-    Validate(Validate),
-    #[command(name = "voxelize")]
-    Voxelize(Voxelize),
+    #[command(name = "profile")]
+    Profile(Profile),
+    #[command(name = "vox-doc")]
+    VoxDoc(VoxDoc),
 }
 
 impl Vxl {
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             Vxl::Hierarchy(hierarchy) => hierarchy.execute(dependencies),
-            Vxl::Info(info) => info.execute(dependencies),
-            Vxl::Mesh(mesh) => mesh.execute(dependencies),
+            Vxl::MeshDoc(mesh_doc) => mesh_doc.execute(dependencies),
             Vxl::Node(node) => node.execute(dependencies),
             Vxl::Object(object) => object.execute(dependencies),
             Vxl::ObjectVoxels(object_voxels) => object_voxels.execute(dependencies),
             Vxl::Palette(palette) => palette.execute(dependencies),
-            Vxl::To(to) => to.execute(dependencies),
-            Vxl::Validate(validate) => validate.execute(dependencies),
-            Vxl::Voxelize(voxelize) => voxelize.execute(dependencies),
+            Vxl::Profile(profile) => profile.execute(dependencies),
+            Vxl::VoxDoc(vox_doc) => vox_doc.execute(dependencies),
         }
     }
 }
