@@ -987,8 +987,9 @@ mod tests {
         // The three siblings keep their place. The child node hangs off the
         // first object, and a node placed under an object anchors at that
         // object's content-center pivot, not its grid corner. The object
-        // re-centers on reload (its origin becomes round(box_min - center)), so
-        // its descendant shifts by that origin, here to [11, 2, 1]. This only
+        // re-centers on reload (its origin becomes round(box_min - center) on
+        // Voxel Max's axes, [-1, -1, 0] once turned back), so its descendant
+        // shifts by that origin, here to [11, 2, 0]. This only
         // arises for object-under-object nesting, which other formats such as
         // Goxel produce; Voxel Max objects are leaves, so a Voxel Max
         // round-trip is unaffected.
@@ -998,7 +999,7 @@ mod tests {
                 ([10, 0, 0], red),
                 ([10, 0, 0], green),
                 ([10, 0, 0], blue),
-                ([11, 2, 1], red),
+                ([11, 2, 0], red),
             ])
         );
     }
@@ -1595,10 +1596,11 @@ mod tests {
             .find(|g| g.name == "g")
             .expect("the root group");
         // Each object box is [0, 0, 0]..[2, 2, 2] in its node-local frame,
-        // centered on [1, 1, 1]; object b is shifted +10x, so the union spans x
-        // [0, 12] and y/z [0, 2], centered on [6, 1, 1] with half-extents [6,
-        // 1, 1].
-        assert_eq!(group.center, [6.0, 1.0, 1.0]);
+        // which lands on [0, -2, 0]..[2, 0, 2] on Voxel Max's Z-up axes,
+        // centered on [1, -1, 1]. Object b is shifted +10x, so the union spans
+        // x [0, 12], y [-2, 0], and z [0, 2], centered on [6, -1, 1] with
+        // half-extents [6, 1, 1].
+        assert_eq!(group.center, [6.0, -1.0, 1.0]);
         assert_eq!(group.bounds_min, Some([-6.0, -1.0, -1.0]));
         assert_eq!(group.bounds_max, Some([6.0, 1.0, 1.0]));
     }
@@ -1627,12 +1629,13 @@ mod tests {
         .unwrap();
         assert_eq!(file.scene_json_file.objects.len(), 1);
         assert!(contents_voxels(&file, "contents.vmaxb").is_empty());
-        // The content box frames the [3, 4, 5] build volume, centered in the
-        // 256 workspace: e_c at its center, e_ma the half-extents.
-        assert_eq!(file.scene_json_file.objects[0].center, [127.5, 128.0, 2.5]);
+        // The content box frames the [3, 4, 5] build volume, [3, 5, 4] on
+        // Voxel Max's Z-up axes, centered in the 256 workspace: e_c at its
+        // center, e_ma the half-extents.
+        assert_eq!(file.scene_json_file.objects[0].center, [127.5, 127.5, 2.0]);
         assert_eq!(
             file.scene_json_file.objects[0].bounds_max,
-            Some([1.5, 2.0, 2.5])
+            Some([1.5, 2.5, 2.0])
         );
         // Reloading keeps the [3, 4, 5] build volume as the object's grid; with
         // no live voxels its derived runtime extent is empty.

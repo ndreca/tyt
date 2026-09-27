@@ -20,7 +20,8 @@ pub struct VMaxExtNode {
     #[cfg_attr(feature = "serde", serde(rename = "ind"))]
     pub index: [i64; 3],
 
-    /// Axis-angle rotation `[x, y, z, angle]` (`t_r`).
+    /// Axis-angle rotation `[x, y, z, angle]` (`t_r`) on Voxel Max's Z-up
+    /// axes.
     #[cfg_attr(feature = "serde", serde(rename = "t_r"))]
     pub rotation: [f64; 4],
 

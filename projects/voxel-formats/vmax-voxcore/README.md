@@ -11,10 +11,12 @@ state with no native voxcore home as its ext.
 
 - `from_vmax_file` / `to_vmax_file`: between a parsed `VMaxFile` and a
   `VMaxVoxMain`. Geometry, palettes, and hierarchy become native voxcore
-  entities. Each object's snapshots are decoded on the fly and re-encoded on
-  write. A loaded document writes back exactly through its ext. The writer
-  reads each object's one palette in Voxel Max's layout, the one the loader
-  builds. `baseColor` and `emissiveColor` hold one value per color cell.
+  entities. Voxel Max is Z-up, so every object and node transform turns onto
+  voxcore's Y-up axes on load and back on write. Each object's snapshots are
+  decoded on the fly and re-encoded on write. A loaded document writes back
+  exactly through its ext. The writer reads each object's one palette in Voxel
+  Max's layout, the one the loader builds. `baseColor` and `emissiveColor`
+  hold one value per color cell.
   Every other property holds one value per material slot. A material pairs
   one cell with one slot. The writer converts nothing. An object with a
   second layer, or a palette off the layout, errors where it departs.

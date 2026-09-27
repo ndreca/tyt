@@ -5,12 +5,12 @@ use ty_math::TyVector3F64;
 use voxcore::{BVoxHierarchyNode, VoxExt, VoxMain};
 
 /// The bounding box `(center, half)` of all geometry under `node_id`, in that
-/// node's own local frame: the union of each child object's content box and
-/// each child node's box mapped through the child's transform. Voxel Max stores
-/// this per group as `e_c`/`e_mi`/`e_ma`; it is the union of the subtree, so it
-/// is derived here rather than kept in the ext. Memoized by node id so a
-/// subtree shared across parents is walked once. A node with no geometry
-/// collapses to a zero box.
+/// node's local frame on Voxel Max's Z-up axes: the union of each child
+/// object's content box and each child node's box mapped through the child's
+/// transform on those axes. Voxel Max stores this per group as
+/// `e_c`/`e_mi`/`e_ma`; it is the union of the subtree, so it is derived here
+/// rather than kept in the ext. Memoized by node id so a subtree shared across
+/// parents is walked once. A node with no geometry collapses to a zero box.
 pub(crate) fn subtree_box_local<T: VoxExt>(
     main: &VoxMain<T>,
     node_id: U32Id<BVoxHierarchyNode>,
@@ -32,7 +32,8 @@ pub(crate) fn subtree_box_local<T: VoxExt>(
         let transform = main
             .hierarchy_node(child_id)
             .expect("a valid child node")
-            .transform;
+            .transform
+            .yup_to_zup();
         let center = transform
             .transform_point(TyVector3F64::from_array(child_center))
             .to_array();

@@ -1,10 +1,13 @@
 use crate::{ObjectPlacement, VMaxExtNode, decode_axis_angle, unbake_position};
+use ty_math::TyTransformF64;
 use vmax::VMaxObject;
-use voxcore::VoxHierarchyNode;
 
+/// The scene object for a node called `name`, which `transform` places on
+/// Voxel Max's Z-up axes.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn object_from_node(
-    node: &VoxHierarchyNode,
+    name: &str,
+    transform: &TyTransformF64,
     ext_node: &VMaxExtNode,
     parent_id: Option<String>,
     rotation: [f64; 4],
@@ -14,16 +17,16 @@ pub(crate) fn object_from_node(
     suffix: &str,
 ) -> VMaxObject {
     VMaxObject {
-        name: node.name.clone(),
+        name: name.to_owned(),
         data,
         palette: pal,
         history: format!("history{suffix}.vmaxhb"),
         id: ext_node.id.clone(),
         parent_id,
         hidden: None,
-        position: unbake_position(&node.transform, decode_axis_angle(rotation), placement),
+        position: unbake_position(transform, decode_axis_angle(rotation), placement),
         rotation,
-        scale: node.transform.scale.to_array(),
+        scale: transform.scale.to_array(),
         ind: ext_node.index,
         s: ext_node.selected,
         t_al: ext_node.alignment.clone(),

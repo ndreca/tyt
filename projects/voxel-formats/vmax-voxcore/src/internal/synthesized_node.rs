@@ -41,7 +41,7 @@ pub fn synthesized_node(ext: &VMaxExt, node: &VoxHierarchyNode) -> VMaxExtNode {
     VMaxExtNode {
         id,
         index,
-        rotation: encode_axis_angle(node.transform.rotation),
+        rotation: encode_axis_angle(node.transform.yup_to_zup().rotation),
         alignment: DEFAULT_ALIGNMENT.to_owned(),
         pivot_face: DEFAULT_PIVOT_FACE.to_owned(),
         pivot_align: DEFAULT_PIVOT_ALIGN.to_owned(),

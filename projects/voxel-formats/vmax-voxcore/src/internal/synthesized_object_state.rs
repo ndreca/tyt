@@ -23,7 +23,7 @@ pub fn synthesized_object_state(ext: &VMaxExt, object: &VoxObject) -> VMaxExtObj
         .map(synth_object_uuid)
         .find(|uuid| !uuids.contains(uuid.as_str()))
         .expect("a fresh index exists");
-    let (_, placement) = place_object(object);
+    let (_, placement) = place_object(&object.yup_to_zup());
     VMaxExtObjectState {
         uuid,
         v: FALLBACK_CONTENT_VERSION,

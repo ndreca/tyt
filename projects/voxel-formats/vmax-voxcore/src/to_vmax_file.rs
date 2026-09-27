@@ -20,10 +20,11 @@ use voxcore::{BVoxObject, BVoxPalette};
 /// palette's, and object's provenance and the scene-level state. The scene
 /// supplies the rest: names, transforms, parents, and content boxes. Nodes
 /// write in listing order, children before parents when the listing has them
-/// so, as Voxel Max's documents do. Each object's one palette is read in
-/// Voxel Max's layout, the one the loader builds. Nothing is converted.
-/// Errors when an entity has no ext entry, when an object has other than one
-/// layer, or when a palette departs from the layout.
+/// so, as Voxel Max's documents do. Every object and node transform turns
+/// back onto Voxel Max's Z-up axes. Each object's one palette is read
+/// unconverted in Voxel Max's layout, the one the loader builds. Errors when
+/// an entity has no ext entry, when an object has other than one layer, or
+/// when a palette departs from the layout.
 pub fn to_vmax_file(main: &VMaxVoxMain, options: &VMaxWriteOptions) -> Result<VMaxFile> {
     let placements = ext_placements(main)?;
 
@@ -56,11 +57,14 @@ pub fn to_vmax_file(main: &VMaxVoxMain, options: &VMaxWriteOptions) -> Result<VM
     for placement in &placements {
         let node = placement.node;
         let ext_node = placement.ext;
-        let rotation = node_rotation(ext_node, node);
+        let transform = node.transform.yup_to_zup();
+        let rotation = node_rotation(ext_node, &transform);
 
         if node.child_object_ids.is_empty() {
             let (center, half) = subtree_box_local(main, placement.node_id, &mut box_memo);
-            groups.push(group_from_node(placement, rotation, center, half));
+            groups.push(group_from_node(
+                placement, &transform, rotation, center, half,
+            ));
             continue;
         }
 
@@ -101,8 +105,9 @@ pub fn to_vmax_file(main: &VMaxVoxMain, options: &VMaxWriteOptions) -> Result<VM
             // runtime grid inside it by the runtime/edit origin offset. The
             // runtime grid is the live voxels' tight extent within the object's
             // build volume; the content box follows from it and the build
-            // volume, the scene placement from the node transform.
-            let (tight, object_placement) = place_object(object);
+            // volume, the scene placement from the node transform. The object
+            // turns back onto Z-up axes with its transform.
+            let (tight, object_placement) = place_object(&object.yup_to_zup());
             let object_state = ext_entry(
                 main.ext().object_states.get(&object_id),
                 "object",
@@ -131,7 +136,8 @@ pub fn to_vmax_file(main: &VMaxVoxMain, options: &VMaxWriteOptions) -> Result<VM
             let pal = plan.pal.clone();
 
             objects.push(object_from_node(
-                node,
+                &node.name,
+                &transform,
                 &object_ext,
                 placement.parent_id.clone(),
                 rotation,
@@ -559,14 +565,15 @@ mod tests {
         assert_eq!(reloaded.ext().hierarchy_nodes.len(), 3);
     }
 
-    /// A node rotated after the load writes its live rotation, while an
-    /// unrotated one keeps the preserved spelling.
+    /// A node rotated after the load writes its live rotation on Voxel Max's
+    /// Z-up axes, a turn about voxcore's `+y` landing on `+z`. An unrotated
+    /// node keeps the preserved spelling.
     #[test]
     fn a_node_rotated_after_the_load_writes_its_live_rotation() {
         let mut main = from_vmax_file(&sample()).unwrap();
         let group_id = U32Id::<BVoxHierarchyNode>::from_u32(0);
         let mut group = main.hierarchy_node(group_id).unwrap().clone();
-        group.transform.rotation = TyQuaternionF64::from_axis_angle(TyVector3F64::Z, 0.5);
+        group.transform.rotation = TyQuaternionF64::from_axis_angle(TyVector3F64::Y, 0.5);
         main.set_hierarchy_node(group_id, group).unwrap();
 
         let file = to_vmax_file(&main, &VMaxWriteOptions::default()).unwrap();

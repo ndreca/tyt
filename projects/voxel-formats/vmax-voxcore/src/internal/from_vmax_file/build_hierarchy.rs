@@ -7,8 +7,9 @@ use voxcore::{BVoxHierarchyNode, BVoxObject, VoxHierarchyNode};
 
 /// Builds the voxcore hierarchy: one node per group then one per object, the
 /// latter placing its geometry. `object_ids[i]` is the object that scene object
-/// `i` places, so instances share a `child_objects` id. Returns the nodes in id
-/// order and the root ids.
+/// `i` places, so instances share a `child_objects` id. `object_transforms`
+/// already sit on Y-up axes. Group transforms turn here. Returns the nodes in
+/// id order and the root ids.
 pub(crate) fn build_hierarchy(
     scene: &VMaxSceneJsonFile,
     object_transforms: &[TyTransformF64],
@@ -25,7 +26,7 @@ pub(crate) fn build_hierarchy(
             name: group.name.clone(),
             child_node_ids: Vec::new(),
             child_object_ids: Vec::new(),
-            transform: group_transform(group),
+            transform: group_transform(group).zup_to_yup(),
         });
     }
     for (index, object) in scene.objects.iter().enumerate() {
