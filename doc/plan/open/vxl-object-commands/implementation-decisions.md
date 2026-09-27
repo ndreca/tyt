@@ -179,3 +179,20 @@ vmax, goxl, and mvox refreshes.
 - `--unit` conflicts with `--quaternion`. clap skips `requires` on an argument
   with a default.
 - `RequiredSelection` gains `resolve_one_node` for `node set name`.
+
+## S7. Node graph
+
+- `add_node`, `link_nodes`, `unlink_nodes`, and `remove_nodes` join
+  `operations/node/`. `add`, `link`, and `unlink` take an optional parent,
+  where `None` is the root list.
+- `add` and `link` append after the parent's existing child nodes, or at the
+  end of the roots. A new root goes in with `push_root_hierarchy_node_id`.
+- `link` sets the parent's children in one call, which runs voxcore's cycle
+  check. It rewraps voxcore's `Cycle` error, which reports a node id, with the
+  parent's name.
+- `remove` counts the roots as a parent, so a descendant that is also a root
+  stays. It releases a descendant once every parent is released, and an
+  object once every placing node is.
+- `remove` fires the roots setter once, then the children setter on each kept
+  parent in listing order. Then it releases nodes, parents first, because
+  voxcore refuses to release a listed node. Objects go last.
