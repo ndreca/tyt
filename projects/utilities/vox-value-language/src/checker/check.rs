@@ -64,26 +64,11 @@ mod tests {
     /// the computed values.
     fn palette() -> TypeEnvironment {
         environment(&[
+            ("baseColor", Domain::Swatch, Dimension::Vec4, Scalar::F32),
+            ("roughness", Domain::Swatch, Dimension::Vec1, Scalar::F32),
+            ("metallic", Domain::Swatch, Dimension::Vec1, Scalar::F32),
             (
-                "baseColorFactor",
-                Domain::Swatch,
-                Dimension::Vec4,
-                Scalar::F32,
-            ),
-            (
-                "roughnessFactor",
-                Domain::Swatch,
-                Dimension::Vec1,
-                Scalar::F32,
-            ),
-            (
-                "metallicFactor",
-                Domain::Swatch,
-                Dimension::Vec1,
-                Scalar::F32,
-            ),
-            (
-                "emissiveFactor",
+                "emissiveColor",
                 Domain::Swatch,
                 Dimension::Vec3,
                 Scalar::F32,
@@ -122,7 +107,7 @@ mod tests {
     #[test]
     fn bindings_settle_in_order_and_later_ones_read_earlier_ones() {
         let program = checked(
-            "tint = baseColorFactor.rgb; dim = tint * 0.5; dark = dim.r < 0.2;",
+            "tint = baseColor.rgb; dim = tint * 0.5; dark = dim.r < 0.2;",
             &palette(),
         );
 
@@ -152,12 +137,12 @@ mod tests {
     #[test]
     fn a_binding_redefines_a_name_let_style() {
         let program = checked(
-            "roughnessFactor = pow(roughnessFactor, 2); count = 1u32; count = f32(count) * 0.5;",
+            "roughness = pow(roughness, 2); count = 1u32; count = f32(count) * 0.5;",
             &palette(),
         );
 
         assert_eq!(
-            get(&program, "roughnessFactor"),
+            get(&program, "roughness"),
             ty(Domain::Swatch, Dimension::Vec1, Scalar::F32)
         );
         assert_eq!(
@@ -172,7 +157,7 @@ mod tests {
         let program = checked("", &palette());
 
         assert_eq!(
-            get(&program, "baseColorFactor"),
+            get(&program, "baseColor"),
             ty(Domain::Swatch, Dimension::Vec4, Scalar::F32)
         );
         assert_eq!(program.get("missing"), None);
@@ -183,7 +168,7 @@ mod tests {
     fn a_check_error_names_its_binding() {
         assert_eq!(
             check(
-                parse("a = 1.0; b = baseColorFactor + 1; c = 2.0;").unwrap(),
+                parse("a = 1.0; b = baseColor + 1; c = 2.0;").unwrap(),
                 &palette()
             ),
             Err(Error::Check {
@@ -242,17 +227,17 @@ mod tests {
     #[test]
     fn the_defaults_profile_fills_what_the_palette_lacks() {
         let program = checked(
-            "baseColorFactor = swatch(default(baseColorFactor, rgba(1, 1, 1, 1)));
+            "baseColor = swatch(default(baseColor, rgba(1, 1, 1, 1)));
              occlusionStrength = swatch(default(occlusionStrength, 1));
-             roughnessFactor = swatch(default(roughnessFactor, 1));
-             metallicFactor = swatch(default(metallicFactor, 1));
-             emissiveFactor = swatch(default(emissiveFactor, rgb(0, 0, 0)));
+             roughness = swatch(default(roughness, 1));
+             metallic = swatch(default(metallic, 1));
+             emissiveColor = swatch(default(emissiveColor, rgb(0, 0, 0)));
              emissiveStrength = swatch(default(emissiveStrength, 1));",
             &palette(),
         );
 
         assert_eq!(
-            get(&program, "baseColorFactor"),
+            get(&program, "baseColor"),
             ty(Domain::Swatch, Dimension::Vec4, Scalar::F32)
         );
         assert_eq!(
@@ -260,7 +245,7 @@ mod tests {
             ty(Domain::Swatch, Dimension::Vec1, Scalar::F32)
         );
         assert_eq!(
-            get(&program, "emissiveFactor"),
+            get(&program, "emissiveColor"),
             ty(Domain::Swatch, Dimension::Vec3, Scalar::F32)
         );
         assert_eq!(
@@ -269,7 +254,7 @@ mod tests {
         );
         assert_eq!(
             program.bindings[2].expression.render(),
-            "(swatch (default `roughnessFactor` 1f32))"
+            "(swatch (default `roughness` 1f32))"
         );
     }
 
@@ -277,10 +262,10 @@ mod tests {
     fn the_built_in_profiles_check() {
         let program = checked(
             "occlusionStrength = swatch(default(occlusionStrength, 1));
-             albedo = baseColorFactor;
-             orm = rgb(occlusionStrength, roughnessFactor, metallicFactor);
+             albedo = baseColor;
+             orm = rgb(occlusionStrength, roughness, metallic);
              maxStrength = max(emissiveStrength);
-             emissive = emissiveFactor * emissiveStrength / max(maxStrength, 0.001);
+             emissive = emissiveColor * emissiveStrength / max(maxStrength, 0.001);
              white = rgb(1, 1, 1);",
             &palette(),
         );
@@ -310,20 +295,20 @@ mod tests {
     #[test]
     fn the_user_profiles_check() {
         let program = checked(
-            "smoothness = 1 - roughnessFactor;
+            "smoothness = 1 - roughness;
              maxStrength = max(emissiveStrength);
-             mse = rgb(metallicFactor, smoothness, emissiveStrength / max(maxStrength, 0.001));
+             mse = rgb(metallic, smoothness, emissiveStrength / max(maxStrength, 0.001));
              heat = step(0.001, emissiveStrength);
-             accent = avg(baseColorFactor.rgb);
+             accent = avg(baseColor.rgb);
              ao = max(computedOcclusion, 0.2);
              glowing = emissiveStrength > 0;
              solid = !glowing;
-             albedo = baseColorFactor;
+             albedo = baseColor;
              opaqueWhite = rgba(1, 1, 1, 1);
              aoFace = faceAvg(computedOcclusion);
              crevice = aoFace < 0.9;
              open = !crevice;
-             mode = mix(\"OPAQUE\", \"BLEND\", min(baseColorFactor.a) < 1);
+             mode = mix(\"OPAQUE\", \"BLEND\", min(baseColor.a) < 1);
              glass = tag == \"glass\";
              palette = u8(swatchIndex);",
             &palette(),
@@ -376,16 +361,16 @@ mod tests {
         let program = checked(
             "crevice = faceAvg(computedOcclusion) < 0.7;
              bands = mod(voxelPosition.y, 2);
-             albedo = baseColorFactor * lerp(0.8, 1, f32(bands));
-             rawEmissive = emissiveFactor * emissiveStrength;
+             albedo = baseColor * lerp(0.8, 1, f32(bands));
+             rawEmissive = emissiveColor * emissiveStrength;
              height = f32(voxelPosition.y) / f32(max(max(voxelPosition.y), 1));
              aoFace = faceAvg(computedOcclusion);
              faceCount = swatchSum(face(1u32));
              ao = swatchSum(aoFace) / f32(max(faceCount, 1));
-             lab = oklabFromRgb(baseColorFactor.rgb);
+             lab = oklabFromRgb(baseColor.rgb);
              reddish = distance(lab, oklabFromRgb(rgb(1, 0, 0))) < 0.25;
              darker = rgbFromOklab(lab * rgb(0.8, 1, 1));
-             hue = mod(oklchFromRgb(baseColorFactor.rgb).z + 0.1, 1);",
+             hue = mod(oklchFromRgb(baseColor.rgb).z + 0.1, 1);",
             &palette(),
         );
 

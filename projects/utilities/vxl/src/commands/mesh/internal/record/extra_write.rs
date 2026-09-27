@@ -74,7 +74,7 @@ mod tests {
             "the profile `x`",
             "accent",
             &serde_json::from_str::<ExtraEntry>(
-                r#"{ "kind": "json-value", "value": "avg(baseColorFactor.rgb)", "transfer": "srgb" }"#,
+                r#"{ "kind": "json-value", "value": "avg(baseColor.rgb)", "transfer": "srgb" }"#,
             )
             .unwrap(),
             "lamp",

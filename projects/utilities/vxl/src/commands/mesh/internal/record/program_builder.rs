@@ -140,7 +140,12 @@ impl<'a> ProgramBuilder<'a> {
 mod tests {
     use super::ProgramBuilder;
     use crate::commands::{Profile, ProfileSet};
-    use std::collections::BTreeMap;
+    use std::collections::{BTreeMap, BTreeSet};
+    use vox_value_language::{Dimension, Domain, Scalar, Type, TypeEnvironment, check, parse};
+    use voxcore::material::{
+        BASE_COLOR, EMISSIVE_COLOR, EMISSIVE_STRENGTH, IOR, METALLIC, OCCLUSION_STRENGTH,
+        ROUGHNESS, TRANSMISSION,
+    };
     use voxsmith::operations::mesh::{ArrayDomain, Computation, ComputedBinding};
 
     /// A set of the built-ins under the profiles `entries` defines as json.
@@ -170,11 +175,11 @@ mod tests {
         assert_eq!(
             bindings,
             [
-                "baseColorFactor",
+                "baseColor",
                 "occlusionStrength",
-                "roughnessFactor",
-                "metallicFactor",
-                "emissiveFactor",
+                "roughness",
+                "metallic",
+                "emissiveColor",
                 "emissiveStrength",
                 "albedo",
                 "orm",
@@ -182,6 +187,67 @@ mod tests {
                 "emissive",
                 "white",
             ]
+        );
+    }
+
+    #[test]
+    fn the_built_ins_read_the_recommended_material_properties() {
+        let profiles = ProfileSet::built_in();
+        let mut builder = ProgramBuilder::new(Some(&profiles), Vec::new());
+
+        builder.land_profile("--profile", "pbr").unwrap();
+
+        let (program, _) = builder.finish();
+        let swatch = |dimension| Type {
+            domain: Domain::Swatch,
+            dimension,
+            scalar: Scalar::F32,
+        };
+        let environment = TypeEnvironment {
+            types: [
+                (BASE_COLOR, Dimension::Vec4),
+                (EMISSIVE_COLOR, Dimension::Vec3),
+                (EMISSIVE_STRENGTH, Dimension::Vec1),
+                (IOR, Dimension::Vec1),
+                (METALLIC, Dimension::Vec1),
+                (OCCLUSION_STRENGTH, Dimension::Vec1),
+                (ROUGHNESS, Dimension::Vec1),
+                (TRANSMISSION, Dimension::Vec1),
+            ]
+            .into_iter()
+            .map(|(name, dimension)| (name.to_owned(), swatch(dimension)))
+            .collect(),
+        };
+        let checked = check(parse(&program).unwrap(), &environment).unwrap();
+
+        // A read of a name no earlier binding defines reaches the palette. An
+        // unbound `default` never counts as a read, so a stale property name
+        // drops out of the set instead of passing as its fallback.
+        let mut bound = BTreeSet::new();
+        let mut properties = BTreeSet::new();
+        for (name, expression) in checked.bindings() {
+            properties.extend(
+                expression
+                    .reads()
+                    .names
+                    .into_iter()
+                    .filter(|read| !bound.contains(read.as_str())),
+            );
+            bound.insert(name);
+        }
+
+        assert_eq!(
+            properties,
+            [
+                BASE_COLOR,
+                EMISSIVE_COLOR,
+                EMISSIVE_STRENGTH,
+                METALLIC,
+                OCCLUSION_STRENGTH,
+                ROUGHNESS,
+            ]
+            .map(str::to_owned)
+            .into()
         );
     }
 
@@ -195,9 +261,9 @@ mod tests {
         builder.push_value("b = a").unwrap();
 
         let (program, _) = builder.finish();
-        assert!(program.starts_with("a = 1;\nbaseColorFactor"), "{program}");
+        assert!(program.starts_with("a = 1;\nbaseColor"), "{program}");
         assert!(
-            program.ends_with("albedo = baseColorFactor;\nb = a;"),
+            program.ends_with("albedo = baseColor;\nb = a;"),
             "{program}"
         );
     }

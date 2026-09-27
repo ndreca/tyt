@@ -1094,11 +1094,11 @@ mod tests {
     }
 
     const DEFAULTS: [&str; 6] = [
-        "baseColorFactor",
+        "baseColor",
         "occlusionStrength",
-        "roughnessFactor",
-        "metallicFactor",
-        "emissiveFactor",
+        "roughness",
+        "metallic",
+        "emissiveColor",
         "emissiveStrength",
     ];
 
@@ -1183,7 +1183,7 @@ mod tests {
             "--write-material-slot-value",
             "0",
             "baseColorFactor",
-            "baseColorFactor",
+            "baseColor",
         ]);
 
         let [steel, glass] = record.materials.as_slice() else {
@@ -1192,7 +1192,7 @@ mod tests {
         assert_eq!(steel.name, None);
         assert_eq!(
             steel.slots[0].source,
-            SlotSource::Value("baseColorFactor".to_owned())
+            SlotSource::Value("baseColor".to_owned())
         );
         assert_eq!(glass.name.as_deref(), Some("glass"));
         assert_eq!(
@@ -1249,7 +1249,7 @@ mod tests {
             "--write-primitive-builtin-value",
             "1",
             "COLOR_0",
-            "baseColorFactor",
+            "baseColor",
             "--write-primitive-custom-value",
             "1",
             "_HEAT",
@@ -1276,7 +1276,7 @@ mod tests {
             [
                 AttributeWrite::Builtin {
                     attribute: "COLOR_0".to_owned(),
-                    expression: "baseColorFactor".to_owned(),
+                    expression: "baseColor".to_owned(),
                 },
                 AttributeWrite::Custom {
                     name: "_HEAT".to_owned(),
@@ -1445,7 +1445,7 @@ mod tests {
         let record = record(&[
             "--write-file-png-value",
             "albedo.png",
-            "baseColorFactor",
+            "baseColor",
             "srgb",
             "--write-file-json-value",
             "values.json",
@@ -1786,14 +1786,14 @@ mod tests {
         let layer = config_layer(
             r#"{ "mesh": { "profiles": {
                 "defaults": {
-                    "values": ["baseColorFactor = swatch(default(baseColorFactor, rgba(0, 0, 0, 1)))"],
+                    "values": ["baseColor = swatch(default(baseColor, rgba(0, 0, 0, 1)))"],
                 },
             } } }"#,
         );
 
         let record = try_record_over(vec![layer], &["--profile", "albedo"]).unwrap();
 
-        assert_eq!(bound_names(&record), ["baseColorFactor", "albedo"]);
+        assert_eq!(bound_names(&record), ["baseColor", "albedo"]);
     }
 
     #[test]
@@ -1823,7 +1823,7 @@ mod tests {
     "profiles": {
       "split": {
         "valuesFrom": ["defaults"],
-        "values": ["albedo = baseColorFactor", "heat = emissiveStrength"],
+        "values": ["albedo = baseColor", "heat = emissiveStrength"],
         "materials": [
           {
             "name": "body",

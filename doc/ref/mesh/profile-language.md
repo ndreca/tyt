@@ -292,18 +292,18 @@ profile loads: the built-ins take the same schema by construction:
   // entry shadows its property with a defaulted copy.
   "defaults": {
     "values": [
-      "baseColorFactor = swatch(default(baseColorFactor, rgba(1, 1, 1, 1)))",
+      "baseColor = swatch(default(baseColor, rgba(1, 1, 1, 1)))",
       "occlusionStrength = swatch(default(occlusionStrength, 1))",
-      "roughnessFactor = swatch(default(roughnessFactor, 1))",
-      "metallicFactor = swatch(default(metallicFactor, 1))",
-      "emissiveFactor = swatch(default(emissiveFactor, rgb(0, 0, 0)))",
+      "roughness = swatch(default(roughness, 1))",
+      "metallic = swatch(default(metallic, 1))",
+      "emissiveColor = swatch(default(emissiveColor, rgb(0, 0, 0)))",
       "emissiveStrength = swatch(default(emissiveStrength, 1))",
     ],
   },
 
   "albedo": {
     "valuesFrom": ["defaults"],
-    "values": ["albedo = baseColorFactor"],
+    "values": ["albedo = baseColor"],
     "materials": [
       {
         "slots": {
@@ -316,7 +316,7 @@ profile loads: the built-ins take the same schema by construction:
   // One value may fill several slots.
   "orm": {
     "valuesFrom": ["defaults"],
-    "values": ["orm = rgb(occlusionStrength, roughnessFactor, metallicFactor)"],
+    "values": ["orm = rgb(occlusionStrength, roughness, metallic)"],
     "materials": [
       {
         "slots": {
@@ -332,7 +332,7 @@ profile loads: the built-ins take the same schema by construction:
     "valuesFrom": ["defaults"],
     "values": [
       "maxStrength = max(emissiveStrength)",
-      "emissive = emissiveFactor * emissiveStrength / max(maxStrength, 0.001)",
+      "emissive = emissiveColor * emissiveStrength / max(maxStrength, 0.001)",
       "white = rgb(1, 1, 1)",
     ],
     "materials": [
@@ -407,9 +407,9 @@ schema, and may build on the built-ins. Seven examples follow:
       "mse": {
         "valuesFrom": ["defaults"],
         "values": [
-          "smoothness = 1 - roughnessFactor",
+          "smoothness = 1 - roughness",
           "maxStrength = max(emissiveStrength)",
-          "mse = rgb(metallicFactor, smoothness, emissiveStrength / max(maxStrength, 0.001))",
+          "mse = rgb(metallic, smoothness, emissiveStrength / max(maxStrength, 0.001))",
         ],
         "files": {
           "png": {
@@ -459,7 +459,7 @@ schema, and may build on the built-ins. Seven examples follow:
         "valuesFrom": ["defaults"],
         "values": [
           "heat = step(0.001, emissiveStrength)",
-          "accent = avg(baseColorFactor.rgb)",
+          "accent = avg(baseColor.rgb)",
         ],
         "files": {
           "png": {
@@ -532,7 +532,7 @@ schema, and may build on the built-ins. Seven examples follow:
         "values": [
           "glowing = emissiveStrength > 0",
           "solid = !glowing",
-          "albedo = baseColorFactor",
+          "albedo = baseColor",
           "opaqueWhite = rgba(1, 1, 1, 1)",
         ],
         "materials": [
@@ -566,11 +566,11 @@ With the output `turret.glb`, `--profile glow-split` expands to
 
 ```sh
 --value "maxStrength = max(emissiveStrength)"   # valuesFrom: emissive
---value "emissive = emissiveFactor * emissiveStrength / max(maxStrength, 0.001)"
+--value "emissive = emissiveColor * emissiveStrength / max(maxStrength, 0.001)"
 --value "white = rgb(1, 1, 1)"
 --value "glowing = emissiveStrength > 0"
 --value "solid = !glowing"
---value "albedo = baseColorFactor"
+--value "albedo = baseColor"
 --value "opaqueWhite = rgba(1, 1, 1, 1)"
 --material-count 2
 --material-name 0 body
@@ -595,9 +595,9 @@ With the output `turret.glb`, `--profile orm` expands to
 ```sh
 # the defaults mixin
 --value "occlusionStrength = swatch(default(occlusionStrength, 1))"
---value "roughnessFactor = swatch(default(roughnessFactor, 1))"
---value "metallicFactor = swatch(default(metallicFactor, 1))"
---value "orm = rgb(occlusionStrength, roughnessFactor, metallicFactor)"
+--value "roughness = swatch(default(roughness, 1))"
+--value "metallic = swatch(default(metallic, 1))"
+--value "orm = rgb(occlusionStrength, roughness, metallic)"
 --material-count 1
 --write-material-slot-value 0 occlusionTexture orm          # slots: kind value
 --write-material-slot-value 0 metallicRoughnessTexture orm

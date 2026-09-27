@@ -595,8 +595,8 @@ mod tests {
     #[test]
     fn identifiers_start_with_a_letter_or_underscore() {
         assert_eq!(
-            kinds("_x x1 baseColorFactor"),
-            vec![name("_x"), name("x1"), name("baseColorFactor")]
+            kinds("_x x1 baseColor"),
+            vec![name("_x"), name("x1"), name("baseColor")]
         );
     }
 

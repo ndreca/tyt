@@ -55,7 +55,7 @@ mod tests {
     #[test]
     fn bindings_evaluate_in_order_and_later_ones_read_earlier_ones() {
         let (_, evaluated) = run(
-            "tint = baseColorFactor.rgb; dim = tint * 0.5; dark = dim.r < 0.3;",
+            "tint = baseColor.rgb; dim = tint * 0.5; dark = dim.r < 0.3;",
             &lamp(),
         )
         .unwrap();
@@ -77,12 +77,12 @@ mod tests {
     #[test]
     fn a_binding_redefines_a_name_let_style() {
         let (_, evaluated) = run(
-            "roughnessFactor = pow(roughnessFactor, 2); count = count * 2u32;",
+            "roughness = pow(roughness, 2); count = count * 2u32;",
             &lamp(),
         )
         .unwrap();
 
-        assert_close(evaluated.get("roughnessFactor").unwrap(), &[0.81, 0.16]);
+        assert_close(evaluated.get("roughness").unwrap(), &[0.81, 0.16]);
         assert_eq!(
             evaluated.get("count").unwrap(),
             &u32s(Domain::Swatch, Dimension::Vec1, &[6, 14])
@@ -118,22 +118,22 @@ mod tests {
     fn the_lamp_bakes_as_the_pages_show() {
         let (_, evaluated) = run(
             "occlusionStrength = swatch(default(occlusionStrength, 1));
-             albedo = baseColorFactor;
-             orm = rgb(occlusionStrength, roughnessFactor, metallicFactor);
+             albedo = baseColor;
+             orm = rgb(occlusionStrength, roughness, metallic);
              maxStrength = max(emissiveStrength);
-             emissive = emissiveFactor * emissiveStrength / max(maxStrength, 0.001);
+             emissive = emissiveColor * emissiveStrength / max(maxStrength, 0.001);
              white = rgb(1, 1, 1);
-             smoothness = 1 - roughnessFactor;
-             mse = rgb(metallicFactor, smoothness, emissiveStrength / max(maxStrength, 0.001));
+             smoothness = 1 - roughness;
+             mse = rgb(metallic, smoothness, emissiveStrength / max(maxStrength, 0.001));
              heat = step(0.001, emissiveStrength);
-             accent = avg(baseColorFactor.rgb);
+             accent = avg(baseColor.rgb);
              glowing = emissiveStrength > 0;
              solid = !glowing;
              opaqueWhite = rgba(1, 1, 1, 1);
-             mode = mix(\"OPAQUE\", \"BLEND\", min(baseColorFactor.a) < 1);
+             mode = mix(\"OPAQUE\", \"BLEND\", min(baseColor.a) < 1);
              glass = tag == \"glass\";
              palette = u8(swatchIndex);
-             rawEmissive = emissiveFactor * emissiveStrength;",
+             rawEmissive = emissiveColor * emissiveStrength;",
             &with_swatch_index(lamp()),
         )
         .unwrap();
@@ -171,7 +171,7 @@ mod tests {
              open = !crevice;
              height = f32(voxelHeight) / f32(max(max(voxelHeight), 1));
              bands = mod(voxelHeight, 2);
-             albedo = baseColorFactor * lerp(0.8, 1, f32(bands));",
+             albedo = baseColor * lerp(0.8, 1, f32(bands));",
             &with_voxel_height(step()),
         )
         .unwrap();
@@ -337,13 +337,13 @@ mod tests {
         let mut environment = lamp();
 
         environment.values.insert(
-            "roughnessFactor".to_owned(),
+            "roughness".to_owned(),
             f32s(Domain::Swatch, Dimension::Vec1, &[0.5, f32::NAN]),
         );
         assert_eq!(
             eval(&checked_lamp(&types_of(&environment)), &environment),
             Err(Error::NonFiniteInput {
-                name: "roughnessFactor".to_owned()
+                name: "roughness".to_owned()
             })
         );
     }

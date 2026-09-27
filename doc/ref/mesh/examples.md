@@ -45,10 +45,10 @@ glTF's `+Y`:
       "palettes": [
         {
           "properties": [
-            { "name": "baseColorFactor", "valuePool": 0 },
-            { "name": "roughnessFactor", "valuePool": 1 },
-            { "name": "metallicFactor", "valuePool": 2 },
-            { "name": "emissiveFactor", "valuePool": 3 },
+            { "name": "baseColor", "valuePool": 0 },
+            { "name": "roughness", "valuePool": 1 },
+            { "name": "metallic", "valuePool": 2 },
+            { "name": "emissiveColor", "valuePool": 3 },
             { "name": "emissiveStrength", "valuePool": 4 },
           ],
           "materials": [
@@ -86,7 +86,7 @@ tread:
       ],
       "palettes": [
         {
-          "properties": [{ "name": "baseColorFactor", "valuePool": 0 }],
+          "properties": [{ "name": "baseColor", "valuePool": 0 }],
           "materials": [
             [0], // the stone
           ],
@@ -323,7 +323,7 @@ riding the config too:
     "profiles": {
       "matte": {
         "valuesFrom": ["defaults"],
-        "values": ["albedo = baseColorFactor"],
+        "values": ["albedo = baseColor"],
         "voxelSize": 0.1,
         "files": {
           "png": {
@@ -464,7 +464,7 @@ vxl mesh lamp.voxj
 ```
 
 The built-in `albedo` profile reduces to one value here: a bare
-`--value "albedo = baseColorFactor"` serves the same, the lamp's palette
+`--value "albedo = baseColor"` serves the same, the lamp's palette
 supplying every base color.
 
 ```jsonc
@@ -1193,7 +1193,7 @@ profile computes the mode from the palette itself:
       "glass": {
         "valuesFrom": ["albedo"],
         "values": [
-          "mode = mix(\"OPAQUE\", \"BLEND\", min(baseColorFactor.a) < 1)",
+          "mode = mix(\"OPAQUE\", \"BLEND\", min(baseColor.a) < 1)",
         ],
         "materials": [
           {
@@ -1221,12 +1221,12 @@ quotes through:
 ```sh
 vxl mesh lamp.voxj
   --values-from albedo
-  --value 'mode = mix("OPAQUE", "BLEND", min(baseColorFactor.a) < 1)'
+  --value 'mode = mix("OPAQUE", "BLEND", min(baseColor.a) < 1)'
   --write-material-slot-value 0 baseColorTexture albedo
   --write-material-slot-value 0 alphaMode mode
 ```
 
-`baseColorFactor.a` is the entries `[1, 0.6]`, `min` folds them to 0.6, the
+`baseColor.a` is the entries `[1, 0.6]`, `min` folds them to 0.6, the
 comparison answers true, and `mix` picks `"BLEND"`. The writer checks the token
 against `alphaMode`'s three words at the edge, so a typo never reaches the
 file:

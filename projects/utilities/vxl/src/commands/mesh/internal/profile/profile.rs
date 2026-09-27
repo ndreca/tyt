@@ -62,7 +62,7 @@ mod tests {
                 "computeIndex": { "swatch": "swatchIndex", "face": ["a", "b"] },
                 "computeOcclusion": "ao",
                 "computeVoxelPosition": ["at"],
-                "values": ["albedo = baseColorFactor"],
+                "values": ["albedo = baseColor"],
                 "voxelSize": 0.1,
                 "method": "culled",
                 "textureShape": 32,

@@ -3,18 +3,18 @@
   // entry shadows its property with a defaulted copy.
   "defaults": {
     "values": [
-      "baseColorFactor = swatch(default(baseColorFactor, rgba(1, 1, 1, 1)))",
+      "baseColor = swatch(default(baseColor, rgba(1, 1, 1, 1)))",
       "occlusionStrength = swatch(default(occlusionStrength, 1))",
-      "roughnessFactor = swatch(default(roughnessFactor, 1))",
-      "metallicFactor = swatch(default(metallicFactor, 1))",
-      "emissiveFactor = swatch(default(emissiveFactor, rgb(0, 0, 0)))",
+      "roughness = swatch(default(roughness, 1))",
+      "metallic = swatch(default(metallic, 1))",
+      "emissiveColor = swatch(default(emissiveColor, rgb(0, 0, 0)))",
       "emissiveStrength = swatch(default(emissiveStrength, 1))",
     ],
   },
 
   "albedo": {
     "valuesFrom": ["defaults"],
-    "values": ["albedo = baseColorFactor"],
+    "values": ["albedo = baseColor"],
     "materials": [
       {
         "slots": {
@@ -27,7 +27,7 @@
   // One value may fill several slots.
   "orm": {
     "valuesFrom": ["defaults"],
-    "values": ["orm = rgb(occlusionStrength, roughnessFactor, metallicFactor)"],
+    "values": ["orm = rgb(occlusionStrength, roughness, metallic)"],
     "materials": [
       {
         "slots": {
@@ -43,7 +43,7 @@
     "valuesFrom": ["defaults"],
     "values": [
       "maxStrength = max(emissiveStrength)",
-      "emissive = emissiveFactor * emissiveStrength / max(maxStrength, 0.001)",
+      "emissive = emissiveColor * emissiveStrength / max(maxStrength, 0.001)",
       "white = rgb(1, 1, 1)",
     ],
     "materials": [

@@ -107,7 +107,7 @@ multi-object document needs a selector. See
    The list sets the material's bake contract. Each of its textures bakes at the
    lowest listed domain at or above its value's domain. With
    `--material-uv 0 face`, an albedo texture reads a `swatch` value from
-   `baseColorFactor`. `face` sits above `swatch`, so the albedo bakes per `face`
+   `baseColor`. `face` sits above `swatch`, so the albedo bakes per `face`
    with each `face` repeating its `swatch`'s texel. An occlusion texture reads a
    `corner` value from `--compute-occlusion`. `face` sits below `corner`, so the
    list cannot hold it, and the texture errors. The bake never steps a value
@@ -533,7 +533,7 @@ them:
 vxl mesh turret.voxj
   --compute-voxel-position voxelPosition
   --value "bands = mod(voxelPosition.y, 2)"
-  --value "albedo = baseColorFactor * lerp(0.8, 1, f32(bands))"
+  --value "albedo = baseColor * lerp(0.8, 1, f32(bands))"
   --write-material-slot-value 0 baseColorTexture albedo
 ```
 
@@ -665,7 +665,7 @@ plain data the runtime can replace at will:
 ```jsonc
 // vxl mesh turret.voxj
 //   --profile pbr
-//   --value "rawEmissive = emissiveFactor * emissiveStrength"
+//   --value "rawEmissive = emissiveColor * emissiveStrength"
 //   --write-mesh-extra-json-value albedo albedo linear
 //   --write-mesh-extra-json-value emissive rawEmissive linear
 //   --compute-index swatch swatchIndex
@@ -760,7 +760,7 @@ JSON file beside the mesh:
 
 A mesh entry never collides with a material slot.
 `--write-material-slot-value 0 baseColorTexture albedo` fills the material
-while `--write-mesh-extra-json-value baseColor baseColorFactor linear` writes
+while `--write-mesh-extra-json-value baseColor baseColor linear` writes
 the rows: two destinations serving two readers. A stock viewer renders the slots
 and never reads the extras. A runtime that reads the extras draws its own
 pixels. The mesh carries the baked look and the swappable data side by side.
@@ -790,8 +790,8 @@ instead of per swatch:
       "palettes": [
         {
           "properties": [
-            { "name": "baseColorFactor", "valuePool": 0 },
-            { "name": "roughnessFactor", "valuePool": 1 },
+            { "name": "baseColor", "valuePool": 0 },
+            { "name": "roughness", "valuePool": 1 },
             { "name": "colorId", "valuePool": 2 },
           ],
           "materials": [

@@ -19,7 +19,7 @@ pub(crate) fn lamp() -> ValueEnvironment {
 
     environment.values = [
         (
-            "baseColorFactor",
+            "baseColor",
             f32s(
                 Domain::Swatch,
                 Dimension::Vec4,
@@ -27,15 +27,15 @@ pub(crate) fn lamp() -> ValueEnvironment {
             ),
         ),
         (
-            "roughnessFactor",
+            "roughness",
             f32s(Domain::Swatch, Dimension::Vec1, &[0.9, 0.4]),
         ),
         (
-            "metallicFactor",
+            "metallic",
             f32s(Domain::Swatch, Dimension::Vec1, &[1.0, 0.0]),
         ),
         (
-            "emissiveFactor",
+            "emissiveColor",
             f32s(
                 Domain::Swatch,
                 Dimension::Vec3,
@@ -112,7 +112,7 @@ pub(crate) fn step() -> ValueEnvironment {
 
     environment.values = [
         (
-            "baseColorFactor",
+            "baseColor",
             f32s(Domain::Swatch, Dimension::Vec4, &[0.55, 0.5, 0.45, 1.0]),
         ),
         (

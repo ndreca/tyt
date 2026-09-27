@@ -34,7 +34,7 @@ one. An all-whitespace fragment errors at its flag, and a parse error names its
 fragment's origin, the flag or the profile entry.
 
 ```sh
---value "tint = baseColorFactor.rgb"
+--value "tint = baseColor.rgb"
 --value "dim = tint * 0.5; bright = tint * 1.2"   # one fragment, two bindings
 ```
 
@@ -44,15 +44,15 @@ A value is plain or an array, independent of its vec1-vec4 dimension. A property
 is an array holding one element per swatch, a distinct flattened material of the
 effective palette, in the [palette atlas](mesh.md#the-palette-atlas)'s texel
 order. A numeric literal is plain. Elementwise operations pair arrays element by
-element and broadcast a plain value across an array, so `1 - roughnessFactor` is
+element and broadcast a plain value across an array, so `1 - roughness` is
 an array. Two arrays of one domain always align, and mixed domains climb the
 [ladder](#domains).
 
 ```sh
 --value "cutoff = 0.4"                      # plain vec1, a literal
---value "tint = baseColorFactor.rgb"        # array vec3, one entry per swatch
+--value "tint = baseColor.rgb"        # array vec3, one entry per swatch
 --value "bright = tint * 1.2"               # array * plain broadcasts
---value "mask = step(0.5, metallicFactor)"  # 1 where a material is metal
+--value "mask = step(0.5, metallic)"  # 1 where a material is metal
 ```
 
 `max(e)`, `min(e)`, `sum(e)`, and `avg(e)` reduce an array across the palette,
@@ -60,7 +60,7 @@ per component, to a plain value; the binary `min`/`max` are elementwise like the
 operators. The emissive bake is the canonical use:
 
 ```sh
---value "emissive = emissiveFactor * emissiveStrength / max(emissiveStrength)"
+--value "emissive = emissiveColor * emissiveStrength / max(emissiveStrength)"
 ```
 
 Each material's emissive color, scaled into `[0, 1]` of the palette's strongest
@@ -71,7 +71,7 @@ strength. An all-zero palette divides `0 / 0` and errors; guard with
 first material's tint. The index has to be a plain unsigned vec1, `u8`, `u16`,
 or `u32`, below the array's entry count; an `f32` index, an out-of-range index,
 or an array index errors. Indexing and swizzling commute:
-`baseColorFactor[0].rgb` and `baseColorFactor.rgb[0]` name the same value.
+`baseColor[0].rgb` and `baseColor.rgb[0]` name the same value.
 
 The destinations read the shape: an image takes an array, one texel per entry, a
 material factor takes a plain value, and JSON takes either.
@@ -201,7 +201,7 @@ colliding property backtick-quoted. `==` and `!=` also compare two
 [strings](#strings) by value.
 
 `any(c)` and `all(c)` fold a bool of any dimension to a vec1, `any` with or and
-`all` with and, so `all(baseColorFactor.rgb > 0.9)` is true where a color runs
+`all` with and, so `all(baseColor.rgb > 0.9)` is true where a color runs
 near white. A select takes a vec1 bool, so a wide comparison folds before it
 routes faces.
 
@@ -278,7 +278,7 @@ exists in the language; only the destination knows the list:
 --write-material-slot-value 0 alphaMode '"MASK"'
 
 # computed: cutout only where the palette holds transparency
---value 'mode = mix("OPAQUE", "MASK", min(baseColorFactor.a) < 1)'
+--value 'mode = mix("OPAQUE", "MASK", min(baseColor.a) < 1)'
 --write-material-slot-value 0 alphaMode mode
 ```
 
@@ -305,7 +305,7 @@ perceived lightness, 0 black to 1 white, `.y` runs green to red, and `.z` blue
 to yellow.
 
 ```sh
---value "lab = oklabFromRgb(baseColorFactor.rgb)"
+--value "lab = oklabFromRgb(baseColor.rgb)"
 --value "reddish = distance(lab, oklabFromRgb(rgb(1, 0, 0))) < 0.25"
 --value "darker = rgbFromOklab(lab * rgb(0.8, 1, 1))"   # dimmed, hue held
 ```
@@ -700,7 +700,7 @@ dimensions, shapes, and numeric types.
    the array's domain:
 
    ```
-   avg(baseColorFactor)   # the palette's mean color
+   avg(baseColor)   # the palette's mean color
    ```
 
 5. `abs(e)` is the componentwise magnitude:
@@ -721,7 +721,7 @@ dimensions, shapes, and numeric types.
    a vec1's length is its absolute value:
 
    ```
-   length(emissiveFactor)   # the emissive color's overall strength
+   length(emissiveColor)   # the emissive color's overall strength
    ```
 
 8. `distance(a, b)` is `length(a - b)`, the straight-line gap between two
@@ -750,7 +750,7 @@ dimensions, shapes, and numeric types.
     and Oklab, the perceptual space; see [Color spaces](#color-spaces):
 
     ```
-    oklabFromRgb(baseColorFactor.rgb).x   # perceived lightness
+    oklabFromRgb(baseColor.rgb).x   # perceived lightness
     ```
 
 12. `oklchFromRgb(c)` and `rgbFromOklch(l)` convert a vec3 between linear RGB
@@ -765,7 +765,7 @@ dimensions, shapes, and numeric types.
     `a`, and `pow(vec1, vecN)` errors, matching the rule for `/`:
 
     ```
-    pow(roughnessFactor, 2.2)   # steepens the roughness curve
+    pow(roughness, 2.2)   # steepens the roughness curve
     ```
 
 14. `mod(a, b)` is the floored remainder, `a - b * floor(a / b)`, the form that
@@ -837,7 +837,7 @@ dimensions, shapes, and numeric types.
     its one answer, the identity:
 
     ```
-    all(baseColorFactor.rgb > 0.9)   # true where a color runs near white
+    all(baseColor.rgb > 0.9)   # true where a color runs near white
     ```
 
 23. `faceAvg(e)`, `faceMin(e)`, `faceMax(e)`, and `faceSum(e)` step a corner
@@ -927,7 +927,7 @@ they take the `rgba` names alone, one per width. The parser takes any identifier
 after the dot; the checker limits the components.
 
 ```sh
-baseColorFactor.rgb   # vec4 to vec3, dropping alpha
+baseColor.rgb   # vec4 to vec3, dropping alpha
 orm.g                 # one channel, roughness
 0.5.rrr               # a grey vec3 splat from one number
 tint.rrgg             # wider than its source
@@ -937,7 +937,7 @@ offset.xyz            # the position alphabet, the same value as .rgb
 **Precedence and associativity.** From tightest to loosest: postfix (swizzle,
 member, index), unary `-` and `!`, `* /`, `+ -`, the comparisons
 `< <= > >= == !=`, `&&`, `^`, `||`. Postfixes chain left to right, so
-`baseColorFactor[0].rgb` and `baseColorFactor.rgb[0]` both parse and name the
+`baseColor[0].rgb` and `baseColor.rgb[0]` both parse and name the
 same value. Unary minus nests, so `- -x` is valid. There is no `--` token in the
 expression language, so `--value` never collides with it.
 
@@ -1006,7 +1006,7 @@ travels.
 
 **Redefinition.** A binding may redefine any name, a property or an earlier
 value. The right side evaluates against the bindings visible at that point, so
-`roughnessFactor = pow(roughnessFactor, 2)` reads the property and rebinds the
+`roughness = pow(roughness, 2)` reads the property and rebinds the
 name, and later expressions see the new value. There is no recursion.
 
 ## Grammar

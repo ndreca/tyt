@@ -212,7 +212,7 @@ mod tests {
                 r#"{
                     "valuesFrom": ["defaults"],
                     "computeOcclusion": "ao",
-                    "values": ["albedo = baseColorFactor"],
+                    "values": ["albedo = baseColor"],
                     "voxelSize": 0.1,
                     "materials": [
                         {

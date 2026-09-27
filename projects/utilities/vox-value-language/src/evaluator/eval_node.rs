@@ -844,18 +844,12 @@ mod tests {
 
     #[test]
     fn f32_arithmetic_pairs_entries_and_broadcasts() {
-        close("roughnessFactor + 0.1", &[1.0, 0.5]);
-        close("1 - roughnessFactor", &[0.1, 0.6]);
+        close("roughness + 0.1", &[1.0, 0.5]);
+        close("1 - roughness", &[0.1, 0.6]);
+        close("baseColor * 2", &[1.0, 1.0, 1.0, 2.0, 2.0, 1.8, 1.2, 1.2]);
+        close("baseColor.rg * baseColor.ba", &[0.25, 0.5, 0.6, 0.54]);
         close(
-            "baseColorFactor * 2",
-            &[1.0, 1.0, 1.0, 2.0, 2.0, 1.8, 1.2, 1.2],
-        );
-        close(
-            "baseColorFactor.rg * baseColorFactor.ba",
-            &[0.25, 0.5, 0.6, 0.54],
-        );
-        close(
-            "baseColorFactor / roughnessFactor",
+            "baseColor / roughness",
             &[
                 0.5 / 0.9,
                 0.5 / 0.9,
@@ -867,14 +861,14 @@ mod tests {
                 1.5,
             ],
         );
-        close("-roughnessFactor", &[-0.9, -0.4]);
-        close("- -roughnessFactor", &[0.9, 0.4]);
+        close("-roughness", &[-0.9, -0.4]);
+        close("- -roughness", &[0.9, 0.4]);
         close("emissiveStrength / max(emissiveStrength)", &[0.0, 1.0]);
     }
 
     #[test]
     fn a_non_finite_f32_result_errors() {
-        assert_eq!(failure("roughnessFactor / 0"), non_finite("/"));
+        assert_eq!(failure("roughness / 0"), non_finite("/"));
         assert_eq!(failure("0 / emissiveStrength"), non_finite("/"));
         assert_eq!(
             failure("emissiveStrength / emissiveStrength"),
@@ -882,7 +876,7 @@ mod tests {
         );
         assert_eq!(failure("pow(-1, 0.5)"), non_finite("pow"));
         assert_eq!(failure("normalize(rgb(0, 0, 0))"), non_finite("normalize"));
-        assert_eq!(failure("mod(roughnessFactor, 0)"), non_finite("mod"));
+        assert_eq!(failure("mod(roughness, 0)"), non_finite("mod"));
         assert_eq!(failure("pow(10, 100)"), non_finite("pow"));
     }
 
@@ -949,7 +943,7 @@ mod tests {
 
     #[test]
     fn mod_is_the_floored_remainder() {
-        close("mod(roughnessFactor, 0.5)", &[0.4, 0.4]);
+        close("mod(roughness, 0.5)", &[0.4, 0.4]);
         close("mod(-0.25, 1)", &[0.75]);
         close("mod(2.5, 1)", &[0.5]);
         close("mod(emissiveStrength + 0.618, 1)", &[0.618, 0.618]);
@@ -959,7 +953,7 @@ mod tests {
 
     #[test]
     fn climbs_duplicate_entries_up_the_ladder() {
-        close("voxel(roughnessFactor)", &[0.9, 0.4]);
+        close("voxel(roughness)", &[0.9, 0.4]);
         assert_eq!(
             value("face(count)"),
             u32s(
@@ -974,7 +968,7 @@ mod tests {
             value("swatch(2u32)"),
             u32s(Domain::Swatch, Dimension::Vec1, &[2, 2])
         );
-        assert_eq!(value("swatch(roughnessFactor)"), value("roughnessFactor"));
+        assert_eq!(value("swatch(roughness)"), value("roughness"));
         assert_eq!(
             value("face(tag)"),
             strings(
@@ -992,7 +986,7 @@ mod tests {
     #[test]
     fn elementwise_operations_climb_the_lower_operand() {
         close(
-            "roughnessFactor * faceValue",
+            "roughness * faceValue",
             &[0.0, 0.9, 1.8, 2.7, 3.6, 2.0, 2.4, 2.8, 3.2, 3.6],
         );
         close(
@@ -1022,11 +1016,7 @@ mod tests {
         let step = step();
 
         close_in("voxel(height)", &step, &[0.0, 0.0, 1.0]);
-        close_in(
-            "face(baseColorFactor)",
-            &step,
-            &[0.55, 0.5, 0.45, 1.0].repeat(10),
-        );
+        close_in("face(baseColor)", &step, &[0.55, 0.5, 0.45, 1.0].repeat(10));
         assert_eq!(
             failure_in("face(height)", &step),
             EvalFailure::ClimbDisagreement {
@@ -1047,10 +1037,10 @@ mod tests {
 
     #[test]
     fn the_plain_reductions_fold_the_whole_domain() {
-        close("max(roughnessFactor)", &[0.9]);
-        close("min(baseColorFactor)", &[0.5, 0.5, 0.5, 0.6]);
-        close("max(baseColorFactor)", &[1.0, 0.9, 0.6, 1.0]);
-        close("avg(baseColorFactor.rg)", &[0.75, 0.7]);
+        close("max(roughness)", &[0.9]);
+        close("min(baseColor)", &[0.5, 0.5, 0.5, 0.6]);
+        close("max(baseColor)", &[1.0, 0.9, 0.6, 1.0]);
+        close("avg(baseColor.rg)", &[0.75, 0.7]);
         close("sum(faceValue)", &[45.0]);
         close("avg(computedOcclusion)", &[19.5 / 40.0]);
         assert_eq!(
@@ -1242,9 +1232,9 @@ mod tests {
 
     #[test]
     fn indexing_samples_one_entry() {
-        close("baseColorFactor[1]", &[1.0, 0.9, 0.6, 0.6]);
-        close("baseColorFactor[1].rgb", &[1.0, 0.9, 0.6]);
-        close("baseColorFactor.rgb[1]", &[1.0, 0.9, 0.6]);
+        close("baseColor[1]", &[1.0, 0.9, 0.6, 0.6]);
+        close("baseColor[1].rgb", &[1.0, 0.9, 0.6]);
+        close("baseColor.rgb[1]", &[1.0, 0.9, 0.6]);
         close("faceValue[9u16]", &[9.0]);
         assert_eq!(value("tag[1u8]"), strings(Domain::Plain, &["glass"]));
         assert_eq!(value("flag[0]"), bools(Domain::Plain, &[false]));
@@ -1270,9 +1260,9 @@ mod tests {
 
     #[test]
     fn swizzles_pick_and_repeat_components() {
-        close("baseColorFactor.a", &[1.0, 0.6]);
-        close("baseColorFactor.bgr", &[0.5, 0.5, 0.5, 0.6, 0.9, 1.0]);
-        close("roughnessFactor.rr", &[0.9, 0.9, 0.4, 0.4]);
+        close("baseColor.a", &[1.0, 0.6]);
+        close("baseColor.bgr", &[0.5, 0.5, 0.5, 0.6, 0.9, 1.0]);
+        close("roughness.rr", &[0.9, 0.9, 0.4, 0.4]);
         close("0.5.rrr", &[0.5, 0.5, 0.5]);
         close("unit.zyx", &[0.0, 0.0, 1.0]);
         assert_eq!(
@@ -1284,7 +1274,7 @@ mod tests {
             u32s(Domain::Voxel, Dimension::Vec1, &[0, 1])
         );
         assert_eq!(
-            value("(baseColorFactor > 0.55).b"),
+            value("(baseColor > 0.55).b"),
             bools(Domain::Swatch, &[false, true])
         );
         assert_eq!(
@@ -1298,19 +1288,19 @@ mod tests {
     #[test]
     fn comparisons_answer_per_entry() {
         assert_eq!(
-            value("roughnessFactor > 0.5"),
+            value("roughness > 0.5"),
             bools(Domain::Swatch, &[true, false])
         );
         assert_eq!(
-            value("roughnessFactor >= 0.9"),
+            value("roughness >= 0.9"),
             bools(Domain::Swatch, &[true, false])
         );
         assert_eq!(
-            value("roughnessFactor < 0.5"),
+            value("roughness < 0.5"),
             bools(Domain::Swatch, &[false, true])
         );
         assert_eq!(
-            value("roughnessFactor <= 0.4"),
+            value("roughness <= 0.4"),
             bools(Domain::Swatch, &[false, true])
         );
         assert_eq!(
@@ -1333,7 +1323,7 @@ mod tests {
         );
         assert_eq!(value("\"a\" == \"a\""), bools(Domain::Plain, &[true]));
         assert_eq!(
-            value("faceValue < roughnessFactor"),
+            value("faceValue < roughness"),
             bools(
                 Domain::Face,
                 &[
@@ -1342,7 +1332,7 @@ mod tests {
             )
         );
         assert_eq!(
-            value("roughnessFactor == 0.9"),
+            value("roughness == 0.9"),
             bools(Domain::Swatch, &[true, false])
         );
         assert_eq!(value("flag == true"), bools(Domain::Swatch, &[false, true]));
@@ -1355,7 +1345,7 @@ mod tests {
     #[test]
     fn a_wide_comparison_answers_per_component() {
         assert_eq!(
-            value("baseColorFactor.rgb > 0.55"),
+            value("baseColor.rgb > 0.55"),
             wide_bools(
                 Domain::Swatch,
                 Dimension::Vec3,
@@ -1363,7 +1353,7 @@ mod tests {
             )
         );
         assert_eq!(
-            value("0.7 < baseColorFactor"),
+            value("0.7 < baseColor"),
             wide_bools(
                 Domain::Swatch,
                 Dimension::Vec4,
@@ -1387,23 +1377,23 @@ mod tests {
     #[test]
     fn folds_answer_per_entry_over_components() {
         assert_eq!(
-            value("all(baseColorFactor.rgb > 0.4)"),
+            value("all(baseColor.rgb > 0.4)"),
             bools(Domain::Swatch, &[true, true])
         );
         assert_eq!(
-            value("all(baseColorFactor.rgb > 0.55)"),
+            value("all(baseColor.rgb > 0.55)"),
             bools(Domain::Swatch, &[false, true])
         );
         assert_eq!(
-            value("any(baseColorFactor.rgb < 0.7)"),
+            value("any(baseColor.rgb < 0.7)"),
             bools(Domain::Swatch, &[true, true])
         );
         assert_eq!(
-            value("any(baseColorFactor == 0.5)"),
+            value("any(baseColor == 0.5)"),
             bools(Domain::Swatch, &[true, false])
         );
         assert_eq!(
-            value("all(baseColorFactor == baseColorFactor)"),
+            value("all(baseColor == baseColor)"),
             bools(Domain::Swatch, &[true, true])
         );
         assert_eq!(
@@ -1417,7 +1407,7 @@ mod tests {
         assert_eq!(value("all(0.5 < unit)"), bools(Domain::Plain, &[false]));
         assert_eq!(value("any(flag)"), bools(Domain::Swatch, &[false, true]));
         assert_eq!(
-            value("all(!(baseColorFactor.rgb > 0.55))"),
+            value("all(!(baseColor.rgb > 0.55))"),
             bools(Domain::Swatch, &[true, false])
         );
         assert_eq!(value("any(true)"), bools(Domain::Plain, &[true]));
@@ -1447,7 +1437,7 @@ mod tests {
             wide_bools(Domain::Plain, Dimension::Vec3, &[false, true, true])
         );
         assert_eq!(
-            value("baseColorFactor.rgb > 0.55 || flag"),
+            value("baseColor.rgb > 0.55 || flag"),
             wide_bools(
                 Domain::Swatch,
                 Dimension::Vec3,
@@ -1455,7 +1445,7 @@ mod tests {
             )
         );
         assert_eq!(
-            value("baseColorFactor.rgb > 0.55 ^ baseColorFactor.rgb > 0.8"),
+            value("baseColor.rgb > 0.55 ^ baseColor.rgb > 0.8"),
             wide_bools(
                 Domain::Swatch,
                 Dimension::Vec3,
@@ -1468,7 +1458,7 @@ mod tests {
     fn mix_picks_per_entry_by_the_bool() {
         close("mix(0f32, 1, flag)", &[0.0, 1.0]);
         close(
-            "mix(baseColorFactor, 0.5.rrrr, flag)",
+            "mix(baseColor, 0.5.rrrr, flag)",
             &[0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5],
         );
         assert_eq!(
@@ -1488,11 +1478,11 @@ mod tests {
             &[0.5, 0.5, 0.5, 0.5, 0.5, 5.0, 6.0, 7.0, 8.0, 9.0],
         );
         assert_eq!(
-            value("mix(\"OPAQUE\", \"BLEND\", min(baseColorFactor.a) < 1)"),
+            value("mix(\"OPAQUE\", \"BLEND\", min(baseColor.a) < 1)"),
             strings(Domain::Plain, &["BLEND"])
         );
         close(
-            "mix(baseColorFactor, 0.rrrr, baseColorFactor > 0.55)",
+            "mix(baseColor, 0.rrrr, baseColor > 0.55)",
             &[0.5, 0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0],
         );
         assert_eq!(
@@ -1503,12 +1493,12 @@ mod tests {
 
     #[test]
     fn default_reads_the_name_or_the_fallback() {
-        close("default(roughnessFactor, 1)", &[0.9, 0.4]);
+        close("default(roughness, 1)", &[0.9, 0.4]);
         close("default(missing, 1)", &[1.0]);
         close("default(missing, rgb(0, 0, 0))", &[0.0, 0.0, 0.0]);
         close("swatch(default(missing, 1))", &[1.0, 1.0]);
         close(
-            "default(roughnessFactor, faceValue)",
+            "default(roughness, faceValue)",
             &[0.9, 0.9, 0.9, 0.9, 0.9, 0.4, 0.4, 0.4, 0.4, 0.4],
         );
         assert_eq!(
@@ -1529,10 +1519,10 @@ mod tests {
 
     #[test]
     fn the_constructors_pack_vec1_parts() {
-        close("r(roughnessFactor)", &[0.9, 0.4]);
-        close("rg(roughnessFactor, metallicFactor)", &[0.9, 1.0, 0.4, 0.0]);
+        close("r(roughness)", &[0.9, 0.4]);
+        close("rg(roughness, metallic)", &[0.9, 1.0, 0.4, 0.0]);
         close(
-            "rgb(metallicFactor, roughnessFactor, 0)",
+            "rgb(metallic, roughness, 0)",
             &[1.0, 0.9, 0.0, 0.0, 0.4, 0.0],
         );
         close("rgba(1, 1, 1, 1)", &[1.0, 1.0, 1.0, 1.0]);
@@ -1555,11 +1545,11 @@ mod tests {
     fn min_and_max_are_elementwise_in_their_binary_forms() {
         close("max(emissiveStrength, 0.001)", &[0.001, 4.0]);
         close(
-            "min(baseColorFactor, 0.6)",
+            "min(baseColor, 0.6)",
             &[0.5, 0.5, 0.5, 0.6, 0.6, 0.6, 0.6, 0.6],
         );
         close(
-            "max(0.6, baseColorFactor)",
+            "max(0.6, baseColor)",
             &[0.6, 0.6, 0.6, 1.0, 1.0, 0.9, 0.6, 0.6],
         );
         assert_eq!(
@@ -1575,33 +1565,33 @@ mod tests {
 
     #[test]
     fn abs_and_the_rounding_forms_are_componentwise() {
-        close("abs(roughnessFactor - 1)", &[0.1, 0.6]);
+        close("abs(roughness - 1)", &[0.1, 0.6]);
         close("abs(rgb(-1, 2, -3))", &[1.0, 2.0, 3.0]);
-        close("floor(roughnessFactor * 4)", &[3.0, 1.0]);
-        close("ceil(roughnessFactor * 4)", &[4.0, 2.0]);
-        close("round(roughnessFactor * 4)", &[4.0, 2.0]);
+        close("floor(roughness * 4)", &[3.0, 1.0]);
+        close("ceil(roughness * 4)", &[4.0, 2.0]);
+        close("round(roughness * 4)", &[4.0, 2.0]);
         close("round(2.5)", &[3.0]);
         close("round(-2.5)", &[-3.0]);
         close("round(0.4)", &[0.0]);
         close("floor(-0.5)", &[-1.0]);
         close("ceil(-0.5)", &[0.0]);
-        close("round(roughnessFactor * 4) / 4", &[1.0, 0.5]);
+        close("round(roughness * 4) / 4", &[1.0, 0.5]);
     }
 
     #[test]
     fn the_vector_functions_fold_each_entry() {
         close("dot(unit, unit)", &[1.0]);
-        close("dot(baseColorFactor.rgb, unit)", &[0.5, 1.0]);
-        close("dot(roughnessFactor, metallicFactor)", &[0.9, 0.0]);
+        close("dot(baseColor.rgb, unit)", &[0.5, 1.0]);
+        close("dot(roughness, metallic)", &[0.9, 0.0]);
         close("length(rgb(3, 4, 0))", &[5.0]);
         close("length(-2)", &[2.0]);
         close(
-            "length(baseColorFactor.rg)",
+            "length(baseColor.rg)",
             &[0.5f32.hypot(0.5), 1.0f32.hypot(0.9)],
         );
         close("distance(unit, rgb(0, 0, 0))", &[1.0]);
         close(
-            "distance(baseColorFactor.rgb, unit)",
+            "distance(baseColor.rgb, unit)",
             &[(0.25f32 + 0.25 + 0.25).sqrt(), (0.81f32 + 0.36).sqrt()],
         );
         close("normalize(rgb(3, 4, 0))", &[0.6, 0.8, 0.0]);
@@ -1612,26 +1602,26 @@ mod tests {
 
     #[test]
     fn pow_lerp_step_clamp_and_smoothstep_follow_their_formulas() {
-        close("pow(roughnessFactor, 2)", &[0.81, 0.16]);
+        close("pow(roughness, 2)", &[0.81, 0.16]);
         close("pow(rgb(4, 9, 16), 0.5)", &[2.0, 3.0, 4.0]);
         close("pow(2, rgb(1, 2, 3).x)", &[2.0]);
         close("lerp(0, 10, 0.25)", &[2.5]);
         close("lerp(0, 10, 1.5)", &[15.0]);
         close("lerp(1, computedOcclusion, 0.8)[0]", &[0.2]);
         close(
-            "lerp(baseColorFactor.rgb, rgb(1, 1, 1), 0.5)",
+            "lerp(baseColor.rgb, rgb(1, 1, 1), 0.5)",
             &[0.75, 0.75, 0.75, 1.0, 0.95, 0.8],
         );
         close("step(0.001, emissiveStrength)", &[0.0, 1.0]);
-        close("step(0.5, baseColorFactor)", &[1.0; 8]);
-        close("step(baseColorFactor.r, baseColorFactor.g)", &[1.0, 0.0]);
+        close("step(0.5, baseColor)", &[1.0; 8]);
+        close("step(baseColor.r, baseColor.g)", &[1.0, 0.0]);
         close("clamp(emissiveStrength, 1, 3)", &[1.0, 3.0]);
         close(
-            "clamp(baseColorFactor, 0.55, 0.95)",
+            "clamp(baseColor, 0.55, 0.95)",
             &[0.55, 0.55, 0.55, 0.95, 0.95, 0.9, 0.6, 0.6],
         );
         close("smoothstep(0, 1, 0.5)", &[0.5]);
-        close("smoothstep(0, 1, roughnessFactor)", &[0.972, 0.352]);
+        close("smoothstep(0, 1, roughness)", &[0.972, 0.352]);
         close("smoothstep(0, 1, 2)", &[1.0]);
         close("smoothstep(0, 1, -1)", &[0.0]);
         close("smoothstep(0.2, 0.8, computedOcclusion)[20]", &[0.5]);
@@ -1693,7 +1683,7 @@ mod tests {
             EvalFailure::Inexact { value: 16777217 }
         );
         assert_eq!(
-            failure("u8(roughnessFactor)"),
+            failure("u8(roughness)"),
             EvalFailure::Fraction {
                 value: 0.9,
                 target: Scalar::U8
@@ -1739,15 +1729,15 @@ mod tests {
     #[test]
     fn the_rounding_conversions_round_by_their_mode_into_their_range() {
         assert_eq!(
-            value("round_u8(roughnessFactor)"),
+            value("round_u8(roughness)"),
             u8s(Domain::Swatch, Dimension::Vec1, &[1, 0])
         );
         assert_eq!(
-            value("ceil_u8(roughnessFactor)"),
+            value("ceil_u8(roughness)"),
             u8s(Domain::Swatch, Dimension::Vec1, &[1, 1])
         );
         assert_eq!(
-            value("floor_u8(roughnessFactor)"),
+            value("floor_u8(roughness)"),
             u8s(Domain::Swatch, Dimension::Vec1, &[0, 0])
         );
         assert_eq!(
@@ -1817,7 +1807,7 @@ mod tests {
         assert!((red[1] - 0.2249).abs() < 1e-3, "{red:?}");
         assert!((red[2] - 0.1258).abs() < 1e-3, "{red:?}");
 
-        let round_trip = value("rgbFromOklab(oklabFromRgb(baseColorFactor.rgb))");
+        let round_trip = value("rgbFromOklab(oklabFromRgb(baseColor.rgb))");
 
         assert_close(&round_trip, &[0.5, 0.5, 0.5, 1.0, 0.9, 0.6]);
         close("oklchFromRgb(rgb(0.5, 0.5, 0.5)).yz", &[0.0, 0.0]);
@@ -1831,7 +1821,7 @@ mod tests {
         assert!((red[1] - 0.2577).abs() < 1e-3, "{red:?}");
         assert!((red[2] - 29.23 / 360.0).abs() < 1e-3, "{red:?}");
 
-        let round_trip = value("rgbFromOklch(oklchFromRgb(baseColorFactor.rgb))");
+        let round_trip = value("rgbFromOklch(oklchFromRgb(baseColor.rgb))");
 
         assert_close(&round_trip, &[0.5, 0.5, 0.5, 1.0, 0.9, 0.6]);
 
