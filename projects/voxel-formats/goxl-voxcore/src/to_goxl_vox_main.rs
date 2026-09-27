@@ -94,9 +94,12 @@ pub fn to_goxl_vox_main(mut main: VoxMain<()>) -> Result<GoxlVoxMain> {
 
     // The old nodes are unlinked first so each releases in any order.
     for &node_id in &old_node_ids {
-        let mut node = main.hierarchy_node(node_id).expect("a listed node").clone();
-        node.child_node_ids.clear();
-        main.set_hierarchy_node(node_id, node)?;
+        let child_object_ids = main
+            .hierarchy_node(node_id)
+            .expect("a listed node")
+            .child_object_ids
+            .clone();
+        main.set_hierarchy_node_children(node_id, Vec::new(), child_object_ids)?;
     }
     for node_id in old_node_ids {
         main.release_hierarchy_node(node_id)?;

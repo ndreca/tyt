@@ -4,13 +4,15 @@ use crate::{
 };
 use branded_id::U32Id;
 use std::collections::HashMap;
+use ty_math::{TyTransformF64, TyVector3I32, TyVector3U32};
 
 /// The ext a [`VoxMain`](crate::VoxMain) carries: the hooks the state fires
-/// when an entity comes, goes, or is renumbered.
+/// when an entity comes, goes, changes, or is renumbered.
 ///
 /// A format ext keeps an entry per entity, keyed by the entity's id. A retain
 /// fires its hook after the mutation, a release fires its hook before it once
-/// every check has passed, and [`gc`](crate::VoxMain::gc) fires
+/// every check has passed, a setter or move fires its hook after the mutation
+/// with the value it replaced, and [`gc`](crate::VoxMain::gc) fires
 /// [`did_gc`](Self::did_gc) with the remap after renumbering. The `did` or
 /// `will` in a hook's name says which. Each hook sees the scene and can
 /// build a complete entry for the entity on the spot.
@@ -42,6 +44,48 @@ pub trait VoxExt {
         Ok(())
     }
 
+    /// Hierarchy node `node_id` was renamed from `old_name`.
+    fn hierarchy_node_name_did_set(
+        &mut self,
+        _state: &VoxState,
+        _node_id: U32Id<BVoxHierarchyNode>,
+        _old_name: &str,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    /// Hierarchy node `node_id` took a new transform in place of
+    /// `old_transform`.
+    fn hierarchy_node_transform_did_set(
+        &mut self,
+        _state: &VoxState,
+        _node_id: U32Id<BVoxHierarchyNode>,
+        _old_transform: TyTransformF64,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    /// Hierarchy node `node_id` took new children in place of
+    /// `old_child_node_ids` and `old_child_object_ids`.
+    fn hierarchy_node_children_did_set(
+        &mut self,
+        _state: &VoxState,
+        _node_id: U32Id<BVoxHierarchyNode>,
+        _old_child_node_ids: &[U32Id<BVoxHierarchyNode>],
+        _old_child_object_ids: &[U32Id<BVoxObject>],
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    /// The roots were replaced, `old_root_ids` being the roots before.
+    fn root_hierarchy_node_ids_did_set(
+        &mut self,
+        _state: &VoxState,
+        _old_root_ids: &[U32Id<BVoxHierarchyNode>],
+    ) -> Result<()> {
+        Ok(())
+    }
+
     /// Object `object_id` was retained.
     fn object_did_retain(
         &mut self,
@@ -56,6 +100,49 @@ pub trait VoxExt {
         &mut self,
         _state: &VoxState,
         _object_id: U32Id<BVoxObject>,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    /// Object `object_id` moved from listing position `old_index`.
+    fn object_did_move(
+        &mut self,
+        _state: &VoxState,
+        _object_id: U32Id<BVoxObject>,
+        _old_index: usize,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    /// Object `object_id` was renamed from `old_name`.
+    fn object_name_did_set(
+        &mut self,
+        _state: &VoxState,
+        _object_id: U32Id<BVoxObject>,
+        _old_name: &str,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    /// Object `object_id` took a new origin in place of `old_origin`.
+    fn object_origin_did_set(
+        &mut self,
+        _state: &VoxState,
+        _object_id: U32Id<BVoxObject>,
+        _old_origin: TyVector3I32,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    /// The live voxels of object `object_id` moved from a grid of
+    /// `old_bounds` onto the object's grid, each taking the new id
+    /// `voxel_ids` pairs with its old id.
+    fn object_voxels_did_remap(
+        &mut self,
+        _state: &VoxState,
+        _object_id: U32Id<BVoxObject>,
+        _old_bounds: TyVector3U32,
+        _voxel_ids: &HashMap<U32Id<BVoxVoxel>, U32Id<BVoxVoxel>>,
     ) -> Result<()> {
         Ok(())
     }
@@ -150,7 +237,7 @@ mod tests {
     };
     use branded_id::U32Id;
     use std::collections::{HashMap, HashSet};
-    use ty_math::TyVector3U32;
+    use ty_math::{TyTransformF64, TyVector3F64, TyVector3I32, TyVector3U32};
 
     /// Records every hook the main fires, with what it could read.
     #[derive(Clone, Debug, Default, PartialEq)]
@@ -179,6 +266,76 @@ mod tests {
             Ok(())
         }
 
+        fn hierarchy_node_name_did_set(
+            &mut self,
+            state: &VoxState,
+            node_id: U32Id<BVoxHierarchyNode>,
+            old_name: &str,
+        ) -> Result<()> {
+            let name = &state.hierarchy_node(node_id).unwrap().name;
+            self.0.push(format!(
+                "node renamed {} {old_name} to {name}",
+                node_id.to_u32()
+            ));
+            Ok(())
+        }
+
+        fn hierarchy_node_transform_did_set(
+            &mut self,
+            state: &VoxState,
+            node_id: U32Id<BVoxHierarchyNode>,
+            old_transform: TyTransformF64,
+        ) -> Result<()> {
+            let position = state.hierarchy_node(node_id).unwrap().transform.position;
+            self.0.push(format!(
+                "node moved {} {} to {position}",
+                node_id.to_u32(),
+                old_transform.position
+            ));
+            Ok(())
+        }
+
+        fn hierarchy_node_children_did_set(
+            &mut self,
+            state: &VoxState,
+            node_id: U32Id<BVoxHierarchyNode>,
+            old_child_node_ids: &[U32Id<BVoxHierarchyNode>],
+            old_child_object_ids: &[U32Id<BVoxObject>],
+        ) -> Result<()> {
+            let node = state.hierarchy_node(node_id).unwrap();
+            let bare = |ids: &[U32Id<BVoxHierarchyNode>]| -> Vec<u32> {
+                ids.iter().map(|id| id.to_u32()).collect()
+            };
+            let bare_objects = |ids: &[U32Id<BVoxObject>]| -> Vec<u32> {
+                ids.iter().map(|id| id.to_u32()).collect()
+            };
+            self.0.push(format!(
+                "node children {} {:?} {:?} to {:?} {:?}",
+                node_id.to_u32(),
+                bare(old_child_node_ids),
+                bare_objects(old_child_object_ids),
+                bare(&node.child_node_ids),
+                bare_objects(&node.child_object_ids)
+            ));
+            Ok(())
+        }
+
+        fn root_hierarchy_node_ids_did_set(
+            &mut self,
+            state: &VoxState,
+            old_root_ids: &[U32Id<BVoxHierarchyNode>],
+        ) -> Result<()> {
+            let bare = |ids: &[U32Id<BVoxHierarchyNode>]| -> Vec<u32> {
+                ids.iter().map(|id| id.to_u32()).collect()
+            };
+            self.0.push(format!(
+                "roots {:?} to {:?}",
+                bare(old_root_ids),
+                bare(state.root_hierarchy_node_ids())
+            ));
+            Ok(())
+        }
+
         fn object_did_retain(
             &mut self,
             state: &VoxState,
@@ -198,6 +355,71 @@ mod tests {
             let name = state.object(object_id).unwrap().name();
             self.0
                 .push(format!("object released {} {name}", object_id.to_u32()));
+            Ok(())
+        }
+
+        fn object_did_move(
+            &mut self,
+            state: &VoxState,
+            object_id: U32Id<BVoxObject>,
+            old_index: usize,
+        ) -> Result<()> {
+            let index = state
+                .iter_objects()
+                .position(|(id, _)| id == object_id)
+                .unwrap();
+            self.0.push(format!(
+                "object moved {} {old_index} to {index}",
+                object_id.to_u32()
+            ));
+            Ok(())
+        }
+
+        fn object_name_did_set(
+            &mut self,
+            state: &VoxState,
+            object_id: U32Id<BVoxObject>,
+            old_name: &str,
+        ) -> Result<()> {
+            let name = state.object(object_id).unwrap().name();
+            self.0.push(format!(
+                "object renamed {} {old_name} to {name}",
+                object_id.to_u32()
+            ));
+            Ok(())
+        }
+
+        fn object_origin_did_set(
+            &mut self,
+            state: &VoxState,
+            object_id: U32Id<BVoxObject>,
+            old_origin: TyVector3I32,
+        ) -> Result<()> {
+            let origin = state.object(object_id).unwrap().origin();
+            self.0.push(format!(
+                "object origin {} {old_origin} to {origin}",
+                object_id.to_u32()
+            ));
+            Ok(())
+        }
+
+        fn object_voxels_did_remap(
+            &mut self,
+            state: &VoxState,
+            object_id: U32Id<BVoxObject>,
+            old_bounds: TyVector3U32,
+            voxel_ids: &HashMap<U32Id<BVoxVoxel>, U32Id<BVoxVoxel>>,
+        ) -> Result<()> {
+            let bounds = state.object(object_id).unwrap().bounds();
+            let mut pairs: Vec<(u32, u32)> = voxel_ids
+                .iter()
+                .map(|(old, new)| (old.to_u32(), new.to_u32()))
+                .collect();
+            pairs.sort_unstable();
+            self.0.push(format!(
+                "voxels remapped {} {old_bounds} to {bounds} {pairs:?}",
+                object_id.to_u32()
+            ));
             Ok(())
         }
 
@@ -345,8 +567,7 @@ mod tests {
 
         main.release_object(b_id).unwrap();
 
-        // The reused id lands at the end of the listing. A move fires nothing
-        // because ids do not change.
+        // The reused id lands at the end of the listing.
         let d_id = main.retain_object(unit_object("d")).unwrap();
 
         main.move_object(d_id, 0).unwrap();
@@ -359,6 +580,82 @@ mod tests {
                 "object retained 2 c",
                 "object released 1 b",
                 "object retained 1 d",
+                "object moved 1 2 to 0",
+            ]
+        );
+    }
+
+    #[test]
+    fn object_setters_fire_with_the_value_they_replaced() {
+        let mut main: VoxMain<Recorder> = VoxMain::default();
+
+        let mut object = VoxObject::new("a".to_owned(), TyVector3U32::new(2, 1, 1)).unwrap();
+
+        object.retain_voxel(U32Id::from_u32(0), &[]).unwrap();
+
+        let object_id = main.retain_object(object).unwrap();
+
+        main.set_object_name(object_id, "b".to_owned()).unwrap();
+
+        main.set_object_origin(object_id, TyVector3I32::new(1, 2, 3))
+            .unwrap();
+
+        main.remap_object_voxels(object_id, TyVector3U32::new(1, 1, 2), |p| {
+            TyVector3I32::new(0, 0, p.x as i32 + 1)
+        })
+        .unwrap();
+
+        assert_eq!(
+            events(&main)[1..],
+            [
+                "object renamed 0 a to b",
+                "object origin 0 [0, 0, 0] to [1, 2, 3]",
+                "voxels remapped 0 [2, 1, 1] to [1, 1, 2] [(0, 1)]",
+            ]
+        );
+    }
+
+    #[test]
+    fn node_setters_fire_with_the_value_they_replaced() {
+        let mut main: VoxMain<Recorder> = VoxMain::default();
+
+        let object_id = main.retain_object(unit_object("a")).unwrap();
+
+        let child_id = main
+            .retain_hierarchy_node(VoxHierarchyNode::default())
+            .unwrap();
+
+        let node_id = main
+            .retain_hierarchy_node(VoxHierarchyNode {
+                name: "n".to_owned(),
+                ..Default::default()
+            })
+            .unwrap();
+
+        main.set_hierarchy_node_name(node_id, "m".to_owned())
+            .unwrap();
+
+        main.set_hierarchy_node_transform(
+            node_id,
+            TyTransformF64::from_translation(TyVector3F64::new(1.0, 0.0, 0.0)),
+        )
+        .unwrap();
+
+        main.set_hierarchy_node_children(node_id, vec![child_id], vec![object_id])
+            .unwrap();
+
+        main.push_root_hierarchy_node_id(node_id).unwrap();
+
+        main.set_root_hierarchy_node_ids(vec![child_id]).unwrap();
+
+        assert_eq!(
+            events(&main)[3..],
+            [
+                "node renamed 1 n to m",
+                "node moved 1 [0, 0, 0] to [1, 0, 0]",
+                "node children 1 [] [] to [0] [0]",
+                "roots [] to [1]",
+                "roots [1] to [0]",
             ]
         );
     }

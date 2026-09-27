@@ -524,12 +524,14 @@ mod tests {
     fn set_child_objects(main: &mut GoxlVoxMain, index: u32, child_object_ids: Vec<u32>) {
         let node_id = node(index);
 
-        let node = VoxHierarchyNode {
-            child_object_ids: child_object_ids.into_iter().map(object).collect(),
-            ..main.hierarchy_node(node_id).unwrap().clone()
-        };
+        let child_node_ids = main.hierarchy_node(node_id).unwrap().child_node_ids.clone();
 
-        main.set_hierarchy_node(node_id, node).unwrap();
+        main.set_hierarchy_node_children(
+            node_id,
+            child_node_ids,
+            child_object_ids.into_iter().map(object).collect(),
+        )
+        .unwrap();
     }
 
     /// Dropping the middle layer and its block, then compacting, leaves the

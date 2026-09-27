@@ -53,23 +53,25 @@ pub fn keep_objects<T: VoxExt>(main: &mut VoxMain<T>, object_ids: &[ObjectId]) -
     // node is emptied because a listed child cannot be released. After this
     // pass nothing references a dead node or a dropped object.
     for (node_id, node) in &nodes {
-        let mut pruned = node.clone();
-
-        if alive.contains(node_id) {
-            pruned
-                .child_node_ids
-                .retain(|child_id| alive.contains(child_id));
-
-            pruned
-                .child_object_ids
-                .retain(|child_id| kept.contains(child_id));
+        let (child_node_ids, child_object_ids) = if alive.contains(node_id) {
+            (
+                node.child_node_ids
+                    .iter()
+                    .copied()
+                    .filter(|child_id| alive.contains(child_id))
+                    .collect(),
+                node.child_object_ids
+                    .iter()
+                    .copied()
+                    .filter(|child_id| kept.contains(child_id))
+                    .collect(),
+            )
         } else {
-            pruned.child_node_ids.clear();
-            pruned.child_object_ids.clear();
-        }
+            (Vec::new(), Vec::new())
+        };
 
-        if pruned != *node {
-            main.set_hierarchy_node(*node_id, pruned)?;
+        if child_node_ids != node.child_node_ids || child_object_ids != node.child_object_ids {
+            main.set_hierarchy_node_children(*node_id, child_node_ids, child_object_ids)?;
         }
     }
 

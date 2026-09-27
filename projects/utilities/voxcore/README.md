@@ -130,12 +130,14 @@ document loaded from a format writes back to that format exactly. A bare
 state writes from the scene. The core never reads the ext.
 
 A format ext keeps an entry per entity, keyed by the entity's id. A mutation
-that retains or releases an entity would leave it stale. The main tells the
-ext through `VoxExt`, and every mutation carries that bound:
+that retains, releases, or edits an entity would leave it stale. The main
+tells the ext through `VoxExt`, and every mutation carries that bound:
 
 1. a retain fires its hook after the mutation
 2. a release fires its hook before the mutation, once every check has passed
-3. `gc` fires `did_gc` with the id remap
+3. a setter or move fires its hook after the mutation with the value it
+   replaced
+4. `gc` fires `did_gc` with the id remap
 
 Each hook sees the `VoxState` and can write a complete entry for the entity
 on the spot. A hook returns a `Result`. A `will` hook's error refuses the

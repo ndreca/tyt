@@ -863,13 +863,8 @@ mod tests {
         child_node_ids: Vec<U32Id<BVoxHierarchyNode>>,
         child_object_ids: Vec<U32Id<BVoxObject>>,
     ) {
-        let replacement = VoxHierarchyNode {
-            child_node_ids,
-            child_object_ids,
-            ..main.hierarchy_node(node(index)).unwrap().clone()
-        };
-
-        main.set_hierarchy_node(node(index), replacement).unwrap();
+        main.set_hierarchy_node_children(node(index), child_node_ids, child_object_ids)
+            .unwrap();
     }
 
     /// Dropping the middle placement, its two nodes, and its model, then
@@ -1167,12 +1162,11 @@ mod tests {
     fn a_moved_transform_errors_until_its_frames_follow() {
         let mut main = from_mvox_file(&placed_models_file()).unwrap();
 
-        let moved = VoxHierarchyNode {
-            transform: TyTransformF64::from_translation(TyVector3F64::new(2.0, 0.0, 0.0)),
-            ..main.hierarchy_node(node(2)).unwrap().clone()
-        };
-
-        main.set_hierarchy_node(node(2), moved).unwrap();
+        main.set_hierarchy_node_transform(
+            node(2),
+            TyTransformF64::from_translation(TyVector3F64::new(2.0, 0.0, 0.0)),
+        )
+        .unwrap();
 
         assert!(to_mvox_file(&main).is_err());
 

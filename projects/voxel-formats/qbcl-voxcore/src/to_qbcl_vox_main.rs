@@ -331,7 +331,8 @@ mod tests {
 
         unit.child_object_ids.clear();
 
-        main.set_hierarchy_node(unit_id, unit).unwrap();
+        main.set_hierarchy_node_children(unit_id, unit.child_node_ids, unit.child_object_ids)
+            .unwrap();
 
         let main = to_qbcl_vox_main(main).unwrap();
 

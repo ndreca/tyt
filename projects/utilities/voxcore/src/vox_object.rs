@@ -250,6 +250,11 @@ impl VoxObject {
         &self.name
     }
 
+    /// Sets the display [`name`](Self::name).
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
     /// Translation from the placing hierarchy node to the grid's min corner, in
     /// voxels. `[0, 0, 0]` places the grid's min corner at the node origin.
     pub fn origin(&self) -> TyVector3I32 {
@@ -365,15 +370,20 @@ impl VoxObject {
     /// Voxel id at grid `position`, or `None` if outside
     /// [`bounds`](Self::bounds).
     pub fn voxel_id(&self, position: TyVector3U32) -> Option<U32Id<BVoxVoxel>> {
-        if position.x >= self.bounds.x || position.y >= self.bounds.y || position.z >= self.bounds.z
-        {
+        Self::raster_id(self.bounds, position)
+    }
+
+    /// The raster id of `position` on a grid of `bounds`, or `None` if outside
+    /// it. `bounds` is within the cell cap, which keeps the arithmetic within
+    /// u32.
+    fn raster_id(bounds: TyVector3U32, position: TyVector3U32) -> Option<U32Id<BVoxVoxel>> {
+        if position.x >= bounds.x || position.y >= bounds.y || position.z >= bounds.z {
             return None;
         }
 
-        // The volume cap in `new` keeps the arithmetic below within u32.
-        let plane = self.bounds.y * self.bounds.z;
+        let plane = bounds.y * bounds.z;
         Some(U32Id::from_u32(
-            position.x * plane + position.y * self.bounds.z + position.z,
+            position.x * plane + position.y * bounds.z + position.z,
         ))
     }
 
@@ -409,6 +419,72 @@ impl VoxObject {
             (raster % plane) / self.bounds.z,
             raster % self.bounds.z,
         ))
+    }
+
+    /// Moves every live voxel onto a grid of `bounds`, the voxel at `p` landing
+    /// at `position(p)` with its samples. Layers and `origin` stay. Returns the
+    /// new id of each live voxel keyed by its old id. Errors, changing nothing,
+    /// if:
+    ///
+    /// 1. the grid would exceed [`MAX_GRID_CELLS`](Self::MAX_GRID_CELLS)
+    /// 2. a live voxel lands outside the grid
+    /// 3. two live voxels land on one cell
+    pub fn remap_voxels(
+        &mut self,
+        bounds: TyVector3U32,
+        position: impl Fn(TyVector3U32) -> TyVector3I32,
+    ) -> Result<HashMap<U32Id<BVoxVoxel>, U32Id<BVoxVoxel>>> {
+        let volume = Self::volume_of(bounds);
+        if volume > Self::MAX_GRID_CELLS {
+            return Err(Error::GridCellCap { cells: volume });
+        }
+
+        let mut liveness = VoxLiveness::new(volume as usize);
+        let mut new_ids = HashMap::with_capacity(self.live_count());
+        let mut old_ids = HashMap::with_capacity(self.live_count());
+        for voxel_id in self.liveness.iter_live() {
+            let old_position = self
+                .voxel_position(voxel_id)
+                .expect("a live voxel is within the grid");
+            let new_position = position(old_position);
+            let Some(new_id) = TyVector3U32::try_from(new_position)
+                .ok()
+                .and_then(|new_position| Self::raster_id(bounds, new_position))
+            else {
+                return Err(Error::RemappedVoxelOutsideGrid {
+                    voxel_id,
+                    position: new_position,
+                    bounds,
+                });
+            };
+
+            if let Some(&other_voxel_id) = old_ids.get(&new_id) {
+                return Err(Error::RemappedVoxelCollision {
+                    voxel_id,
+                    other_voxel_id,
+                });
+            }
+
+            liveness.set_live(new_id, true);
+            old_ids.insert(new_id, voxel_id);
+            new_ids.insert(voxel_id, new_id);
+        }
+
+        // Non-live cells are ignored filler, so material 0 stands in.
+        let layer_ids: Vec<_> = self.layer_ids.iter().collect();
+        for layer_id in layer_ids {
+            // Safety: retained layer ids have a sample column.
+            let column = unsafe { self.samples.get_mut(layer_id) };
+            let mut moved = IdVec::from_vec(vec![U32Id::from_u32(0); volume as usize]);
+            for (&old_id, &new_id) in &new_ids {
+                moved[new_id.to_usize_id()] = column[old_id.to_usize_id()];
+            }
+            *column = moved;
+        }
+
+        self.bounds = bounds;
+        self.liveness = liveness;
+        Ok(new_ids)
     }
 
     /// This object turned from Z-up to Y-up axes, `+z` to `+y` and `+y` to
@@ -496,6 +572,7 @@ impl Drop for VoxObject {
 mod tests {
     use crate::{BVoxMaterial, BVoxPalette, Error, VoxObject};
     use branded_id::U32Id;
+    use std::collections::HashMap;
     use ty_math::{TyVector3I32, TyVector3U32};
 
     fn material_id(index: u32) -> U32Id<BVoxMaterial> {
@@ -560,6 +637,71 @@ mod tests {
                 ),
             ]
         );
+    }
+
+    #[test]
+    fn remap_voxels_moves_live_voxels_and_their_samples() {
+        let mut object = seated_object();
+
+        // Swap y and z onto a `1 x 3 x 2` grid.
+        let voxel_ids = object
+            .remap_voxels(TyVector3U32::new(1, 3, 2), |p| {
+                TyVector3I32::new(p.x as i32, p.z as i32, p.y as i32)
+            })
+            .unwrap();
+
+        assert_eq!(object.bounds(), TyVector3U32::new(1, 3, 2));
+        assert_eq!(object.origin(), TyVector3I32::new(5, 6, 7));
+        assert_eq!(
+            live_cells(&object),
+            vec![
+                (
+                    TyVector3U32::new(0, 0, 1),
+                    vec![material_id(3), material_id(4)]
+                ),
+                (
+                    TyVector3U32::new(0, 2, 0),
+                    vec![material_id(5), material_id(6)]
+                ),
+            ]
+        );
+        assert_eq!(
+            voxel_ids,
+            HashMap::from([
+                (U32Id::from_u32(3), U32Id::from_u32(1)),
+                (U32Id::from_u32(2), U32Id::from_u32(4)),
+            ])
+        );
+    }
+
+    #[test]
+    fn remap_voxels_rejects_a_bad_move_without_changing_state() {
+        let mut object = seated_object();
+        let before = live_cells(&object);
+
+        assert_eq!(
+            object.remap_voxels(TyVector3U32::new(1, 2, 3), |p| p.as_ivec3()
+                - TyVector3I32::Y),
+            Err(Error::RemappedVoxelOutsideGrid {
+                voxel_id: U32Id::from_u32(2),
+                position: TyVector3I32::new(0, -1, 2),
+                bounds: TyVector3U32::new(1, 2, 3),
+            })
+        );
+        assert_eq!(
+            object.remap_voxels(TyVector3U32::new(1, 1, 1), |_| TyVector3I32::ZERO),
+            Err(Error::RemappedVoxelCollision {
+                voxel_id: U32Id::from_u32(3),
+                other_voxel_id: U32Id::from_u32(2),
+            })
+        );
+        assert!(matches!(
+            object.remap_voxels(TyVector3U32::splat(1 << 10), |p| p.as_ivec3()),
+            Err(Error::GridCellCap { .. })
+        ));
+
+        assert_eq!(object.bounds(), TyVector3U32::new(1, 2, 3));
+        assert_eq!(live_cells(&object), before);
     }
 
     #[test]

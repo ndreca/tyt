@@ -227,9 +227,7 @@ fn rebuild_hierarchy(
     // The old nodes release once nothing lists them.
     main.set_root_hierarchy_node_ids(vec![root_transform])?;
     for (&old_id, node) in &old {
-        let mut node = node.clone();
-        node.child_node_ids.clear();
-        main.set_hierarchy_node(old_id, node)?;
+        main.set_hierarchy_node_children(old_id, Vec::new(), node.child_object_ids.clone())?;
     }
     for &old_id in old.keys() {
         main.release_hierarchy_node(old_id)?;
@@ -270,13 +268,14 @@ impl<'a> Builder<'a> {
         node_id: U32Id<BVoxHierarchyNode>,
         child_ids: Vec<U32Id<BVoxHierarchyNode>>,
     ) -> Result<()> {
-        let mut node = self
+        let child_object_ids = self
             .main
             .hierarchy_node(node_id)
             .expect("an emitted node is listed")
+            .child_object_ids
             .clone();
-        node.child_node_ids = child_ids;
-        self.main.set_hierarchy_node(node_id, node)?;
+        self.main
+            .set_hierarchy_node_children(node_id, child_ids, child_object_ids)?;
         Ok(())
     }
 

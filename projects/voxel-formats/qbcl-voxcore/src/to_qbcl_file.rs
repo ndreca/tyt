@@ -471,10 +471,8 @@ mod tests {
         child_node_ids: Vec<U32Id<BVoxHierarchyNode>>,
         child_object_ids: Vec<U32Id<BVoxObject>>,
     ) {
-        let mut node = main.hierarchy_node(node_id).unwrap().clone();
-        node.child_node_ids = child_node_ids;
-        node.child_object_ids = child_object_ids;
-        main.set_hierarchy_node(node_id, node).unwrap();
+        main.set_hierarchy_node_children(node_id, child_node_ids, child_object_ids)
+            .unwrap();
     }
 
     /// Retains a one-voxel object of the sample's second color.

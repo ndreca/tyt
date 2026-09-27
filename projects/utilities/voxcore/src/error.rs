@@ -7,6 +7,7 @@ use std::{
     error::Error as StdError,
     fmt::{Display, Formatter, Result as FmtResult},
 };
+use ty_math::{TyVector3I32, TyVector3U32};
 
 /// An error from voxcore.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -48,6 +49,20 @@ pub enum Error {
 
     /// A mutation named a voxel outside the object's grid.
     UnknownVoxel { voxel_id: U32Id<BVoxVoxel> },
+
+    /// A voxel remap moved this live voxel to `position`, outside the new
+    /// grid of `bounds`.
+    RemappedVoxelOutsideGrid {
+        voxel_id: U32Id<BVoxVoxel>,
+        position: TyVector3I32,
+        bounds: TyVector3U32,
+    },
+
+    /// A voxel remap moved two live voxels onto one cell.
+    RemappedVoxelCollision {
+        voxel_id: U32Id<BVoxVoxel>,
+        other_voxel_id: U32Id<BVoxVoxel>,
+    },
 
     /// A color read resolved `baseColor` to a property whose value pool holds
     /// no colors.
@@ -320,6 +335,30 @@ impl Display for Error {
                     voxel_id.to_u32()
                 )
             }
+            Error::RemappedVoxelOutsideGrid {
+                voxel_id,
+                position,
+                bounds,
+            } => write!(
+                f,
+                "voxel {} would move to [{}, {}, {}], outside the {} x {} x {} grid",
+                voxel_id.to_u32(),
+                position.x,
+                position.y,
+                position.z,
+                bounds.x,
+                bounds.y,
+                bounds.z
+            ),
+            Error::RemappedVoxelCollision {
+                voxel_id,
+                other_voxel_id,
+            } => write!(
+                f,
+                "voxels {} and {} would move onto one cell",
+                other_voxel_id.to_u32(),
+                voxel_id.to_u32()
+            ),
             Error::NonColorProperty {
                 palette_id,
                 property_id,

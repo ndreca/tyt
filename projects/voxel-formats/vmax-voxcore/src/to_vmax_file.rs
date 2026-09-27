@@ -452,7 +452,8 @@ mod tests {
         let doomed_palette_id = U32Id::<BVoxPalette>::from_u32(1);
         let mut group = main.hierarchy_node(group_id).unwrap().clone();
         group.child_node_ids.retain(|&id| id != doomed_node_id);
-        main.set_hierarchy_node(group_id, group).unwrap();
+        main.set_hierarchy_node_children(group_id, group.child_node_ids, group.child_object_ids)
+            .unwrap();
         main.release_hierarchy_node(doomed_node_id).unwrap();
         main.release_object(doomed_object_id).unwrap();
         main.release_palette(doomed_palette_id).unwrap();
@@ -574,7 +575,8 @@ mod tests {
         let group_id = U32Id::<BVoxHierarchyNode>::from_u32(0);
         let mut group = main.hierarchy_node(group_id).unwrap().clone();
         group.transform.rotation = TyQuaternionF64::from_axis_angle(TyVector3F64::Y, 0.5);
-        main.set_hierarchy_node(group_id, group).unwrap();
+        main.set_hierarchy_node_transform(group_id, group.transform)
+            .unwrap();
 
         let file = to_vmax_file(&main, &VMaxWriteOptions::default()).unwrap();
         let [x, y, z, angle] = file.scene_json_file.groups[0].rotation;

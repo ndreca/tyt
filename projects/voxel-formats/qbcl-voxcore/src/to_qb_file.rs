@@ -260,7 +260,8 @@ mod tests {
             .unwrap();
         let mut emptied = main.hierarchy_node(node_id).unwrap().clone();
         emptied.child_object_ids.clear();
-        main.set_hierarchy_node(node_id, emptied).unwrap();
+        main.set_hierarchy_node_children(node_id, emptied.child_node_ids, emptied.child_object_ids)
+            .unwrap();
         main.release_hierarchy_node(node_id).unwrap();
         main.release_object(U32Id::<BVoxObject>::from_u32(0))
             .unwrap();
@@ -319,7 +320,8 @@ mod tests {
         let mut main = from_qb_file(&file).unwrap();
         let mut root = main.hierarchy_node(node(0)).unwrap().clone();
         root.child_node_ids.push(node(1));
-        main.set_hierarchy_node(node(0), root).unwrap();
+        main.set_hierarchy_node_children(node(0), root.child_node_ids, root.child_object_ids)
+            .unwrap();
         main.set_root_hierarchy_node_ids(vec![node(0)]).unwrap();
         assert!(to_qb_file(&main).is_err());
 
@@ -327,14 +329,16 @@ mod tests {
         let mut main = from_qb_file(&file).unwrap();
         let mut root = main.hierarchy_node(node(0)).unwrap().clone();
         root.child_object_ids.push(object(1));
-        main.set_hierarchy_node(node(0), root).unwrap();
+        main.set_hierarchy_node_children(node(0), root.child_node_ids, root.child_object_ids)
+            .unwrap();
         assert!(to_qb_file(&main).is_err());
 
         // An object placed by two roots.
         let mut main = from_qb_file(&file).unwrap();
         let mut root = main.hierarchy_node(node(1)).unwrap().clone();
         root.child_object_ids = vec![object(0)];
-        main.set_hierarchy_node(node(1), root).unwrap();
+        main.set_hierarchy_node_children(node(1), root.child_node_ids, root.child_object_ids)
+            .unwrap();
         assert!(to_qb_file(&main).is_err());
 
         // An object no root places.

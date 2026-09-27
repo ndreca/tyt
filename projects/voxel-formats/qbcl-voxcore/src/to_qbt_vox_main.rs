@@ -317,7 +317,8 @@ mod tests {
 
         group.child_object_ids.push(U32Id::from_u32(1));
 
-        main.set_hierarchy_node(group_id, group).unwrap();
+        main.set_hierarchy_node_children(group_id, group.child_node_ids, group.child_object_ids)
+            .unwrap();
 
         let unit_id = U32Id::<BVoxHierarchyNode>::from_u32(2);
 
@@ -325,7 +326,8 @@ mod tests {
 
         unit.child_node_ids.push(U32Id::from_u32(1));
 
-        main.set_hierarchy_node(unit_id, unit).unwrap();
+        main.set_hierarchy_node_children(unit_id, unit.child_node_ids, unit.child_object_ids)
+            .unwrap();
 
         let main = to_qbt_vox_main(main).unwrap();
 

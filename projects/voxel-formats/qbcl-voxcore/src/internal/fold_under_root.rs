@@ -35,9 +35,12 @@ pub fn fold_under_root(main: &mut VoxMain<()>, root_name: &str) -> Result<()> {
     // An unreached node's parents are all unreached. Unlinking them first
     // lets each release in any order.
     for &node_id in &unreached {
-        let mut node = main.hierarchy_node(node_id).expect("a listed node").clone();
-        node.child_node_ids.clear();
-        main.set_hierarchy_node(node_id, node)?;
+        let child_object_ids = main
+            .hierarchy_node(node_id)
+            .expect("a listed node")
+            .child_object_ids
+            .clone();
+        main.set_hierarchy_node_children(node_id, Vec::new(), child_object_ids)?;
     }
 
     main.set_root_hierarchy_node_ids(Vec::new())?;
@@ -100,7 +103,8 @@ fn visit(
     node.child_node_ids = child_node_ids;
 
     if first {
-        main.set_hierarchy_node(node_id, node)?;
+        main.set_hierarchy_node_transform(node_id, node.transform)?;
+        main.set_hierarchy_node_children(node_id, node.child_node_ids, node.child_object_ids)?;
         return Ok(node_id);
     }
 

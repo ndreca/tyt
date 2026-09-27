@@ -49,9 +49,12 @@ pub fn to_qb_vox_main(mut main: VoxMain<()>) -> Result<QbVoxMain> {
         .collect();
     main.set_root_hierarchy_node_ids(Vec::new())?;
     for &node_id in &node_ids {
-        let mut node = main.hierarchy_node(node_id).expect("a listed node").clone();
-        node.child_node_ids.clear();
-        main.set_hierarchy_node(node_id, node)?;
+        let child_object_ids = main
+            .hierarchy_node(node_id)
+            .expect("a listed node")
+            .child_object_ids
+            .clone();
+        main.set_hierarchy_node_children(node_id, Vec::new(), child_object_ids)?;
     }
     for node_id in node_ids {
         main.release_hierarchy_node(node_id)?;
@@ -291,7 +294,8 @@ mod tests {
 
         node.child_object_ids.push(U32Id::from_u32(0));
 
-        main.set_hierarchy_node(node_id, node).unwrap();
+        main.set_hierarchy_node_children(node_id, node.child_node_ids, node.child_object_ids)
+            .unwrap();
 
         let main = to_qb_vox_main(main).unwrap();
 

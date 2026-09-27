@@ -2,11 +2,14 @@ use crate::{
     BVoxHierarchyNode, BVoxLayer, BVoxMaterial, BVoxObject, BVoxPalette, BVoxProperty,
     BVoxValuePool, BVoxValuePoolValue, BVoxVoxel, Error, Result, TakenExt, VoxEffectivePalette,
     VoxExt, VoxGcRemap, VoxHierarchyNode, VoxObject, VoxPalette, VoxState, VoxValuePool,
-    vox_state::first_cycle_node_index,
+    vox_state::{check_node_transform, first_cycle_node_index},
 };
 use branded_id::{IdVec, U32Id, soa::IdRemap};
-use std::collections::{HashMap, HashSet};
-use ty_math::TyVector3I32;
+use std::{
+    collections::{HashMap, HashSet},
+    mem,
+};
+use ty_math::{TyTransformF64, TyVector3I32, TyVector3U32};
 
 /// The in-memory state of a voxel model.
 ///
@@ -16,8 +19,9 @@ use ty_math::TyVector3I32;
 /// reached through [`state`](Self::state) and forwarded here.
 ///
 /// `T` is the ext carried alongside the scene, a [`VoxExt`]. The core never
-/// reads it. A mutation that retains, releases, repaints, or renumbers tells
-/// the ext through its hooks. A hook error surfaces as the mutation's error.
+/// reads it. A mutation that retains, releases, repaints, sets, moves, or
+/// renumbers tells the ext through its hooks. A hook error surfaces as the
+/// mutation's error.
 #[derive(Debug, Default)]
 pub struct VoxMain<T = ()> {
     /// The scene.
@@ -390,35 +394,79 @@ impl<T: VoxExt> VoxMain<T> {
         Ok(())
     }
 
-    /// Replaces hierarchy node `id` with `node`, keeping its id, its listing
-    /// position, its parents, and its place in the roots. Errors, changing
-    /// nothing, if:
-    ///
-    /// 1. `id` is not one of this state's nodes
-    /// 2. a child node or child object is not one of this state's
-    /// 3. a child repeats
-    /// 4. the transform is malformed
-    /// 5. a child node reaches `id` through `child_node_ids`, closing a cycle
-    ///
-    /// An error reports `node` as a batch of one, at listing index `0`.
-    pub fn set_hierarchy_node(
+    /// Sets the name of hierarchy node `id`. Errors, changing nothing, if `id`
+    /// is not one of this state's nodes.
+    pub fn set_hierarchy_node_name(
         &mut self,
         id: U32Id<BVoxHierarchyNode>,
-        node: VoxHierarchyNode,
+        name: String,
     ) -> Result<()> {
         if !self.state.hierarchy_node_ids.is_retained(id) {
             return Err(Error::UnknownHierarchyNode { node_id: id });
         }
 
-        self.state.check_inserted_node(&node, 0, &HashSet::new())?;
+        // Safety: a retained node id has a value.
+        let node = unsafe { self.state.hierarchy_nodes.get_mut(id) };
+        let old_name = mem::replace(&mut node.name, name);
+        self.ext
+            .hierarchy_node_name_did_set(&self.state, id, &old_name)
+    }
 
-        if self.state.reaches_hierarchy_node(&node.child_node_ids, id) {
-            return Err(Error::InsertedCycle { index: 0 });
+    /// Sets the transform of hierarchy node `id`. Errors, changing nothing,
+    /// if `id` is not one of this state's nodes or `transform` is malformed.
+    pub fn set_hierarchy_node_transform(
+        &mut self,
+        id: U32Id<BVoxHierarchyNode>,
+        transform: TyTransformF64,
+    ) -> Result<()> {
+        if !self.state.hierarchy_node_ids.is_retained(id) {
+            return Err(Error::UnknownHierarchyNode { node_id: id });
+        }
+
+        check_node_transform(id, &transform)?;
+
+        // Safety: a retained node id has a value.
+        let node = unsafe { self.state.hierarchy_nodes.get_mut(id) };
+        let old_transform = mem::replace(&mut node.transform, transform);
+        self.ext
+            .hierarchy_node_transform_did_set(&self.state, id, old_transform)
+    }
+
+    /// Sets the child nodes and child objects of hierarchy node `id`, keeping
+    /// its id, its listing position, its parents, and its place in the roots.
+    /// Errors, changing nothing, if:
+    ///
+    /// 1. `id` is not one of this state's nodes
+    /// 2. a child node or child object is not one of this state's
+    /// 3. a child repeats
+    /// 4. a child node reaches `id` through `child_node_ids`, closing a cycle
+    pub fn set_hierarchy_node_children(
+        &mut self,
+        id: U32Id<BVoxHierarchyNode>,
+        child_node_ids: Vec<U32Id<BVoxHierarchyNode>>,
+        child_object_ids: Vec<U32Id<BVoxObject>>,
+    ) -> Result<()> {
+        if !self.state.hierarchy_node_ids.is_retained(id) {
+            return Err(Error::UnknownHierarchyNode { node_id: id });
+        }
+
+        self.state
+            .check_node_children(id, &child_node_ids, &child_object_ids)?;
+
+        if self.state.reaches_hierarchy_node(&child_node_ids, id) {
+            return Err(Error::Cycle { node_id: id });
         }
 
         // Safety: a retained node id has a value.
-        *unsafe { self.state.hierarchy_nodes.get_mut(id) } = node;
-        Ok(())
+        let node = unsafe { self.state.hierarchy_nodes.get_mut(id) };
+        let old_child_node_ids = mem::replace(&mut node.child_node_ids, child_node_ids);
+        let old_child_object_ids = mem::replace(&mut node.child_object_ids, child_object_ids);
+        self.ext.hierarchy_node_children_did_set(
+            &self.state,
+            id,
+            &old_child_node_ids,
+            &old_child_object_ids,
+        )
     }
 
     /// Retains a layer referencing `palette_id` to object `object_id`, after
@@ -753,8 +801,29 @@ impl<T: VoxExt> VoxMain<T> {
             return Err(Error::IndexPastCount { index, count });
         }
 
+        let old_index = self
+            .state
+            .object_ids
+            .iter()
+            .position(|object_id| object_id == id)
+            .expect("a retained object is listed");
         self.state.object_ids.move_to(id, index);
-        Ok(())
+        self.ext.object_did_move(&self.state, id, old_index)
+    }
+
+    /// Sets the name of object `object_id`. Errors, changing nothing, if
+    /// `object_id` is not one of this state's.
+    pub fn set_object_name(&mut self, object_id: U32Id<BVoxObject>, name: String) -> Result<()> {
+        if !self.state.object_ids.is_retained(object_id) {
+            return Err(Error::UnknownObject { object_id });
+        }
+
+        // Safety: the object id is retained.
+        let object = unsafe { self.state.objects.get_mut(object_id) };
+        let old_name = object.name().to_owned();
+        object.set_name(name);
+        self.ext
+            .object_name_did_set(&self.state, object_id, &old_name)
     }
 
     /// Sets the grid origin of object `object_id`. Errors, changing nothing, if
@@ -769,8 +838,33 @@ impl<T: VoxExt> VoxMain<T> {
         }
 
         // Safety: the object id is retained.
-        unsafe { self.state.objects.get_mut(object_id) }.set_origin(origin);
-        Ok(())
+        let object = unsafe { self.state.objects.get_mut(object_id) };
+        let old_origin = object.origin();
+        object.set_origin(origin);
+        self.ext
+            .object_origin_did_set(&self.state, object_id, old_origin)
+    }
+
+    /// Moves every live voxel of object `object_id` onto a grid of `bounds`
+    /// through [`VoxObject::remap_voxels`], which renumbers the voxel ids.
+    /// Errors, changing nothing, if `object_id` is not one of this state's or
+    /// the remap errors.
+    pub fn remap_object_voxels(
+        &mut self,
+        object_id: U32Id<BVoxObject>,
+        bounds: TyVector3U32,
+        position: impl Fn(TyVector3U32) -> TyVector3I32,
+    ) -> Result<()> {
+        if !self.state.object_ids.is_retained(object_id) {
+            return Err(Error::UnknownObject { object_id });
+        }
+
+        // Safety: the object id is retained.
+        let object = unsafe { self.state.objects.get_mut(object_id) };
+        let old_bounds = object.bounds();
+        let voxel_ids = object.remap_voxels(bounds, position)?;
+        self.ext
+            .object_voxels_did_remap(&self.state, object_id, old_bounds, &voxel_ids)
     }
 
     /// Retains a shared palette at the end of the listing, returning its id.
@@ -922,8 +1016,10 @@ impl<T: VoxExt> VoxMain<T> {
             return Err(Error::DuplicateRoot { root_id });
         }
 
+        let old_root_ids = self.state.root_hierarchy_node_ids.clone();
         self.state.root_hierarchy_node_ids.push(root_id);
-        Ok(())
+        self.ext
+            .root_hierarchy_node_ids_did_set(&self.state, &old_root_ids)
     }
 
     /// Replaces the scene's roots. Errors, changing nothing, if a root is not
@@ -943,8 +1039,9 @@ impl<T: VoxExt> VoxMain<T> {
             }
         }
 
-        self.state.root_hierarchy_node_ids = root_ids;
-        Ok(())
+        let old_root_ids = mem::replace(&mut self.state.root_hierarchy_node_ids, root_ids);
+        self.ext
+            .root_hierarchy_node_ids_did_set(&self.state, &old_root_ids)
     }
 
     /// Retains a shared value pool at the end of the listing, returning its id.
@@ -1265,7 +1362,7 @@ mod tests {
     };
     use branded_id::U32Id;
     use std::collections::{HashMap, HashSet};
-    use ty_math::{TyQuaternionF64, TyVector3F64, TyVector3I32, TyVector3U32};
+    use ty_math::{TyQuaternionF64, TyTransformF64, TyVector3F64, TyVector3I32, TyVector3U32};
 
     fn node_id(index: u32) -> U32Id<BVoxHierarchyNode> {
         U32Id::from_u32(index)
@@ -1797,7 +1894,7 @@ mod tests {
     }
 
     #[test]
-    fn set_hierarchy_node_replaces_the_node_and_keeps_its_references() {
+    fn node_setters_replace_fields_and_keep_references() {
         let mut main: VoxMain = VoxMain::default();
         let a_id = main.retain_object(unit_object("a")).unwrap();
         let b_id = main.retain_object(unit_object("b")).unwrap();
@@ -1809,17 +1906,20 @@ mod tests {
             .unwrap();
         main.set_root_hierarchy_node_ids(vec![parent_id]).unwrap();
 
-        main.set_hierarchy_node(
-            child_id,
-            VoxHierarchyNode {
-                name: "renamed".to_owned(),
-                ..node_with_objects(vec![b_id])
-            },
-        )
-        .unwrap();
+        let transform = TyTransformF64::from_translation(TyVector3F64::new(1.0, -2.0, 3.0));
+
+        main.set_hierarchy_node_name(child_id, "renamed".to_owned())
+            .unwrap();
+
+        main.set_hierarchy_node_transform(child_id, transform)
+            .unwrap();
+
+        main.set_hierarchy_node_children(child_id, Vec::new(), vec![b_id])
+            .unwrap();
 
         let child = main.hierarchy_node(child_id).unwrap();
         assert_eq!(child.name, "renamed");
+        assert_eq!(child.transform, transform);
         assert_eq!(child.child_object_ids, [b_id]);
         let listing: Vec<_> = main.iter_hierarchy_nodes().map(|(id, _)| id).collect();
         assert_eq!(listing, [child_id, parent_id]);
@@ -1835,17 +1935,47 @@ mod tests {
     }
 
     #[test]
-    fn set_hierarchy_node_rejects_an_unknown_node() {
+    fn node_setters_reject_an_unknown_node() {
         let mut main: VoxMain = VoxMain::default();
 
         assert!(matches!(
-            main.set_hierarchy_node(node_id(0), VoxHierarchyNode::default()),
+            main.set_hierarchy_node_name(node_id(0), String::new()),
+            Err(Error::UnknownHierarchyNode { .. })
+        ));
+        assert!(matches!(
+            main.set_hierarchy_node_transform(node_id(0), TyTransformF64::default()),
+            Err(Error::UnknownHierarchyNode { .. })
+        ));
+        assert!(matches!(
+            main.set_hierarchy_node_children(node_id(0), Vec::new(), Vec::new()),
             Err(Error::UnknownHierarchyNode { .. })
         ));
     }
 
     #[test]
-    fn set_hierarchy_node_rejects_a_cycle() {
+    fn set_hierarchy_node_transform_rejects_a_malformed_transform() {
+        let mut main: VoxMain = VoxMain::default();
+        let id = main
+            .retain_hierarchy_node(VoxHierarchyNode::default())
+            .unwrap();
+
+        let zero_scale = TyTransformF64 {
+            scale: TyVector3F64::new(1.0, 0.0, 1.0),
+            ..Default::default()
+        };
+
+        assert_eq!(
+            main.set_hierarchy_node_transform(id, zero_scale),
+            Err(Error::ZeroScale { node_id: id })
+        );
+        assert_eq!(
+            main.hierarchy_node(id).unwrap().transform,
+            TyTransformF64::default()
+        );
+    }
+
+    #[test]
+    fn set_hierarchy_node_children_rejects_a_cycle() {
         let mut main: VoxMain = VoxMain::default();
         // A chain 0 -> 1 -> 2.
         let ids = main
@@ -1858,14 +1988,14 @@ mod tests {
 
         // Pointing the leaf back at the head closes a cycle, as does a node
         // listing itself.
-        assert!(matches!(
-            main.set_hierarchy_node(ids[2], node_with_children(vec![ids[0]])),
-            Err(Error::InsertedCycle { index: 0 })
-        ));
-        assert!(matches!(
-            main.set_hierarchy_node(ids[1], node_with_children(vec![ids[1]])),
-            Err(Error::InsertedCycle { index: 0 })
-        ));
+        assert_eq!(
+            main.set_hierarchy_node_children(ids[2], vec![ids[0]], Vec::new()),
+            Err(Error::Cycle { node_id: ids[2] })
+        );
+        assert_eq!(
+            main.set_hierarchy_node_children(ids[1], vec![ids[1]], Vec::new()),
+            Err(Error::Cycle { node_id: ids[1] })
+        );
 
         // Nothing changed. Reaching the leaf both directly and through node 1
         // is sharing, not a cycle.
@@ -1875,29 +2005,70 @@ mod tests {
                 .child_node_ids
                 .is_empty()
         );
-        main.set_hierarchy_node(ids[0], node_with_children(vec![ids[1], ids[2]]))
+        main.set_hierarchy_node_children(ids[0], vec![ids[1], ids[2]], Vec::new())
             .unwrap();
         assert_eq!(main.validate(), Ok(()));
     }
 
     #[test]
-    fn set_hierarchy_node_rejects_a_dangling_or_repeated_child() {
+    fn set_hierarchy_node_children_rejects_a_dangling_or_repeated_child() {
         let mut main: VoxMain = VoxMain::default();
         let a_id = main.retain_object(unit_object("a")).unwrap();
         let id = main
             .retain_hierarchy_node(node_with_objects(vec![a_id]))
             .unwrap();
 
-        assert!(matches!(
-            main.set_hierarchy_node(id, node_with_children(vec![node_id(9)])),
-            Err(Error::UnknownHierarchyNode { .. })
-        ));
-        assert!(matches!(
-            main.set_hierarchy_node(id, node_with_objects(vec![a_id, a_id])),
-            Err(Error::InsertedDuplicateChildObject { index: 0, .. })
-        ));
+        assert_eq!(
+            main.set_hierarchy_node_children(id, vec![node_id(9)], Vec::new()),
+            Err(Error::ChildNode {
+                node_id: id,
+                child_id: node_id(9)
+            })
+        );
+        assert_eq!(
+            main.set_hierarchy_node_children(id, Vec::new(), vec![a_id, a_id]),
+            Err(Error::DuplicateChildObject {
+                node_id: id,
+                object_id: a_id
+            })
+        );
 
         assert_eq!(main.hierarchy_node(id).unwrap().child_object_ids, [a_id]);
+    }
+
+    #[test]
+    fn object_setters_set_name_origin_and_voxels() {
+        let mut main: VoxMain = VoxMain::default();
+        let value_pool_id = int_value_pool(&mut main, vec![0, 1]);
+        let palette_id = main
+            .retain_palette(two_material_palette(value_pool_id))
+            .unwrap();
+        let mut object = VoxObject::new("a".to_owned(), TyVector3U32::new(2, 1, 1)).unwrap();
+        object.retain_layer(palette_id, material_id(0));
+        object.retain_voxel(voxel_id(1), &[material_id(1)]).unwrap();
+        let object_id = main.retain_object(object).unwrap();
+
+        main.set_object_name(object_id, "b".to_owned()).unwrap();
+
+        main.set_object_origin(object_id, TyVector3I32::new(-1, 2, 3))
+            .unwrap();
+
+        // Widen to 3 x 1 x 1 and slide the voxel from x = 1 to x = 2.
+        main.remap_object_voxels(object_id, TyVector3U32::new(3, 1, 1), |p| {
+            p.as_ivec3() + TyVector3I32::X
+        })
+        .unwrap();
+
+        let object = main.object(object_id).unwrap();
+        assert_eq!(object.name(), "b");
+        assert_eq!(object.origin(), TyVector3I32::new(-1, 2, 3));
+        assert_eq!(object.bounds(), TyVector3U32::new(3, 1, 1));
+        let live: Vec<_> = object
+            .iter_live_samples(U32Id::from_u32(0))
+            .unwrap()
+            .collect();
+        assert_eq!(live, [(voxel_id(2), material_id(1))]);
+        assert_eq!(main.validate(), Ok(()));
     }
 
     #[test]

@@ -8,7 +8,7 @@ use branded_id::{
     soa::{IdField, IdStruct},
 };
 use std::collections::{HashMap, HashSet};
-use ty_math::{TyQuaternionExt, UNIT_ROTATION_TOLERANCE};
+use ty_math::{TyQuaternionExt, TyTransformF64, UNIT_ROTATION_TOLERANCE};
 
 /// The scene of a voxel model: the read side of [`VoxMain`](crate::VoxMain),
 /// which forwards to it.
@@ -166,43 +166,8 @@ impl VoxState {
 
         // Node children; retention-checked before the cycle pass.
         for (node_id, node) in self.iter_hierarchy_nodes() {
-            let mut seen_child_node_ids = HashSet::with_capacity(node.child_node_ids.len());
-            for &child_id in &node.child_node_ids {
-                if self.hierarchy_node(child_id).is_none() {
-                    return Err(Error::ChildNode { node_id, child_id });
-                }
-                if !seen_child_node_ids.insert(child_id) {
-                    return Err(Error::DuplicateChildNode { node_id, child_id });
-                }
-            }
-
-            let mut seen_child_object_ids = HashSet::with_capacity(node.child_object_ids.len());
-            for &object_id in &node.child_object_ids {
-                if self.object(object_id).is_none() {
-                    return Err(Error::ChildObject { node_id, object_id });
-                }
-                if !seen_child_object_ids.insert(object_id) {
-                    return Err(Error::DuplicateChildObject { node_id, object_id });
-                }
-            }
-
-            // The node transform must be finite and non-degenerate. The
-            // rotation needs no finiteness guard of its own: a non-finite
-            // component fails the unit-length check below.
-            let position = node.transform.position;
-            let scale = node.transform.scale;
-            if !position.is_finite() || !scale.is_finite() {
-                return Err(Error::NonFiniteTransform { node_id });
-            }
-
-            if scale.x == 0.0 || scale.y == 0.0 || scale.z == 0.0 {
-                return Err(Error::ZeroScale { node_id });
-            }
-
-            let rotation = node.transform.rotation;
-            if !rotation.is_normalized_within(UNIT_ROTATION_TOLERANCE) {
-                return Err(Error::NonUnitRotation { node_id });
-            }
+            self.check_node_children(node_id, &node.child_node_ids, &node.child_object_ids)?;
+            check_node_transform(node_id, &node.transform)?;
         }
 
         // Roots.
@@ -241,6 +206,37 @@ impl VoxState {
             return Err(Error::Cycle {
                 node_id: node_ids[node_index],
             });
+        }
+
+        Ok(())
+    }
+
+    /// Checks the children of node `node_id`: each is one of this state's and
+    /// none repeats.
+    pub(crate) fn check_node_children(
+        &self,
+        node_id: U32Id<BVoxHierarchyNode>,
+        child_node_ids: &[U32Id<BVoxHierarchyNode>],
+        child_object_ids: &[U32Id<BVoxObject>],
+    ) -> Result<()> {
+        let mut seen_child_node_ids = HashSet::with_capacity(child_node_ids.len());
+        for &child_id in child_node_ids {
+            if self.hierarchy_node(child_id).is_none() {
+                return Err(Error::ChildNode { node_id, child_id });
+            }
+            if !seen_child_node_ids.insert(child_id) {
+                return Err(Error::DuplicateChildNode { node_id, child_id });
+            }
+        }
+
+        let mut seen_child_object_ids = HashSet::with_capacity(child_object_ids.len());
+        for &object_id in child_object_ids {
+            if self.object(object_id).is_none() {
+                return Err(Error::ChildObject { node_id, object_id });
+            }
+            if !seen_child_object_ids.insert(object_id) {
+                return Err(Error::DuplicateChildObject { node_id, object_id });
+            }
         }
 
         Ok(())
@@ -502,6 +498,32 @@ impl VoxState {
     pub fn value_pool_count(&self) -> usize {
         self.value_pool_ids.len()
     }
+}
+
+/// Checks the transform of node `node_id`: finite and non-degenerate. The
+/// rotation needs no finiteness guard of its own: a non-finite component fails
+/// the unit-length check.
+pub(crate) fn check_node_transform(
+    node_id: U32Id<BVoxHierarchyNode>,
+    transform: &TyTransformF64,
+) -> Result<()> {
+    if !transform.position.is_finite() || !transform.scale.is_finite() {
+        return Err(Error::NonFiniteTransform { node_id });
+    }
+
+    let scale = transform.scale;
+    if scale.x == 0.0 || scale.y == 0.0 || scale.z == 0.0 {
+        return Err(Error::ZeroScale { node_id });
+    }
+
+    if !transform
+        .rotation
+        .is_normalized_within(UNIT_ROTATION_TOLERANCE)
+    {
+        return Err(Error::NonUnitRotation { node_id });
+    }
+
+    Ok(())
 }
 
 /// The `children` index of a node lying on a `child_node_ids` cycle, or `None`

@@ -1,5 +1,6 @@
 use branded_id::U32Id;
 use std::{any::Any, collections::HashMap, fmt::Debug};
+use ty_math::{TyTransformF64, TyVector3I32, TyVector3U32};
 use voxcore::{
     BVoxHierarchyNode, BVoxMaterial, BVoxObject, BVoxPalette, BVoxVoxel, Result, VoxExt,
     VoxGcRemap, VoxState,
@@ -56,12 +57,90 @@ impl VoxExt for Box<dyn VoxconvExt> {
         (**self).hierarchy_node_will_release(main, node_id)
     }
 
+    fn hierarchy_node_name_did_set(
+        &mut self,
+        main: &VoxState,
+        node_id: U32Id<BVoxHierarchyNode>,
+        old_name: &str,
+    ) -> Result<()> {
+        (**self).hierarchy_node_name_did_set(main, node_id, old_name)
+    }
+
+    fn hierarchy_node_transform_did_set(
+        &mut self,
+        main: &VoxState,
+        node_id: U32Id<BVoxHierarchyNode>,
+        old_transform: TyTransformF64,
+    ) -> Result<()> {
+        (**self).hierarchy_node_transform_did_set(main, node_id, old_transform)
+    }
+
+    fn hierarchy_node_children_did_set(
+        &mut self,
+        main: &VoxState,
+        node_id: U32Id<BVoxHierarchyNode>,
+        old_child_node_ids: &[U32Id<BVoxHierarchyNode>],
+        old_child_object_ids: &[U32Id<BVoxObject>],
+    ) -> Result<()> {
+        (**self).hierarchy_node_children_did_set(
+            main,
+            node_id,
+            old_child_node_ids,
+            old_child_object_ids,
+        )
+    }
+
+    fn root_hierarchy_node_ids_did_set(
+        &mut self,
+        main: &VoxState,
+        old_root_ids: &[U32Id<BVoxHierarchyNode>],
+    ) -> Result<()> {
+        (**self).root_hierarchy_node_ids_did_set(main, old_root_ids)
+    }
+
     fn object_did_retain(&mut self, main: &VoxState, object_id: U32Id<BVoxObject>) -> Result<()> {
         (**self).object_did_retain(main, object_id)
     }
 
     fn object_will_release(&mut self, main: &VoxState, object_id: U32Id<BVoxObject>) -> Result<()> {
         (**self).object_will_release(main, object_id)
+    }
+
+    fn object_did_move(
+        &mut self,
+        main: &VoxState,
+        object_id: U32Id<BVoxObject>,
+        old_index: usize,
+    ) -> Result<()> {
+        (**self).object_did_move(main, object_id, old_index)
+    }
+
+    fn object_name_did_set(
+        &mut self,
+        main: &VoxState,
+        object_id: U32Id<BVoxObject>,
+        old_name: &str,
+    ) -> Result<()> {
+        (**self).object_name_did_set(main, object_id, old_name)
+    }
+
+    fn object_origin_did_set(
+        &mut self,
+        main: &VoxState,
+        object_id: U32Id<BVoxObject>,
+        old_origin: TyVector3I32,
+    ) -> Result<()> {
+        (**self).object_origin_did_set(main, object_id, old_origin)
+    }
+
+    fn object_voxels_did_remap(
+        &mut self,
+        main: &VoxState,
+        object_id: U32Id<BVoxObject>,
+        old_bounds: TyVector3U32,
+        voxel_ids: &HashMap<U32Id<BVoxVoxel>, U32Id<BVoxVoxel>>,
+    ) -> Result<()> {
+        (**self).object_voxels_did_remap(main, object_id, old_bounds, voxel_ids)
     }
 
     fn palette_did_retain(
