@@ -37,5 +37,5 @@ The design is in the [README](README.md). Each step builds the commands the
 - [x] **S6. Node setters.** `glam`'s `DQuat::from_euler(EulerRot::XYZEx, ...)`
       inverts the `to_euler_radians` that `hierarchy show` prints with.
 - [x] **S7. Node graph.** `link` reuses voxcore's cycle check.
-- [ ] **S8. Docs.** Add vxl README sections and extend the command list in the
+- [x] **S8. Docs.** Add vxl README sections and extend the command list in the
       [vxl-commands README](../vxl-commands/README.md#commands).
