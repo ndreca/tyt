@@ -1,0 +1,8 @@
+#[allow(clippy::module_inception)]
+mod profile_object;
+mod profile_object_command;
+mod profile_object_mesh;
+
+pub use profile_object::*;
+pub use profile_object_command::*;
+pub use profile_object_mesh::*;

@@ -203,7 +203,7 @@ object and errors in a mesh holding several. See
     stack in line order. The material and primitive lists merge by position, and
     an element two profiles set errors. An explicit flag replaces the element it
     collides with; see the [profile language](profile-language.md#stacking).
-    `vxl profile object-mesh list` lists the profiles a run can apply.
+    `vxl profile object mesh list` lists the profiles a run can apply.
 
 16. `--value <bindings>`
     - Repeatable: yes

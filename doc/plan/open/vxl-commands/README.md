@@ -59,8 +59,7 @@ Every command sits under the noun it addresses, then its verb.
 - [`vxl hierarchy show`](reference/hierarchy/README.md): print the scene graph.
 - [`vxl palette`](reference/palette/README.md): list, show, quantize, and remap
   palettes.
--
-  [`vxl profile object-mesh list`](../../../ref/mesh/profile-language.md#loading):
+- [`vxl profile object mesh list`](../../../ref/mesh/profile-language.md#loading):
   list the profiles `object mesh --profile` can apply.
 
 `vxl vox-doc to` already ships. The

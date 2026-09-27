@@ -1013,8 +1013,9 @@ The verbs split by shape. `list` prints one summary row per item of a
 collection, and `show` prints one thing's contents, so `palette` keeps both and
 a document gets `show`.
 
-`mesh --list-profiles` became `profile object-mesh list`, with the layout a
-`--layout` flag like every other report. `object mesh` then takes its input
+`mesh --list-profiles` became `profile object mesh list`, with the layout a
+`--layout` flag like every other report. The path after `profile` repeats the
+profiled command's path, `object mesh`. `object mesh` then takes its input
 unconditionally. The profiles moved in `.vxlconfig` from the top-level `mesh`
 section to `object.mesh`, read through an `ObjectConfig` holding one entry per
 configurable `object` command.

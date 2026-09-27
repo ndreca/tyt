@@ -3,7 +3,7 @@ use clap::Parser;
 
 /// Inspects the profiles `object mesh --profile` can apply.
 #[derive(Clone, Debug, Parser)]
-#[command(name = "object-mesh")]
+#[command(name = "mesh")]
 pub struct ProfileObjectMesh {
     #[clap(subcommand)]
     pub command: ProfileObjectMeshCommand,

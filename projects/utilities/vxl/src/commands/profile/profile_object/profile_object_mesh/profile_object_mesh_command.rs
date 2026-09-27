@@ -1,7 +1,7 @@
 use crate::{Dependencies, Result, commands::ProfileObjectMeshList};
 use clap::Subcommand;
 
-/// The `profile object-mesh` command group.
+/// The `profile object mesh` command group.
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 pub enum ProfileObjectMeshCommand {
