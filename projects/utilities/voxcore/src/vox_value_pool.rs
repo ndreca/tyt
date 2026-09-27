@@ -317,6 +317,54 @@ impl VoxValuePool {
     }
 }
 
+impl Clone for VoxValuePool {
+    fn clone(&self) -> Self {
+        let ids = &self.value_ids;
+
+        // Safety: the column holds a value for every id in the id pool.
+        let kind = unsafe {
+            match &self.kind {
+                VoxValuePoolKind::Bool(values) => {
+                    VoxValuePoolKind::Bool(values.clone_retained(ids))
+                }
+                VoxValuePoolKind::Float(values) => {
+                    VoxValuePoolKind::Float(values.clone_retained(ids))
+                }
+                VoxValuePoolKind::Int(values) => VoxValuePoolKind::Int(values.clone_retained(ids)),
+                VoxValuePoolKind::Json(values) => {
+                    VoxValuePoolKind::Json(values.clone_retained(ids))
+                }
+                VoxValuePoolKind::String(values) => {
+                    VoxValuePoolKind::String(values.clone_retained(ids))
+                }
+                VoxValuePoolKind::Vec2Float(values) => {
+                    VoxValuePoolKind::Vec2Float(values.clone_retained(ids))
+                }
+                VoxValuePoolKind::Vec2Int(values) => {
+                    VoxValuePoolKind::Vec2Int(values.clone_retained(ids))
+                }
+                VoxValuePoolKind::Vec3Float(values) => {
+                    VoxValuePoolKind::Vec3Float(values.clone_retained(ids))
+                }
+                VoxValuePoolKind::Vec3Int(values) => {
+                    VoxValuePoolKind::Vec3Int(values.clone_retained(ids))
+                }
+                VoxValuePoolKind::Vec4Float(values) => {
+                    VoxValuePoolKind::Vec4Float(values.clone_retained(ids))
+                }
+                VoxValuePoolKind::Vec4Int(values) => {
+                    VoxValuePoolKind::Vec4Int(values.clone_retained(ids))
+                }
+            }
+        };
+
+        Self {
+            value_ids: ids.clone(),
+            kind,
+        }
+    }
+}
+
 impl Drop for VoxValuePool {
     fn drop(&mut self) {
         // Safety: the column holds a value for every id in the id pool.
@@ -539,6 +587,25 @@ mod tests {
             Error::MalformedValuePoolValue {
                 value_id: value_id(0)
             }
+        );
+    }
+
+    #[test]
+    fn a_clone_keeps_ids_and_holes() {
+        let mut value_pool =
+            VoxValuePool::string(vec!["a".to_owned(), "b".to_owned(), "c".to_owned()]);
+
+        value_pool.release_value_stable(value_id(1));
+
+        let copy = value_pool.clone();
+
+        assert_eq!(copy, value_pool);
+        assert_eq!(
+            copy.iter_values().collect::<Vec<_>>(),
+            [
+                (value_id(0), VoxValuePoolValueRef::String("a")),
+                (value_id(2), VoxValuePoolValueRef::String("c")),
+            ]
         );
     }
 }

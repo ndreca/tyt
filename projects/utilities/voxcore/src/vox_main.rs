@@ -204,7 +204,11 @@ impl<T: VoxExt> VoxMain<T> {
             // Safety: retained palette ids have a value.
             let palette = unsafe { self.state.palettes.get_mut(palette_id) };
             palette.relabel_value_pool_values(&value_pool_value_remaps);
-            palette.relabel_value_pools(&value_pool_remap);
+            palette.relabel_value_pools(|value_pool_id| {
+                value_pool_remap
+                    .new_id(value_pool_id)
+                    .expect("a property names a live value pool in a valid state")
+            });
             material_remaps[palette_id.to_usize_id()] = palette.gc();
         }
 

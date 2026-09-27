@@ -112,3 +112,33 @@ vmax, goxl, and mvox refreshes.
   `ty-math` dependency for it.
 - `RequiredSelection::resolve_one_object` enforces the exactly-one rule for
   `set name` and `reorder`.
+
+## S4. Object placement and copies
+
+- `VoxObject`, `VoxPalette`, and `VoxValuePool` implement `Clone` by hand in
+  voxcore. Their `IdField` columns hold non-`Copy` values, and branded-id
+  clones an `IdField` only for `Copy` values, so `derive` does not compile.
+  branded-id 0.1.11 adds `IdField::clone_retained`, which copies the value at
+  each id the pool retains. A clone keeps its ids and holes, so material and
+  value ids stay valid.
+- branded-id is a submodule the workspace patches to, so voxcore builds
+  against 0.1.11 before it publishes.
+- `VoxObject::relabel_layer_palettes` and `VoxPalette::relabel_value_pools`
+  are public and take a closure. They translate the ids that point into
+  another main, and `gc` calls them with its remaps. `VoxMain` hands out only
+  shared references, so a relabel reaches only a detached value and cannot
+  skip a hook.
+- `link_objects`, `unlink_objects`, `duplicate_objects`, and `add_objects`
+  live in voxsmith. `add_objects` takes the source as a `&VoxState`.
+- `link` appends to the parent's child objects. `unlink` leaves a childless
+  parent in place, unlike `remove`.
+- A copy from `duplicate` or `add` goes at the end of the object list and at
+  the end of each placing node's child objects.
+- `add` copies the referenced palettes and value pools in source listing
+  order. The new root nodes for unparented copies are appended to the roots
+  in one `set_root_hierarchy_node_ids` call.
+- `ParentSelection::resolve_required` gives `link` and `unlink` a usage error
+  when no parent selector is given.
+- `object add` resolves `--source-from` inline, the way `VoxelInput` and
+  `MeshInput` each do for `--from`.
+- `HookRecorder` also logs `palette_did_retain`.

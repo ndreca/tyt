@@ -99,19 +99,11 @@ impl VoxObject {
         let layer_ids: Vec<_> = self.layer_ids.iter().collect();
         let live_ids: Vec<_> = self.liveness.iter_live().collect();
         for layer_id in layer_ids {
-            // Translate the referenced palette id to its relabeled value.
+            // Samples translate while the layer still holds the palette's
+            // pre-gc id. The filler cells of non-live voxels are exempt.
             // Safety: retained layer ids have a `layer_palette_ids` value.
-            let old_palette_id = *unsafe { self.layer_palette_ids.get(layer_id) };
-            let new_palette_id = palette_remap
-                .new_id(old_palette_id)
-                .expect("a layer references a live palette in a valid state");
-
-            // Safety: same retained layer id.
-            *unsafe { self.layer_palette_ids.get_mut(layer_id) } = new_palette_id;
-
-            // Translate each live voxel's sample material through that
-            // palette's relabeling; non-live voxels' filler cells are exempt.
-            let material_remap = &material_remaps[old_palette_id.to_usize_id()];
+            let palette_id = *unsafe { self.layer_palette_ids.get(layer_id) };
+            let material_remap = &material_remaps[palette_id.to_usize_id()];
             // Safety: retained layer ids have a sample column.
             let column = unsafe { self.samples.get_mut(layer_id) };
             for &voxel_id in &live_ids {
@@ -122,6 +114,12 @@ impl VoxObject {
             }
         }
 
+        self.relabel_layer_palettes(|palette_id| {
+            palette_remap
+                .new_id(palette_id)
+                .expect("a layer references a live palette in a valid state")
+        });
+
         // Compact the layer id pool; the values above were already translated,
         // so this only relabels layer keys.
         let layer_remap = self.layer_ids.gc();
@@ -130,6 +128,23 @@ impl VoxObject {
         // nothing has retained or released since.
         unsafe { self.samples.gc(&layer_remap) };
         unsafe { self.layer_palette_ids.gc(&layer_remap) };
+    }
+
+    /// Translates every layer's palette id through `palette_id`, for an object
+    /// moving to another [`VoxMain`](crate::VoxMain)'s palettes. Material ids
+    /// are palette-local, so the samples keep them.
+    /// [`VoxMain::retain_object`](crate::VoxMain::retain_object) checks the
+    /// new ids on insert.
+    pub fn relabel_layer_palettes(
+        &mut self,
+        mut palette_id: impl FnMut(U32Id<BVoxPalette>) -> U32Id<BVoxPalette>,
+    ) {
+        let layer_ids: Vec<_> = self.layer_ids.iter().collect();
+        for layer_id in layer_ids {
+            // Safety: retained layer ids have a `layer_palette_ids` value.
+            let slot = unsafe { self.layer_palette_ids.get_mut(layer_id) };
+            *slot = palette_id(*slot);
+        }
     }
 
     /// Grid size in voxels.
@@ -558,6 +573,21 @@ impl VoxObject {
     }
 }
 
+impl Clone for VoxObject {
+    fn clone(&self) -> Self {
+        Self {
+            name: self.name.clone(),
+            bounds: self.bounds,
+            origin: self.origin,
+            liveness: self.liveness.clone(),
+            layer_ids: self.layer_ids.clone(),
+            layer_palette_ids: self.layer_palette_ids.clone(),
+            // Safety: retained layer ids have a sample column.
+            samples: unsafe { self.samples.clone_retained(&self.layer_ids) },
+        }
+    }
+}
+
 impl Drop for VoxObject {
     fn drop(&mut self) {
         // Safety: every `layer_ids` id has a value in both columns.
@@ -975,5 +1005,46 @@ mod tests {
             [(second_id, U32Id::<BVoxPalette>::from_u32(1))]
         );
         assert_eq!(object.retain_voxel(voxel_id, &[material_id(6)]), Ok(()));
+    }
+
+    #[test]
+    fn a_clone_copies_every_layer_and_voxel() {
+        let mut object = seated_object();
+
+        let (first_layer_id, _) = object.iter_layers().next().unwrap();
+        object.release_layer(first_layer_id).unwrap();
+
+        let mut copy = object.clone();
+
+        assert_eq!(copy.name(), "o");
+        assert_eq!(copy.bounds(), object.bounds());
+        assert_eq!(copy.origin(), object.origin());
+        assert_eq!(
+            copy.iter_layers().collect::<Vec<_>>(),
+            object.iter_layers().collect::<Vec<_>>()
+        );
+        assert_eq!(live_cells(&copy), live_cells(&object));
+
+        let voxel_id = copy.iter_live().next().unwrap();
+        copy.release_voxel(voxel_id).unwrap();
+
+        assert_eq!(object.live_count(), 2);
+    }
+
+    #[test]
+    fn relabel_layer_palettes_keeps_the_samples() {
+        let mut object = seated_object();
+
+        let before = live_cells(&object);
+
+        object.relabel_layer_palettes(|palette_id| U32Id::from_u32(palette_id.to_u32() + 10));
+
+        let palette_ids: Vec<_> = object
+            .iter_layers()
+            .map(|(_, palette_id)| palette_id.to_u32())
+            .collect();
+
+        assert_eq!(palette_ids, [10, 11]);
+        assert_eq!(live_cells(&object), before);
     }
 }

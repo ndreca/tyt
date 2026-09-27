@@ -1,9 +1,12 @@
 use branded_id::U32Id;
 use std::collections::HashMap;
 use ty_math::{TyTransformF64, TyVector3I32, TyVector3U32};
-use voxcore::{BVoxHierarchyNode, BVoxObject, BVoxVoxel, Result, VoxExt, VoxMain, VoxState};
+use voxcore::{
+    BVoxHierarchyNode, BVoxObject, BVoxPalette, BVoxVoxel, Result, VoxExt, VoxMain, VoxState,
+};
 
-/// Records the node and object hooks a main fires, one line apiece.
+/// Records the node, object, and palette-retain hooks a main fires, one line
+/// apiece.
 #[derive(Debug, Default)]
 pub(crate) struct HookRecorder(Vec<String>);
 
@@ -145,6 +148,17 @@ impl VoxExt for HookRecorder {
     ) -> Result<()> {
         self.0
             .push(format!("object {} voxels remapped", object_id.to_u32()));
+
+        Ok(())
+    }
+
+    fn palette_did_retain(
+        &mut self,
+        _state: &VoxState,
+        palette_id: U32Id<BVoxPalette>,
+    ) -> Result<()> {
+        self.0
+            .push(format!("palette {} retained", palette_id.to_u32()));
 
         Ok(())
     }

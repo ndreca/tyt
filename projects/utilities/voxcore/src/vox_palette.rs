@@ -315,17 +315,19 @@ impl VoxPalette {
         }
     }
 
-    /// Translates every property's value-pool id through `remap`, matching a
-    /// value-pool store a [`VoxMain`](crate::VoxMain) is compacting. Requires a
-    /// referentially valid palette, so every property names a live value pool.
-    pub(crate) fn relabel_value_pools(&mut self, remap: &IdRemap<BVoxValuePool, u32>) {
+    /// Translates every property's value-pool id through `value_pool_id`, for
+    /// a palette moving to another [`VoxMain`](crate::VoxMain)'s value pools.
+    /// [`VoxMain::retain_palette`](crate::VoxMain::retain_palette) checks the
+    /// new ids on insert.
+    pub fn relabel_value_pools(
+        &mut self,
+        mut value_pool_id: impl FnMut(U32Id<BVoxValuePool>) -> U32Id<BVoxValuePool>,
+    ) {
         let property_ids: Vec<_> = self.property_ids.iter().collect();
         for property_id in property_ids {
             // Safety: retained property ids have a value.
             let property = unsafe { self.properties.get_mut(property_id) };
-            property.value_pool_id = remap
-                .new_id(property.value_pool_id)
-                .expect("a property names a live value pool in a valid state");
+            property.value_pool_id = value_pool_id(property.value_pool_id);
         }
     }
 
@@ -362,6 +364,26 @@ impl VoxPalette {
                     }
                 }
             }
+        }
+    }
+}
+
+impl Clone for VoxPalette {
+    fn clone(&self) -> Self {
+        // Safety: each column holds a value for every id in its id pool.
+        let (properties, materials) = unsafe {
+            (
+                self.properties.clone_retained(&self.property_ids),
+                self.materials.clone_retained(&self.material_ids),
+            )
+        };
+
+        Self {
+            property_ids: self.property_ids.clone(),
+            properties,
+            material_ids: self.material_ids.clone(),
+            materials,
+            property_id_by_name: self.property_id_by_name.clone(),
         }
     }
 }
@@ -731,5 +753,46 @@ mod tests {
 
         assert_eq!(palette.material_count(), 2);
         assert_eq!(value_ids, [value_id(0), value_id(2)]);
+    }
+
+    #[test]
+    fn a_clone_keeps_ids_and_holes() {
+        let mut palette = VoxPalette::default();
+        let property_id = palette
+            .retain_property("a".to_owned(), value_pool_id(0), value_id(0))
+            .unwrap();
+
+        let released_id = palette.retain_material(vec![value_id(1)]).unwrap();
+        let kept_id = palette.retain_material(vec![value_id(2)]).unwrap();
+        palette.release_material(released_id).unwrap();
+
+        let copy = palette.clone();
+
+        assert_eq!(copy.iter_materials().collect::<Vec<_>>(), [kept_id]);
+        assert!(!copy.contains_material(released_id));
+        assert_eq!(copy.value_id(kept_id, property_id), Some(value_id(2)));
+        assert_eq!(copy.property_id_by_name("a"), Some(property_id));
+    }
+
+    #[test]
+    fn relabel_value_pools_moves_each_property() {
+        let mut palette = VoxPalette::default();
+        let a_id = palette
+            .retain_property("a".to_owned(), value_pool_id(0), value_id(0))
+            .unwrap();
+        let b_id = palette
+            .retain_property("b".to_owned(), value_pool_id(1), value_id(0))
+            .unwrap();
+
+        palette.relabel_value_pools(|value_pool_id| U32Id::from_u32(value_pool_id.to_u32() + 5));
+
+        assert_eq!(
+            palette.property(a_id).unwrap().value_pool_id,
+            value_pool_id(5)
+        );
+        assert_eq!(
+            palette.property(b_id).unwrap().value_pool_id,
+            value_pool_id(6)
+        );
     }
 }

@@ -24,7 +24,6 @@ impl ParentSelection {
     /// The parent node the selectors match in `main`. Returns `None` for the
     /// root list when no selector was given, and errors unless the selectors
     /// match exactly one node.
-    #[cfg_attr(not(test), expect(dead_code, reason = "object link uses it from S4"))]
     pub fn resolve<T: VoxExt>(
         &self,
         main: &VoxMain<T>,
@@ -44,6 +43,22 @@ impl ParentSelection {
         };
 
         Ok(Some(node_id))
+    }
+
+    /// The parent node the selectors match in `main`, for a command that needs
+    /// one. Errors unless a selector was given and the selectors match exactly
+    /// one node.
+    pub fn resolve_required<T: VoxExt>(
+        &self,
+        main: &VoxMain<T>,
+    ) -> Result<U32Id<BVoxHierarchyNode>> {
+        let Some(node_id) = self.resolve(main)? else {
+            return Err(Error::usage(
+                "this command needs a parent node; pass --select-parent or --select-parent-index",
+            ));
+        };
+
+        Ok(node_id)
     }
 }
 
@@ -86,6 +101,18 @@ mod tests {
     #[test]
     fn no_selector_targets_the_root_list() {
         assert_eq!(parent(&[]).resolve(&two_doors()).unwrap(), None);
+    }
+
+    #[test]
+    fn a_required_parent_needs_a_selector() {
+        let main = two_doors();
+
+        assert!(parent(&[]).resolve_required(&main).is_err());
+        assert!(
+            parent(&["--select-parent-index", "0"])
+                .resolve_required(&main)
+                .is_ok()
+        );
     }
 
     #[test]

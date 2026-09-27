@@ -38,10 +38,6 @@ pub(crate) use file_name::*;
 pub(crate) use mesh_input::*;
 pub(crate) use none_or::*;
 pub(crate) use object_selection::*;
-#[cfg_attr(
-    not(test),
-    expect(unused_imports, reason = "object link uses it from S4")
-)]
 pub(crate) use parent_selection::*;
 pub(crate) use parse_index_range::*;
 pub(crate) use positive_count::*;
