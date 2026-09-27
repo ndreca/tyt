@@ -26,7 +26,7 @@ The design is in the [README](README.md). Each step builds the commands the
       paths. The voxj output reuses `VoxjEncodingOptions`. Its `resolve_output`
       defaults to compact JSON today and must default to the input's
       container instead.
-- [ ] **S3. Object properties.** `trim` and `set edit-bounds` renumber voxel
+- [x] **S3. Object properties.** `trim` and `set edit-bounds` renumber voxel
       ids and fire the voxel remap hook.
 - [ ] **S4. Object placement and copies.** `VoxObject` has no `Clone`. Derive
       it or rebuild copies through `new`, `retain_layer`, and `retain_voxel`,

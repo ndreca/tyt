@@ -91,3 +91,24 @@ vmax, goxl, and mvox refreshes.
   deterministically.
 - voxsmith tests share a `HookRecorder` ext under a `cfg(test)`
   `test_utilities` module. It logs the node and object hooks.
+
+## S3. Object properties
+
+- `object set name`, `object set origin`, and `object reorder` each make one
+  voxcore setter call per object, so vxl calls `set_object_name`,
+  `set_object_origin`, and `move_object` directly. `trim_objects` and
+  `set_edit_bounds` carry their own logic and live in voxsmith.
+- `trim` and `set edit-bounds` call `remap_object_voxels` and then
+  `set_object_origin`, so an ext sees the voxel remap under the old origin
+  before the origin moves.
+- `set edit-bounds` checks every live voxel against the node-local box before
+  it remaps, so the error reports the box the user typed. A `max` below `min`
+  errors. A zero-size axis is allowed.
+- `trim` errors when the moved origin leaves the `i32` range. An object that
+  is already tight still remaps and fires its hooks.
+- Vector flags parse as `Vec<i32>` with `num_args = 3`,
+  `allow_negative_numbers`, and `ArgAction::Set`, so a repeated flag errors.
+  vxl's `vector3_i32` turns the values into a `TyVector3I32`, and vxl gains a
+  `ty-math` dependency for it.
+- `RequiredSelection::resolve_one_object` enforces the exactly-one rule for
+  `set name` and `reorder`.

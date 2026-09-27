@@ -36,6 +36,22 @@ impl RequiredSelection {
         Ok(object_ids)
     }
 
+    /// The one object the selectors match in `main`. Errors unless they match
+    /// exactly one.
+    pub fn resolve_one_object<T: VoxExt>(&self, main: &VoxMain<T>) -> Result<U32Id<BVoxObject>> {
+        let object_ids = self.resolve_objects(main)?;
+
+        let [object_id] = object_ids[..] else {
+            return Err(Error::usage(format!(
+                "the selection matched {} objects but this command needs exactly one; check \
+                 --select and --select-index",
+                object_ids.len()
+            )));
+        };
+
+        Ok(object_id)
+    }
+
     /// The ids of the nodes the selectors match in `main`, in document order.
     /// Errors when they match nothing.
     #[cfg_attr(not(test), expect(dead_code, reason = "node commands use it from S6"))]
@@ -59,7 +75,8 @@ impl RequiredSelection {
 mod tests {
     use crate::RequiredSelection;
     use clap::Parser;
-    use voxcore::{VoxHierarchyNode, VoxMain};
+    use ty_math::TyVector3U32;
+    use voxcore::{VoxHierarchyNode, VoxMain, VoxObject};
 
     #[derive(Debug, Parser)]
     struct Cli {
@@ -106,6 +123,28 @@ mod tests {
                 .unwrap()
                 .len(),
             1
+        );
+    }
+
+    #[test]
+    fn resolve_one_object_needs_exactly_one_match() {
+        let mut main: VoxMain = VoxMain::default();
+
+        for name in ["a", "b"] {
+            let object = VoxObject::new(name.to_owned(), TyVector3U32::splat(1)).unwrap();
+
+            main.retain_object(object).unwrap();
+        }
+
+        assert!(
+            selection(&["--select", "a"])
+                .resolve_one_object(&main)
+                .is_ok()
+        );
+        assert!(
+            selection(&["--select-index", "0-1"])
+                .resolve_one_object(&main)
+                .is_err()
         );
     }
 }
