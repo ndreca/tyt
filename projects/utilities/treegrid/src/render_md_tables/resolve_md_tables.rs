@@ -8,10 +8,10 @@ impl TreeGridOptions {
     /// The tables render's shape, rejecting every option it does not
     /// consume.
     pub fn resolve_md_tables(&self) -> Result<TreeGridTableShape, TreeGridError> {
-        self.no_hierarchy_options()?;
+        self.no_box_hierarchy_options()?;
         self.no_width()?;
         let label = match self.label.unwrap_or(TreeGridLabelKind::Concat) {
-            TreeGridLabelKind::None => return Err(TreeGridError::LabelNoneWithMdTables),
+            TreeGridLabelKind::None => return Err(TreeGridError::LabelNoneWithTables),
             TreeGridLabelKind::Concat => TreeGridTableLabelMode::Concat,
             TreeGridLabelKind::Header => TreeGridTableLabelMode::Header,
         };
@@ -78,7 +78,7 @@ mod tests {
 
         assert_eq!(
             options.resolve_md_tables(),
-            Err(TreeGridError::LabelNoneWithMdTables)
+            Err(TreeGridError::LabelNoneWithTables)
         );
     }
 

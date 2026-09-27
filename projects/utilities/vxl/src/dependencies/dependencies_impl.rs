@@ -135,7 +135,7 @@ impl TerminalColumns for DependenciesImpl {
         }
     }
 
-    /// No terminal-width detection off unix; the `rows` layout does not wrap.
+    /// No terminal-width detection off unix; the `text-rows` layout does not wrap.
     #[cfg(not(unix))]
     fn terminal_columns(&self) -> Option<usize> {
         None

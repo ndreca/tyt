@@ -3,29 +3,34 @@ use voxsmith::operations::mesh::ProfileListLayout;
 
 impl CliValue for ProfileListLayout {
     const VARIANTS: &'static [Self] = &[
-        ProfileListLayout::Hierarchy,
+        ProfileListLayout::BoxHierarchy,
+        ProfileListLayout::BoxTables,
         ProfileListLayout::JsonCompact,
         ProfileListLayout::JsonPretty,
         ProfileListLayout::MdLists,
         ProfileListLayout::MdTables,
-        ProfileListLayout::Rows,
+        ProfileListLayout::TextRows,
     ];
 
     fn name(self) -> &'static str {
         match self {
-            ProfileListLayout::Hierarchy => "hierarchy",
+            ProfileListLayout::BoxHierarchy => "box-hierarchy",
+            ProfileListLayout::BoxTables => "box-tables",
             ProfileListLayout::JsonCompact => "json-compact",
             ProfileListLayout::JsonPretty => "json-pretty",
             ProfileListLayout::MdLists => "md-lists",
             ProfileListLayout::MdTables => "md-tables",
-            ProfileListLayout::Rows => "rows",
+            ProfileListLayout::TextRows => "text-rows",
         }
     }
 
     fn help(self) -> &'static str {
         match self {
-            ProfileListLayout::Hierarchy => {
+            ProfileListLayout::BoxHierarchy => {
                 "A box-glyph tree, one branch per origin over its profiles"
+            }
+            ProfileListLayout::BoxTables => {
+                "One box-glyph table, a column per origin over its profiles"
             }
             ProfileListLayout::JsonCompact => "Compact, single-line JSON",
             ProfileListLayout::JsonPretty => "Pretty-printed, multi-line JSON",
@@ -36,7 +41,7 @@ impl CliValue for ProfileListLayout {
             ProfileListLayout::MdTables => {
                 "One markdown table, a column per origin over its profiles"
             }
-            ProfileListLayout::Rows => "One row per origin, its profiles beside it",
+            ProfileListLayout::TextRows => "One row per origin, its profiles beside it",
         }
     }
 }

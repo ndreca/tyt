@@ -16,10 +16,10 @@ let metallic = grid.retain_child(palette, TreeGridLabel::quoted("metallicFactor"
 grid.push_value(metallic, TreeGridValue::new("1"));
 grid.push_value(metallic, TreeGridValue::new("0.2"));
 
-let rows = grid.render_rows(&TreeGridRowsOptions::default());
+let rows = grid.render_text_rows(&TreeGridTextRowsOptions::default());
 ```
 
-The default `rows` layout renders each data node as one labeled row:
+The default `text-rows` layout renders each data node as one labeled row:
 
 ```text
 0."baseColorFactor" #FF0000FF #00FF0080
@@ -27,12 +27,12 @@ The default `rows` layout renders each data node as one labeled row:
 0."metallicFactor"  1 0.2
 ```
 
-The `hierarchy` layout renders the same grid as a box-glyph tree;
+The `box-hierarchy` layout renders the same grid as a box-glyph tree;
 `value_children` gives each value its own line:
 
 ```rust
-let tree = grid.render_hierarchy(
-    &TreeGridHierarchyOptions::default().with_value_children(true),
+let tree = grid.render_box_hierarchy(
+    &TreeGridBoxHierarchyOptions::default().with_value_children(true),
 );
 ```
 
@@ -47,9 +47,9 @@ let tree = grid.render_hierarchy(
 ```
 
 The other layouts arrange the same grid as aligned columns, markdown tables,
-numbered markdown lists under headings, or JSON, and a label mode decides
-whether the text layouts label data with full dot-joined paths, with leaf
-segments under nested markdown headings, or not at all.
+box-glyph tables, numbered markdown lists under headings, or JSON, and a label
+mode decides whether the text layouts label data with full dot-joined paths,
+with leaf segments under nested markdown headings, or not at all.
 
 Each render method takes only the options its layout consumes, so every
 combination that compiles is valid and rendering always succeeds. Options can
@@ -59,7 +59,7 @@ consume:
 
 ```rust
 let options = TreeGridOptions::default().with_value_children(true);
-let tree = grid.render_hierarchy(&options.resolve_hierarchy()?);
+let tree = grid.render_box_hierarchy(&options.resolve_box_hierarchy()?);
 ```
 
 Values can be any type: a cell policy (`TreeGridCells`) turns them into cells.
@@ -81,7 +81,7 @@ let mut grid = TreeGrid::with_cells(TextCells);
 let position = grid.retain_root(TreeGridLabel::bare("position"));
 grid.push_value(position, "[12.5, 0.5, 10.0]".to_owned());
 
-let tree = grid.render_hierarchy(&TreeGridHierarchyOptions::default());
+let tree = grid.render_box_hierarchy(&TreeGridBoxHierarchyOptions::default());
 ```
 
 ```text
@@ -89,9 +89,10 @@ let tree = grid.render_hierarchy(&TreeGridHierarchyOptions::default());
 ```
 
 Each layout rides its own default-on cargo feature named for its render module
-(`render_hierarchy`, `render_rows`, `render_columns`, `render_md_tables`,
-`render_md_lists`), its render method arriving on a small extension trait, so an
-adopter that renders only one layout can trim the rest. The `json-pretty` /
+(`render_box_hierarchy`, `render_box_tables`, `render_md_lists`,
+`render_md_tables`, `render_text_columns`, `render_text_rows`), its render
+method arriving on a small extension trait, so an adopter that renders only one
+layout can trim the rest. The `json-pretty` /
 `json-compact` layouts ride the optional `json` feature, which pulls in
 `serde_json`; `TreeGridJsonValue` pairs a value with a native JSON form when its
 text and JSON diverge:

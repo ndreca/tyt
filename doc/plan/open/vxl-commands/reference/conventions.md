@@ -24,17 +24,20 @@ These hold across the commands and match the existing `to` commands.
    `baseColor`), operate on a whole property, and reject a component.
    Property keys are the glTF vocabulary names such as `baseColor`.
 5. The read-only reports render with `--layout`, every command drawing its
-   values from one shared vocabulary: `hierarchy`, `rows`, `columns`,
-   `md-tables`, `md-lists`, `json-pretty`, and `json-compact`.
-   [`palette show`](palette/show.md) offers all six, defaults to `rows`, and
-   refines them with `--label`, `--header-level`, and `--table-shape`.
-   [`hierarchy show`](hierarchy/show.md) offers `hierarchy` (its default),
-   `json-pretty`, and `json-compact`. `validate` and `info` offer `md-tables`
-   (their default), `json-pretty`, and `json-compact`, and
-   [`palette list`](palette/list.md) adds a `hierarchy` tree to those three
-   and defaults to it. `mesh --list-profiles` takes the layout as its
-   optional value, `hierarchy`, `json-compact`, `json-pretty`, `md-lists`,
-   `md-tables`, or `rows`, defaulting to `hierarchy`.
+   values from one shared vocabulary whose prefix names the output family:
+   `box-hierarchy` and `box-tables` draw with box glyphs, `json-compact` and
+   `json-pretty` serialize, `md-lists` and `md-tables` emit markdown, and
+   `text-columns` and `text-rows` pad plain text.
+   [`palette show`](palette/show.md) offers all eight, defaults to
+   `text-rows`, and refines them with `--label`, `--header-level`, and
+   `--table-shape`. [`hierarchy show`](hierarchy/show.md) offers
+   `box-hierarchy` (its default), `json-compact`, and `json-pretty`.
+   `validate` offers `json-compact`, `json-pretty`, and `md-tables` (its
+   default); `info` adds `box-tables` to those three, and
+   [`palette list`](palette/list.md) adds `box-hierarchy` (its default) and
+   `box-tables`. `mesh --list-profiles` takes the layout as its optional
+   value, `box-hierarchy` (its default), `box-tables`, `json-compact`,
+   `json-pretty`, `md-lists`, `md-tables`, or `text-rows`.
 6. Multiple values are passed by repeating the flag, as in
    `--select-index 0 --select-index 3`, not as one comma-separated argument. The
    exception is the `--texture-map` channel list, where the comma-separated RGBA

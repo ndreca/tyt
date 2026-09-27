@@ -5,7 +5,7 @@ pub enum HierarchyShowLayout {
     /// The scene graph as a box-glyph tree, each entity's tag and view rows
     /// inline on its nodes.
     #[default]
-    Hierarchy,
+    BoxHierarchy,
 
     /// The scene graph as single-line JSON records.
     JsonCompact,

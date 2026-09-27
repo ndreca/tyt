@@ -8,7 +8,7 @@ impl TreeGridOptions {
         self.no_width()?;
         self.no_header_level()?;
         self.no_table_shape()?;
-        self.no_hierarchy_options()
+        self.no_box_hierarchy_options()
     }
 }
 
@@ -21,7 +21,7 @@ mod tests {
         assert_eq!(TreeGridOptions::default().resolve_json(), Ok(()));
         assert_eq!(
             TreeGridOptions::default().with_width(80).resolve_json(),
-            Err(TreeGridError::WidthWithoutRows)
+            Err(TreeGridError::WidthWithoutTextRows)
         );
     }
 }

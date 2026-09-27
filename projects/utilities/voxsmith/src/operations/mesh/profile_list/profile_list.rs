@@ -1,9 +1,9 @@
 use crate::operations::mesh::{ProfileListGroup, ProfileListLayout};
 use treegrid::{
-    TreeGrid, TreeGridHierarchyOptions, TreeGridJsonValue, TreeGridJsonValueCells, TreeGridLabel,
-    TreeGridMdListsOptions, TreeGridNestedTableOptions, TreeGridRenderHierarchy,
-    TreeGridRenderJson, TreeGridRenderMdLists, TreeGridRenderMdTables, TreeGridRenderRows,
-    TreeGridRowsOptions, TreeGridTableShape,
+    TreeGrid, TreeGridBoxHierarchyOptions, TreeGridJsonValue, TreeGridJsonValueCells,
+    TreeGridLabel, TreeGridMdListsOptions, TreeGridNestedTableOptions, TreeGridRenderBoxHierarchy,
+    TreeGridRenderBoxTables, TreeGridRenderJson, TreeGridRenderMdLists, TreeGridRenderMdTables,
+    TreeGridRenderTextRows, TreeGridTableShape, TreeGridTableShapeKind, TreeGridTextRowsOptions,
 };
 
 /// Renders `groups` in `layout`, one node per group in the given order over
@@ -11,11 +11,14 @@ use treegrid::{
 /// putting one top-level heading over a section per group.
 pub fn profile_list(groups: &[ProfileListGroup], layout: ProfileListLayout) -> String {
     match layout {
-        ProfileListLayout::Hierarchy => build_grid(groups, None).render_hierarchy(
-            &TreeGridHierarchyOptions::default()
+        ProfileListLayout::BoxHierarchy => build_grid(groups, None).render_box_hierarchy(
+            &TreeGridBoxHierarchyOptions::default()
                 .with_bare_roots(true)
                 .with_value_children(true),
         ),
+        ProfileListLayout::BoxTables => {
+            build_grid(groups, None).render_box_tables(TreeGridTableShapeKind::Nested)
+        }
         ProfileListLayout::JsonCompact => build_grid(groups, None).render_json_compact(),
         ProfileListLayout::JsonPretty => build_grid(groups, None).render_json_pretty(),
         ProfileListLayout::MdLists => {
@@ -24,8 +27,8 @@ pub fn profile_list(groups: &[ProfileListGroup], layout: ProfileListLayout) -> S
         ProfileListLayout::MdTables => build_grid(groups, None).render_md_tables(
             &TreeGridTableShape::Nested(TreeGridNestedTableOptions::default()),
         ),
-        ProfileListLayout::Rows => {
-            build_grid(groups, None).render_rows(&TreeGridRowsOptions::default())
+        ProfileListLayout::TextRows => {
+            build_grid(groups, None).render_text_rows(&TreeGridTextRowsOptions::default())
         }
     }
 }
@@ -79,7 +82,7 @@ mod tests {
     #[test]
     fn hierarchy_branches_each_group_in_order() {
         assert_eq!(
-            profile_list(&groups(), ProfileListLayout::Hierarchy),
+            profile_list(&groups(), ProfileListLayout::BoxHierarchy),
             "built in\n\
              ├ albedo\n\
              ├ defaults\n\
@@ -91,6 +94,24 @@ mod tests {
              \n\
              /repo/.vxlconfig\n\
              └ orm\n"
+        );
+    }
+
+    #[test]
+    fn box_tables_give_each_group_a_boxed_column() {
+        assert_eq!(
+            profile_list(&groups(), ProfileListLayout::BoxTables),
+            "┌───┬──────────┬──────────────────┬──────────────────┐\n\
+             │ # │ built in │ /home/.vxlconfig │ /repo/.vxlconfig │\n\
+             ├───┼──────────┼──────────────────┼──────────────────┤\n\
+             │ 0 │ albedo   │ matte            │ orm              │\n\
+             ├───┼──────────┼──────────────────┼──────────────────┤\n\
+             │ 1 │ defaults │                  │                  │\n\
+             ├───┼──────────┼──────────────────┼──────────────────┤\n\
+             │ 2 │ emissive │                  │                  │\n\
+             ├───┼──────────┼──────────────────┼──────────────────┤\n\
+             │ 3 │ pbr      │                  │                  │\n\
+             └───┴──────────┴──────────────────┴──────────────────┘\n"
         );
     }
 
@@ -120,7 +141,7 @@ mod tests {
     #[test]
     fn rows_put_each_group_beside_its_profiles() {
         assert_eq!(
-            profile_list(&groups(), ProfileListLayout::Rows),
+            profile_list(&groups(), ProfileListLayout::TextRows),
             "built in         albedo defaults emissive pbr\n\
              \n\
              /home/.vxlconfig matte\n\
@@ -162,7 +183,7 @@ mod tests {
 
     #[test]
     fn no_groups_render_nothing() {
-        assert_eq!(profile_list(&[], ProfileListLayout::Hierarchy), "");
+        assert_eq!(profile_list(&[], ProfileListLayout::BoxHierarchy), "");
         assert_eq!(profile_list(&[], ProfileListLayout::MdLists), "");
         assert_eq!(profile_list(&[], ProfileListLayout::JsonCompact), "[]\n");
     }

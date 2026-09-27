@@ -14,7 +14,7 @@ and `cargo test --workspace` all pass. The per-step keyboard record is
 in
 [reference/implementation-decisions.md](reference/implementation-decisions.md).
 One future option stays deferred, not blocking: whether `hierarchy
-show` / vmax / fbx expose the `rows` / `columns` / `md-tables` layouts,
+show` / vmax / fbx expose the `text-rows` / `text-columns` / `md-tables` layouts,
 once someone wants them.
 
 Four commands orbit the same idea -- a hierarchical collection whose nodes
@@ -73,8 +73,8 @@ pairs it with a native JSON form -- together exactly the shape of
 `palette_show`'s `Sample`. A node's cell format (`visual` /
 `visual-text` / `text`) applies to its values; unset, the policy
 picks per value. One
-render method per layout (`render_hierarchy`, `render_rows`,
-`render_columns`, `render_md_tables`, `render_json_pretty`,
+render method per layout (`render_box_hierarchy`, `render_text_rows`,
+`render_text_columns`, `render_md_tables`, `render_json_pretty`,
 `render_json_compact`) arranges the same populated grid, each taking
 only the options its layout consumes and returning `String`
 infallibly, and a label mode (`none` / `concat` / `header`) decides
@@ -100,10 +100,10 @@ Dependencies: `branded-id`, plus two optional features: `json` gates
 JSON layouts (JSON-rendering adopters enable it), and `ty-math` gates
 the typed-color value constructors (vxl enables it at no cost; it
 already depends on ty-math). Each layout also rides its own
-default-on feature named for its render module (`render_hierarchy`,
-`render_rows`, `render_columns`, `render_md_tables`) whose
+default-on feature named for its render module (`render_box_hierarchy`,
+`render_text_rows`, `render_text_columns`, `render_md_tables`) whose
 module holds that layout's render extension trait
-(`TreeGridRenderHierarchy` and kin), its options payload, and its
+(`TreeGridRenderBoxHierarchy` and kin), its options payload, and its
 `resolve_*` impl, so an adopter can trim to the layouts it renders
 (S4b, 2026-07-20). No clap, no libc, no tyt-common. No IO
 `Dependencies` trait and no `impl` feature: the optional capabilities
@@ -117,10 +117,10 @@ follow house style: one per file, `TreeGrid` prefix (`TreeGrid`,
 `TreeGridNode`, `TreeGridLabel`, `TreeGridValue`, `TreeGridSwatch`,
 `TreeGridVisual`,
 `TreeGridCellFormat`, the render extension traits
-(`TreeGridRenderHierarchy`, `TreeGridRenderRows`,
-`TreeGridRenderColumns`, `TreeGridRenderMdTables`,
+(`TreeGridRenderBoxHierarchy`, `TreeGridRenderTextRows`,
+`TreeGridRenderTextColumns`, `TreeGridRenderMdTables`,
 `TreeGridRenderJson`), the per-layout option payloads
-(`TreeGridHierarchyOptions`, `TreeGridRowsOptions`, and kin),
+(`TreeGridBoxHierarchyOptions`, `TreeGridTextRowsOptions`, and kin),
 `TreeGridLabelMode`, `TreeGridTableShape`, the loose
 `TreeGridOptions` with its `*Kind` enums, `TreeGridError`,
 `BTreeGridNode`).
@@ -142,7 +142,7 @@ grid.push_value(component, TreeGridValue::unorm8(128));
 let options = TreeGridOptions::default()
     .with_label(TreeGridLabelKind::Concat)
     .with_width(80);
-let output = grid.render_rows(&options.resolve_rows()?);
+let output = grid.render_text_rows(&options.resolve_text_rows()?);
 // 0."baseColorFactor".a 255 128
 ```
 
@@ -157,15 +157,15 @@ as `hierarchy show` already does.
 One render method per layout, with the semantics specified precisely
 in [reference/rendering-spec.md](reference/rendering-spec.md):
 
-1. `hierarchy`: the box-glyph tree. Annotations show; values print
+1. `box-hierarchy`: the box-glyph tree. Annotations show; values print
    inline after `label: `, or one connector line each under
    `value_children`; `bare_roots` chooses whether roots take connectors
    (vmax-style) or print as bare section headers (`root` / `unplaced` /
    `palettes`-style).
-2. `rows`: each data-bearing node is one row, blank line between rows,
+2. `text-rows`: each data-bearing node is one row, blank line between rows,
    only the label column padded, `width` wraps with continuation indent --
    today's `palette show --layout row`.
-3. `columns`: each data-bearing node is one padded column under its label
+3. `text-columns`: each data-bearing node is one padded column under its label
    -- today's `column`.
 4. `md-tables`: aligned markdown tables led by a `#` index column, shaped
    by `TreeGridOptions::table_shape`: `nested` (default) groups one
@@ -175,7 +175,9 @@ in [reference/rendering-spec.md](reference/rendering-spec.md):
    (phase 6, committed scope) transposes to one row per entity with
    relative-path columns, what `info` and `palette list` need -- see
    [design notes](reference/design-notes.md).
-5. `json-pretty` / `json-compact`: the generic envelope, one record per
+5. `box-tables`: the `md-tables` shapes drawn with box glyphs, a rule
+   between every row, each section headed by a bare full-path line.
+6. `json-pretty` / `json-compact`: the generic envelope, one record per
    node: `{"label", "annotation"?, "values"?, "children"?}`.
 
 Data-bearing nodes enumerate in pre-order everywhere, so all layouts agree
@@ -183,15 +185,15 @@ on order.
 
 ### Label modes
 
-`TreeGridLabelMode`, consumed by `rows`, `columns`, and `md-tables`; the
-`hierarchy` and JSON layouts carry the labels structurally and reject
+`TreeGridLabelMode`, consumed by `text-rows`, `text-columns`, and `md-tables`; the
+`box-hierarchy` and JSON layouts carry the labels structurally and reject
 a set mode:
 
 1. `none`: no labels. Errors under `md-tables`, which cannot head its columns
    with nothing.
 2. `concat` (default): the full path joined with `.`, each `Quoted`
-   segment quoted -- `0."baseColorFactor".a`. Inline on `rows` /
-   `columns`, matching the current `row` / `column` headers (quoting
+   segment quoted -- `0."baseColorFactor".a`. Inline on `text-rows` /
+   `text-columns`, matching the current `row` / `column` headers (quoting
    landed in 82e803a); on `md-tables`, headings nest exactly like `header`
    -- same positions, same increasing levels -- but each carries its
    full path.
@@ -232,7 +234,7 @@ a set mode:
 - **clap.** The library exposes plain enums; each command keeps its own
   `ValueEnum` and maps, the `FillMode` / `MaterialMode` pattern. Commands
   expose only the layouts that make sense for them (e.g. `hierarchy show`
-  starts with `hierarchy` + the JSON pair).
+  starts with `box-hierarchy` + the JSON pair).
 
 ## CLI surface changes
 
@@ -253,7 +255,7 @@ the no-header variants into `--label`:
 | (new)                        | `--table-shape nested \| flat` (`records` at S15) |
 | (new)                        | `--layout hierarchy`             |
 
-Default output (`rows` + `concat`) stays byte-identical. The JSON payload
+Default output (`text-rows` + `concat`) stays byte-identical. The JSON payload
 changes from the bespoke `[{palette, attribute, values}]` records to the
 generic envelope -- the "one shared JSON envelope across the read
 commands" the [vxl-commands plan](../vxl-commands/reference/palette/show.md)
@@ -271,7 +273,7 @@ current flags until the phase 6 consistency pass renames
 | --- | --- | --- | --- |
 | `vxl palette show` | selectors, pool classification, sampling, `Width` | all of `render*`, `wrap_cells`, `assemble_row`, swatch fns (~350 lines) | 2 |
 | `vxl hierarchy show` | `Scene`, placements, `Filter`, view math | `Walk`'s tree drawing | 3 |
-| `vxl palette list` | selection, field gathering | `render_hierarchy` + `tree_glyphs` | 3 |
+| `vxl palette list` | selection, field gathering | `render_box_hierarchy` + `tree_glyphs` | 3 |
 | `tyt vmax hierarchy` | scene load, `select_nodes`, transform resolve | `Renderer` | 4 |
 | `tyt fbx hierarchy` | flag parsing, Blender data extraction | the tree-printing half of `FBX_HIERARCHY_PY` | 5 |
 | `vxl info` / `validate` / `list` tables + JSON | -- | `md_table`, `to_json_string` | 6 |
@@ -358,10 +360,10 @@ third; it closes the plan.
    styles: connectored roots (vmax, collapsed-ancestors lists) versus bare
    section headers (`root` / `unplaced` in `hierarchy show`, `palettes` in
    `palette list`).
-10. **Layout value names**: `hierarchy`, `rows`, `columns`, `md-tables`,
-   `json-pretty`, `json-compact`; label modes `none`, `concat`, `header`.
-   `json-*` prefixes group the serializations together in `--help` and
-   completions.
+10. **Layout value names**: `box-hierarchy`, `box-tables`, `json-compact`,
+   `json-pretty`, `md-lists`, `md-tables`, `text-columns`, `text-rows`; label
+   modes `none`, `concat`, `header`. Each prefix names an output family, so
+   the families group together in `--help` and completions.
 11. **The tree-selection closure lands in `pathspec`, not treegrid**
    (2026-07-14). A query/model-crate split (populate a typed tree
    once, then select and collapse against it) was investigated and

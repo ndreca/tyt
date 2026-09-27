@@ -20,7 +20,7 @@ branded-id = "0.1.7"
 clap = { version = "4.5.58", features = ["derive"] }
 clap_complete = { version = "4.5", optional = true }
 treegrid = { version = "0.2.0", default-features = false, features = [
-    "render_hierarchy",
+    "render_box_hierarchy",
 ] }
 treeselect = "0.1.1"
 tyt-common = { version = "0.1.7" }

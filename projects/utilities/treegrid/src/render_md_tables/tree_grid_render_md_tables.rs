@@ -1,10 +1,8 @@
 use crate::{
-    BTreeGridNode, TreeGrid, TreeGridCells, TreeGridNestedTableOptions,
-    TreeGridRecordsTableOptions, TreeGridTableLabelMode, TreeGridTableShape,
-    render::{self, Cell},
-    render_md_tables,
+    TreeGrid, TreeGridCells, TreeGridTableLabelMode, TreeGridTableShape, TreeGridTableShapeKind,
+    render::TreeGridRenderFramedTables, render_md_tables::MdTableFrame,
 };
-use branded_id::U32Id;
+use std::num::NonZeroU8;
 
 /// The `md-tables` render.
 pub trait TreeGridRenderMdTables {
@@ -15,250 +13,22 @@ pub trait TreeGridRenderMdTables {
 
 impl<C: TreeGridCells> TreeGridRenderMdTables for TreeGrid<C> {
     fn render_md_tables(&self, shape: &TreeGridTableShape) -> String {
-        let blocks = match shape {
-            TreeGridTableShape::Nested(options) => self.nested_blocks(options),
-            TreeGridTableShape::Flat => self.flat_blocks(),
-            TreeGridTableShape::Records(options) => self.records_blocks(options),
+        let (kind, label, level) = match *shape {
+            TreeGridTableShape::Flat => (
+                TreeGridTableShapeKind::Flat,
+                TreeGridTableLabelMode::Concat,
+                NonZeroU8::MIN,
+            ),
+            TreeGridTableShape::Nested(options) => {
+                (TreeGridTableShapeKind::Nested, options.label, options.level)
+            }
+            TreeGridTableShape::Records(options) => (
+                TreeGridTableShapeKind::Records,
+                TreeGridTableLabelMode::Concat,
+                options.level,
+            ),
         };
-        if blocks.is_empty() {
-            String::new()
-        } else {
-            format!("{}\n", blocks.join("\n\n"))
-        }
-    }
-}
-
-impl<C: TreeGridCells> TreeGrid<C> {
-    /// The nested blocks: headings and group tables in the grouping
-    /// walk's order.
-    fn nested_blocks(&self, options: &TreeGridNestedTableOptions) -> Vec<String> {
-        let mut blocks: Vec<String> = Vec::new();
-        // Groups arrive depth-first with parents before children, so a
-        // depth-indexed stack of cumulative paths recovers each
-        // branch's dot-joined path without parent links in the arena.
-        // The stacked segments stay bare; the annotation joins only
-        // the branch's heading.
-        let mut paths: Vec<String> = Vec::new();
-        for group in self.groups() {
-            if let Some(branch) = group.branch {
-                let node = self.node(branch);
-                let leaf = node.label.render();
-                paths.truncate(group.depth);
-                let path = match paths.last() {
-                    Some(parent) => format!("{parent}.{leaf}"),
-                    None => leaf.clone(),
-                };
-                let text = match options.label {
-                    TreeGridTableLabelMode::Concat => path.clone(),
-                    TreeGridTableLabelMode::Header => leaf,
-                };
-                let text = match &node.annotation {
-                    Some(annotation) => format!("{text} {annotation}"),
-                    None => text,
-                };
-                blocks.push(render::heading(options.level, group.depth, &text));
-                paths.push(path);
-            }
-            if !group.members.is_empty() {
-                let labels: Vec<String> = group
-                    .members
-                    .iter()
-                    .map(|&id| self.node(id).annotated_label())
-                    .collect();
-                blocks.push(self.table_block(&labels, &group.members));
-            }
-        }
-        blocks
-    }
-
-    /// The flat block: one table over every data node, when any.
-    fn flat_blocks(&self) -> Vec<String> {
-        let (labels, ids): (Vec<String>, Vec<U32Id<BTreeGridNode>>) =
-            self.data_paths().into_iter().unzip();
-        if ids.is_empty() {
-            return Vec::new();
-        }
-        vec![self.table_block(&labels, &ids)]
-    }
-
-    /// The records blocks: a heading-less table of the data-bearing
-    /// roots, then one heading and table per value-less root that
-    /// leads to data.
-    fn records_blocks(&self, options: &TreeGridRecordsTableOptions) -> Vec<String> {
-        let mut blocks: Vec<String> = Vec::new();
-        let leading: Vec<U32Id<BTreeGridNode>> = self
-            .roots()
-            .iter()
-            .copied()
-            .filter(|&root| !self.node(root).values.is_empty())
-            .collect();
-        if !leading.is_empty() {
-            blocks.push(self.records_table(&leading));
-        }
-        for &root in self.roots() {
-            let node = self.node(root);
-            if !node.values.is_empty() || !self.leads_to_data(root) {
-                continue;
-            }
-            blocks.push(render::heading(options.level, 0, &node.annotated_label()));
-            let rows: Vec<U32Id<BTreeGridNode>> = node
-                .children()
-                .iter()
-                .copied()
-                .filter(|&child| self.bears_data(child))
-                .collect();
-            blocks.push(self.records_table(&rows));
-        }
-        blocks
-    }
-
-    /// One records table over `rows`: a `label` column, a `value`
-    /// column when any row bears values, then the union of the rows'
-    /// relative descendant data paths in first-encounter order. A row
-    /// without data at a column leaves the cell blank.
-    fn records_table(&self, rows: &[U32Id<BTreeGridNode>]) -> String {
-        let row_entries: Vec<Vec<(String, Vec<U32Id<BTreeGridNode>>)>> =
-            rows.iter().map(|&row| self.relative_entries(row)).collect();
-        let mut columns: Vec<String> = Vec::new();
-        for entries in &row_entries {
-            for (path, _) in entries {
-                if !columns.contains(path) {
-                    columns.push(path.clone());
-                }
-            }
-        }
-        let has_value = rows.iter().any(|&row| !self.node(row).values.is_empty());
-
-        let mut headers = vec![Cell::text("label")];
-        if has_value {
-            headers.push(Cell::text("value"));
-        }
-        headers.extend(columns.iter().map(|path| table_cell(Cell::text(path))));
-        let table_rows: Vec<Vec<Cell>> = rows
-            .iter()
-            .zip(&row_entries)
-            .map(|(&row, entries)| {
-                let mut cells = vec![table_cell(Cell::text(self.node(row).annotated_label()))];
-                if has_value {
-                    cells.push(self.joined_cell(&[row]));
-                }
-                for path in &columns {
-                    let ids = match entries.iter().find(|(entry, _)| entry == path) {
-                        Some((_, ids)) => ids.as_slice(),
-                        None => &[],
-                    };
-                    cells.push(self.joined_cell(ids));
-                }
-                cells
-            })
-            .collect();
-        let mut table = render_md_tables::md_table(&headers, &table_rows);
-        // md_table ends its last line with `\n`; the block join
-        // re-adds it.
-        table.pop();
-        table
-    }
-
-    /// The relative descendant data paths under `row` in pre-order,
-    /// same-path entries merged in encounter order.
-    fn relative_entries(
-        &self,
-        row: U32Id<BTreeGridNode>,
-    ) -> Vec<(String, Vec<U32Id<BTreeGridNode>>)> {
-        let mut paths: Vec<(String, U32Id<BTreeGridNode>)> = Vec::new();
-        for &child in self.node(row).children() {
-            self.collect_data_paths(child, "", &mut paths);
-        }
-        let mut entries: Vec<(String, Vec<U32Id<BTreeGridNode>>)> = Vec::new();
-        for (path, id) in paths {
-            match entries.iter_mut().find(|(entry, _)| *entry == path) {
-                Some((_, ids)) => ids.push(id),
-                None => entries.push((path, vec![id])),
-            }
-        }
-        entries
-    }
-
-    /// One escaped table cell joining every value of `ids` with the
-    /// separator rule; no values leave the cell blank.
-    fn joined_cell(&self, ids: &[U32Id<BTreeGridNode>]) -> Cell {
-        let mut cells: Vec<Cell> = Vec::new();
-        for &id in ids {
-            let node = self.node(id);
-            for value in &node.values {
-                cells.push(Cell::render(self.cells(), node.format, value));
-            }
-        }
-        if cells.is_empty() {
-            return Cell::text("");
-        }
-        let separator = Cell::separator(&cells);
-        let width = cells.iter().map(|cell| cell.width).sum::<usize>()
-            + separator.len() * (cells.len() - 1);
-        let rendered = cells
-            .iter()
-            .map(|cell| cell.rendered.as_str())
-            .collect::<Vec<&str>>()
-            .join(separator);
-        table_cell(Cell {
-            rendered,
-            width,
-            bare_visual: separator.is_empty(),
-        })
-    }
-
-    /// Whether the node or any descendant bears values.
-    fn bears_data(&self, id: U32Id<BTreeGridNode>) -> bool {
-        !self.node(id).values.is_empty() || self.leads_to_data(id)
-    }
-
-    /// One table over `ids`: a `#` index column, then one column per
-    /// node headed by its label, one row per value index.
-    fn table_block(&self, labels: &[String], ids: &[U32Id<BTreeGridNode>]) -> String {
-        let columns: Vec<Vec<Cell>> = ids
-            .iter()
-            .map(|&id| {
-                let node = self.node(id);
-                node.values
-                    .iter()
-                    .map(|value| table_cell(Cell::render(self.cells(), node.format, value)))
-                    .collect()
-            })
-            .collect();
-        let row_count = columns.iter().map(Vec::len).max().unwrap_or(0);
-
-        let mut headers = vec![Cell::text("#")];
-        headers.extend(labels.iter().map(|label| table_cell(Cell::text(label))));
-        let rows: Vec<Vec<Cell>> = (0..row_count)
-            .map(|row| {
-                let mut cells = vec![Cell::text(row.to_string())];
-                cells.extend(
-                    columns
-                        .iter()
-                        .map(|column| column.get(row).cloned().unwrap_or_else(|| Cell::text(""))),
-                );
-                cells
-            })
-            .collect();
-        let mut table = render_md_tables::md_table(&headers, &rows);
-        // md_table ends its last line with `\n`; the block join
-        // re-adds it.
-        table.pop();
-        table
-    }
-}
-
-/// The cell escaped for a table: pipes escape and newlines flatten,
-/// the added backslashes widening the cell. A bare visual's opaque
-/// bytes pass verbatim.
-fn table_cell(cell: Cell) -> Cell {
-    if cell.bare_visual {
-        return cell;
-    }
-    Cell {
-        width: cell.width + cell.rendered.matches('|').count(),
-        rendered: render_md_tables::md_cell(&cell.rendered),
-        bare_visual: false,
+        self.render_framed_tables(kind, label, &MdTableFrame { level })
     }
 }
 

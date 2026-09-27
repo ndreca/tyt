@@ -1,18 +1,18 @@
 use crate::{
-    BTreeGridNode, TreeGrid, TreeGridCells, TreeGridLabelMode, TreeGridRowsOptions,
+    BTreeGridNode, TreeGrid, TreeGridCells, TreeGridLabelMode, TreeGridTextRowsOptions,
     render::{self, Cell},
 };
 use branded_id::U32Id;
 
-/// The `rows` render.
-pub trait TreeGridRenderRows {
-    /// Renders the `rows` layout: one labeled row of cells per data
+/// The `text-rows` render.
+pub trait TreeGridRenderTextRows {
+    /// Renders the `text-rows` layout: one labeled row of cells per data
     /// node, in pre-order, with a blank line between rows.
-    fn render_rows(&self, options: &TreeGridRowsOptions) -> String;
+    fn render_text_rows(&self, options: &TreeGridTextRowsOptions) -> String;
 }
 
-impl<C: TreeGridCells> TreeGridRenderRows for TreeGrid<C> {
-    fn render_rows(&self, options: &TreeGridRowsOptions) -> String {
+impl<C: TreeGridCells> TreeGridRenderTextRows for TreeGrid<C> {
+    fn render_text_rows(&self, options: &TreeGridTextRowsOptions) -> String {
         let mut blocks: Vec<String> = Vec::new();
         match options.label {
             TreeGridLabelMode::None => {
@@ -132,7 +132,7 @@ fn wrap_cells(cells: &[Cell], separator: &str, budget: usize) -> Vec<String> {
 mod tests {
     use crate::{
         TreeGrid, TreeGridCellFormat, TreeGridHeaderOptions, TreeGridLabel, TreeGridLabelMode,
-        TreeGridRenderRows, TreeGridRowsOptions, TreeGridValue,
+        TreeGridRenderTextRows, TreeGridTextRowsOptions, TreeGridValue,
     };
     use std::num::NonZeroU8;
 
@@ -159,7 +159,7 @@ mod tests {
     #[test]
     fn an_empty_grid_renders_the_empty_string() {
         assert_eq!(
-            TreeGrid::new().render_rows(&TreeGridRowsOptions::default()),
+            TreeGrid::new().render_text_rows(&TreeGridTextRowsOptions::default()),
             ""
         );
     }
@@ -167,7 +167,7 @@ mod tests {
     #[test]
     fn concat_labels_pad_to_the_longest_path() {
         assert_eq!(
-            worked_example().render_rows(&TreeGridRowsOptions::default()),
+            worked_example().render_text_rows(&TreeGridTextRowsOptions::default()),
             "0.\"baseColorFactor\"   #FF0000FF #00FF0080\n\
              \n\
              0.\"metallicFactor\"    1 0.2\n\
@@ -178,9 +178,9 @@ mod tests {
 
     #[test]
     fn none_labels_drop_the_label_column() {
-        let options = TreeGridRowsOptions::default().with_label(TreeGridLabelMode::None);
+        let options = TreeGridTextRowsOptions::default().with_label(TreeGridLabelMode::None);
         assert_eq!(
-            worked_example().render_rows(&options),
+            worked_example().render_text_rows(&options),
             "#FF0000FF #00FF0080\n\
              \n\
              1 0.2\n\
@@ -191,10 +191,10 @@ mod tests {
 
     #[test]
     fn header_labels_nest_headings_and_pad_per_group() {
-        let options = TreeGridRowsOptions::default()
+        let options = TreeGridTextRowsOptions::default()
             .with_label(TreeGridLabelMode::Header(TreeGridHeaderOptions::default()));
         assert_eq!(
-            worked_example().render_rows(&options),
+            worked_example().render_text_rows(&options),
             "# 0\n\
              \n\
              \"baseColorFactor\" #FF0000FF #00FF0080\n\
@@ -219,10 +219,10 @@ mod tests {
         grid.node_mut(metallic).format = Some(TreeGridCellFormat::Text);
         grid.push_value(metallic, TreeGridValue::unorm(0.2));
 
-        let options = TreeGridRowsOptions::default()
+        let options = TreeGridTextRowsOptions::default()
             .with_label(TreeGridLabelMode::Header(TreeGridHeaderOptions::default()));
         assert_eq!(
-            grid.render_rows(&options),
+            grid.render_text_rows(&options),
             "materialCount 2\n\
              \n\
              # 0\n\
@@ -233,11 +233,11 @@ mod tests {
 
     #[test]
     fn a_header_level_deepens_every_heading() {
-        let options = TreeGridRowsOptions::default().with_label(TreeGridLabelMode::Header(
+        let options = TreeGridTextRowsOptions::default().with_label(TreeGridLabelMode::Header(
             TreeGridHeaderOptions::default().with_level(NonZeroU8::new(2).unwrap()),
         ));
         assert_eq!(
-            worked_example().render_rows(&options),
+            worked_example().render_text_rows(&options),
             "## 0\n\
              \n\
              \"baseColorFactor\" #FF0000FF #00FF0080\n\
@@ -254,11 +254,11 @@ mod tests {
 
     #[test]
     fn a_heading_past_level_six_renders_bold() {
-        let options = TreeGridRowsOptions::default().with_label(TreeGridLabelMode::Header(
+        let options = TreeGridTextRowsOptions::default().with_label(TreeGridLabelMode::Header(
             TreeGridHeaderOptions::default().with_level(NonZeroU8::new(6).unwrap()),
         ));
         assert_eq!(
-            worked_example().render_rows(&options),
+            worked_example().render_text_rows(&options),
             "###### 0\n\
              \n\
              \"baseColorFactor\" #FF0000FF #00FF0080\n\
@@ -285,7 +285,7 @@ mod tests {
         grid.push_value(strength, TreeGridValue::float(2.0));
 
         assert_eq!(
-            grid.render_rows(&TreeGridRowsOptions::default()),
+            grid.render_text_rows(&TreeGridTextRowsOptions::default()),
             "0.\"baseColorFactor\"           #FF0000FF\n\
              \n\
              0.\"emissiveStrength\" (scalar) 2\n"
@@ -305,7 +305,7 @@ mod tests {
         grid.push_value(alpha, TreeGridValue::unorm8(128));
 
         assert_eq!(
-            grid.render_rows(&TreeGridRowsOptions::default()),
+            grid.render_text_rows(&TreeGridTextRowsOptions::default()),
             "0.\"tint\" (scalar) #00FF0080\n\
              \n\
              0.\"tint\".a        128\n"
@@ -324,10 +324,10 @@ mod tests {
         grid.node_mut(alpha).format = Some(TreeGridCellFormat::Text);
         grid.push_value(alpha, TreeGridValue::unorm8(128));
 
-        let options = TreeGridRowsOptions::default()
+        let options = TreeGridTextRowsOptions::default()
             .with_label(TreeGridLabelMode::Header(TreeGridHeaderOptions::default()));
         assert_eq!(
-            grid.render_rows(&options),
+            grid.render_text_rows(&options),
             "# 0\n\
              \n\
              \"tint\" (scalar) #00FF0080\n\
@@ -349,9 +349,9 @@ mod tests {
 
         // The 20-column label indent leaves room for one 9-wide hex
         // per line.
-        let options = TreeGridRowsOptions::default().with_width(30);
+        let options = TreeGridTextRowsOptions::default().with_width(30);
         assert_eq!(
-            grid.render_rows(&options),
+            grid.render_text_rows(&options),
             "0.\"baseColorFactor\" #FF0000FF\n                    #00FF0080\n"
         );
     }
@@ -363,10 +363,10 @@ mod tests {
         grid.push_value(node, TreeGridValue::new("abcdef"));
         grid.push_value(node, TreeGridValue::new("gh"));
 
-        let options = TreeGridRowsOptions::default()
+        let options = TreeGridTextRowsOptions::default()
             .with_label(TreeGridLabelMode::None)
             .with_width(5);
-        assert_eq!(grid.render_rows(&options), "abcdef\ngh\n");
+        assert_eq!(grid.render_text_rows(&options), "abcdef\ngh\n");
     }
 
     #[test]
@@ -379,7 +379,7 @@ mod tests {
         grid.push_value(base, TreeGridValue::srgba8([0, 255, 0, 128]));
 
         assert_eq!(
-            grid.render_rows(&TreeGridRowsOptions::default()),
+            grid.render_text_rows(&TreeGridTextRowsOptions::default()),
             "0.\"baseColorFactor\" \x1b[48;2;255;0;0m  \x1b[0m\x1b[48;2;0;255;0m  \x1b[0m\n"
         );
     }
@@ -396,7 +396,7 @@ mod tests {
         // The space separator keeps bools from running into
         // `truefalse`.
         assert_eq!(
-            grid.render_rows(&TreeGridRowsOptions::default()),
+            grid.render_text_rows(&TreeGridTextRowsOptions::default()),
             "0.\"shadows\" true false\n"
         );
     }
@@ -413,7 +413,7 @@ mod tests {
         grid.push_value(metallic, TreeGridValue::float(0.2));
 
         assert_eq!(
-            grid.render_rows(&TreeGridRowsOptions::default()),
+            grid.render_text_rows(&TreeGridTextRowsOptions::default()),
             "0.\"baseColorFactor\" \x1b[48;2;255;0;0m  \x1b[0m #FF0000FF \x1b[48;2;0;255;0m  \x1b[0m #00FF0080\n\
              \n\
              0.\"metallicFactor\"  1 0.2\n"

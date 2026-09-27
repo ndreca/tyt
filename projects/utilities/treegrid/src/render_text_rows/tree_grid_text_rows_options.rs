@@ -1,8 +1,8 @@
 use crate::TreeGridLabelMode;
 
-/// Options the `rows` layout consumes.
+/// Options the `text-rows` layout consumes.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub struct TreeGridRowsOptions {
+pub struct TreeGridTextRowsOptions {
     /// How rows spend the ancestor path.
     pub label: TreeGridLabelMode,
 
@@ -10,7 +10,7 @@ pub struct TreeGridRowsOptions {
     pub width: Option<usize>,
 }
 
-impl TreeGridRowsOptions {
+impl TreeGridTextRowsOptions {
     /// Sets the label mode.
     pub fn with_label(mut self, label: TreeGridLabelMode) -> Self {
         self.label = label;

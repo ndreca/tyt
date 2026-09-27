@@ -3,7 +3,10 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ProfileListLayout {
     /// A box-glyph tree, one branch per origin over its profiles.
-    Hierarchy,
+    BoxHierarchy,
+
+    /// One box-glyph table, a column per origin over its profiles.
+    BoxTables,
 
     /// Compact, single-line JSON.
     JsonCompact,
@@ -19,5 +22,5 @@ pub enum ProfileListLayout {
     MdTables,
 
     /// One row per origin, its profiles beside it.
-    Rows,
+    TextRows,
 }

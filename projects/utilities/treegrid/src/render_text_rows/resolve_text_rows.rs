@@ -1,12 +1,12 @@
-use crate::{TreeGridError, TreeGridOptions, TreeGridRowsOptions};
+use crate::{TreeGridError, TreeGridOptions, TreeGridTextRowsOptions};
 
 impl TreeGridOptions {
-    /// The rows render's options, rejecting every option it does not
+    /// The text rows render's options, rejecting every option it does not
     /// consume.
-    pub fn resolve_rows(&self) -> Result<TreeGridRowsOptions, TreeGridError> {
-        self.no_hierarchy_options()?;
+    pub fn resolve_text_rows(&self) -> Result<TreeGridTextRowsOptions, TreeGridError> {
+        self.no_box_hierarchy_options()?;
         self.no_table_shape()?;
-        Ok(TreeGridRowsOptions {
+        Ok(TreeGridTextRowsOptions {
             label: self.text_label()?,
             width: self.width,
         })
@@ -17,15 +17,15 @@ impl TreeGridOptions {
 mod tests {
     use crate::{
         TreeGridError, TreeGridHeaderOptions, TreeGridLabelKind, TreeGridLabelMode,
-        TreeGridOptions, TreeGridRowsOptions, TreeGridTableShapeKind,
+        TreeGridOptions, TreeGridTableShapeKind, TreeGridTextRowsOptions,
     };
     use std::num::NonZeroU8;
 
     #[test]
     fn default_options_resolve_to_concat_rows() {
         assert_eq!(
-            TreeGridOptions::default().resolve_rows(),
-            Ok(TreeGridRowsOptions::default())
+            TreeGridOptions::default().resolve_text_rows(),
+            Ok(TreeGridTextRowsOptions::default())
         );
     }
 
@@ -37,8 +37,8 @@ mod tests {
             .with_width(72);
 
         assert_eq!(
-            options.resolve_rows(),
-            Ok(TreeGridRowsOptions::default()
+            options.resolve_text_rows(),
+            Ok(TreeGridTextRowsOptions::default()
                 .with_label(TreeGridLabelMode::Header(
                     TreeGridHeaderOptions::default().with_level(NonZeroU8::new(3).unwrap())
                 ))
@@ -51,7 +51,7 @@ mod tests {
         let options = TreeGridOptions::default().with_header_level(NonZeroU8::new(2).unwrap());
 
         assert_eq!(
-            options.resolve_rows(),
+            options.resolve_text_rows(),
             Err(TreeGridError::HeaderLevelWithoutHeaders)
         );
     }
@@ -61,8 +61,8 @@ mod tests {
         let options = TreeGridOptions::default().with_table_shape(TreeGridTableShapeKind::Nested);
 
         assert_eq!(
-            options.resolve_rows(),
-            Err(TreeGridError::TableShapeWithoutMdTables)
+            options.resolve_text_rows(),
+            Err(TreeGridError::TableShapeWithoutTables)
         );
     }
 
@@ -71,8 +71,8 @@ mod tests {
         let options = TreeGridOptions::default().with_bare_roots(true);
 
         assert_eq!(
-            options.resolve_rows(),
-            Err(TreeGridError::BareRootsWithoutHierarchy)
+            options.resolve_text_rows(),
+            Err(TreeGridError::BareRootsWithoutBoxHierarchy)
         );
     }
 }

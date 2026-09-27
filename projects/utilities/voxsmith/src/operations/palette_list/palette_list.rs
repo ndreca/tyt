@@ -5,9 +5,10 @@ use crate::{
 };
 use branded_id::U32Id;
 use treegrid::{
-    BTreeGridNode, TreeGrid, TreeGridHierarchyOptions, TreeGridJsonValue, TreeGridJsonValueCells,
-    TreeGridLabel, TreeGridRecordsTableOptions, TreeGridRenderHierarchy, TreeGridRenderJson,
-    TreeGridRenderMdTables, TreeGridTableShape, TreeGridValue,
+    BTreeGridNode, TreeGrid, TreeGridBoxHierarchyOptions, TreeGridJsonValue,
+    TreeGridJsonValueCells, TreeGridLabel, TreeGridRecordsTableOptions, TreeGridRenderBoxHierarchy,
+    TreeGridRenderBoxTables, TreeGridRenderJson, TreeGridRenderMdTables, TreeGridTableShape,
+    TreeGridTableShapeKind, TreeGridValue,
 };
 use voxcore::{BVoxPalette, VoxExt, VoxMain, VoxPalette};
 
@@ -59,8 +60,10 @@ fn render<T: VoxExt>(
     layout: PaletteListLayout,
 ) -> String {
     match layout {
-        PaletteListLayout::Hierarchy => build_grid(main, palettes, fields)
-            .render_hierarchy(&TreeGridHierarchyOptions::default().with_bare_roots(true)),
+        PaletteListLayout::BoxHierarchy => build_grid(main, palettes, fields)
+            .render_box_hierarchy(&TreeGridBoxHierarchyOptions::default().with_bare_roots(true)),
+        PaletteListLayout::BoxTables => build_records_grid(main, palettes, fields)
+            .render_box_tables(TreeGridTableShapeKind::Records),
         PaletteListLayout::JsonCompact => build_grid(main, palettes, fields).render_json_compact(),
         PaletteListLayout::JsonPretty => build_grid(main, palettes, fields).render_json_pretty(),
         PaletteListLayout::MdTables => build_records_grid(main, palettes, fields).render_md_tables(
@@ -291,6 +294,22 @@ mod tests {
     }
 
     #[test]
+    fn box_tables_list_one_row_per_palette_in_a_box() {
+        assert_eq!(
+            render_all(&shared_main(), PaletteListLayout::BoxTables),
+            "palettes\n\
+             \n\
+             ┌───────┬─────────────────────────────┬───────────┬─────────┐\n\
+             │ label │ properties                  │ materials │ objects │\n\
+             ├───────┼─────────────────────────────┼───────────┼─────────┤\n\
+             │ 0     │ baseColor, metallic         │ 2         │ a, b    │\n\
+             ├───────┼─────────────────────────────┼───────────┼─────────┤\n\
+             │ 1     │ baseColor, emissiveStrength │ 1         │ b       │\n\
+             └───────┴─────────────────────────────┴───────────┴─────────┘\n"
+        );
+    }
+
+    #[test]
     fn tables_lists_one_row_per_palette() {
         assert_eq!(
             render_all(&shared_main(), PaletteListLayout::MdTables),
@@ -326,7 +345,7 @@ mod tests {
     #[test]
     fn hierarchy_nests_fields_under_each_palette() {
         assert_eq!(
-            render_all(&shared_main(), PaletteListLayout::Hierarchy),
+            render_all(&shared_main(), PaletteListLayout::BoxHierarchy),
             "palettes\n\
              ├ 0\n\
              │ ├ materials: 2\n\
@@ -354,7 +373,7 @@ mod tests {
             materials: true,
             objects: true,
         };
-        let output = palette_list(&main, &[], fields, PaletteListLayout::Hierarchy).unwrap();
+        let output = palette_list(&main, &[], fields, PaletteListLayout::BoxHierarchy).unwrap();
         assert_eq!(
             output,
             "palettes\n\
@@ -484,7 +503,7 @@ mod tests {
         main.retain_palette(palette).unwrap();
 
         assert_eq!(
-            render_all(&main, PaletteListLayout::Hierarchy),
+            render_all(&main, PaletteListLayout::BoxHierarchy),
             "palettes\n\
              └ 0\n\
              \u{20}\u{20}├ materials: 1\n\

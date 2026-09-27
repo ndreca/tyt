@@ -1,6 +1,6 @@
-/// Options the `hierarchy` layout consumes.
+/// Options the `box-hierarchy` layout consumes.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub struct TreeGridHierarchyOptions {
+pub struct TreeGridBoxHierarchyOptions {
     /// When true, each root prints its label alone on an unprefixed
     /// line, its children below with connectors; when false, roots
     /// take connectors like any child.
@@ -13,7 +13,7 @@ pub struct TreeGridHierarchyOptions {
     pub value_children: bool,
 }
 
-impl TreeGridHierarchyOptions {
+impl TreeGridBoxHierarchyOptions {
     /// Sets whether roots print bare.
     pub fn with_bare_roots(mut self, bare_roots: bool) -> Self {
         self.bare_roots = bare_roots;

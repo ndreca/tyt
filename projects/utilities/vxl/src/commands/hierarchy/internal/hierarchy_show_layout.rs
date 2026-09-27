@@ -3,14 +3,14 @@ use voxsmith::operations::hierarchy_show::HierarchyShowLayout;
 
 impl CliValue for HierarchyShowLayout {
     const VARIANTS: &'static [Self] = &[
-        HierarchyShowLayout::Hierarchy,
+        HierarchyShowLayout::BoxHierarchy,
         HierarchyShowLayout::JsonCompact,
         HierarchyShowLayout::JsonPretty,
     ];
 
     fn name(self) -> &'static str {
         match self {
-            HierarchyShowLayout::Hierarchy => "hierarchy",
+            HierarchyShowLayout::BoxHierarchy => "box-hierarchy",
             HierarchyShowLayout::JsonCompact => "json-compact",
             HierarchyShowLayout::JsonPretty => "json-pretty",
         }
@@ -18,7 +18,7 @@ impl CliValue for HierarchyShowLayout {
 
     fn help(self) -> &'static str {
         match self {
-            HierarchyShowLayout::Hierarchy => {
+            HierarchyShowLayout::BoxHierarchy => {
                 "The scene graph as a box-glyph tree, each entity's tag and view rows inline on \
                  its nodes"
             }

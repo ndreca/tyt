@@ -18,7 +18,7 @@ amended; after adoption, this spec is the single source of truth.
     into the label text by the caller.
   - `annotation: Option<String>`: a verbatim suffix joined with one
     space to the label wherever a layout labels the node, meaning
-    `hierarchy` node lines, row labels, column heads, table column
+    `box-hierarchy` node lines, row labels, column heads, table column
     headers, and the headings that name a branch. The caller supplies
     its own brackets (`vmax`'s `energy-tank (Group)` sets
     `annotation: "(Group)"`; `palette show`'s scalar marker sets
@@ -54,11 +54,11 @@ amended; after adoption, this spec is the single source of truth.
   in pre-order in every layout, so all layouts agree on order. A node may
   have both values and children.
 - Each layout lives in its own module, named for its render method
-  (`render_hierarchy` and kin), behind a default-on cargo feature
-  named like the module (`render_hierarchy`, `render_rows`,
-  `render_columns`, `render_md_tables`, `render_md_lists`; `json` and `ty-math` stay
+  (`render_box_hierarchy` and kin), behind a default-on cargo feature
+  named like the module (`render_box_hierarchy`, `render_text_rows`,
+  `render_text_columns`, `render_md_tables`, `render_md_lists`; `json` and `ty-math` stay
   non-default): the layout's render method
-  rides an extension trait on `TreeGrid` (`TreeGridRenderHierarchy`
+  rides an extension trait on `TreeGrid` (`TreeGridRenderBoxHierarchy`
   and kin), beside its options payload and its `resolve_*` impl, so
   an adopter can trim to the layouts it renders and no type changes
   shape with a feature.
@@ -139,17 +139,17 @@ Behind the `ty-math` feature, over the component-generic color family
 - A segment renders as-is (`Bare`) or `{:?}`-quoted (`Quoted`).
 - A **path** is the segments from a root to a node, joined with `.`:
   `0."baseColorFactor".a`.
-- `TreeGridLabelMode` lives on the `rows` and `columns` payloads
+- `TreeGridLabelMode` lives on the `text-rows` and `text-columns` payloads
   (nested tables carry their own two-variant `TreeGridTableLabelMode`;
   record tables carry no mode, `concat` and `header` rendering alike
   there); the `resolve_*` methods map the loose
   `TreeGridOptions::label` kind into them, unset meaning `concat`. A label mode with the
-  `hierarchy` or JSON renders, which carry labels structurally, is
+  `box-hierarchy` or JSON renders, which carry labels structurally, is
   `TreeGridError::LabelModeWithoutLabels`:
-  - `none`: no labels anywhere. Under `md-tables` this is
-    `TreeGridError::LabelNoneWithMdTables`.
+  - `none`: no labels anywhere. Under `md-tables` and `box-tables` this
+    is `TreeGridError::LabelNoneWithTables`.
   - `concat` (default): each data node is labeled by its full path. On
-    `rows` and `columns` the label sits inline on the row or column
+    `text-rows` and `text-columns` the label sits inline on the row or column
     head, with no headings. On `md-tables`, which cannot spend a column
     header on a long path, the headings follow the same nested walk as
     `header` -- same positions, same increasing levels -- but each
@@ -182,7 +182,7 @@ Behind the `ty-math` feature, over the component-generic color family
   markdown; the zero level is unrepresentable (`NonZeroU8`). The
   `resolve_*` methods fold the loose `TreeGridOptions::header_level`
   into those payloads; set on a render that emits no headings --
-  label mode `none`, `concat` with `rows` / `columns`, flat tables,
+  label mode `none`, `concat` with `text-rows` / `text-columns`, flat tables,
   or a render that takes no label mode -- it is
   `TreeGridError::HeaderLevelWithoutHeaders`, not a silent no-op.
 - A node's annotation suffixes its own label wherever one names it:
@@ -193,15 +193,15 @@ Behind the `ty-math` feature, over the component-generic color family
 
 ## Layouts
 
-### hierarchy
+### box-hierarchy
 
-- Rendered by `render_hierarchy(&TreeGridHierarchyOptions)`, on the
-  `TreeGridRenderHierarchy` trait behind the `render_hierarchy`
+- Rendered by `render_box_hierarchy(&TreeGridBoxHierarchyOptions)`, on the
+  `TreeGridRenderBoxHierarchy` trait behind the `render_box_hierarchy`
   feature.
 - Glyphs: connector `├` / `└` before a child, extension `│ ` / `  ` under
   a non-last / last child.
-- `TreeGridHierarchyOptions::bare_roots` (the other `resolve_*`
-  methods reject it as `TreeGridError::BareRootsWithoutHierarchy`):
+- `TreeGridBoxHierarchyOptions::bare_roots` (the other `resolve_*`
+  methods reject it as `TreeGridError::BareRootsWithoutBoxHierarchy`):
   - `false` (default): roots take connectors like any child, siblings of
     one another (`tyt vmax hierarchy`, collapsed-ancestors lists).
   - `true`: each root prints its label alone on an unprefixed line, its
@@ -212,16 +212,16 @@ Behind the `ty-math` feature, over the component-generic color family
 - A node line is `{label}{ annotation?}` when it has no values, else
   `{label}{ annotation?}: {cells}` with the node's cell separator rule.
   Values are not wrapped in this layout.
-- `TreeGridHierarchyOptions::value_children`: when true, a data node
+- `TreeGridBoxHierarchyOptions::value_children`: when true, a data node
   prints `{label}{ annotation?}` alone and each value prints as its
   own child line beneath, before the node's child nodes -- one cell
   per line, rendered per the node's format, taking a connector like a
   child. Default false, the inline form above; the other `resolve_*`
-  methods reject it as `TreeGridError::ValueChildrenWithoutHierarchy`.
+  methods reject it as `TreeGridError::ValueChildrenWithoutBoxHierarchy`.
 - Children render beneath in insertion order.
 - Every line ends with `\n`; an empty grid renders as an empty string.
-- `resolve_hierarchy` rejects a label mode (`LabelModeWithoutLabels`)
-  and a width (`WidthWithoutRows`).
+- `resolve_box_hierarchy` rejects a label mode (`LabelModeWithoutLabels`)
+  and a width (`WidthWithoutTextRows`).
 
 Observed shapes this layout must reproduce (from
 `vxl hierarchy show src/vmax/energy-reactor.vmax --show-transforms
@@ -239,19 +239,19 @@ root                                      <- bare root (bare_roots: true)
 │     └ 0: {materials: 10}                <- Bare("0") + tag value
 ```
 
-and from vmax `hierarchy` (connectored roots, annotation form):
+and from `tyt vmax hierarchy` (connectored roots, annotation form):
 
 ```text
 ├ energy-tank (Group)
 │ └ energy-tank-1 (Object)
 ```
 
-### rows
+### text-rows
 
 Today's `palette show --layout row`:
 
-- Rendered by `render_rows(&TreeGridRowsOptions)`, on the
-  `TreeGridRenderRows` trait behind the `render_rows` feature.
+- Rendered by `render_text_rows(&TreeGridTextRowsOptions)`, on the
+  `TreeGridRenderTextRows` trait behind the `render_text_rows` feature.
 - One row per data node: `{label} {cells}`.
 - Labels pad to the longest label so every row's first cell aligns; cells
   themselves are never padded. `--label none` drops the label column and
@@ -263,8 +263,8 @@ Today's `palette show --layout row`:
   width (`wrap_cells` semantics), a cell wider than the remaining budget
   takes a line of its own, and at least one cell is always placed per
   line. `width: None` never wraps. Only this render consumes `width`
-  (`TreeGridRowsOptions::width`); the other `resolve_*` methods
-  reject it (`TreeGridError::WidthWithoutRows`).
+  (`TreeGridTextRowsOptions::width`); the other `resolve_*` methods
+  reject it (`TreeGridError::WidthWithoutTextRows`).
 - Under `header` mode, label padding is computed per group.
 
 ### md-lists
@@ -284,12 +284,12 @@ Today's `palette show --layout row`:
 - Blocks separate with one blank line. Lines right-trim. Output ends
   with one `\n`; an empty grid renders as an empty string.
 
-### columns
+### text-columns
 
 Today's `palette show --layout column`:
 
-- Rendered by `render_columns(&TreeGridColumnsOptions)`, on the
-  `TreeGridRenderColumns` trait behind the `render_columns` feature.
+- Rendered by `render_text_columns(&TreeGridTextColumnsOptions)`, on the
+  `TreeGridRenderTextColumns` trait behind the `render_text_columns` feature.
 - One column per data node, cells padded to the column's max visible
   width (the label widens its column too, unless `none`), columns joined
   with one space, lines right-trimmed.
@@ -306,7 +306,7 @@ and level, `Flat`, or `Records(TreeGridRecordsTableOptions)`,
 carrying the heading level alone. `resolve_md_tables` maps the loose
 `TreeGridOptions::table_shape` kind into it, unset meaning `Nested`;
 the other `resolve_*` methods reject a set shape as
-`TreeGridError::TableShapeWithoutMdTables`, not a silent no-op.
+`TreeGridError::TableShapeWithoutTables`, not a silent no-op.
 
 - `Nested`: tables group (see Labels), under nested headings whose text
   is the branch's full path (`concat`) or its leaf segment (`header`):
@@ -344,6 +344,26 @@ the other `resolve_*` methods reject a set shape as
   width, so swatch cells align.
 - `none` label mode is an error (see Labels).
 
+### box-tables
+
+Rendered by `render_box_tables(TreeGridTableShapeKind)`, on the
+`TreeGridRenderBoxTables` trait behind the `render_box_tables` feature.
+The shape kind picks `Nested`, `Flat`, or `Records` with the meaning
+above, and the walk is the one `md-tables` runs, so the tables hold the
+same cells in the same order. What differs is the frame:
+
+- A section heading is a bare line carrying the branch's full concat
+  path (nested) or the root's label (records); there is no heading
+  level, so `resolve_box_tables` rejects `header_level` as
+  `TreeGridError::HeaderLevelWithoutHeaders` and the `header` label mode
+  as `TreeGridError::HeaderLabelWithBoxTables`. `none` is
+  `TreeGridError::LabelNoneWithTables` as for `md-tables`.
+- `box_table` rules: a `┌┬┐` top edge, the header row, a `├┼┤` rule
+  under the header and between every pair of rows, and a `└┴┘` bottom
+  edge; every column pads to its widest cell with no minimum; cell text
+  flattens newlines (`box_cell`) and keeps pipes, since `│` frames the
+  cells; width is visible width, so swatch cells align.
+
 ### json-pretty / json-compact
 
 - Behind the non-default `json` feature; without it these renders do
@@ -379,12 +399,12 @@ the other `resolve_*` methods reject a set shape as
 `TreeGridError`, one variant per invalid option combination, returned
 by the `TreeGridOptions` `resolve_*` methods; each render method
 takes a payload in which every such combination is unrepresentable,
-and cannot fail. The set is `LabelNoneWithMdTables`,
-`LabelModeWithoutLabels`, `HeaderLevelWithoutHeaders`,
-`HeaderLabelWithFlatTables`, `LabelConcatWithMdLists`,
-`TableShapeWithoutMdTables`,
-`BareRootsWithoutHierarchy`, `ValueChildrenWithoutHierarchy`, and
-`WidthWithoutRows`. Commands map it into their own error types (vxl:
+and cannot fail. The set is `BareRootsWithoutBoxHierarchy`,
+`HeaderLabelWithBoxTables`, `HeaderLabelWithFlatTables`,
+`HeaderLevelWithoutHeaders`, `LabelConcatWithMdLists`,
+`LabelModeWithoutLabels`, `LabelNoneWithTables`,
+`TableShapeWithoutTables`, `ValueChildrenWithoutBoxHierarchy`, and
+`WidthWithoutTextRows`. Commands map it into their own error types (vxl:
 `ErrorKind::InvalidInput`).
 
 ## Worked example
@@ -401,7 +421,7 @@ TreeGrid
     └ Bare("a")                       values: 255 (Gray swatch)
 ```
 
-- `rows` + `concat` (format `Text`):
+- `text-rows` + `concat` (format `Text`):
 
   ```text
   0."baseColorFactor"   #FF0000FF #00FF0080
@@ -411,7 +431,7 @@ TreeGrid
   1."baseColorFactor".a 255
   ```
 
-- `rows` + `header` (default `header_level` 1):
+- `text-rows` + `header` (default `header_level` 1):
 
   ```text
   # 0
@@ -460,7 +480,7 @@ TreeGrid
   | 1   | #00FF0080           | 0.2                |                       |
   ```
 
-- `hierarchy` (`bare_roots: false`):
+- `box-hierarchy` (`bare_roots: false`):
 
   ```text
   ├ 0
@@ -481,7 +501,7 @@ TreeGrid
 
 The dry run that shaped the grouped-tables design (2026-07-13):
 `vxl hierarchy show submodules/tyt-assets/src/vmax/energy-reactor.vmax
---show-transforms`, whose tree is the `hierarchy`-layout output under
+--show-transforms`, whose tree is the `box-hierarchy`-layout output under
 "Observed shapes" above -- a `root` section over four scene nodes, each
 carrying a tag value, a `transform` branch (`position` / `rotation` /
 `scale`, one pre-formatted value each), and a tag-valued object child.
@@ -539,7 +559,7 @@ heading text changes, each carrying its full path:
 ...
 ```
 
-The remaining layouts over the same tree. `rows` + `concat` emits no
+The remaining layouts over the same tree. `text-rows` + `concat` emits no
 headings: one row per data node, labels padded to the longest, and the
 best grep target of the layouts:
 
@@ -558,7 +578,7 @@ root."energy-tank-2"                     {node: 1}
 ...
 ```
 
-`columns` + `concat` is the transpose: twenty single-valued columns
+`text-columns` + `concat` is the transpose: twenty single-valued columns
 under full-path headers, one data row -- columns earn their keep on
 long series like a palette's materials, not here:
 
@@ -588,14 +608,14 @@ normalizes them. `Flat`
 on this tree is the degenerate 21-column, one-row table that motivated
 grouping in the first place -- available, not advisable.
 
-The `hierarchy` and JSON layouts ignore label modes: the `hierarchy`
+The `box-hierarchy` and JSON layouts ignore label modes: the `box-hierarchy`
 render of this tree is the "Observed shapes" listing above, and the
 envelope carries each label structurally.
 
 What this example pins down: single-valued hierarchy data degenerates
 to one-row series tables (the `#` column is all zeros), which is why
 the record shape (phase 6) exists and why `hierarchy show` exposes only
-`hierarchy` + JSON in v1; and the `root` section label leads every
+`box-hierarchy` + JSON in v1; and the `root` section label leads every
 concat heading, so a command exposing tabular layouts may prefer to
 build a flatter forest for them -- the command owns the tree it
 populates.

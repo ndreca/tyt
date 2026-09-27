@@ -1,6 +1,5 @@
-/// The table shape.
-///
-/// The loose counterpart of the tables-feature `TreeGridTableShape`.
+/// The table shape. The box tables render takes it as is; the markdown
+/// tables render pairs it with heading options as `TreeGridTableShape`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TreeGridTableShapeKind {
     /// One table per parent-path group, under nested headings.

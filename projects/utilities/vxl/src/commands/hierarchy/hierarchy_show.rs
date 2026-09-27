@@ -27,7 +27,7 @@ pub struct HierarchyShow {
     #[arg(
         value_name = "layout",
         long,
-        default_value = "hierarchy",
+        default_value = "box-hierarchy",
         value_parser = cli_value_parser::<HierarchyShowLayout>()
     )]
     layout: HierarchyShowLayout,
@@ -263,7 +263,7 @@ mod tests {
     #[test]
     fn layout_defaults_to_hierarchy_and_parses_the_json_values() {
         let show = HierarchyShow::try_parse_from(["show", "in.voxj"]).unwrap();
-        assert_eq!(show.layout, HierarchyShowLayout::Hierarchy);
+        assert_eq!(show.layout, HierarchyShowLayout::BoxHierarchy);
 
         let show =
             HierarchyShow::try_parse_from(["show", "in.voxj", "--layout", "json-pretty"]).unwrap();

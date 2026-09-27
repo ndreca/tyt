@@ -3,7 +3,8 @@ use voxsmith::operations::palette_list::PaletteListLayout;
 
 impl CliValue for PaletteListLayout {
     const VARIANTS: &'static [Self] = &[
-        PaletteListLayout::Hierarchy,
+        PaletteListLayout::BoxHierarchy,
+        PaletteListLayout::BoxTables,
         PaletteListLayout::JsonCompact,
         PaletteListLayout::JsonPretty,
         PaletteListLayout::MdTables,
@@ -11,7 +12,8 @@ impl CliValue for PaletteListLayout {
 
     fn name(self) -> &'static str {
         match self {
-            PaletteListLayout::Hierarchy => "hierarchy",
+            PaletteListLayout::BoxHierarchy => "box-hierarchy",
+            PaletteListLayout::BoxTables => "box-tables",
             PaletteListLayout::JsonCompact => "json-compact",
             PaletteListLayout::JsonPretty => "json-pretty",
             PaletteListLayout::MdTables => "md-tables",
@@ -20,8 +22,12 @@ impl CliValue for PaletteListLayout {
 
     fn help(self) -> &'static str {
         match self {
-            PaletteListLayout::Hierarchy => {
+            PaletteListLayout::BoxHierarchy => {
                 "Indented tree, one palette per branch, like `hierarchy show`"
+            }
+            PaletteListLayout::BoxTables => {
+                "A `palettes` line over one aligned record table drawn with box glyphs, one row \
+                 per palette"
             }
             PaletteListLayout::JsonCompact => "Compact, single-line JSON",
             PaletteListLayout::JsonPretty => "Pretty-printed, multi-line JSON",

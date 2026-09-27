@@ -8,8 +8,8 @@ use branded_id::{IdVec, U32Id};
 use pathspec::GitIgnoreRegex;
 use std::{collections::HashSet, f64::consts::PI};
 use treegrid::{
-    BTreeGridNode, TreeGrid, TreeGridHierarchyOptions, TreeGridLabel, TreeGridRenderHierarchy,
-    TreeGridRenderJson, TreeGridValue,
+    BTreeGridNode, TreeGrid, TreeGridBoxHierarchyOptions, TreeGridLabel,
+    TreeGridRenderBoxHierarchy, TreeGridRenderJson, TreeGridValue,
 };
 use treeselect::TreeSelection;
 use ty_math::{TyQuaternionExt, TyTransformF64, TyVector3F64};
@@ -59,9 +59,9 @@ pub fn hierarchy_show<T: VoxExt>(
     walk.run();
 
     Ok(match options.layout {
-        HierarchyShowLayout::Hierarchy => {
-            let hierarchy = TreeGridHierarchyOptions::default().with_bare_roots(bare_roots);
-            walk.grid.render_hierarchy(&hierarchy)
+        HierarchyShowLayout::BoxHierarchy => {
+            let hierarchy = TreeGridBoxHierarchyOptions::default().with_bare_roots(bare_roots);
+            walk.grid.render_box_hierarchy(&hierarchy)
         }
 
         HierarchyShowLayout::JsonCompact => walk.grid.render_json_compact(),
@@ -1126,7 +1126,7 @@ mod tests {
             main,
             &HierarchyShowOptions {
                 pattern,
-                layout: HierarchyShowLayout::Hierarchy,
+                layout: HierarchyShowLayout::BoxHierarchy,
                 collapse_instances,
                 views: HierarchyViews::default(),
             },
@@ -1139,7 +1139,7 @@ mod tests {
             main,
             &HierarchyShowOptions {
                 pattern: None,
-                layout: HierarchyShowLayout::Hierarchy,
+                layout: HierarchyShowLayout::BoxHierarchy,
                 collapse_instances: false,
                 views,
             },

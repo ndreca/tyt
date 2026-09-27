@@ -7,46 +7,69 @@ use std::{
 /// [`TreeGridOptions`](crate::TreeGridOptions) `resolve_*` methods.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TreeGridError {
-    /// The `md-tables` layout cannot head its columns with nothing; label
-    /// mode `none` is invalid there.
-    LabelNoneWithMdTables,
+    /// Bare roots were requested on a layout other than `box-hierarchy`.
+    BareRootsWithoutBoxHierarchy,
 
-    /// A label mode was set, but the layout carries its labels
-    /// structurally and takes no mode.
-    LabelModeWithoutLabels,
-
-    /// `header_level` was set on a render that emits no headings.
-    HeaderLevelWithoutHeaders,
+    /// Box table sections head with bare full-path lines; the `header`
+    /// label mode is invalid there.
+    HeaderLabelWithBoxTables,
 
     /// The flat table shape heads its columns with full paths; the
     /// `header` label mode is invalid there.
     HeaderLabelWithFlatTables,
 
+    /// `header_level` was set on a render that emits no headings.
+    HeaderLevelWithoutHeaders,
+
     /// A list has no inline label slot to carry a path; the `concat`
     /// label mode is invalid with `md-lists`.
     LabelConcatWithMdLists,
 
-    /// A table shape was set on a layout other than `md-tables`.
-    TableShapeWithoutMdTables,
+    /// A label mode was set, but the layout carries its labels
+    /// structurally and takes no mode.
+    LabelModeWithoutLabels,
 
-    /// Bare roots were requested on a layout other than `hierarchy`.
-    BareRootsWithoutHierarchy,
+    /// A table layout cannot head its columns with nothing; label mode
+    /// `none` is invalid there.
+    LabelNoneWithTables,
+
+    /// A table shape was set on a layout other than `box-tables` or
+    /// `md-tables`.
+    TableShapeWithoutTables,
 
     /// Value children were requested on a layout other than
-    /// `hierarchy`.
-    ValueChildrenWithoutHierarchy,
+    /// `box-hierarchy`.
+    ValueChildrenWithoutBoxHierarchy,
 
-    /// A width was set on a layout other than `rows`.
-    WidthWithoutRows,
+    /// A width was set on a layout other than `text-rows`.
+    WidthWithoutTextRows,
 }
 
 impl Display for TreeGridError {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
-            TreeGridError::LabelNoneWithMdTables => {
+            TreeGridError::BareRootsWithoutBoxHierarchy => {
                 write!(
                     f,
-                    "the markdown tables layout requires labels, but the label mode is none"
+                    "bare roots were requested, but the layout is not box hierarchy"
+                )
+            }
+            TreeGridError::HeaderLabelWithBoxTables => {
+                write!(f, "the box tables layout takes the concat label mode")
+            }
+            TreeGridError::HeaderLabelWithFlatTables => {
+                write!(f, "the flat table shape requires the concat label mode")
+            }
+            TreeGridError::HeaderLevelWithoutHeaders => {
+                write!(
+                    f,
+                    "a header level was set, but the render emits no headings"
+                )
+            }
+            TreeGridError::LabelConcatWithMdLists => {
+                write!(
+                    f,
+                    "the markdown lists layout takes the header or none label mode"
                 )
             }
             TreeGridError::LabelModeWithoutLabels => {
@@ -55,41 +78,26 @@ impl Display for TreeGridError {
                     "a label mode was set, but the layout carries its labels structurally"
                 )
             }
-            TreeGridError::HeaderLevelWithoutHeaders => {
+            TreeGridError::LabelNoneWithTables => {
                 write!(
                     f,
-                    "a header level was set, but the render emits no headings"
+                    "the table layouts require labels, but the label mode is none"
                 )
             }
-            TreeGridError::HeaderLabelWithFlatTables => {
-                write!(f, "the flat table shape requires the concat label mode")
-            }
-            TreeGridError::LabelConcatWithMdLists => {
+            TreeGridError::TableShapeWithoutTables => {
                 write!(
                     f,
-                    "the markdown lists layout takes the header or none label mode"
+                    "a table shape was set, but the layout is not a table layout"
                 )
             }
-            TreeGridError::TableShapeWithoutMdTables => {
+            TreeGridError::ValueChildrenWithoutBoxHierarchy => {
                 write!(
                     f,
-                    "a table shape was set, but the layout is not markdown tables"
+                    "value children were requested, but the layout is not box hierarchy"
                 )
             }
-            TreeGridError::BareRootsWithoutHierarchy => {
-                write!(
-                    f,
-                    "bare roots were requested, but the layout is not hierarchy"
-                )
-            }
-            TreeGridError::ValueChildrenWithoutHierarchy => {
-                write!(
-                    f,
-                    "value children were requested, but the layout is not hierarchy"
-                )
-            }
-            TreeGridError::WidthWithoutRows => {
-                write!(f, "a width was set, but the layout is not rows")
+            TreeGridError::WidthWithoutTextRows => {
+                write!(f, "a width was set, but the layout is not text rows")
             }
         }
     }

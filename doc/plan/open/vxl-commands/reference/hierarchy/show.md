@@ -66,7 +66,7 @@ voxels reports a zero-size box at its origin.
     print each later placement as a non-expanded stub, rather than expanding
     every placement in full.
 13. `--layout <layout>`: how to render the scene graph, and the serialization
-    to emit. `hierarchy` (default) is the box-glyph tree; `json-pretty` and
+    to emit. `box-hierarchy` (default) is the box-glyph tree; `json-pretty` and
     `json-compact` emit the same tree as the shared read-command envelope, one
     record per node, each `{"label", "values"?, "children"?}`, with the raw
     unquoted name as the label and the `{node: 0}`-style tags, view rows, and

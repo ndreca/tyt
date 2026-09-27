@@ -12,10 +12,13 @@ layer count, and the position and sample encodings in use; each palette's
 property set and material count; whether `editState` and `ext` namespaces are
 present; and the root, instanced, and unplaced nodes in the hierarchy.
 
-1. `--layout` `md-tables` | `json-pretty` | `json-compact` (default `md-tables`):
-   how to render the report. `md-tables` is the human-readable form, a
+1. `--layout` `box-tables` | `json-compact` | `json-pretty` | `md-tables`
+   (default `md-tables`): how to render the report. `md-tables` is the
+   human-readable form, a
    `# {input}` title over `## Document`, `## Palettes`, and `## Objects`
-   record tables, each row labeled under the fixed `label` column. The JSON
+   record tables, each row labeled under the fixed `label` column.
+   `box-tables` draws the same three tables with box glyphs under bare
+   `{input}`, `document`, `palettes`, and `objects` lines. The JSON
    forms emit the same report in the shared read-command envelope, one
    `{"label", "annotation"?, "values"?, "children"?}` record per node:
    `document`, `palettes`, and `objects` roots whose fields carry snake_case

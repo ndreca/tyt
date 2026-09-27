@@ -1,14 +1,14 @@
-use crate::{TreeGridError, TreeGridHierarchyOptions, TreeGridOptions};
+use crate::{TreeGridBoxHierarchyOptions, TreeGridError, TreeGridOptions};
 
 impl TreeGridOptions {
-    /// The hierarchy render's options, rejecting every option it does
+    /// The box hierarchy render's options, rejecting every option it does
     /// not consume.
-    pub fn resolve_hierarchy(&self) -> Result<TreeGridHierarchyOptions, TreeGridError> {
+    pub fn resolve_box_hierarchy(&self) -> Result<TreeGridBoxHierarchyOptions, TreeGridError> {
         self.no_label()?;
         self.no_width()?;
         self.no_header_level()?;
         self.no_table_shape()?;
-        Ok(TreeGridHierarchyOptions {
+        Ok(TreeGridBoxHierarchyOptions {
             bare_roots: self.bare_roots,
             value_children: self.value_children,
         })
@@ -17,7 +17,7 @@ impl TreeGridOptions {
 
 #[cfg(test)]
 mod tests {
-    use crate::{TreeGridError, TreeGridHierarchyOptions, TreeGridLabelKind, TreeGridOptions};
+    use crate::{TreeGridBoxHierarchyOptions, TreeGridError, TreeGridLabelKind, TreeGridOptions};
 
     #[test]
     fn hierarchy_options_resolve_into_the_hierarchy_payload() {
@@ -26,8 +26,8 @@ mod tests {
             .with_value_children(true);
 
         assert_eq!(
-            options.resolve_hierarchy(),
-            Ok(TreeGridHierarchyOptions::default()
+            options.resolve_box_hierarchy(),
+            Ok(TreeGridBoxHierarchyOptions::default()
                 .with_bare_roots(true)
                 .with_value_children(true))
         );
@@ -38,7 +38,7 @@ mod tests {
         let options = TreeGridOptions::default().with_label(TreeGridLabelKind::Concat);
 
         assert_eq!(
-            options.resolve_hierarchy(),
+            options.resolve_box_hierarchy(),
             Err(TreeGridError::LabelModeWithoutLabels)
         );
     }

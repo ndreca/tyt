@@ -127,21 +127,19 @@ outside it, never clamp.
 ## Layouts
 
 `--layout` arranges the collections and chooses the serialization. It defaults
-to `rows` and is orthogonal to the per-collection presentation and reading.
+to `text-rows` and is orthogonal to the per-collection presentation and reading.
 The text layouts share those and only place the collections; the two JSON
 layouts emit the records directly and ignore the presentation.
 
-1. `hierarchy`: a box-glyph tree of palettes, properties, and components, each
-   collection's values inline on its node.
-2. `rows` (default): each collection is one row prefixed by its label, the
-   labels padded to the longest so the first value of each row lines up, and
-   the rows separated by a blank line. Only the label is padded; the values are
-   not column-aligned. Swatch cells abut into a continuous strip; the other
-   formats, and a swatch value with no swatch such as a bool, separate their
-   values with a single space.
-3. `columns`: each collection is its own column beneath its label, padded to a
-   common width so a `value` rendering reads straight down.
-4. `md-tables`: the collections fill aligned markdown tables led by a `#` column
+1. `box-hierarchy`: a box-glyph tree of palettes, properties, and components,
+   each collection's values inline on its node.
+2. `box-tables`: the `md-tables` tables drawn with box glyphs, a rule between
+   every row, each section headed by a bare line carrying its full path
+   instead of a markdown heading. `--table-shape` picks the shape as for
+   `md-tables`; the label mode stays `concat`.
+3. `json-compact`: the collection tree as single-line JSON.
+4. `json-pretty`: the collection tree as indented JSON.
+5. `md-tables`: the collections fill aligned markdown tables led by a `#` column
    of 0-based material indices, one column per collection headed by its label,
    and one row per material index. A shorter palette leaves its column blank
    past its last material. `--table-shape` picks the shape: `nested` (default)
@@ -150,27 +148,35 @@ layouts emit the records directly and ignore the presentation.
    comparison view; and `records` transposes to one row per property under
    each palette's heading, with a `label` column, a `value` column of the
    row's own values, and one column per component path.
-5. `json-pretty`: the collection tree as indented JSON.
-6. `json-compact`: the collection tree as single-line JSON.
+6. `text-columns`: each collection is its own column beneath its label, padded
+   to a common width so a `value` rendering reads straight down.
+7. `text-rows` (default): each collection is one row prefixed by its label, the
+   labels padded to the longest so the first value of each row lines up, and
+   the rows separated by a blank line. Only the label is padded; the values are
+   not column-aligned. Swatch cells abut into a continuous strip; the other
+   formats, and a swatch value with no swatch such as a bool, separate their
+   values with a single space.
 
 Alignment for the `value` and `swatch-value` forms is measured by the visible
 width of a cell, since the swatch escape codes carry no width of their own.
 
 ## Labels
 
-`--label` chooses how the text layouts `rows`, `columns`, and `md-tables` label
-each collection. The `hierarchy` and JSON layouts carry the labels
-structurally, so setting `--label` with them is an error rather than a silent
-no-op.
+`--label` chooses how the layouts `box-tables`, `md-tables`, `text-columns`,
+and `text-rows` label each collection. The `box-hierarchy` and JSON layouts
+carry the labels structurally, so setting `--label` with them is an error
+rather than a silent no-op.
 
-1. `none`: no labels. An error under `md-tables`, whose columns cannot be headed
-   by nothing.
+1. `none`: no labels. An error under the table layouts, whose columns cannot
+   be headed by nothing.
 2. `concat` (default): the full dot-joined path, as in `0."baseColor".a`.
-   Inline on `rows` and `columns`; under `md-tables` the headings nest exactly
-   like `header` but each carries its full path.
+   Inline on `text-rows` and `text-columns`; under `md-tables` the headings
+   nest exactly like `header` but each carries its full path, and under
+   `box-tables` each section's bare line carries it.
 3. `header`: the ancestor path becomes nested markdown headings, `# 0` and
    `## "baseColor"`, and each collection beneath is labeled by its leaf
-   segment alone, so palettes read as per-palette sections.
+   segment alone, so palettes read as per-palette sections. An error under
+   `box-tables`, whose bare section lines carry no level.
 
 `--header-level` sets the markdown level of the shallowest heading, so
 embedded output sits at the right depth under a host document's headings; the
@@ -214,7 +220,7 @@ record, so the records keep selector order:
 
 ## Width
 
-`--width` wraps the `rows` layout so a wide palette folds onto continuation
+`--width` wraps the `text-rows` layout so a wide palette folds onto continuation
 lines, each indented under the row's first value, rather than running off as one
 line the terminal mangles. It takes one of:
 
@@ -224,7 +230,7 @@ line the terminal mangles. It takes one of:
 2. `unlimited`: never wrap; one line per collection.
 3. a column count, such as `--width 80`: wrap to that many columns.
 
-It applies to `rows`; the other layouts ignore it.
+It applies to `text-rows`; the other layouts ignore it.
 
 ## Deferred
 

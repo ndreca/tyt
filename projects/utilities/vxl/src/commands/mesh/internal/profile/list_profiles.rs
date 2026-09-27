@@ -32,7 +32,7 @@ mod tests {
         ]);
 
         assert_eq!(
-            list_profiles(&profiles, ProfileListLayout::Rows),
+            list_profiles(&profiles, ProfileListLayout::TextRows),
             "built in         albedo defaults emissive pbr\n\
              \n\
              /home/.vxlconfig matte\n\

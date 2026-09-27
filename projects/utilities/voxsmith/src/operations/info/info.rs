@@ -6,8 +6,8 @@ use branded_id::U32Id;
 use std::num::NonZeroU8;
 use treegrid::{
     BTreeGridNode, TreeGrid, TreeGridJsonValue, TreeGridJsonValueCells, TreeGridLabel,
-    TreeGridRecordsTableOptions, TreeGridRenderJson, TreeGridRenderMdTables, TreeGridTableShape,
-    TreeGridValue,
+    TreeGridRecordsTableOptions, TreeGridRenderBoxTables, TreeGridRenderJson,
+    TreeGridRenderMdTables, TreeGridTableShape, TreeGridTableShapeKind, TreeGridValue,
 };
 use voxcore::{BVoxObject, VoxExt, VoxMain, VoxObject};
 
@@ -24,12 +24,25 @@ pub fn info<T: VoxExt>(
     layout: InfoLayout,
 ) -> String {
     match layout {
+        InfoLayout::BoxTables => render_box_tables(main, object_ids, document),
         InfoLayout::JsonCompact => {
             build_json_grid(main, object_ids, document).render_json_compact()
         }
         InfoLayout::JsonPretty => build_json_grid(main, object_ids, document).render_json_pretty(),
         InfoLayout::MdTables => render_md_tables(main, object_ids, document),
     }
+}
+
+/// The report as a file-name line over three box-glyph record-table
+/// sections: document, palettes, objects.
+fn render_box_tables<T: VoxExt>(
+    main: &VoxMain<T>,
+    object_ids: &[U32Id<BVoxObject>],
+    document: &InfoDocument<'_>,
+) -> String {
+    let tables = build_records_grid(main, object_ids, document)
+        .render_box_tables(TreeGridTableShapeKind::Records);
+    format!("{}\n\n{tables}", document.name)
 }
 
 /// The report as a file-name heading over three record-table sections:
@@ -397,6 +410,35 @@ mod tests {
             format_version: Some(format_version),
             has_ext: false,
         }
+    }
+
+    #[test]
+    fn box_tables_line_the_sections_with_box_glyphs() {
+        let output = info_all(
+            &tight_main(),
+            &voxj_document("test.voxj", 2),
+            InfoLayout::BoxTables,
+        );
+        assert!(
+            output.starts_with(
+                "test.voxj\n\n\
+                 document\n\n\
+                 ┌────────────────┬───────┐\n\
+                 │ label          │ value │\n\
+                 ├────────────────┼───────┤\n\
+                 │ format         │ voxj  │\n\
+                 ├────────────────┼───────┤\n\
+                 │ format_version │ 2     │\n\
+                 ├────────────────┼───────┤\n\
+                 │ has_ext        │ no    │\n\
+                 ├────────────────┼───────┤\n\
+                 │ has_edit       │ no    │\n\
+                 └────────────────┴───────┘\n\
+                 \npalettes\n\n\
+                 ┌"
+            ),
+            "{output}"
+        );
     }
 
     #[test]

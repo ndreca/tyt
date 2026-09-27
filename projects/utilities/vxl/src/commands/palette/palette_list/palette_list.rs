@@ -23,7 +23,7 @@ pub struct PaletteList {
     #[arg(
         value_name = "layout",
         long,
-        default_value = "hierarchy",
+        default_value = "box-hierarchy",
         value_parser = cli_value_parser::<PaletteListLayout>()
     )]
     layout: PaletteListLayout,

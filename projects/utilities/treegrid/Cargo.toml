@@ -16,16 +16,18 @@ ty-math = { version = "0.2.0", optional = true }
 
 [features]
 default = [
-    "render_columns",
-    "render_hierarchy",
+    "render_box_hierarchy",
+    "render_box_tables",
     "render_md_lists",
-    "render_rows",
     "render_md_tables",
+    "render_text_columns",
+    "render_text_rows",
 ]
 json = ["dep:serde_json"]
-render_columns = []
-render_hierarchy = []
+render_box_hierarchy = []
+render_box_tables = []
 render_md_lists = []
-render_rows = []
 render_md_tables = []
+render_text_columns = []
+render_text_rows = []
 ty-math = ["dep:ty-math"]

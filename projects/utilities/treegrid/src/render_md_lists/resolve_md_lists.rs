@@ -7,7 +7,7 @@ impl TreeGridOptions {
     /// The lists render's options, rejecting every option it does not
     /// consume. An unset label means `header`.
     pub fn resolve_md_lists(&self) -> Result<TreeGridMdListsOptions, TreeGridError> {
-        self.no_hierarchy_options()?;
+        self.no_box_hierarchy_options()?;
         self.no_width()?;
         self.no_table_shape()?;
         let label = match self.label.unwrap_or(TreeGridLabelKind::Header) {
@@ -92,19 +92,19 @@ mod tests {
     fn options_of_other_layouts_are_rejected() {
         assert_eq!(
             TreeGridOptions::default().with_width(72).resolve_md_lists(),
-            Err(TreeGridError::WidthWithoutRows)
+            Err(TreeGridError::WidthWithoutTextRows)
         );
         assert_eq!(
             TreeGridOptions::default()
                 .with_table_shape(TreeGridTableShapeKind::Nested)
                 .resolve_md_lists(),
-            Err(TreeGridError::TableShapeWithoutMdTables)
+            Err(TreeGridError::TableShapeWithoutTables)
         );
         assert_eq!(
             TreeGridOptions::default()
                 .with_value_children(true)
                 .resolve_md_lists(),
-            Err(TreeGridError::ValueChildrenWithoutHierarchy)
+            Err(TreeGridError::ValueChildrenWithoutBoxHierarchy)
         );
     }
 }

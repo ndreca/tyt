@@ -13,8 +13,9 @@ use std::result::Result as StdResult;
 use treegrid::{
     BTreeGridNode, TreeGrid, TreeGridCellFormat, TreeGridError, TreeGridJsonValue,
     TreeGridJsonValueCells, TreeGridLabel, TreeGridLabelKind, TreeGridOptions,
-    TreeGridRenderColumns, TreeGridRenderHierarchy, TreeGridRenderJson, TreeGridRenderMdTables,
-    TreeGridRenderRows, TreeGridSwatch, TreeGridTableShapeKind,
+    TreeGridRenderBoxHierarchy, TreeGridRenderBoxTables, TreeGridRenderJson,
+    TreeGridRenderMdTables, TreeGridRenderTextColumns, TreeGridRenderTextRows, TreeGridSwatch,
+    TreeGridTableShapeKind,
 };
 use ty_math::{TyLinSrgbF64, TyLinSrgbaF64, TySrgbF64, TySrgbaF64};
 use voxcore::{
@@ -646,12 +647,12 @@ fn render(grid: &TreeGrid<TreeGridJsonValueCells>, options: &PaletteShowOptions)
         });
     }
     Ok(match layout {
-        PaletteShowLayout::Columns => {
-            grid.render_columns(&resolve_options(options.resolve_columns())?)
+        PaletteShowLayout::BoxHierarchy => {
+            grid.render_box_hierarchy(&resolve_options(options.resolve_box_hierarchy())?)
         }
 
-        PaletteShowLayout::Hierarchy => {
-            grid.render_hierarchy(&resolve_options(options.resolve_hierarchy())?)
+        PaletteShowLayout::BoxTables => {
+            grid.render_box_tables(resolve_options(options.resolve_box_tables())?)
         }
 
         PaletteShowLayout::JsonCompact => {
@@ -668,11 +669,15 @@ fn render(grid: &TreeGrid<TreeGridJsonValueCells>, options: &PaletteShowOptions)
             grid.render_md_tables(&resolve_options(options.resolve_md_tables())?)
         }
 
-        PaletteShowLayout::Rows => {
+        PaletteShowLayout::TextColumns => {
+            grid.render_text_columns(&resolve_options(options.resolve_text_columns())?)
+        }
+
+        PaletteShowLayout::TextRows => {
             if let Some(columns) = width {
                 options = options.with_width(columns);
             }
-            grid.render_rows(&resolve_options(options.resolve_rows())?)
+            grid.render_text_rows(&resolve_options(options.resolve_text_rows())?)
         }
     })
 }
@@ -859,7 +864,7 @@ mod tests {
         let output = show(
             &main,
             &[("0", "baseColor", "value", "auto")],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(output, "0.\"baseColor\" #FF0000FF #00FF0080\n");
     }
@@ -870,7 +875,7 @@ mod tests {
         let output = show(
             &main,
             &[("0", "baseColor.a", "value", "auto")],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         // A vocabulary color name reads srgb-hex, so the alpha bytes FF and
         // 80 spell their hex pairs.
@@ -883,7 +888,7 @@ mod tests {
         let output = show(
             &main,
             &[("0", "baseColor", "swatch", "auto")],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(
             output,
@@ -913,7 +918,7 @@ mod tests {
         let output = show(
             &main,
             &[("0", "shadows", "swatch", "auto")],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(output, "0.\"shadows\" true false\n");
     }
@@ -930,7 +935,7 @@ mod tests {
                 ("0", "baseColor", "value", "auto"),
                 ("0", "metallic", "value", "auto"),
             ],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(
             output,
@@ -949,7 +954,7 @@ mod tests {
             &main,
             &selectors(&[("0", "baseColor", "value", "auto")]),
             &PaletteShowOptions {
-                layout: PaletteShowLayout::Rows,
+                layout: PaletteShowLayout::TextRows,
                 label: None,
                 header_level: None,
                 table_shape: None,
@@ -970,7 +975,7 @@ mod tests {
             &main,
             &selectors(&[("0", "baseColor", "value", "auto")]),
             &PaletteShowOptions {
-                layout: PaletteShowLayout::Rows,
+                layout: PaletteShowLayout::TextRows,
                 label: Some(PaletteShowLabel::None),
                 header_level: None,
                 table_shape: None,
@@ -1011,7 +1016,7 @@ mod tests {
                 ("1", "baseColor", "value", "auto"),
                 ("0", "baseColor", "value", "auto"),
             ],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(
             output,
@@ -1030,7 +1035,7 @@ mod tests {
                 ("0", "baseColor", "value", "auto"),
                 ("0", "baseColor", "swatch", "auto"),
             ],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(
             output,
@@ -1049,7 +1054,7 @@ mod tests {
                 ("0", "baseColor.a", "value", "auto"),
                 ("1", "baseColor.a", "value", "auto"),
             ],
-            PaletteShowLayout::Columns,
+            PaletteShowLayout::TextColumns,
         );
         assert_eq!(
             output,
@@ -1067,7 +1072,7 @@ mod tests {
                 ("1", "baseColor.a", "value", "auto"),
             ]),
             &PaletteShowOptions {
-                layout: PaletteShowLayout::Columns,
+                layout: PaletteShowLayout::TextColumns,
                 label: Some(PaletteShowLabel::None),
                 header_level: None,
                 table_shape: None,
@@ -1084,7 +1089,7 @@ mod tests {
         let output = show(
             &main,
             &[("0", "*", "value", "auto")],
-            PaletteShowLayout::Hierarchy,
+            PaletteShowLayout::BoxHierarchy,
         );
         assert_eq!(
             output,
@@ -1099,7 +1104,7 @@ mod tests {
             &main,
             &selectors(&[("*", "baseColor", "value", "auto")]),
             &PaletteShowOptions {
-                layout: PaletteShowLayout::Rows,
+                layout: PaletteShowLayout::TextRows,
                 label: Some(PaletteShowLabel::Header),
                 header_level: None,
                 table_shape: None,
@@ -1120,7 +1125,7 @@ mod tests {
             &main,
             &selectors(&[("*", "baseColor", "value", "auto")]),
             &PaletteShowOptions {
-                layout: PaletteShowLayout::Rows,
+                layout: PaletteShowLayout::TextRows,
                 label: Some(PaletteShowLabel::Header),
                 header_level: NonZeroU8::new(2),
                 table_shape: None,
@@ -1129,6 +1134,53 @@ mod tests {
         )
         .unwrap();
         assert!(output.starts_with("## 0\n"));
+    }
+
+    #[test]
+    fn box_tables_group_one_box_per_palette_under_bare_lines() {
+        let main = sample_main();
+        let output = show(
+            &main,
+            &[("*", "baseColor", "value", "auto")],
+            PaletteShowLayout::BoxTables,
+        );
+        assert_eq!(
+            output,
+            "0\n\
+             \n\
+             ┌───┬─────────────┐\n\
+             │ # │ \"baseColor\" │\n\
+             ├───┼─────────────┤\n\
+             │ 0 │ #FF0000FF   │\n\
+             ├───┼─────────────┤\n\
+             │ 1 │ #00FF0080   │\n\
+             └───┴─────────────┘\n\
+             \n\
+             1\n\
+             \n\
+             ┌───┬─────────────┐\n\
+             │ # │ \"baseColor\" │\n\
+             ├───┼─────────────┤\n\
+             │ 0 │ #0000FFFF   │\n\
+             └───┴─────────────┘\n"
+        );
+    }
+
+    #[test]
+    fn box_tables_reject_header_labels() {
+        let main = sample_main();
+        let result = palette_show(
+            &main,
+            &selectors(&[("*", "baseColor", "value", "auto")]),
+            &PaletteShowOptions {
+                layout: PaletteShowLayout::BoxTables,
+                label: Some(PaletteShowLabel::Header),
+                header_level: None,
+                table_shape: None,
+                width: None,
+            },
+        );
+        assert!(result.is_err());
     }
 
     #[test]
@@ -1246,7 +1298,7 @@ mod tests {
             &main,
             &selectors(&[("0", "baseColor", "value", "auto")]),
             &PaletteShowOptions {
-                layout: PaletteShowLayout::Hierarchy,
+                layout: PaletteShowLayout::BoxHierarchy,
                 label: Some(PaletteShowLabel::Concat),
                 header_level: None,
                 table_shape: None,
@@ -1347,13 +1399,13 @@ mod tests {
         let scalar = show(
             &main,
             &[("0", "metallic", "auto", "auto")],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(scalar, "0.\"metallic\" 1 0.2\n");
         let component = show(
             &main,
             &[("0", "baseColor.r", "auto", "auto")],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(component, "0.\"baseColor\".r FF 00\n");
     }
@@ -1383,7 +1435,7 @@ mod tests {
         let output = show(
             &main,
             &[("0", "emissiveColor", "value", "auto")],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         // Six hex digits, no alpha pair.
         assert_eq!(output, "0.\"emissiveColor\" #FF0000\n");
@@ -1403,7 +1455,7 @@ mod tests {
         let red = show(
             &main,
             &[("0", "emissiveColor.r", "value", "auto")],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(red, "0.\"emissiveColor\".r FF\n");
     }
@@ -1436,7 +1488,7 @@ mod tests {
         let output = show(
             &main,
             &[("0", "emissiveColor", "value", "linear-float")],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(output, "0.\"emissiveColor\" lin_srgba(2, 1, 0.5, 1)\n");
     }
@@ -1502,13 +1554,13 @@ mod tests {
         let output = show(
             &main,
             &[("0", "tint", "value", "auto")],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(output, "0.\"tint\" [1,0,0]\n");
         let component = show(
             &main,
             &[("0", "tint.r", "value", "auto")],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(component, "0.\"tint\".r 1\n");
         assert!(
@@ -1526,7 +1578,7 @@ mod tests {
                 ("0", "tint", "value", "srgb-hex"),
                 ("0", "tint.r", "value", "srgb-hex"),
             ],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(
             output,
@@ -1569,7 +1621,7 @@ mod tests {
     #[test]
     fn the_readings_spell_one_color_per_the_design_examples() {
         let main = custom_tint_vec_4_main();
-        let row = |fields| show(&main, &[fields], PaletteShowLayout::Rows);
+        let row = |fields| show(&main, &[fields], PaletteShowLayout::TextRows);
         // The sRGB readings encode the stored 0.25 to 0.537099, byte 0x89;
         // the linear reading keeps the stored numbers; alpha never
         // transfer-encodes. A component respells under the same reading, and
@@ -1628,7 +1680,7 @@ mod tests {
         let output = show(
             &main,
             &[("0", "tint", "value", "linear-float")],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(output, "0.\"tint\" lin_srgba(2, 1, 0.5, 1)\n");
     }
@@ -1654,7 +1706,7 @@ mod tests {
         let output = show(
             &main,
             &[("0", "position.x", "value", "auto")],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(output, "0.\"position\".x 3\n");
         assert!(
@@ -1685,7 +1737,7 @@ mod tests {
         let output = show(
             &main,
             &[("0", "count", "value", "auto")],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(output, "0.\"count\" 3 7\n");
     }
@@ -1707,7 +1759,7 @@ mod tests {
         let text = show(
             &main,
             &[("0", "extra", "value", "auto")],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(text, "0.\"extra\" [1,2]\n");
         let json = show(
@@ -1738,7 +1790,7 @@ mod tests {
         let row = show(
             &main,
             &[("0", "*", "value", "auto")],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(row, "0.\"\" true\n");
         // JSON keeps the raw name; its own string quoting is enough there.
@@ -1775,7 +1827,7 @@ mod tests {
         let output = show(
             &main,
             &[("0", "emissiveStrength", "value", "auto")],
-            PaletteShowLayout::Rows,
+            PaletteShowLayout::TextRows,
         );
         assert_eq!(output, "0.\"emissiveStrength\" 2 2\n");
     }

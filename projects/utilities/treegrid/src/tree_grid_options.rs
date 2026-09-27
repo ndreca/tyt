@@ -1,13 +1,14 @@
 #[cfg(any(
-    feature = "render_columns",
-    feature = "render_hierarchy",
     feature = "json",
+    feature = "render_box_hierarchy",
+    feature = "render_box_tables",
+    feature = "render_text_columns",
     feature = "render_md_lists",
-    feature = "render_rows",
-    feature = "render_md_tables"
+    feature = "render_md_tables",
+    feature = "render_text_rows"
 ))]
 use crate::TreeGridError;
-#[cfg(any(feature = "render_columns", feature = "render_rows"))]
+#[cfg(any(feature = "render_text_columns", feature = "render_text_rows"))]
 use crate::{TreeGridHeaderOptions, TreeGridLabelMode};
 use crate::{TreeGridLabelKind, TreeGridTableShapeKind};
 use std::num::NonZeroU8;
@@ -19,26 +20,26 @@ use std::num::NonZeroU8;
 /// does not consume.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct TreeGridOptions {
-    /// The label mode, consumed by the rows, columns, markdown tables, and
-    /// markdown lists renders; unset means `concat` there, `header` on
-    /// markdown lists.
+    /// The label mode, consumed by the text rows, text columns, box tables, markdown
+    /// tables, and markdown lists renders; unset means `concat` there,
+    /// `header` on markdown lists.
     pub label: Option<TreeGridLabelKind>,
 
-    /// The wrap budget, consumed by the rows render.
+    /// The wrap budget, consumed by the text rows render.
     pub width: Option<usize>,
 
     /// The level of the shallowest heading, consumed by
     /// heading-emitting renders; unset means `1` there.
     pub header_level: Option<NonZeroU8>,
 
-    /// Whether roots print bare, consumed by the hierarchy render.
+    /// Whether roots print bare, consumed by the box hierarchy render.
     pub bare_roots: bool,
 
     /// Whether values print as child lines, consumed by the hierarchy
     /// render.
     pub value_children: bool,
 
-    /// The table shape, consumed by the markdown tables render; unset means
+    /// The table shape, consumed by the table renders; unset means
     /// `nested` there.
     pub table_shape: Option<TreeGridTableShapeKind>,
 }
@@ -80,9 +81,9 @@ impl TreeGridOptions {
         self
     }
 
-    /// The rows / columns label mode, with the header level folded
+    /// The text rows / columns label mode, with the header level folded
     /// into `header` labels.
-    #[cfg(any(feature = "render_columns", feature = "render_rows"))]
+    #[cfg(any(feature = "render_text_columns", feature = "render_text_rows"))]
     pub(crate) fn text_label(&self) -> Result<TreeGridLabelMode, TreeGridError> {
         match self.label.unwrap_or(TreeGridLabelKind::Concat) {
             TreeGridLabelKind::None => {
@@ -100,16 +101,16 @@ impl TreeGridOptions {
     }
 
     #[cfg(any(
-        feature = "render_columns",
+        feature = "render_text_columns",
         feature = "render_md_lists",
-        feature = "render_rows",
+        feature = "render_text_rows",
         feature = "render_md_tables"
     ))]
     pub(crate) fn level(&self) -> NonZeroU8 {
         self.header_level.unwrap_or(NonZeroU8::MIN)
     }
 
-    #[cfg(any(feature = "render_hierarchy", feature = "json"))]
+    #[cfg(any(feature = "render_box_hierarchy", feature = "json"))]
     pub(crate) fn no_label(&self) -> Result<(), TreeGridError> {
         if self.label.is_some() {
             return Err(TreeGridError::LabelModeWithoutLabels);
@@ -118,26 +119,28 @@ impl TreeGridOptions {
     }
 
     #[cfg(any(
-        feature = "render_columns",
-        feature = "render_hierarchy",
         feature = "json",
+        feature = "render_box_hierarchy",
+        feature = "render_box_tables",
+        feature = "render_text_columns",
         feature = "render_md_lists",
         feature = "render_md_tables"
     ))]
     pub(crate) fn no_width(&self) -> Result<(), TreeGridError> {
         if self.width.is_some() {
-            return Err(TreeGridError::WidthWithoutRows);
+            return Err(TreeGridError::WidthWithoutTextRows);
         }
         Ok(())
     }
 
     #[cfg(any(
-        feature = "render_columns",
-        feature = "render_hierarchy",
         feature = "json",
+        feature = "render_box_hierarchy",
+        feature = "render_box_tables",
+        feature = "render_text_columns",
         feature = "render_md_lists",
-        feature = "render_rows",
-        feature = "render_md_tables"
+        feature = "render_md_tables",
+        feature = "render_text_rows"
     ))]
     pub(crate) fn no_header_level(&self) -> Result<(), TreeGridError> {
         if self.header_level.is_some() {
@@ -147,32 +150,33 @@ impl TreeGridOptions {
     }
 
     #[cfg(any(
-        feature = "render_columns",
-        feature = "render_hierarchy",
+        feature = "render_text_columns",
+        feature = "render_box_hierarchy",
         feature = "json",
         feature = "render_md_lists",
-        feature = "render_rows"
+        feature = "render_text_rows"
     ))]
     pub(crate) fn no_table_shape(&self) -> Result<(), TreeGridError> {
         if self.table_shape.is_some() {
-            return Err(TreeGridError::TableShapeWithoutMdTables);
+            return Err(TreeGridError::TableShapeWithoutTables);
         }
         Ok(())
     }
 
     #[cfg(any(
-        feature = "render_columns",
         feature = "json",
+        feature = "render_box_tables",
+        feature = "render_text_columns",
         feature = "render_md_lists",
-        feature = "render_rows",
-        feature = "render_md_tables"
+        feature = "render_md_tables",
+        feature = "render_text_rows"
     ))]
-    pub(crate) fn no_hierarchy_options(&self) -> Result<(), TreeGridError> {
+    pub(crate) fn no_box_hierarchy_options(&self) -> Result<(), TreeGridError> {
         if self.bare_roots {
-            return Err(TreeGridError::BareRootsWithoutHierarchy);
+            return Err(TreeGridError::BareRootsWithoutBoxHierarchy);
         }
         if self.value_children {
-            return Err(TreeGridError::ValueChildrenWithoutHierarchy);
+            return Err(TreeGridError::ValueChildrenWithoutBoxHierarchy);
         }
         Ok(())
     }

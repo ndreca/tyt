@@ -10,7 +10,7 @@ use std::{
     path::PathBuf,
 };
 use treegrid::{
-    BTreeGridNode, TreeGrid, TreeGridHierarchyOptions, TreeGridLabel, TreeGridRenderHierarchy,
+    BTreeGridNode, TreeGrid, TreeGridBoxHierarchyOptions, TreeGridLabel, TreeGridRenderBoxHierarchy,
 };
 use treeselect::TreeSelection;
 
@@ -169,7 +169,7 @@ fn render_tree(
 
     Ok(builder
         .grid
-        .render_hierarchy(&TreeGridHierarchyOptions::default()))
+        .render_box_hierarchy(&TreeGridBoxHierarchyOptions::default()))
 }
 
 /// Matches `select` over the entry paths; errors when nothing matches.

@@ -58,16 +58,18 @@ branch in the tree, and the other two behave the same way.
 
 ## Layout
 
-`--layout` `hierarchy` | `md-tables` | `json-pretty` | `json-compact` (default
-`hierarchy`): how to render the listing.
+`--layout` `box-hierarchy` | `box-tables` | `json-compact` | `json-pretty` |
+`md-tables` (default `box-hierarchy`): how to render the listing.
 
-1. `hierarchy` (default): the indented tree above, in the
+1. `box-hierarchy` (default): the indented tree above, in the
    [`hierarchy show`](../hierarchy/show.md) idiom, a `palettes` header over one
    branch per palette index, with the material count as a `materials: <n>`
    leaf and
    `properties` and `objects` as subtrees. Property keys and object names are
    user-entered, so they print quoted.
-2. `md-tables`: a `# palettes` heading over one aligned record table, one row
+2. `box-tables`: the `md-tables` record table drawn with box glyphs under a
+   bare `palettes` line.
+3. `md-tables`: a `# palettes` heading over one aligned record table, one row
    per palette labeled by its index and one column per enabled field:
 
    ```
@@ -80,7 +82,7 @@ branch in the tree, and the other two behave the same way.
    | 2     | metallic, roughness         | 1         | Object B           |
    ```
 
-3. `json-pretty` and `json-compact`: the listing tree as pretty or compact
+4. `json-pretty` and `json-compact`: the listing tree as pretty or compact
    JSON in the shared read-command envelope, one `{"label", "annotation"?,
    "values"?, "children"?}` record per tree node: the `palettes` root over one
    record per palette index, the material count as a native number under

@@ -40,7 +40,7 @@ pub struct PaletteShow {
     #[arg(
         value_name = "layout",
         long,
-        default_value = "rows",
+        default_value = "text-rows",
         value_parser = cli_value_parser::<PaletteShowLayout>()
     )]
     layout: PaletteShowLayout,
@@ -59,8 +59,8 @@ pub struct PaletteShow {
     #[arg(value_name = "header-level", long)]
     header_level: Option<NonZeroU8>,
 
-    /// How the `tables` layout shapes its tables. Defaults to `nested`,
-    /// one table per palette group under headings.
+    /// How the `md-tables` and `box-tables` layouts shape their tables.
+    /// Defaults to `nested`, one table per palette group under headings.
     #[arg(
         value_name = "table-shape",
         long,
@@ -68,7 +68,7 @@ pub struct PaletteShow {
     )]
     table_shape: Option<PaletteShowTableShape>,
 
-    /// Width the `rows` layout wraps to: `terminal` (default), `unlimited`,
+    /// Width the `text-rows` layout wraps to: `terminal` (default), `unlimited`,
     /// or a column count.
     #[arg(value_name = "width", long, default_value = "terminal")]
     width: Width,

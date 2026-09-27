@@ -1,13 +1,13 @@
-use crate::{TreeGridColumnsOptions, TreeGridError, TreeGridOptions};
+use crate::{TreeGridError, TreeGridOptions, TreeGridTextColumnsOptions};
 
 impl TreeGridOptions {
-    /// The columns render's options, rejecting every option it does
+    /// The text columns render's options, rejecting every option it does
     /// not consume.
-    pub fn resolve_columns(&self) -> Result<TreeGridColumnsOptions, TreeGridError> {
-        self.no_hierarchy_options()?;
+    pub fn resolve_text_columns(&self) -> Result<TreeGridTextColumnsOptions, TreeGridError> {
+        self.no_box_hierarchy_options()?;
         self.no_width()?;
         self.no_table_shape()?;
-        Ok(TreeGridColumnsOptions {
+        Ok(TreeGridTextColumnsOptions {
             label: self.text_label()?,
         })
     }
@@ -16,8 +16,8 @@ impl TreeGridOptions {
 #[cfg(test)]
 mod tests {
     use crate::{
-        TreeGridColumnsOptions, TreeGridError, TreeGridHeaderOptions, TreeGridLabelKind,
-        TreeGridLabelMode, TreeGridOptions,
+        TreeGridError, TreeGridHeaderOptions, TreeGridLabelKind, TreeGridLabelMode,
+        TreeGridOptions, TreeGridTextColumnsOptions,
     };
 
     #[test]
@@ -25,8 +25,8 @@ mod tests {
         let options = TreeGridOptions::default().with_label(TreeGridLabelKind::Header);
 
         assert_eq!(
-            options.resolve_columns(),
-            Ok(TreeGridColumnsOptions::default()
+            options.resolve_text_columns(),
+            Ok(TreeGridTextColumnsOptions::default()
                 .with_label(TreeGridLabelMode::Header(TreeGridHeaderOptions::default())))
         );
     }
@@ -36,8 +36,8 @@ mod tests {
         let options = TreeGridOptions::default().with_width(80);
 
         assert_eq!(
-            options.resolve_columns(),
-            Err(TreeGridError::WidthWithoutRows)
+            options.resolve_text_columns(),
+            Err(TreeGridError::WidthWithoutTextRows)
         );
     }
 
@@ -46,8 +46,8 @@ mod tests {
         let options = TreeGridOptions::default().with_value_children(true);
 
         assert_eq!(
-            options.resolve_columns(),
-            Err(TreeGridError::ValueChildrenWithoutHierarchy)
+            options.resolve_text_columns(),
+            Err(TreeGridError::ValueChildrenWithoutBoxHierarchy)
         );
     }
 }

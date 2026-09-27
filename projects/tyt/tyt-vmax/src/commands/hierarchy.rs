@@ -8,8 +8,8 @@ use std::{
     path::PathBuf,
 };
 use treegrid::{
-    BTreeGridNode, TreeGrid, TreeGridHierarchyOptions, TreeGridLabel, TreeGridRenderHierarchy,
-    TreeGridValue,
+    BTreeGridNode, TreeGrid, TreeGridBoxHierarchyOptions, TreeGridLabel,
+    TreeGridRenderBoxHierarchy, TreeGridValue,
 };
 use treeselect::TreeSelection;
 
@@ -158,7 +158,7 @@ impl Hierarchy {
 
         let output = builder
             .grid
-            .render_hierarchy(&TreeGridHierarchyOptions::default());
+            .render_box_hierarchy(&TreeGridBoxHierarchyOptions::default());
         dependencies.write_stdout(output.as_bytes())?;
         Ok(())
     }

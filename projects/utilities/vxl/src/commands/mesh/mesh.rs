@@ -175,13 +175,13 @@ pub struct Mesh {
 
     /// Lists the profiles a run can apply under the `.vxlconfig` supplying
     /// each, or `built in`, and writes no mesh. Takes no other argument. The
-    /// layout defaults to `hierarchy`.
+    /// layout defaults to `box-hierarchy`.
     #[arg(
         value_name = "layout",
         long,
         exclusive = true,
         num_args = 0..=1,
-        default_missing_value = "hierarchy",
+        default_missing_value = "box-hierarchy",
         value_parser = cli_value_parser::<ProfileListLayout>(),
     )]
     list_profiles: Option<ProfileListLayout>,
@@ -1105,13 +1105,13 @@ mod tests {
     #[test]
     fn list_profiles_stands_alone_and_takes_a_layout() {
         let mesh = Mesh::try_parse_from(["mesh", "--list-profiles"]).unwrap();
-        assert_eq!(mesh.list_profiles, Some(ProfileListLayout::Hierarchy));
+        assert_eq!(mesh.list_profiles, Some(ProfileListLayout::BoxHierarchy));
 
         let mesh = Mesh::try_parse_from(["mesh", "--list-profiles", "json-compact"]).unwrap();
         assert_eq!(mesh.list_profiles, Some(ProfileListLayout::JsonCompact));
 
         assert_eq!(parse(&[]).list_profiles, None);
-        assert!(Mesh::try_parse_from(["mesh", "--list-profiles", "columns"]).is_err());
+        assert!(Mesh::try_parse_from(["mesh", "--list-profiles", "text-columns"]).is_err());
         assert!(Mesh::try_parse_from(["mesh"]).is_err());
         assert!(Mesh::try_parse_from(["mesh", "--from", "voxj"]).is_err());
         assert!(Mesh::try_parse_from(["mesh", "model.voxj", "--list-profiles"]).is_err());

@@ -1,4 +1,4 @@
-use crate::{BTreeGridNode, TreeGrid, TreeGridCells, TreeGridHierarchyOptions, render::Cell};
+use crate::{BTreeGridNode, TreeGrid, TreeGridBoxHierarchyOptions, TreeGridCells, render::Cell};
 use branded_id::U32Id;
 
 /// Box drawings up and right: the connector before a last child.
@@ -15,15 +15,15 @@ const EXTENSION_LAST: &str = "  ";
 /// a space.
 const EXTENSION_MID: &str = "\u{2502} ";
 
-/// The `hierarchy` render.
-pub trait TreeGridRenderHierarchy {
-    /// Renders the `hierarchy` layout: a box-glyph tree with one line
+/// The `box-hierarchy` render.
+pub trait TreeGridRenderBoxHierarchy {
+    /// Renders the `box-hierarchy` layout: a box-glyph tree with one line
     /// per node.
-    fn render_hierarchy(&self, options: &TreeGridHierarchyOptions) -> String;
+    fn render_box_hierarchy(&self, options: &TreeGridBoxHierarchyOptions) -> String;
 }
 
-impl<C: TreeGridCells> TreeGridRenderHierarchy for TreeGrid<C> {
-    fn render_hierarchy(&self, options: &TreeGridHierarchyOptions) -> String {
+impl<C: TreeGridCells> TreeGridRenderBoxHierarchy for TreeGrid<C> {
+    fn render_box_hierarchy(&self, options: &TreeGridBoxHierarchyOptions) -> String {
         let mut output = String::new();
         if options.bare_roots {
             for (index, &root) in self.roots().iter().enumerate() {
@@ -53,7 +53,7 @@ impl<C: TreeGridCells> TreeGrid<C> {
         id: U32Id<BTreeGridNode>,
         prefix: &str,
         last: bool,
-        options: &TreeGridHierarchyOptions,
+        options: &TreeGridBoxHierarchyOptions,
     ) {
         let connector = if last { CONNECTOR_LAST } else { CONNECTOR_MID };
         let line = self.node_line(id, options);
@@ -71,7 +71,7 @@ impl<C: TreeGridCells> TreeGrid<C> {
         output: &mut String,
         id: U32Id<BTreeGridNode>,
         prefix: &str,
-        options: &TreeGridHierarchyOptions,
+        options: &TreeGridBoxHierarchyOptions,
     ) {
         let node = self.node(id);
         let values: &[C::Value] = if options.value_children {
@@ -100,7 +100,7 @@ impl<C: TreeGridCells> TreeGrid<C> {
     /// The node's line content: label, annotation, then the inline
     /// cells; the cells are omitted when values print as child lines
     /// instead.
-    fn node_line(&self, id: U32Id<BTreeGridNode>, options: &TreeGridHierarchyOptions) -> String {
+    fn node_line(&self, id: U32Id<BTreeGridNode>, options: &TreeGridBoxHierarchyOptions) -> String {
         let node = self.node(id);
         let mut line = node.annotated_label();
         if !options.value_children && !node.values.is_empty() {
@@ -120,14 +120,14 @@ impl<C: TreeGridCells> TreeGrid<C> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        TreeGrid, TreeGridCellFormat, TreeGridHierarchyOptions, TreeGridLabel,
-        TreeGridRenderHierarchy, TreeGridValue,
+        TreeGrid, TreeGridBoxHierarchyOptions, TreeGridCellFormat, TreeGridLabel,
+        TreeGridRenderBoxHierarchy, TreeGridValue,
     };
 
     #[test]
     fn an_empty_grid_renders_the_empty_string() {
         assert_eq!(
-            TreeGrid::new().render_hierarchy(&TreeGridHierarchyOptions::default()),
+            TreeGrid::new().render_box_hierarchy(&TreeGridBoxHierarchyOptions::default()),
             ""
         );
     }
@@ -149,9 +149,9 @@ mod tests {
         let count = grid.retain_child(second, TreeGridLabel::bare("materialCount"));
         grid.push_value(count, TreeGridValue::int(1));
 
-        let options = TreeGridHierarchyOptions::default().with_bare_roots(true);
+        let options = TreeGridBoxHierarchyOptions::default().with_bare_roots(true);
         assert_eq!(
-            grid.render_hierarchy(&options),
+            grid.render_box_hierarchy(&options),
             "palettes\n\
              ├ 0\n\
              │ ├ materialCount: 2\n\
@@ -177,7 +177,7 @@ mod tests {
         grid.node_mut(reactor).annotation = Some("(Object)".to_owned());
 
         assert_eq!(
-            grid.render_hierarchy(&TreeGridHierarchyOptions::default()),
+            grid.render_box_hierarchy(&TreeGridBoxHierarchyOptions::default()),
             "├ energy-tank (Group)\n\
              │ └ energy-tank-1 (Object)\n\
              └ energy-reactor (Object)\n"
@@ -194,7 +194,7 @@ mod tests {
         grid.push_value(mesh, TreeGridValue::new("{object: 0}"));
 
         assert_eq!(
-            grid.render_hierarchy(&TreeGridHierarchyOptions::default()),
+            grid.render_box_hierarchy(&TreeGridBoxHierarchyOptions::default()),
             "└ ancestors\n\
              \u{20}\u{20}└ \"hand\": {node: 0}\n\
              \u{20}\u{20}\u{20}\u{20}└ \"handMesh\": {object: 0}\n"
@@ -217,9 +217,9 @@ mod tests {
         let loose = grid.retain_child(unplaced, TreeGridLabel::quoted("looseMesh"));
         grid.push_value(loose, TreeGridValue::new("{object: 1}"));
 
-        let options = TreeGridHierarchyOptions::default().with_bare_roots(true);
+        let options = TreeGridBoxHierarchyOptions::default().with_bare_roots(true);
         assert_eq!(
-            grid.render_hierarchy(&options),
+            grid.render_box_hierarchy(&options),
             "root\n\
              └ \"root\": {node: 0}\n\
              \u{20}\u{20}└ \"body\": {object: 0}\n\
@@ -245,9 +245,9 @@ mod tests {
         let object = grid.retain_child(tank, TreeGridLabel::quoted("energy-tank-1"));
         grid.push_value(object, TreeGridValue::new("{object: 0, instance: 0}"));
 
-        let options = TreeGridHierarchyOptions::default().with_bare_roots(true);
+        let options = TreeGridBoxHierarchyOptions::default().with_bare_roots(true);
         assert_eq!(
-            grid.render_hierarchy(&options),
+            grid.render_box_hierarchy(&options),
             "root\n\
              └ \"energy-tank-1\": {node: 0}\n\
              \u{20}\u{20}├ transform\n\
@@ -269,9 +269,9 @@ mod tests {
         grid.node_mut(component).format = Some(TreeGridCellFormat::Text);
         grid.push_value(component, TreeGridValue::unorm8(255));
 
-        let options = TreeGridHierarchyOptions::default().with_value_children(true);
+        let options = TreeGridBoxHierarchyOptions::default().with_value_children(true);
         assert_eq!(
-            grid.render_hierarchy(&options),
+            grid.render_box_hierarchy(&options),
             "└ 0\n\
              \u{20}\u{20}└ \"baseColorFactor\"\n\
              \u{20}\u{20}\u{20}\u{20}├ #FF0000FF\n\
@@ -289,7 +289,7 @@ mod tests {
         grid.push_value(node, TreeGridValue::int(3));
 
         assert_eq!(
-            grid.render_hierarchy(&TreeGridHierarchyOptions::default()),
+            grid.render_box_hierarchy(&TreeGridBoxHierarchyOptions::default()),
             "└ energy-tank (Group): 3\n"
         );
     }
@@ -303,7 +303,7 @@ mod tests {
         grid.push_value(attribute, TreeGridValue::srgba8([0, 255, 0, 128]));
 
         assert_eq!(
-            grid.render_hierarchy(&TreeGridHierarchyOptions::default()),
+            grid.render_box_hierarchy(&TreeGridBoxHierarchyOptions::default()),
             "└ \"baseColorFactor\": \
              \x1b[48;2;255;0;0m  \x1b[0m\x1b[48;2;0;255;0m  \x1b[0m\n"
         );
