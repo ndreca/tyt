@@ -146,13 +146,13 @@ cargo build -p tyt --features bin   # Build the binary
 
 ## Development
 
-After cloning, enable the git hooks once:
+After cloning, run setup once:
 
 ```sh
 npm run setup
 ```
 
-This points `core.hooksPath` at `.githooks`, so a pre-commit hook runs `cargo fmt --all -- --check` and `cargo clippy --workspace --all-targets -- -D warnings` before each commit. Without npm, run `git config core.hooksPath .githooks`.
+This points `core.hooksPath` at `.githooks`, so a pre-commit hook runs `cargo fmt --all -- --check` and `cargo clippy --workspace --all-targets -- -D warnings` before each commit. It also checks out the `submodules/branded-id` submodule, which the workspace patches `branded-id` to, so the build needs it. Without npm, run `git config core.hooksPath .githooks` and `git submodule update --init submodules/branded-id`.
 
 Format and lint manually with:
 
@@ -169,6 +169,8 @@ Releases use [`cargo-workspaces`](https://github.com/pksunkara/cargo-workspaces)
 cargo workspaces version --force tyt patch --yes   # bump changed crates + force tyt, commit, tag, push
 cargo workspaces publish --publish-as-is           # publish to crates.io in dependency order, skipping published versions
 ```
+
+`branded-id` lives outside the workspace in its submodule, so the release commands skip it. Publish a new version from its own repository before a release whose crates depend on it.
 
 A crate not yet on crates.io publishes by hand first at the version its manifest names, with `cargo publish -p <crate>`, and the version command then takes `--ignore-changes '<crate path>/**'` so the bump leaves it there. Stick with `patch`. Use `custom <version>` for an explicit version.
 

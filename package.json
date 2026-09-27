@@ -6,7 +6,7 @@
   "type": "module",
   "sideEffects": false,
   "scripts": {
-    "setup": "git config core.hooksPath .githooks",
+    "setup": "git config core.hooksPath .githooks && git submodule update --init submodules/branded-id",
     "_": "",
     "tyt:install": "cargo install --path ./projects/tyt/tyt --features=\"bin\"",
     "vmax:install": "cargo install --path ./projects/tyt/tyt-vmax --features=\"bin\"",

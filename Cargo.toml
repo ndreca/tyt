@@ -48,6 +48,8 @@ members = [
     "projects/voxel-formats/voxj-voxcore",
 ]
 
+exclude = ["submodules/branded-id"]
+
 resolver = "2"
 
 [patch.crates-io]
@@ -97,6 +99,8 @@ vmax-voxcore = { path = "projects/voxel-formats/vmax-voxcore" }
 voxj = { path = "projects/voxel-formats/voxj" }
 voxj-codec = { path = "projects/voxel-formats/voxj-codec" }
 voxj-voxcore = { path = "projects/voxel-formats/voxj-voxcore" }
+
+branded-id = { path = "submodules/branded-id" }
 
 [workspace.metadata.workspaces]
 

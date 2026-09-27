@@ -220,8 +220,6 @@ dependencies = [
 [[package]]
 name = "branded-id"
 version = "0.1.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3dd383297e0f2833501ff34b02cf056fa71bf6b27c5af063db0660919a375ab"
 dependencies = [
  "serde",
  "uuid",
