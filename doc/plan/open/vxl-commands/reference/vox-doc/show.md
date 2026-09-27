@@ -1,9 +1,9 @@
-# `vxl info`
+# `vxl vox-doc show`
 
-*Part of the [Vxl Command-Line Reference](../README.md).*
+*Part of the [Vxl Command-Line Reference](../../README.md).*
 
 ```
-vxl info <input> [options]
+vxl vox-doc show <input> [options]
 ```
 
 Reports what a document contains, surfacing the format internals that voxel
@@ -28,4 +28,4 @@ present; and the root, instanced, and unplaced nodes in the hierarchy.
 2. `--select <glob>` / `--select-index <index>`: narrow the objects section to
    the selected objects, labeled by their document index; the document and
    palettes sections stay document-wide. See
-   [Object selectors](conventions.md#object-selectors).
+   [Object selectors](../conventions.md#object-selectors).

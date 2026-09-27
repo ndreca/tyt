@@ -37,14 +37,19 @@ vocabulary names such as `baseColor`.
 
 ## Commands
 
-- [`vxl to <format>`](reference/to/README.md): convert between voxel formats,
-  and the canonical way to re-encode, pack, and unpack a document.
-- [`vxl mesh`](../../../ref/mesh/mesh.md): voxel to editable mesh, with material maps as
-  textures or per-vertex attributes.
-- [`vxl material`](reference/material.md): bake material maps only.
-- [`vxl voxelize`](reference/voxelize.md): mesh to voxel grid.
-- [`vxl palette`](reference/palette/README.md): list, show, quantize, and remap
-  palettes.
+Every command sits under the noun it addresses, then its verb.
+
+- [`vxl vox-doc to <format>`](reference/vox-doc/to/README.md): convert between
+  voxel formats, and the canonical way to re-encode, pack, and unpack a
+  document.
+- [`vxl vox-doc validate`](reference/vox-doc/validate.md): check a document
+  against the spec.
+- [`vxl vox-doc show`](reference/vox-doc/show.md): report a document's contents.
+- [`vxl mesh-doc voxelize`](reference/mesh-doc/voxelize.md): mesh to voxel grid.
+- [`vxl object mesh`](../../../ref/mesh/mesh.md): voxel to editable mesh, with
+  material maps as textures or per-vertex attributes.
+- [`vxl object material`](reference/object/material.md): bake material maps
+  only.
 - [`vxl object`](../../closed/vxl-object-commands/README.md#vxl-object): edit
   object properties, placements, and copies.
 - [`vxl object-voxels`](../../closed/vxl-object-commands/README.md#vxl-object-voxels):
@@ -52,10 +57,13 @@ vocabulary names such as `baseColor`.
 - [`vxl node`](../../closed/vxl-object-commands/README.md#vxl-node): edit nodes
   and hierarchy edges.
 - [`vxl hierarchy show`](reference/hierarchy/README.md): print the scene graph.
-- [`vxl validate`](reference/validate.md): check a document against the spec.
-- [`vxl info`](reference/info.md): report a document's contents.
+- [`vxl palette`](reference/palette/README.md): list, show, quantize, and remap
+  palettes.
+-
+  [`vxl profile object-mesh list`](../../../ref/mesh/profile-language.md#loading):
+  list the profiles `object mesh --profile` can apply.
 
-`vxl to` already ships. The
+`vxl vox-doc to` already ships. The
 [object commands plan](../../closed/vxl-object-commands/README.md) covers the
 object, object-voxels, and node commands. This plan covers the rest.
 

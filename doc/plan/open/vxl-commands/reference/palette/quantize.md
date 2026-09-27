@@ -38,16 +38,16 @@ output mirrors the input, a document in its own format or a bare palette JSON.
    unions with `--select`. Given no selector of either kind, every object is
    dithered. See [Object selectors](../conventions.md#object-selectors).
 
-A material spans all of a palette's properties, one value each.
-Material
-follows color: `quantize` clusters the selected property to at most
+A material spans all of a palette's properties, one value each. Material follows
+color: `quantize` clusters the selected property to at most
 `--max-palette-materials` values, then collapses each cluster to one material
-whose whole set of values is its representative's, so the other properties follow
-the clustered one: materials in the same color cluster merge into one and any
-appearance difference between them is lost to the representative.
-`--max-palette-materials` therefore bounds the palette's material count, not just
-the selected property's distinct values. The representative is an actual
-material, never an averaged one, so every kept material is a real one. This is the
-reduction [`voxelize`](../voxelize.md)'s `--max-palette-materials` applies inline,
-sharing this command's `--method`, `--space`, and `--dither`. See
+whose whole set of values is its representative's, so the other properties
+follow the clustered one: materials in the same color cluster merge into one and
+any appearance difference between them is lost to the representative.
+`--max-palette-materials` therefore bounds the palette's material count, not
+just the selected property's distinct values. The representative is an actual
+material, never an averaged one, so every kept material is a real one. This is
+the reduction [`mesh-doc voxelize`](../mesh-doc/voxelize.md)'s
+`--max-palette-materials` applies inline, sharing this command's `--method`,
+`--space`, and `--dither`. See
 [Palettes](../../../../../../projects/voxel-formats/voxj/docs/voxel-json-file-format.md#palettes).

@@ -12,7 +12,7 @@ for implementation choices a reviewer of the Rust would want explained.
 > "material", moved the recommended PBR attribute names to the glTF
 > metallic-roughness vocabulary (`rgba` became `baseColorFactor`, and so on, with
 > `emissive` split into `emissiveFactor` and `emissiveStrength`), replaced the
-> cross-layer merge with a non-merging `layers` list selected by `mesh`'s
+> cross-layer merge with a non-merging `layers` list selected by `object mesh`'s
 > `--layer`, renamed `--max-palette-cells` to `--max-palette-materials` and
 > `--show-palettes` to `--show-layers`, and added a `--color-format`
 > (`hex` | `float`, default `float`) encoding option. Where an entry below names
@@ -31,22 +31,23 @@ for implementation choices a reviewer of the Rust would want explained.
 ## MeshFormat
 
 `MeshFormat` carries the two glTF variants, `Gltf` (`.gltf`) and `Glb` (`.glb`),
-which are the only mesh formats `mesh` and `voxelize` handle for now. glTF was
-chosen over `fbx` and `obj` because it has a mature pure-Rust reader, the `gltf`
-crate, so the mesh I/O needs no Blender shell-out or C++ bindings. `from_path`
-infers the variant from the extension, mirroring `Format::from_path`. Other
-formats are stated future work in the [design notes](design-notes.md), not a
-current variant.
+which are the only mesh formats `object mesh` and `mesh-doc voxelize` handle for
+now. glTF was chosen over `fbx` and `obj` because it has a mature pure-Rust
+reader, the `gltf` crate, so the mesh I/O needs no Blender shell-out or C++
+bindings. `from_path` infers the variant from the extension, mirroring
+`Format::from_path`. Other formats are stated future work in the
+[design notes](design-notes.md), not a current variant.
 
 No `extension()` method yet. `Format` carries none, and the only caller is the
-defaulted output path, which lands with the `mesh` command.
+defaulted output path, which lands with the `object mesh` command.
 
 ## --select-index parser
 
 `FromStr::Err` is `String`. That is the idiomatic error for a clap value parser
 because `String` converts into the boxed error clap expects, and it avoids a
-one-off error type. The clap wiring puts `Vec<SelectIndex>` in an `#[arg]`, which
-is first compiled when the `mesh` command lands, so the bound is exercised then.
+one-off error type. The clap wiring puts `Vec<SelectIndex>` in an `#[arg]`,
+which is first compiled when the `object mesh` command lands, so the bound is
+exercised then.
 
 The public API is just `contains`. The union resolver tests each object index
 against every selector, which is all `contains` needs to support. Validating an
@@ -80,12 +81,13 @@ will match with `pathspec` when the object selectors are built.
 `VoxjEncodingOptions` is a `clap::Args` group with the four flags that shape a
 voxj document: `--format`, `--encoding-preset`, `--position-encoding`, and
 `--sample-encoding`, with `encoding` and `resolve_format` resolution methods.
-Both `to voxj` and `voxelize` flatten it; `to voxj` adds `--ext` and
-`--edit-state`, which a voxelized mesh has no source for, so they are not in the
-shared group. clap cannot prefix a flattened group, so sharing happens at this
-sub-group rather than wrapping each command's whole writer surface. Output-path
-defaulting stays per command, since the default stem differs: `to voxj` defaults
-from the voxel file, `voxelize` from the mesh.
+Both `vox-doc to voxj` and `mesh-doc voxelize` flatten it; `vox-doc to voxj`
+adds `--ext` and `--edit-state`, which a voxelized mesh has no source for, so
+they are not in the shared group. clap cannot prefix a flattened group, so
+sharing happens at this sub-group rather than wrapping each command's whole
+writer surface. Output-path defaulting stays per command, since the default stem
+differs: `vox-doc to voxj` defaults from the voxel file, `mesh-doc voxelize`
+from the mesh.
 
 `--optimize` was renamed to `--encoding-preset`, and the type `VoxjOptimize` to
 `VoxjEncodingPreset`, because its values are `size`, `fast`, and `pretty`, and
@@ -107,7 +109,7 @@ stays independent of the tyt support crates.
 
 ## palette list
 
-`palette list` follows the `info` report template rather than the richer
+`palette list` follows the `vox-doc show` report template rather than the richer
 `palette show` machinery, since it is a flat per-palette overview with no value
 collections, selectors, or swatches. It loads the state and renders a pure
 function over the `VoxMain`, the same load-render-print split the other read
@@ -153,17 +155,18 @@ keeping those whose `iter_palette_refs` name it. An object appears once however
 many times it references the palette, since the filter is a boolean any-match, so
 an unvalidated document that references one palette twice still lists the object
 once. Markdown shows the referencing object names and JSON their indices, the
-same name-versus-id split `info` draws between its Markdown and JSON.
+same name-versus-id split `vox-doc show` draws between its Markdown and JSON.
 
-Building `list` surfaced four helpers already inlined in `info` and, for the JSON
-tail, in `validate` too. They moved to shared `implementation` functions rather
-than being duplicated a third time: `row` and `md_cell` join the `markdown_table`
-module they feed, `attribute_names` and `to_json_string` become their own leaf
-modules. `to_json_string` is the pretty-or-compact serialize plus trailing
-newline that `info`, `validate`, and `list` share, so the read commands' JSON
-stays byte-identical in form. `palette show` keeps its own serialize, since it
-returns the string with an `expect` rather than propagating a `Result`, and
-retyping it was not worth the churn.
+Building `list` surfaced four helpers already inlined in `vox-doc show` and, for
+the JSON tail, in `vox-doc validate` too. They moved to shared `implementation`
+functions rather than being duplicated a third time: `row` and `md_cell` join
+the `markdown_table` module they feed, `attribute_names` and `to_json_string`
+become their own leaf modules. `to_json_string` is the pretty-or-compact
+serialize plus trailing newline that `vox-doc show`, `vox-doc validate`, and
+`list` share, so the read commands' JSON stays byte-identical in form.
+`palette show` keeps its own serialize, since it returns the string with an
+`expect` rather than propagating a `Result`, and retyping it was not worth the
+churn.
 
 ## palette show
 
@@ -197,8 +200,8 @@ reported. The richer JSON forms are left to the V2 follow-ups in
 ## voxelize
 
 The mesh-reading and rasterization live in voxsmith, not vxl, so the command
-follows the `to voxj` template: `commands/voxelize.rs` parses the flags and
-`implementation/voxelize.rs` calls voxsmith, which returns a
+follows the `vox-doc to voxj` template: `commands/voxelize.rs` parses the flags
+and `implementation/voxelize.rs` calls voxsmith, which returns a
 [`VoxMain`](voxcore::VoxMain) that the same `VoxjFileBuilder` path then encodes
 with the shared `--format` / `--encoding-preset` / `--position-encoding` /
 `--sample-encoding` options. vxl gains no mesh dependency of its own; the `gltf`
@@ -235,19 +238,19 @@ counts. `import_slice` auto-detects `.glb` versus `.gltf` from the bytes, so
 `.gltf` with external `.bin` buffers cannot resolve from bytes and errors.
 
 Grid resolution is resolved in vxl's `implementation/voxelize.rs` before the
-voxsmith call, into a single voxel-count triple: `--resolution` caps the
-longest axis and sizes the others to preserve aspect, while `--voxel-size`
-divides each meter extent by `<meters>` and rounds up. The mutual exclusion of
-`--resolution` and `--voxel-size` is a clap `ArgGroup` with
-`required = true`, so exactly one is present. The two `Option` flags live only in
-the command struct clap fills; `execute` collapses them into a `GridResolution`
-enum (`VoxelGridLength(u32)` | `MetersPerVoxel(f64)`) that the trait and impl
-take, so the "exactly one" the group enforces at the CLI is a type invariant
-past it, not a pair of `Option`s a resolver has to reconcile.
-The voxj writer is the same `VoxjFileBuilder` path, factored into a shared
-`implementation/write_voxj_document` helper that `to voxj` also uses; voxelize
-calls it with `ext = false` and `EditStateMode::Never`, since a voxelized mesh
-carries neither a source `ext` block nor an editor build volume.
+voxsmith call, into a single voxel-count triple: `--resolution` caps the longest
+axis and sizes the others to preserve aspect, while `--voxel-size` divides each
+meter extent by `<meters>` and rounds up. The mutual exclusion of `--resolution`
+and `--voxel-size` is a clap `ArgGroup` with `required = true`, so exactly one
+is present. The two `Option` flags live only in the command struct clap fills;
+`execute` collapses them into a `GridResolution` enum (`VoxelGridLength(u32)` |
+`MetersPerVoxel(f64)`) that the trait and impl take, so the "exactly one" the
+group enforces at the CLI is a type invariant past it, not a pair of `Option`s a
+resolver has to reconcile. The voxj writer is the same `VoxjFileBuilder` path,
+factored into a shared `implementation/write_voxj_document` helper that
+`vox-doc to voxj` also uses; voxelize calls it with `ext = false` and
+`EditStateMode::Never`, since a voxelized mesh carries neither a source `ext`
+block nor an editor build volume.
 
 The voxelizer rasterizes with a separating-axis triangle-vs-voxel-box test in
 grid space (each voxel a unit cube), and `solid` adds a six-connected flood fill
@@ -258,11 +261,11 @@ overlap.
 
 Coordinates convert from glTF's Y-up to Voxel Json's Z-up: each gathered
 world-space point is sent through `(x, y, z) -> (x, -z, y)`, a +90 degree
-rotation about X that preserves the right-handedness both formats use, so a model
-stands upright in a Z-up editor. The conversion is fixed by the two formats'
-specs (glTF mandates Y-up), so it needs no flag; a future `--axes` style override
-for the rare mis-authored file is left as future work, and `vxl mesh` (the
-inverse) must mirror this mapping.
+rotation about X that preserves the right-handedness both formats use, so a
+model stands upright in a Z-up editor. The conversion is fixed by the two
+formats' specs (glTF mandates Y-up), so it needs no flag; a future `--axes`
+style override for the rare mis-authored file is left as future work, and
+`vxl object mesh` (the inverse) must mirror this mapping.
 
 `--material-mode` chooses the color source, `--fill-mode` the geometry, and the
 two are independent. Reading the mesh fails the conversion as a
@@ -276,7 +279,7 @@ invents interior cells with no material. The rasterizer and the `VoxelGrid`,
 material table, and triangle types are all format-independent (they live under
 `internal/mesh/`); only the glTF reader is glTF-specific.
 
-Every mode writes the five attributes `mesh` bakes: `rgba`, `metallic`,
+Every mode writes the five attributes `object mesh` bakes: `rgba`, `metallic`,
 `roughness`, `emissive`, `occlusion`. `flat` and the interior fill cell use a
 default finish (matte, non-metal, unoccluded). `per-primitive` reads each glTF
 material's flat factors: glTF's linear base color is sRGB-encoded to match the
@@ -358,11 +361,12 @@ surface cell resolves, locking in the coverage guarantee.
 ## Per-texel PBR maps
 
 The per-texel sampler was extended from base color to the full material:
-metallic, roughness, emissive, and occlusion each sample their own glTF texture on
-the same scatter pass, so `sample_material` (renamed from `sample_base_color`)
-returns a per-cell `MeshMaterial` rather than a base color and `resolve_materials`
-takes it whole. An attribute whose material has no texture keeps the flat factor
-`mesh` bakes, so the sampler's output is a superset of the per-primitive one.
+metallic, roughness, emissive, and occlusion each sample their own glTF texture
+on the same scatter pass, so `sample_material` (renamed from
+`sample_base_color`) returns a per-cell `MeshMaterial` rather than a base color
+and `resolve_materials` takes it whole. An attribute whose material has no
+texture keeps the flat factor `object mesh` bakes, so the sampler's output is a
+superset of the per-primitive one.
 
 The color space is decoded at the sample site, not stored on the texture, so one
 image feeding maps of different kinds decodes correctly for each. `MeshTexture` is
@@ -398,10 +402,10 @@ controls reduce a palette to at most N cells. The flag is named
 `--max-palette-cells` (not `--count` or `--max-palette`) and `palette quantize`
 takes the same name, since both run the identical operation: clustering M cells
 into N > M is a no-op, so a "count" is really a ceiling. Its value is a
-`MaxPaletteCells` of `none` or a positive count; `voxelize` defaults it to 256,
-`quantize` will require it. The `--method` / `--space` / `--dither` trio is a
-flattened `PaletteReductionOptions` clap group, paired with the per-command cap
-flag into a plain `PaletteReduction` the trait carries, so the group can be
+`MaxPaletteCells` of `none` or a positive count; `mesh-doc voxelize` defaults it
+to 256, `quantize` will require it. The `--method` / `--space` / `--dither` trio
+is a flattened `PaletteReductionOptions` clap group, paired with the per-command
+cap flag into a plain `PaletteReduction` the trait carries, so the group can be
 shared while the caps differ (default vs required).
 
 `reduce_palette` is the engine, a public voxsmith operation on the assembled
@@ -605,21 +609,22 @@ and swatch arrangements, but its `markdown`, `pretty-json`, and `compact-json`
 names and behavior match the shared form. The bare palette `--from palette` input
 and a shared JSON envelope stay deferred.
 
-JSON is built with `serde_json`, the crate `info` and `validate` already pull in,
-replacing the V1 hand-rolled serializer: `compact-json` is `to_string` and
-`pretty-json` is `to_string_pretty`, the same indented form `info` emits, so the
-read commands' JSON reads alike. An integral scalar still serializes as an integer
-so it matches the text layouts. The markdown layout shares one `markdown_table`
-helper with `info`, and the `visible_width` and `pad_right` primitives move to a
-`text_width` module; the shared table measures past ANSI escapes so swatch cells
-align, which `info`'s plain text neither needs nor is hurt by.
+JSON is built with `serde_json`, the crate `vox-doc show` and `vox-doc validate`
+already pull in, replacing the V1 hand-rolled serializer: `compact-json` is
+`to_string` and `pretty-json` is `to_string_pretty`, the same indented form
+`vox-doc show` emits, so the read commands' JSON reads alike. An integral scalar
+still serializes as an integer so it matches the text layouts. The markdown
+layout shares one `markdown_table` helper with `vox-doc show`, and the
+`visible_width` and `pad_right` primitives move to a `text_width` module; the
+shared table measures past ANSI escapes so swatch cells align, which
+`vox-doc show`'s plain text neither needs nor is hurt by.
 
-The markdown table leads with a `#` column of the 0-based cell index of each row,
-prepended in `render_markdown` rather than in the shared `markdown_table`, so the
-`info` tables stay unchanged. A row maps to a palette cell, so the index reads as
-the cell number a selector or the other layouts refer to; only `markdown` gains
-the column, since `row` and `column` already carry their headers and JSON records
-the values positionally.
+The markdown table leads with a `#` column of the 0-based cell index of each
+row, prepended in `render_markdown` rather than in the shared `markdown_table`,
+so the `vox-doc show` tables stay unchanged. A row maps to a palette cell, so
+the index reads as the cell number a selector or the other layouts refer to;
+only `markdown` gains the column, since `row` and `column` already carry their
+headers and JSON records the values positionally.
 
 `--width` wraps the `row` layouts so a 255-entry palette folds into a block
 instead of one multi-thousand-column line that the terminal mangles when it
@@ -736,12 +741,13 @@ Instancing across sibling branches is a diamond, not a cycle, so only an ancesto
 repeat stops the walk.
 
 The tree is split into a `root` section of each root's subtree and an `unplaced`
-section, each under a bare header line printed only when its section is non-empty.
-`unplaced` lists nodes that are neither a root nor a child, then objects no node
-places, each in listing order. Unplaced nodes render with their subtrees, which
-surfaces child nodes reachable only through an unplaced parent and so absent from
-the root tree. Orphan objects match the `--select` convention that an unreferenced
-object has its bare name as its path, and `info` already reports every object.
+section, each under a bare header line printed only when its section is
+non-empty. `unplaced` lists nodes that are neither a root nor a child, then
+objects no node places, each in listing order. Unplaced nodes render with their
+subtrees, which surfaces child nodes reachable only through an unplaced parent
+and so absent from the root tree. Orphan objects match the `--select` convention
+that an unreferenced object has its bare name as its path, and `vox-doc show`
+already reports every object.
 
 `hierarchy show` renders only the markdown tree and takes no `--layout`, unlike
 the other read reports with their `pretty-json` and `compact-json` forms. The
@@ -868,17 +874,17 @@ The edit grid can be absent: coincident with the runtime grid, it carries no
 authoring margin. Rather than omit the row, which reads the same as the flag
 being off, an absent edit value prints `null`, the document's own absent marker,
 matching the JSON layouts of `palette show`. `edit_present` reuses the exact
-margin test `info` applies for its edit-bounds column, so the two reports agree
-on when an edit grid is distinct.
+margin test `vox-doc show` applies for its edit-bounds column, so the two
+reports agree on when an edit grid is distinct.
 
 The runtime grid is never absent, so runtime rows never print `null`. An object
 with no live voxels still has a runtime grid, a zero-size box; it prints one at
-the object's origin, matching the `0x0x0` bounds and origin `info` reports for an
-empty object. An earlier cut printed `null` here, but an empty object's grid is
-zero, not missing, and the file records that zero. The one loss is the position:
-for an empty object that also has an edit grid, `origin` is the edit origin,
-since a `VoxObject` keeps a single origin and derives the runtime box from live
-voxels, of which an empty object has none.
+the object's origin, matching the `0x0x0` bounds and origin `vox-doc show`
+reports for an empty object. An earlier cut printed `null` here, but an empty
+object's grid is zero, not missing, and the file records that zero. The one loss
+is the position: for an empty object that also has an edit grid, `origin` is the
+edit origin, since a `VoxObject` keeps a single origin and derives the runtime
+box from live voxels, of which an empty object has none.
 
 The rows render through an `ObjectRow` list built per object, a `Value` line or a
 `Bounds` min/max subtree, each carrying its `Option` value so the `null` form is
@@ -931,18 +937,18 @@ selected placements whose parent is unselected.
 ## Shared object selection
 
 `ObjectSelection` is a `clap::Args` group in vxl's `internal`, the two selector
-flags plus `has_selectors` and `resolve`, flattened by `mesh`, `info`, and every
-`to` target the way `VoxelInput` is. `resolve` owns one policy, that a selector
-matching nothing is a usage error naming both flags; `mesh` keeps its
-exactly-one policy on top, where an empty result can only mean a document with
-no objects. `select_objects` moved from voxsmith's `mesh` module to
-`utilities`, which made `pathspec` an unconditional dependency and retired the
-`_pathspec` marker feature; it is one globset-backed crate that every selecting
-command enabled anyway.
+flags plus `has_selectors` and `resolve`, flattened by `object mesh`,
+`vox-doc show`, and every `vox-doc to` target the way `VoxelInput` is. `resolve`
+owns one policy, that a selector matching nothing is a usage error naming both
+flags; `object mesh` keeps its exactly-one policy on top, where an empty result
+can only mean a document with no objects. `select_objects` moved from voxsmith's
+`mesh` module to `utilities`, which made `pathspec` an unconditional dependency
+and retired the `_pathspec` marker feature; it is one globset-backed crate that
+every selecting command enabled anyway.
 
-`info` takes the resolved ids rather than a pruned state, so the objects
-section keeps document indices as labels and the document and palettes
-sections stay whole. `to` prunes through voxsmith's `keep_objects`, which finds
+`vox-doc show` takes the resolved ids rather than a pruned state, so the objects
+section keeps document indices as labels and the document and palettes sections
+stay whole. `vox-doc to` prunes through voxsmith's `keep_objects`, which finds
 the nodes whose subtree still places a kept object, rewrites the survivors'
 child lists with voxcore's checked `set_hierarchy_node`, empties and releases
 the rest, and releases the dropped objects. `convert` then compacts with `gc`,
@@ -992,3 +998,23 @@ be written; a predictable rule beats one that depends on the profile. Every
 document meshes before any is saved, so an error writes nothing. A file two
 objects of one document write is caught in voxsmith with a record error naming
 the file, ahead of meshdoc's duplicate-name check.
+
+## Noun-first command groups
+
+Every command sits under the noun it addresses. The path before the verb picks
+what the command acts on, and anything after the verb narrows the action, as in
+`object set name` or `vox-doc to goxl`. `info`, `validate`, and `to` moved under
+`vox-doc`, with `info` renamed `show`. `voxelize` moved to `mesh-doc voxelize`,
+and `mesh` moved to `object mesh`, which selects objects like the rest of the
+`object` group. The planned `material` becomes `object material` for the same
+reason.
+
+The verbs split by shape. `list` prints one summary row per item of a
+collection, and `show` prints one thing's contents, so `palette` keeps both and
+a document gets `show`.
+
+`mesh --list-profiles` became `profile object-mesh list`, with the layout a
+`--layout` flag like every other report. `object mesh` then takes its input
+unconditionally. The profiles moved in `.vxlconfig` from the top-level `mesh`
+section to `object.mesh`, read through an `ObjectConfig` holding one entry per
+configurable `object` command.

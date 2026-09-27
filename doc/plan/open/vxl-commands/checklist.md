@@ -12,14 +12,15 @@ off as they land.
 - `vxl` stays independent of `tyt-common` and `tyt-injection`. Use `std::fs` and
   the codec crates already wired in `Cargo.toml` (`voxcore`, `voxj-codec`,
   `voxsmith`, `vmax-codec`). The tyt FBX and material commands are behavioral
-  models only, not dependencies. Mesh reading for `mesh` and `voxelize` goes
-  through voxsmith, which gains a `gltf` feature gating the `gltf` crate, rather
-  than a vxl-level mesh dependency.
+  models only, not dependencies. Mesh reading for `object mesh` and
+  `mesh-doc voxelize` goes through voxsmith, which gains a `gltf` feature gating
+  the `gltf` crate, rather than a vxl-level mesh dependency.
 - Follow the existing command house style: one `clap` `Parser` struct per file
   in `src/commands/`, re-exported from `commands/mod.rs`, dispatched from
   `vxl.rs`; one `Dependencies` trait method per operation in `dependencies.rs`
   with the concrete impl behind the `impl` feature under `implementation/`. Use
-  `to voxj` (`commands/voxj.rs`, `implementation/to_voxj.rs`) as the template.
+  `vox-doc to voxj` (`commands/voxj.rs`, `implementation/to_voxj.rs`) as the
+  template.
 - Each `#[arg]` starts with `value_name`. Enumerated options are `ValueEnum`
   types, one per file under `utilities/`, re-exported. Outputs are
   `Option<PathBuf>` defaulted from the input stem. Booleans use the settable
@@ -38,10 +39,10 @@ off as they land.
       subtree, repeatable, union over all values. See
       [conventions](reference/conventions.md).
 - [x] `ObjectSelection`, the shared `--select` / `--select-index` clap group
-      with the no-match usage error, flattened by `mesh`, `info`, and every
-      `to` target; voxsmith resolves it with `utilities::select_objects` and
-      prunes for `to` with `operations::to::keep_objects` over voxcore's
-      `set_hierarchy_node`.
+      with the no-match usage error, flattened by `object mesh`, `vox-doc show`,
+      and every `vox-doc to` target; voxsmith resolves it with
+      `utilities::select_objects` and prunes for `vox-doc to` with
+      `operations::to::keep_objects` over voxcore's `set_hierarchy_node`.
 - [x] `--atlas` layout `ValueEnum`: `palette` shipped, one texel per distinct
       flattened material the object uses, its layers merged per property name
       by the format's layer-override resolution; `unwrap` (per-mesh UV) hidden
@@ -56,10 +57,10 @@ off as they land.
       lands. See [mesh](../../../ref/mesh/mesh.md).
 - [x] `--define-property <property> <name>` binding, a pure rename alias giving
       a custom voxel-json key a name a packing reads. The type is not declared:
-      `mesh` reads it from the key's value pool in its winning layer's palette,
-      a color pool exposing components and a scalar pool read whole, and a key
-      no layer binds follows the format's unbound-default rule (a glTF built-in
-      bakes its spec default, a custom key errors). See
+      `object mesh` reads it from the key's value pool in its winning layer's
+      palette, a color pool exposing components and a scalar pool read whole,
+      and a key no layer binds follows the format's unbound-default rule (a glTF
+      built-in bakes its spec default, a custom key errors). See
       [mesh](../../../ref/mesh/value-language.md).
 - [ ] `--vertex` / `--vertex-map` carrier: the vertex twins of the texture
       flags, writing `COLOR_0` and custom `_NAME` attributes, the
@@ -71,28 +72,28 @@ off as they land.
       (`embedded` for `.glb`, `external` for `.gltf`): embed images in the glb
       chunk / gltf data URI and the palette JSON under `extras.vxl`, write
       external `.png` and `-palette.json` files, or both. See
-      [mesh](../../../ref/mesh/mesh.md). (Image storage shipped with `mesh`; the palette
-      JSON reuse lands with the vertex carriers.)
+      [mesh](../../../ref/mesh/mesh.md). (Image storage shipped with
+      `object mesh`; the palette JSON reuse lands with the vertex carriers.)
 - [x] Shared voxj encoding options (`--format`, `--encoding-preset`,
-      `--position-encoding`, `--sample-encoding`) in
-      `VoxjEncodingOptions`, flattened by `to voxj` and `voxelize`;
-      `--ext`/`--edit-state` stay on `to voxj`.
+      `--position-encoding`, `--sample-encoding`) in `VoxjEncodingOptions`,
+      flattened by `vox-doc to voxj` and `mesh-doc voxelize`;
+      `--ext`/`--edit-state` stay on `vox-doc to voxj`.
 - [x] `ValueEnum`s for the palette ops: quantize method, color space, dither,
       and `palette show` format (`auto` | `swatch` | `swatch-value` | `value`).
-- [ ] Shared palette-reduction engine and a flattened options group
-      (`--method` / `--space` / `--dither`), reused by `palette quantize`,
-      `palette remap` (space/dither), and `voxelize`'s `--max-palette-materials`,
-      on the one material-follows-color rule (a count bounds materials; a merged
+- [ ] Shared palette-reduction engine and a flattened options group (`--method`
+      / `--space` / `--dither`), reused by `palette quantize`, `palette remap`
+      (space/dither), and `mesh-doc voxelize`'s `--max-palette-materials`, on
+      the one material-follows-color rule (a count bounds materials; a merged
       material takes its cluster representative's whole material). Landed: the
       `PaletteReductionOptions` group and voxsmith's `reduce_palette` with all
       three methods (`median-cut` / `octree` / `kmeans`) in oklab/lab/rgb via
-      `remove_material`+`gc`, plus `--dither` (`floyd-steinberg` / `ordered`) as a
-      per-voxel remap in 3D raster order. Pending: `quantize` / `remap` will
+      `remove_material`+`gc`, plus `--dither` (`floyd-steinberg` / `ordered`) as
+      a per-voxel remap in 3D raster order. Pending: `quantize` / `remap` will
       reuse the engine.
 
 ## Commands
 
-### mesh ([ref/mesh](../../../ref/mesh/mesh.md))
+### object mesh ([ref/mesh](../../../ref/mesh/mesh.md))
 
 - [x] `Mesh` command struct, dispatch, and one mesh object per selected object
       under the hierarchy reaching it, or one mesh per object with
@@ -123,14 +124,14 @@ off as they land.
       the impl resolves the selectors to object indices and meshes by index,
       while the command owns the exactly-one policy and its flag-named errors.
 
-### material ([reference/material.md](reference/material.md))
+### object material ([reference/object/material.md](reference/object/material.md))
 
 - [ ] `Material` command sharing the mesh map flags, bake-only with no geometry.
-- [ ] `--atlas` shared with `mesh`; atlas derivation identical per mode; verify
-      byte-for-byte parity.
+- [ ] `--atlas` shared with `object mesh`; atlas derivation identical per mode;
+      verify byte-for-byte parity.
 - [ ] Require at least one map; otherwise list the maps and exit non-zero.
 
-### voxelize ([reference/voxelize.md](reference/voxelize.md))
+### mesh-doc voxelize ([reference/mesh-doc/voxelize.md](reference/mesh-doc/voxelize.md))
 
 - [x] `Voxelize` command; `--from` (`gltf` | `glb`), mutually exclusive
       `--resolution` | `--voxel-size` (clap `ArgGroup`,
@@ -144,10 +145,11 @@ off as they land.
       voxel) as the node scale, leaving `--resolution` at scale `1`.
 - [x] voxsmith `gltf` feature gating the `gltf` crate and a mesh-to-`VoxMain`
       voxelizer; `Dependencies::voxelize` and its impl call it, then write
-      through `VoxjFileBuilder` like `to voxj`. glTF Y-up is converted to the
-      Z-up document convention; the inverse `mesh` command must mirror it.
+      through `VoxjFileBuilder` like `vox-doc to voxj`. glTF Y-up is converted
+      to the Z-up document convention; the inverse `object mesh` command must
+      mirror it.
 
-Material sampling (see [voxelize](reference/voxelize.md) and
+Material sampling (see [voxelize](reference/mesh-doc/voxelize.md) and
 [design notes](reference/design-notes.md)):
 
 - [x] `--material-mode auto | per-primitive | per-texel | flat` (default
@@ -155,18 +157,19 @@ Material sampling (see [voxelize](reference/voxelize.md) and
       `--fill-color`-with-`--fill-mode surface` guard. `per-texel` and
       texture-aware `auto` still fall back to `per-primitive` until the texel
       sampler lands below.
-- [x] `per-primitive`: one material per source glTF material from the PBR factors
-      (`baseColorFactor`, `metallicFactor`, `roughnessFactor`, `emissiveFactor`,
-      `emissiveStrength`, `occlusionStrength`), matching what `mesh` bakes.
+- [x] `per-primitive`: one material per source glTF material from the PBR
+      factors (`baseColorFactor`, `metallicFactor`, `roughnessFactor`,
+      `emissiveFactor`, `emissiveStrength`, `occlusionStrength`), matching what
+      `object mesh` bakes.
 - [x] `--fill-color #RRGGBBAA` (omitted for the default): the whole object under
       `flat`, the `solid`-fill interior under the sampling modes; a set color is
       rejected on a sampling-mode surface. An omitted interior adopts its nearest
       surface material.
 - [x] `--max-palette-materials <n> | none` (default `256`) via the shared
-      reduction engine; expose `--method` / `--space` / `--dither` on `voxelize`.
-      Landed for
-      all three methods (`median-cut` / `octree` / `kmeans`) with a stderr note,
-      and both `--dither` modes (`floyd-steinberg` / `ordered`).
+      reduction engine; expose `--method` / `--space` / `--dither` on
+      `mesh-doc voxelize`. Landed for all three methods (`median-cut` / `octree`
+      / `kmeans`) with a stderr note, and both `--dither` modes
+      (`floyd-steinberg` / `ordered`).
 - [x] `per-texel`: UV interpolation, image decode, area-average over the voxel
       footprint, epsilon-merge of near-identical tuples, and a `solid`-interior
       fallback to the nearest surface material. `auto` becomes texture-aware here.
@@ -208,12 +211,12 @@ Material sampling (see [voxelize](reference/voxelize.md) and
 - [x] `--show-layers`, one child per layer labeled by its palette index with its
       material count.
 
-### validate ([reference/validate.md](reference/validate.md))
+### vox-doc validate ([reference/vox-doc/validate.md](reference/vox-doc/validate.md))
 
 - [x] Implement the spec validation checklist; non-zero exit on failure;
       `--layout` report.
 
-### info ([reference/info.md](reference/info.md))
+### vox-doc show ([reference/vox-doc/show.md](reference/vox-doc/show.md))
 
 - [ ] Report version, per-object bounds / voxel count / encodings, palette
       property sets and material counts, `editState` and `ext` presence, and root /
@@ -225,15 +228,16 @@ Material sampling (see [voxelize](reference/voxelize.md) and
       per-object encodings and the root / instanced / unplaced node breakdown.
 - [x] `--select` / `--select-index` narrow the objects section.
 
-### to ([reference/to/README.md](reference/to/README.md))
+### vox-doc to ([reference/vox-doc/to/README.md](reference/vox-doc/to/README.md))
 
 - [x] `--select` / `--select-index` write only the selected objects, the
       hierarchy pruned to what still places them.
 
 ## Finishing
 
-- [x] `--layout` output on `list`, `validate`, and `info`; `palette show` keeps
-      its own `--json`, and `hierarchy show` prints only its tree.
+- [x] `--layout` output on `list`, `vox-doc validate`, and `vox-doc show`;
+      `palette show` keeps its own `--json`, and `hierarchy show` prints only
+      its tree.
 - [x] Help text and `clap_complete` completions cover the new commands.
 - [ ] Tests per command, following the existing test style.
 

@@ -50,7 +50,8 @@ its own format or a bare palette JSON.
 When several input materials land on the same target entry they merge into it,
 each remapped voxel adopting the target material's every property value, so
 material follows color (the compared property), the same rule
-[`quantize`](quantize.md) and [`voxelize`](../voxelize.md) follow.
+[`quantize`](quantize.md) and [`mesh-doc voxelize`](../mesh-doc/voxelize.md)
+follow.
 
 ## Example
 

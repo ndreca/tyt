@@ -2,14 +2,14 @@
 
 *Part of the [Vxl Command-Line Reference](../README.md).*
 
-These hold across the commands and match the existing `to` commands.
+These hold across the commands and match the existing `vox-doc to` commands.
 
 1. Input format is recognized by leading bytes or inferred from the extension,
    and overridden with `--from`. Mesh I/O format is inferred from the mesh
    extension or set with `--to` and `--from`.
 2. Output paths are optional and default to the input stem with the new
-   extension, so a defaulted `to voxj` writes `.voxj` and `--format zip` writes
-   `.voxjz`.
+   extension, so a defaulted `vox-doc to voxj` writes `.voxj` and `--format zip`
+   writes `.voxjz`.
 3. Settable booleans follow the `--ext` style: a bare flag means `true`, an
    explicit `--flag false` turns it off, and the option has a default.
 4. Palette addressing differs by command. [`palette list`](palette/list.md)
@@ -28,15 +28,14 @@ These hold across the commands and match the existing `to` commands.
    `box-hierarchy` and `box-tables` draw with box glyphs, `json-compact` and
    `json-pretty` serialize, `md-lists` and `md-tables` emit markdown, and
    `text-columns` and `text-rows` pad plain text.
-   [`palette show`](palette/show.md) offers all eight, defaults to
-   `text-rows`, and refines them with `--label`, `--header-level`, and
-   `--table-shape`. [`hierarchy show`](hierarchy/show.md) offers
-   `box-hierarchy` (its default), `json-compact`, and `json-pretty`.
-   `validate` offers `json-compact`, `json-pretty`, and `md-tables` (its
-   default); `info` adds `box-tables` to those three, and
-   [`palette list`](palette/list.md) adds `box-hierarchy` (its default) and
-   `box-tables`. `mesh --list-profiles` takes the layout as its optional
-   value, `box-hierarchy` (its default), `box-tables`, `json-compact`,
+   [`palette show`](palette/show.md) offers all eight, defaults to `text-rows`,
+   and refines them with `--label`, `--header-level`, and `--table-shape`.
+   [`hierarchy show`](hierarchy/show.md) offers `box-hierarchy` (its default),
+   `json-compact`, and `json-pretty`. `vox-doc validate` offers `json-compact`,
+   `json-pretty`, and `md-tables` (its default); `vox-doc show` adds
+   `box-tables` to those three, and [`palette list`](palette/list.md) adds
+   `box-hierarchy` (its default) and `box-tables`. `profile object-mesh list`
+   offers `box-hierarchy` (its default), `box-tables`, `json-compact`,
    `json-pretty`, `md-lists`, `md-tables`, or `text-rows`.
 6. Multiple values are passed by repeating the flag, as in
    `--select-index 0 --select-index 3`, not as one comma-separated argument. The
@@ -65,14 +64,16 @@ one rule set, matched by the `pathspec` engine:
 
 ## Object selectors
 
-[`mesh`](../../../../ref/mesh/mesh.md) and [`material`](material.md) choose which objects to output,
-[`to`](to/README.md) which objects to write, [`info`](info.md) which objects to
-report, and [`palette quantize`](palette/quantize.md) and
-[`palette remap`](palette/remap.md) which objects to dither, with two
-repeatable options, one per addressing mode, so a value is never parsed as
-either an index or a glob. Selection targets objects; under `mesh` each matched
-object becomes one mesh object placed by the hierarchy nodes reaching it, so a
-path is the selection key and the placement follows from the document.
+[`object mesh`](../../../../ref/mesh/mesh.md) and
+[`object material`](object/material.md) choose which objects to output,
+[`vox-doc to`](vox-doc/to/README.md) which objects to write,
+[`vox-doc show`](vox-doc/show.md) which objects to report, and
+[`palette quantize`](palette/quantize.md) and
+[`palette remap`](palette/remap.md) which objects to dither, with two repeatable
+options, one per addressing mode, so a value is never parsed as either an index
+or a glob. Selection targets objects; under `object mesh` each matched object
+becomes one mesh object placed by the hierarchy nodes reaching it, so a path is
+the selection key and the placement follows from the document.
 
 1. `--select-index <index>`: an object index into the document's `objects`,
    a plain integer such as `0` or a range `a-b` such as `2-5`. Repeat the flag
@@ -93,10 +94,11 @@ path is the selection key and the placement follows from the document.
 
 Both options repeat, and every `--select-index` and `--select` value unions its
 matches. Given neither, every object is selected; given one that matches
-nothing, the command errors rather than quietly selecting nothing. `material`
-outputs the selection, `to` writes it, `info` reports it, and `quantize` and
-`remap` dither it, and `mesh` outputs it into one mesh, or one per object under
-`--split-files` (see [mesh](../../../../ref/mesh/mesh.md)).
+nothing, the command errors rather than quietly selecting nothing.
+`object material` outputs the selection, `vox-doc to` writes it, `vox-doc show`
+reports it, and `quantize` and `remap` dither it, and `object mesh` outputs it
+into one mesh, or one per object under `--split-files` (see
+[mesh](../../../../ref/mesh/mesh.md)).
 
 Baking a matched node's subtree and transforms into one flattened mesh, rather
 than carrying the nodes over, is a separate mode left for a later pass.

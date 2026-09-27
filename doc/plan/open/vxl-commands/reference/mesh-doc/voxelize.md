@@ -1,18 +1,18 @@
-# `vxl voxelize`
+# `vxl mesh-doc voxelize`
 
-*Part of the [Vxl Command-Line Reference](../README.md).*
+*Part of the [Vxl Command-Line Reference](../../README.md).*
 
 ```
-vxl voxelize <input> [output] [--resolution <reference> <n> | --voxel-size <meters>] [--frame <frame>] [--scale <scale>] [options]
+vxl mesh-doc voxelize <input> [output] [--resolution <reference> <n> | --voxel-size <meters>] [--frame <frame>] [--scale <scale>] [options]
 ```
 
-Rasterizes a mesh into voxel objects. This is the inverse of [`vxl mesh`](../../../../ref/mesh/mesh.md).
-The input is a glTF mesh, text (`.gltf`) or binary (`.glb`); glTF is the only
-mesh format read for now. The default output path is the input stem with the
-`.voxj` extension. The voxel size is set one of two mutually exclusive
-ways: a voxel count along a reference side with `--resolution` or the size
-directly with `--voxel-size`. When neither is given it defaults to
-`--voxel-size 1`, one voxel per meter.
+Rasterizes a mesh into voxel objects. This is the inverse of
+[`vxl object mesh`](../../../../../ref/mesh/mesh.md). The input is a glTF mesh,
+text (`.gltf`) or binary (`.glb`); glTF is the only mesh format read for now.
+The default output path is the input stem with the `.voxj` extension. The voxel
+size is set one of two mutually exclusive ways: a voxel count along a reference
+side with `--resolution` or the size directly with `--voxel-size`. When neither
+is given it defaults to `--voxel-size 1`, one voxel per meter.
 
 Every mesh object the hierarchy places becomes one voxel object under a root
 node named after its placing mesh node. Each object's grid sits on a lattice
@@ -80,10 +80,10 @@ triangles is an error that reports the object.
    4. `auto`, the default, picks `per-texel` when the mesh carries textures and
       `per-primitive` when it does not.
 
-   Every mode writes the same properties [`mesh`](../../../../ref/mesh/mesh.md) bakes back,
-   `baseColor`, `metallic`, `roughness`, `emissiveColor`,
-   `emissiveStrength`, and `occlusionStrength`, so a voxelized model round-trips
-   through `mesh`.
+   Every mode writes the same properties
+   [`object mesh`](../../../../../ref/mesh/mesh.md) bakes back, `baseColor`,
+   `metallic`, `roughness`, `emissiveColor`, `emissiveStrength`, and
+   `occlusionStrength`, so a voxelized model round-trips through `object mesh`.
 8. `--fill-color <#RRGGBBAA>`: the color of voxels that have no sampled surface,
    omitted for the default. Its role depends on `--material-mode`:
 
@@ -100,31 +100,32 @@ triangles is an error that reports the object.
    `per-texel` especially; when the count exceeds `<n>` the palette is reduced
    to it, never failing and never silently dropping materials. Reduction is the
    designed default, firing on nearly every run, so it stays quiet. `256` keeps
-   each per-voxel sample index within one
-   byte (the format packs it at `ceil(log2(materials))` bits) and matches the
-   familiar 256-color ceiling; `none` disables the cap for bit-exact materials.
-   Reduction clusters on `baseColor` and a merged material takes its cluster
-   representative's whole set of values, so material follows color: materials that
-   land in one color cluster collapse to one real representative material, not an
-   averaged one. This is the same reduction [`palette quantize`](palette/quantize.md)
-   runs, so `--max-palette-materials <n>` matches piping the output through
+   each per-voxel sample index within one byte (the format packs it at
+   `ceil(log2(materials))` bits) and matches the familiar 256-color ceiling;
+   `none` disables the cap for bit-exact materials. Reduction clusters on
+   `baseColor` and a merged material takes its cluster representative's whole
+   set of values, so material follows color: materials that land in one color
+   cluster collapse to one real representative material, not an averaged one.
+   This is the same reduction [`palette quantize`](../palette/quantize.md) runs,
+   so `--max-palette-materials <n>` matches piping the output through
    `palette quantize --max-palette-materials <n>`.
 10. `--method`, `--space`, and `--dither`: the palette-reduction controls shared
-   with [`palette quantize`](palette/quantize.md), defaulting the same way
-   (`median-cut`, `oklab`, `none`). They shape the `--max-palette-materials`
-   reduction and are inert when it does not fire; `--dither` diffuses the
-   snapping error across the voxels in 3D order.
-The format carries no physical units: one unit is one voxel, and real-world
-scale comes from hierarchy-node transforms. Both flags resolve to one voxel
-size, which `voxelize` records in the placing node's scale so the assembled
-model keeps its source dimensions. glTF is meter-native, and under `--scale
-bake` any scene- or node-level scale on the mesh is applied before voxelizing,
-so two glTF exports of the same object at different authored scales voxelize
-alike, mirroring [`vxl mesh`](../../../../ref/mesh/mesh.md)'s `--voxel-size`. See
-[Coordinate System](../../../../../projects/voxel-formats/voxj/docs/voxel-json-file-format.md#coordinate-system).
+    with [`palette quantize`](../palette/quantize.md), defaulting the same way
+    (`median-cut`, `oklab`, `none`). They shape the `--max-palette-materials`
+    reduction and are inert when it does not fire; `--dither` diffuses the
+    snapping error across the voxels in 3D order. The format carries no physical
+    units: one unit is one voxel, and real-world scale comes from hierarchy-node
+    transforms. Both flags resolve to one voxel size, which `mesh-doc voxelize`
+    records in the placing node's scale so the assembled model keeps its source
+    dimensions. glTF is meter-native, and under `--scale bake` any scene- or
+    node-level scale on the mesh is applied before voxelizing, so two glTF
+    exports of the same object at different authored scales voxelize alike,
+    mirroring [`vxl object mesh`](../../../../../ref/mesh/mesh.md)'s
+    `--voxel-size`. See
+    [Coordinate System](../../../../../../projects/voxel-formats/voxj/docs/voxel-json-file-format.md#coordinate-system).
 
-`voxelize` writes a voxel-json document and shares `to voxj`'s encoding options:
-`--format`, `--encoding-preset`, `--position-encoding`, and
-`--sample-encoding`, which default the same way they do there. It does not take `--ext` or
-`--edit-state`: a voxelized mesh has no source `ext` block to carry and no
-editor build volume to record.
+`mesh-doc voxelize` writes a voxel-json document and shares `vox-doc to voxj`'s
+encoding options: `--format`, `--encoding-preset`, `--position-encoding`, and
+`--sample-encoding`, which default the same way they do there. It does not take
+`--ext` or `--edit-state`: a voxelized mesh has no source `ext` block to carry
+and no editor build volume to record.

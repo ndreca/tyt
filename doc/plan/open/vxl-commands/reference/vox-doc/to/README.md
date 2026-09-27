@@ -1,9 +1,9 @@
-# `vxl to`
+# `vxl vox-doc to`
 
-*Part of the [Vxl Command-Line Reference](../../README.md).*
+*Part of the [Vxl Command-Line Reference](../../../README.md).*
 
 ```
-vxl to <format> <input> [output] [options]
+vxl vox-doc to <format> <input> [output] [options]
 ```
 
 Converts a voxel file from any supported input format to `<format>`. This
@@ -25,7 +25,7 @@ Every target takes:
 1. `--from <format>`: source voxel format. Inferred from the input extension
    when omitted.
 2. `--select <glob>` / `--select-index <index>`: write only the selected
-   objects; see [Object selectors](../conventions.md#object-selectors). The
+   objects; see [Object selectors](../../conventions.md#object-selectors). The
    written hierarchy is the smallest that still places every selected object:
    a node survives when its subtree places one, keeping its transform and its
    surviving children in order, and roots, node order, and object order are
