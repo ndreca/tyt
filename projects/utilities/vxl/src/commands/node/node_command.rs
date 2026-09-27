@@ -1,6 +1,6 @@
 use crate::{
     Dependencies, Result,
-    commands::{NodeAdd, NodeLink, NodeRemove, NodeSet, NodeUnlink},
+    commands::{NodeAdd, NodeLink, NodeList, NodeRemove, NodeSet, NodeUnlink},
 };
 use clap::Subcommand;
 
@@ -12,6 +12,8 @@ pub enum NodeCommand {
     NodeAdd(NodeAdd),
     #[command(name = "link")]
     NodeLink(NodeLink),
+    #[command(name = "list")]
+    NodeList(NodeList),
     #[command(name = "remove")]
     NodeRemove(NodeRemove),
     #[command(name = "set")]
@@ -25,6 +27,7 @@ impl NodeCommand {
         match self {
             NodeCommand::NodeAdd(add) => add.execute(dependencies),
             NodeCommand::NodeLink(link) => link.execute(dependencies),
+            NodeCommand::NodeList(list) => list.execute(dependencies),
             NodeCommand::NodeRemove(remove) => remove.execute(dependencies),
             NodeCommand::NodeSet(set) => set.execute(dependencies),
             NodeCommand::NodeUnlink(unlink) => unlink.execute(dependencies),

@@ -27,7 +27,6 @@ zune-jpeg = { version = "0.5", optional = true }
 
 [features]
 default = [
-    "hierarchy",
     "impl",
     "mesh_doc",
     "node",
@@ -38,9 +37,8 @@ default = [
     "vox_doc",
 ]
 
-hierarchy = ["_treegrid", "dep:treeselect"]
 mesh_doc = []
-node = []
+node = ["_treegrid", "dep:treeselect"]
 object = ["dep:serde_json", "dep:vox-value-language"]
 object_voxels = []
 palette = ["_treegrid", "dep:serde_json"]

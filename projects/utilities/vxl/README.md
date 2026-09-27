@@ -6,10 +6,10 @@ A command-line tool for working with voxels.
 
 The `object`, `object-voxels`, and `node` commands edit a document. Each reads
 any format voxconv reads and writes Voxel JSON beside the input by default.
-`object mesh` writes a mesh instead. `--select` takes a hierarchy-path glob.
-`--select-index` takes an index or a range. Both repeat and pick what the
-command acts on. `--select-parent` and `--select-parent-index` pick the one node
-at the parent end of an edge.
+`object mesh` writes a mesh instead. `node list` only prints the scene graph.
+`--select` takes a hierarchy-path glob. `--select-index` takes an index or a
+range. Both repeat and pick what the command acts on. `--select-parent` and
+`--select-parent-index` pick the one node at the parent end of an edge.
 
 ```sh
 # Reads Voxel Max and writes scene.voxj beside it.
@@ -57,12 +57,13 @@ vxl object-voxels rotate scene.voxj --select crate --axis y --turns 1
 
 ## Nodes
 
-`node` commands write nodes and hierarchy edges. `set` writes a node's name,
-position, rotation, or scale. `set rotation` takes Euler angles in the order
-`hierarchy show --show-transforms` prints them, in degrees by default. `add`
-creates an empty node. `link` and `unlink` add or drop one child edge. Without
-a parent selector, `add`, `link`, and `unlink` act on the root list. `remove`
-releases nodes along with each descendant left without a parent.
+`node list` prints the scene graph. The other `node` commands write nodes and
+hierarchy edges. `set` writes a node's name, position, rotation, or scale.
+`set rotation` takes Euler angles in the order `node list --show-transforms`
+prints them, in degrees by default. `add` creates an empty node. `link` and
+`unlink` add or drop one child edge. Without a parent selector, `add`, `link`,
+and `unlink` act on the root list. `remove` releases nodes along with each
+descendant left without a parent.
 
 ```sh
 # Swings the door node 37 degrees about y.

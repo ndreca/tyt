@@ -1,7 +1,6 @@
 /// The node-path patterns
-/// [`HierarchyShowOptions`](crate::operations::hierarchy::HierarchyShowOptions)
-/// filters by, bundled with the collapse flags so a collapse flag cannot be set
-/// without a pattern.
+/// [`NodeListOptions`](crate::operations::node::NodeListOptions) filters by. The
+/// collapse flags live here because they have no meaning without a pattern.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PatternView {
     /// The gitignore-style node-path patterns, in order. The last one to match

@@ -90,13 +90,13 @@ command's design lives in [mesh](../../../../ref/mesh/mesh.md).
 3. A dry-run or preview mode for the destructive palette operations.
 4. Additional mesh formats beyond glTF, such as `fbx` and `obj`, as needed, for
    both `object mesh` output and `mesh-doc voxelize` input.
-5. Gitignore-style multiple patterns shipped for `hierarchy show`: an ordered
-   list of select and deselect patterns with `!` negation, trailing-slash
-   node-only matching, and last-match-wins, so a selection subtracts as well as
-   adds. It is built on a new dependency-light `pathspec` crate, a Rust port
-   of the C# `com.tyleo.gitignore` package layered on the `globset` already in
-   use, rather than the heavier `ignore` crate. The parent-directory rule was
-   settled git-faithful: an excluded node prunes its subtree, matching the
-   reference engine. The `--select` object selectors will inherit the same engine
-   when they land. See
+5. Gitignore-style multiple patterns shipped for `node list`: an ordered list of
+   select and deselect patterns with `!` negation, trailing-slash node-only
+   matching, and last-match-wins, so a selection subtracts as well as adds. It
+   is built on a new dependency-light `pathspec` crate, a Rust port of the C#
+   `com.tyleo.gitignore` package layered on the `globset` already in use, rather
+   than the heavier `ignore` crate. The parent-directory rule was settled
+   git-faithful: an excluded node prunes its subtree, matching the reference
+   engine. The `--select` object selectors will inherit the same engine when
+   they land. See
    [implementation decisions](implementation-decisions.md#gitignore-style-pattern-matching).

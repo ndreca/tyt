@@ -1,8 +1,6 @@
 use crate::{
     Error, Result,
-    operations::hierarchy::{
-        HierarchyShowLayout, HierarchyShowOptions, HierarchyViews, PatternView,
-    },
+    operations::node::{NodeListLayout, NodeListOptions, NodeListViews, PatternView},
 };
 use branded_id::{IdVec, U32Id};
 use pathspec::GitIgnoreRegex;
@@ -31,10 +29,7 @@ type GridNodeId = U32Id<BTreeGridNode>;
 /// each root subtree, then an `unplaced` section of the nodes nothing places
 /// and the objects no node places, with instanced nodes marked. Errors when a
 /// `pattern` is malformed or matches nothing.
-pub fn hierarchy_show<T: VoxExt>(
-    main: &VoxMain<T>,
-    options: &HierarchyShowOptions,
-) -> Result<String> {
+pub fn node_list<T: VoxExt>(main: &VoxMain<T>, options: &NodeListOptions) -> Result<String> {
     let scene = Scene::from_main(main);
 
     let filter = match &options.pattern {
@@ -59,14 +54,14 @@ pub fn hierarchy_show<T: VoxExt>(
     walk.run();
 
     Ok(match options.layout {
-        HierarchyShowLayout::BoxHierarchy => {
+        NodeListLayout::BoxHierarchy => {
             let hierarchy = TreeGridBoxHierarchyOptions::default().with_bare_roots(bare_roots);
             walk.grid.render_box_hierarchy(&hierarchy)
         }
 
-        HierarchyShowLayout::JsonCompact => walk.grid.render_json_compact(),
+        NodeListLayout::JsonCompact => walk.grid.render_json_compact(),
 
-        HierarchyShowLayout::JsonPretty => walk.grid.render_json_pretty(),
+        NodeListLayout::JsonPretty => walk.grid.render_json_pretty(),
     })
 }
 
@@ -425,7 +420,7 @@ struct Walk<'a, T: VoxExt> {
     collapse_instances: bool,
 
     /// The per-node and per-object subtrees to append.
-    views: HierarchyViews,
+    views: NodeListViews,
 
     /// The path filter, when a `pattern` was given.
     filter: Option<Filter>,
@@ -1040,9 +1035,9 @@ fn format_vec3(vector: TyVector3F64, precision: usize) -> String {
 mod tests {
     use crate::{
         Result,
-        operations::hierarchy::{
-            HierarchyShowLayout, HierarchyShowOptions, HierarchyViews, OriginView, PatternView,
-            TransformView, hierarchy_show,
+        operations::node::{
+            NodeListLayout, NodeListOptions, NodeListViews, OriginView, PatternView, TransformView,
+            node_list,
         },
     };
     use branded_id::U32Id;
@@ -1122,24 +1117,24 @@ mod tests {
             collapse_ancestors,
             collapse_descendants,
         });
-        hierarchy_show(
+        node_list(
             main,
-            &HierarchyShowOptions {
+            &NodeListOptions {
                 pattern,
-                layout: HierarchyShowLayout::BoxHierarchy,
+                layout: NodeListLayout::BoxHierarchy,
                 collapse_instances,
-                views: HierarchyViews::default(),
+                views: NodeListViews::default(),
             },
         )
     }
 
     /// Renders `main` with the given views, no pattern or collapse flags.
-    fn render_views(main: &VoxMain, views: HierarchyViews) -> String {
-        hierarchy_show(
+    fn render_views(main: &VoxMain, views: NodeListViews) -> String {
+        node_list(
             main,
-            &HierarchyShowOptions {
+            &NodeListOptions {
                 pattern: None,
-                layout: HierarchyShowLayout::BoxHierarchy,
+                layout: NodeListLayout::BoxHierarchy,
                 collapse_instances: false,
                 views,
             },
@@ -1148,14 +1143,14 @@ mod tests {
     }
 
     /// Renders `main` under `layout`, no pattern, collapse flags, or views.
-    fn render_layout(main: &VoxMain, layout: HierarchyShowLayout) -> String {
-        hierarchy_show(
+    fn render_layout(main: &VoxMain, layout: NodeListLayout) -> String {
+        node_list(
             main,
-            &HierarchyShowOptions {
+            &NodeListOptions {
                 pattern: None,
                 layout,
                 collapse_instances: false,
-                views: HierarchyViews::default(),
+                views: NodeListViews::default(),
             },
         )
         .unwrap()
@@ -1381,7 +1376,7 @@ mod tests {
         // The section root, the node tags, and the object tags all survive as
         // records; labels are the raw names, unquoted, and every value is the
         // pre-formatted tag text.
-        let output = render_layout(&simple_main(), HierarchyShowLayout::JsonPretty);
+        let output = render_layout(&simple_main(), NodeListLayout::JsonPretty);
         assert_eq!(
             output,
             r#"[
@@ -1411,7 +1406,7 @@ mod tests {
 
     #[test]
     fn json_compact_renders_the_envelope_on_one_line() {
-        let output = render_layout(&simple_main(), HierarchyShowLayout::JsonCompact);
+        let output = render_layout(&simple_main(), NodeListLayout::JsonCompact);
         assert_eq!(
             output,
             concat!(
@@ -1657,9 +1652,9 @@ mod tests {
         };
         let output = render_views(
             &main,
-            HierarchyViews {
+            NodeListViews {
                 transforms: Some(view),
-                ..HierarchyViews::default()
+                ..NodeListViews::default()
             },
         );
         assert_eq!(
@@ -1679,7 +1674,7 @@ mod tests {
         // Every geometry flag on, at precision 2 in local space. Edit is the
         // 6x6x6 build volume at origin (-1, -1, -1); runtime is the tight 4x4x4
         // live box, node-relative origin (0, 0, 0).
-        let views = HierarchyViews {
+        let views = NodeListViews {
             edit_origins: Some(OriginView {
                 world: false,
                 precision: 2,
@@ -1692,7 +1687,7 @@ mod tests {
             }),
             runtime_bounds: Some(2),
             runtime_extents: Some(2),
-            ..HierarchyViews::default()
+            ..NodeListViews::default()
         };
         let output = render_views(&geometry_main(), views);
         assert_eq!(
@@ -1732,7 +1727,7 @@ mod tests {
             .unwrap();
         main.set_root_hierarchy_node_ids(vec![root_id]).unwrap();
 
-        let views = HierarchyViews {
+        let views = NodeListViews {
             edit_origins: Some(OriginView {
                 world: false,
                 precision: 2,
@@ -1740,7 +1735,7 @@ mod tests {
             edit_bounds: Some(2),
             edit_extents: Some(2),
             runtime_extents: Some(2),
-            ..HierarchyViews::default()
+            ..NodeListViews::default()
         };
         let output = render_views(&main, views);
         assert!(
@@ -1775,7 +1770,7 @@ mod tests {
             .unwrap();
         main.set_root_hierarchy_node_ids(vec![root_id]).unwrap();
 
-        let views = HierarchyViews {
+        let views = NodeListViews {
             edit_extents: Some(2),
             runtime_origins: Some(OriginView {
                 world: false,
@@ -1783,7 +1778,7 @@ mod tests {
             }),
             runtime_bounds: Some(2),
             runtime_extents: Some(2),
-            ..HierarchyViews::default()
+            ..NodeListViews::default()
         };
         let output = render_views(&main, views);
         assert_eq!(
@@ -1826,12 +1821,12 @@ mod tests {
 
         let local = render_views(
             &main,
-            HierarchyViews {
+            NodeListViews {
                 runtime_origins: Some(OriginView {
                     world: false,
                     precision: 2,
                 }),
-                ..HierarchyViews::default()
+                ..NodeListViews::default()
             },
         );
         assert!(
@@ -1841,12 +1836,12 @@ mod tests {
 
         let world = render_views(
             &main,
-            HierarchyViews {
+            NodeListViews {
                 runtime_origins: Some(OriginView {
                     world: true,
                     precision: 2,
                 }),
-                ..HierarchyViews::default()
+                ..NodeListViews::default()
             },
         );
         assert!(
@@ -1886,9 +1881,9 @@ mod tests {
         };
         let output = render_views(
             &main,
-            HierarchyViews {
+            NodeListViews {
                 transforms: Some(view),
-                ..HierarchyViews::default()
+                ..NodeListViews::default()
             },
         );
         assert!(
@@ -1901,9 +1896,9 @@ mod tests {
     fn layers_list_each_referenced_palette_with_its_material_count() {
         let output = render_views(
             &palette_ref_main(),
-            HierarchyViews {
+            NodeListViews {
                 layers: true,
-                ..HierarchyViews::default()
+                ..NodeListViews::default()
             },
         );
         assert_eq!(
@@ -1923,9 +1918,9 @@ mod tests {
         // empty array rather than a childless header.
         let output = render_views(
             &simple_main(),
-            HierarchyViews {
+            NodeListViews {
                 layers: true,
-                ..HierarchyViews::default()
+                ..NodeListViews::default()
             },
         );
         assert_eq!(
@@ -1943,10 +1938,10 @@ mod tests {
         // the geometry row keeps its non-last connector.
         let output = render_views(
             &palette_ref_main(),
-            HierarchyViews {
+            NodeListViews {
                 edit_extents: Some(2),
                 layers: true,
-                ..HierarchyViews::default()
+                ..NodeListViews::default()
             },
         );
         assert_eq!(
@@ -1967,9 +1962,9 @@ mod tests {
         // 4x4x4 block of 64 live voxels.
         let output = render_views(
             &geometry_main(),
-            HierarchyViews {
+            NodeListViews {
                 voxel_counts: true,
-                ..HierarchyViews::default()
+                ..NodeListViews::default()
             },
         );
         assert_eq!(
@@ -1988,10 +1983,10 @@ mod tests {
         // `body` holds no live voxel, so the count is `0`.
         let output = render_views(
             &palette_ref_main(),
-            HierarchyViews {
+            NodeListViews {
                 voxel_counts: true,
                 layers: true,
-                ..HierarchyViews::default()
+                ..NodeListViews::default()
             },
         );
         assert_eq!(

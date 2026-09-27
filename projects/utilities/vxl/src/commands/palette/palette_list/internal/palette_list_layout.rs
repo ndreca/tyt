@@ -22,9 +22,7 @@ impl CliValue for PaletteListLayout {
 
     fn help(self) -> &'static str {
         match self {
-            PaletteListLayout::BoxHierarchy => {
-                "Indented tree, one palette per branch, like `hierarchy show`"
-            }
+            PaletteListLayout::BoxHierarchy => "Indented tree, one palette per branch",
             PaletteListLayout::BoxTables => {
                 "A `palettes` line over one aligned record table drawn with box glyphs, one row \
                  per palette"

@@ -30,7 +30,7 @@ These hold across the commands and match the existing `vox-doc to` commands.
    `text-columns` and `text-rows` pad plain text.
    [`palette show`](palette/show.md) offers all eight, defaults to `text-rows`,
    and refines them with `--label`, `--header-level`, and `--table-shape`.
-   [`hierarchy show`](hierarchy/show.md) offers `box-hierarchy` (its default),
+   [`node list`](node/list.md) offers `box-hierarchy` (its default),
    `json-compact`, and `json-pretty`. `vox-doc validate` offers `json-compact`,
    `json-pretty`, and `md-tables` (its default); `vox-doc show` adds
    `box-tables` to those three, and [`palette list`](palette/list.md) adds
@@ -45,8 +45,8 @@ These hold across the commands and match the existing `vox-doc to` commands.
 ## Glob patterns
 
 Patterns follow `.gitignore` rules, not grep substring matching. The
-[`hierarchy show`](hierarchy/show.md) patterns and the `--select` path glob share
-one rule set, matched by the `pathspec` engine:
+[`node list`](node/list.md) patterns and the `--select` path glob share one rule
+set, matched by the `pathspec` engine:
 
 1. A pattern is a full match against a whole path segment, not a substring. `door`
    matches the name `door`, not `backdoor`; write `*door*` for a substring match.
@@ -80,17 +80,17 @@ the selection key and the placement follows from the document.
    to pick several, as in `--select-index 0 --select-index 3`. Index is the
    canonical object reference in the spec.
 2. `--select <glob>`: a glob over hierarchy paths, matched with the shared
-   [glob rules](#glob-patterns) exactly as [`hierarchy show`](hierarchy/show.md)
-   matches node paths. The candidates are the path of every node and every object
-   it places: a node's path is the chain of node names from a root, an object's
+   [glob rules](#glob-patterns) exactly as [`node list`](node/list.md) matches
+   node paths. The candidates are the path of every node and every object it
+   places: a node's path is the chain of node names from a root, an object's
    path that chain plus the object. A match selects every object at or under it,
    so matching a node selects its whole subtree, just as selecting a node in
-   `hierarchy show` brings in its subtree, and matching an object selects that
+   `node list` brings in its subtree, and matching an object selects that
    object. `--select a` selects every object under node `a`, `--select a/**` the
    same by its descendants, and `--select a/b` only object `b`. The graph is a
    DAG, so an object reached through several parents has one path per placement
-   and matches when any path does; an object no node references has just its name
-   as its path. Names are not unique, so a glob may match several objects.
+   and matches when any path does; an object no node references has just its
+   name as its path. Names are not unique, so a glob may match several objects.
 
 Both options repeat, and every `--select-index` and `--select` value unions its
 matches. Given neither, every object is selected; given one that matches

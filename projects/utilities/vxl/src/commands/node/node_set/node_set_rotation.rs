@@ -23,7 +23,7 @@ pub struct NodeSetRotation {
     selection: RequiredSelection,
 
     /// Euler angles about the fixed x, y, then z axes, as
-    /// `hierarchy show --show-transforms` prints them.
+    /// `node list --show-transforms` prints them.
     #[arg(
         value_names = ["x", "y", "z"],
         long,

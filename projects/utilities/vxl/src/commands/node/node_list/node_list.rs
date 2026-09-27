@@ -3,16 +3,16 @@ use clap::Parser;
 use std::io::{Error as IOError, ErrorKind};
 use voxconv::load;
 use voxcore::VoxMain;
-use voxsmith::operations::hierarchy::{
-    HierarchyShowLayout, HierarchyShowOptions, HierarchyViews, OriginView, PatternView,
-    TransformView, hierarchy_show,
+use voxsmith::operations::node::{
+    NodeListLayout, NodeListOptions, NodeListViews, OriginView, PatternView, TransformView,
+    node_list,
 };
 
 /// Prints the scene graph as a box-glyph tree or as JSON records, marking
 /// instanced nodes and listing unplaced nodes and orphan objects.
 #[derive(Clone, Debug, Parser)]
-#[command(name = "show")]
-pub struct HierarchyShow {
+#[command(name = "list")]
+pub struct NodeList {
     #[command(flatten)]
     input: VoxelInput,
 
@@ -28,9 +28,9 @@ pub struct HierarchyShow {
         value_name = "layout",
         long,
         default_value = "box-hierarchy",
-        value_parser = cli_value_parser::<HierarchyShowLayout>()
+        value_parser = cli_value_parser::<NodeListLayout>()
     )]
-    layout: HierarchyShowLayout,
+    layout: NodeListLayout,
 
     /// Collapse repeat instances: expand a shared node's first placement and
     /// print each later placement as a non-expanded stub.
@@ -117,9 +117,9 @@ pub struct HierarchyShow {
     show_layers: bool,
 }
 
-impl HierarchyShow {
+impl NodeList {
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
-        let views = HierarchyViews {
+        let views = NodeListViews {
             transforms: parse(self.show_transforms.as_deref(), parse_transform_view)?,
             edit_origins: parse(self.show_edit_origins.as_deref(), parse_origin_view)?,
             edit_bounds: parse(self.show_edit_bounds.as_deref(), parse_precision_arg)?,
@@ -143,14 +143,14 @@ impl HierarchyShow {
 
         let main: VoxMain = load(&dependencies, from, &self.input.path)?;
 
-        let options = HierarchyShowOptions {
+        let options = NodeListOptions {
             pattern,
             layout: self.layout,
             collapse_instances: self.collapse_instances,
             views,
         };
 
-        let output = hierarchy_show(&main, &options)?;
+        let output = node_list(&main, &options)?;
 
         Ok(dependencies.write_stdout(output.as_bytes())?)
     }
@@ -236,11 +236,13 @@ fn invalid(message: String) -> Error {
 #[cfg(test)]
 mod tests {
     use crate::commands::{
-        HierarchyShow,
-        hierarchy::hierarchy_show::{parse_origin_view, parse_precision_arg, parse_transform_view},
+        NodeList,
+        node::node_list::node_list::{
+            parse_origin_view, parse_precision_arg, parse_transform_view,
+        },
     };
     use clap::Parser;
-    use voxsmith::operations::hierarchy::HierarchyShowLayout;
+    use voxsmith::operations::node::NodeListLayout;
 
     fn strings(values: &[&str]) -> Vec<String> {
         values.iter().map(|value| value.to_string()).collect()
@@ -250,28 +252,25 @@ mod tests {
     fn a_collapse_flag_requires_a_pattern() {
         // Without a pattern, clap rejects the collapse flag rather than silently
         // ignoring it.
-        assert!(
-            HierarchyShow::try_parse_from(["show", "in.voxj", "--collapse-ancestors"]).is_err()
-        );
+        assert!(NodeList::try_parse_from(["list", "in.voxj", "--collapse-ancestors"]).is_err());
         // With a pattern it parses.
         assert!(
-            HierarchyShow::try_parse_from(["show", "in.voxj", "door", "--collapse-ancestors"])
-                .is_ok()
+            NodeList::try_parse_from(["list", "in.voxj", "door", "--collapse-ancestors"]).is_ok()
         );
     }
 
     #[test]
     fn layout_defaults_to_hierarchy_and_parses_the_json_values() {
-        let show = HierarchyShow::try_parse_from(["show", "in.voxj"]).unwrap();
-        assert_eq!(show.layout, HierarchyShowLayout::BoxHierarchy);
+        let list = NodeList::try_parse_from(["list", "in.voxj"]).unwrap();
+        assert_eq!(list.layout, NodeListLayout::BoxHierarchy);
 
-        let show =
-            HierarchyShow::try_parse_from(["show", "in.voxj", "--layout", "json-pretty"]).unwrap();
-        assert_eq!(show.layout, HierarchyShowLayout::JsonPretty);
+        let list =
+            NodeList::try_parse_from(["list", "in.voxj", "--layout", "json-pretty"]).unwrap();
+        assert_eq!(list.layout, NodeListLayout::JsonPretty);
 
-        let show =
-            HierarchyShow::try_parse_from(["show", "in.voxj", "--layout", "json-compact"]).unwrap();
-        assert_eq!(show.layout, HierarchyShowLayout::JsonCompact);
+        let list =
+            NodeList::try_parse_from(["list", "in.voxj", "--layout", "json-compact"]).unwrap();
+        assert_eq!(list.layout, NodeListLayout::JsonCompact);
     }
 
     #[test]

@@ -58,7 +58,7 @@ Every command sits under the noun it addresses, then its verb.
   move voxels within an object's grid.
 - [`vxl node`](../../closed/vxl-object-commands/README.md#vxl-node): edit nodes
   and hierarchy edges.
-- [`vxl hierarchy show`](reference/hierarchy/README.md): print the scene graph.
+- [`vxl node list`](reference/node/README.md): print the scene graph.
 - [`vxl palette`](reference/palette/README.md): list, show, quantize, and remap
   palettes.
 - [`vxl profile object mesh list`](../../../ref/mesh/profile-language.md#loading):

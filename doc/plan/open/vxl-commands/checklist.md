@@ -100,10 +100,10 @@ off as they land.
       `--split-files`. The mesher lives in
       voxsmith (`object_to_mesh_geometry` plus `object_to_glb_bytes` /
       `object_to_gltf_bytes`) behind the `gltf` feature; vxl stays a thin CLI.
-- [x] `--to` / `--from` (`gltf` | `glb`), `--voxel-size` (meters per voxel, default
-      `1.0`, baked into every vertex; glTF is meter-native), `--method`, and the
-      `--select` / `--select-index` object selectors, `--select` matched through
-      the shared `pathspec` gitignore engine like `hierarchy show`.
+- [x] `--to` / `--from` (`gltf` | `glb`), `--voxel-size` (meters per voxel,
+      default `1.0`, baked into every vertex; glTF is meter-native), `--method`,
+      and the `--select` / `--select-index` object selectors, `--select` matched
+      through the shared `pathspec` gitignore engine like `node list`.
 - [ ] `--atlas unwrap` and the `--computed-occlusion-*` tuning flags, landing
       with the computed-occlusion maps. See
       [mesh Deferred](../../../ref/mesh/mesh.md).
@@ -198,7 +198,7 @@ Material sampling (see [voxelize](reference/mesh-doc/voxelize.md) and
       a bare palette JSON input, the `--target` shape; dither only with a
       document.
 
-### hierarchy show ([reference/hierarchy/show.md](reference/hierarchy/show.md))
+### node list ([reference/node/list.md](reference/node/list.md))
 
 - [x] Tree render with DAG / instancing and unplaced-node markers, plus
       `--collapse-instances`. Markdown tree only; no `--layout`.
@@ -236,8 +236,8 @@ Material sampling (see [voxelize](reference/mesh-doc/voxelize.md) and
 ## Finishing
 
 - [x] `--layout` output on `list`, `vox-doc validate`, and `vox-doc show`;
-      `palette show` keeps its own `--json`, and `hierarchy show` prints only
-      its tree.
+      `palette show` keeps its own `--json`, and `node list` prints only its
+      tree.
 - [x] Help text and `clap_complete` completions cover the new commands.
 - [ ] Tests per command, following the existing test style.
 

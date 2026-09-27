@@ -4,9 +4,9 @@ use ty_math::{TyVector3I32, TyVector3U32};
 use voxcore::{BVoxObject, Error as VoxError, VoxExt, VoxMain};
 
 /// Sets each object's build volume to the node-local box from `min` to `max`,
-/// the box `hierarchy show --show-edit-bounds` prints. The object takes
-/// `origin = min` and `bounds = max - min`, and its voxels shift in the grid
-/// so no voxel moves in the scene. Errors if:
+/// the box `node list --show-edit-bounds` prints. The object takes
+/// `origin = min` and `bounds = max - min`, and its voxels shift in the grid so
+/// no voxel moves in the scene. Errors if:
 ///
 /// 1. `max` is below `min` on some axis
 /// 2. an id is not one of the main's objects

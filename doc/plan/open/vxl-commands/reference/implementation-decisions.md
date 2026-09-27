@@ -124,29 +124,29 @@ Its layout is a command-specific `PaletteListLayout` rather than the shared
 layout enum. `hierarchy` is the default, since the tree reads as the natural
 shape of a palette with its nested attributes and referencing objects; the table
 and JSON are opt-in through `--layout`. The `hierarchy` layout draws the listing
-as a tree in the `hierarchy show` idiom: a `palettes` header over one bare-index
+as a tree in the `node list` idiom: a `palettes` header over one bare-index
 branch per palette, its cell count a `cellCount: <n>` leaf and its `attributes`
-and `objects` as subtrees. The box-drawing glyphs those two trees share, the four
-connector and extension constants, moved out of `hierarchy_show` into a
+and `objects` as subtrees. The box-drawing glyphs those two trees share, the
+four connector and extension constants, moved out of `node_list` into a
 `tree_glyphs` leaf module both draw from, so the connectors cannot drift apart.
 The renderer collects a palette's enabled child branches into a `HierarchyChild`
-list first, then walks it, so the last enabled branch takes the closing connector
-whichever fields are on; an empty subtree prints `objects: []` the way
-`hierarchy show` prints `palettes: []`.
+list first, then walks it, so the last enabled branch takes the closing
+connector whichever fields are on; an empty subtree prints `objects: []` the way
+`node list` prints `palettes: []`.
 
 Trailing positional filters reuse `SelectIndex`, the index-or-range selector the
 object selectors already parse, since a palette-index filter is the same grammar,
 `1`, `5-10`, repeatable and unioned. A palette lists when any filter contains its
 index, and none given lists every palette. A filter set that matches no palette
-is an error, matching how `hierarchy show` treats a pattern that selects nothing,
-so a stray index is caught rather than silently listing nothing.
+is an error, matching how `node list` treats a pattern that selects nothing, so
+a stray index is caught rather than silently listing nothing.
 
 Which fields render is a `PaletteListFields` of three settable booleans,
 `--show-attributes`, `--show-cells`, and `--show-objects`, each defaulting to
 shown in the `--ext` style so a bare `palette list` prints them all and
 `--show-* false` drops one. The index is always shown, as the palette's identity.
 The command parses the three flags and bundles them into the struct the trait
-carries, the same parse-then-bundle split `hierarchy show` uses for its views. A
+carries, the same parse-then-bundle split `node list` uses for its views. A
 dropped field leaves out its Markdown column, its JSON key, and its hierarchy
 branch alike, so the three layouts stay consistent.
 
@@ -643,11 +643,10 @@ self-sizing.
 `create-command` lays every command, group or leaf, in one flat `src/commands/`
 namespace flattened through `pub use {snake}::*`, so a leaf's CLI name had to be
 unique across the whole crate at both the file (`show.rs`) and the type (`Show`)
-level. That blocked `vxl hierarchy show` while `vxl palette show` already owned
+level. That blocked `vxl vox-doc show` while `vxl palette show` already owned
 both. Now a grouped command's type and file name carry their parent-group path:
 `show` under `palette` is the `PaletteShow` type in `palette_show.rs`, and the
-same `show` under a `hierarchy` group would land as `HierarchyShow` in
-`hierarchy_show.rs`. The clap
+same `show` under `vox-doc` lands as `VoxDocShow` in `vox_doc_show.rs`. The clap
 `#[command(name = "show")]` keeps the bare CLI name, so the surface is unchanged
 and both still run as `... show`. Top-level commands and the group structs take
 no prefix, so `info`, `palette`, and `to` are untouched.
@@ -660,7 +659,7 @@ and templates feed the prefixed names with no structural change. The existing
 and `Goxl` to `ToGoxl` and so on, so generated and hand-written commands share one
 layout.
 
-## hierarchy show
+## node list
 
 This is built in three iterations. The first landed the core tree with its
 instancing and unplaced marks and `--collapse-instances`; the second the
@@ -670,9 +669,9 @@ another replaced the single `--show-bounds`/`--show-extents` pair with the six
 edit/runtime geometry flags; see
 [Edit- and runtime-grid geometry](#edit--and-runtime-grid-geometry).
 
-`Dependencies::hierarchy_show` carries the load, render, and print together like
-the other read reports, so the command struct only parses flags. Its core is a
-pure `render` over a `VoxMain` that returns the output string, which unit-tests
+`Dependencies::node_list` carries the load, render, and print together like the
+other read reports, so the command struct only parses flags. Its core is a pure
+`render` over a `VoxMain` that returns the output string, which unit-tests
 without the filesystem; the wrapper loads the document and writes to standard
 output.
 
@@ -749,10 +748,10 @@ and so absent from the root tree. Orphan objects match the `--select` convention
 that an unreferenced object has its bare name as its path, and `vox-doc show`
 already reports every object.
 
-`hierarchy show` renders only the markdown tree and takes no `--layout`, unlike
-the other read reports with their `pretty-json` and `compact-json` forms. The
-scene graph reads as a tree, so a JSON layout was dropped for this command, which
-also keeps it off the shared `ReportLayout` and its `serde_json` path. A
+`node list` renders only the markdown tree and takes no `--layout`, unlike the
+other read reports with their `pretty-json` and `compact-json` forms. The scene
+graph reads as a tree, so a JSON layout was dropped for this command, which also
+keeps it off the shared `ReportLayout` and its `serde_json` path. A
 machine-readable graph can return later if a caller needs one.
 
 The patterns resolve against per-placement paths, revised from the single glob
@@ -895,20 +894,20 @@ first cut used.
 
 ## Gitignore-style pattern matching
 
-`hierarchy show` takes several patterns matched with `.gitignore` rules,
-replacing the single `match_glob`/`PathGlob` glob. The matcher is a new
-dependency-light crate, `pathspec`, a Rust port of the C#
-`com.tyleo.gitignore` package the game uses to enable loggers by hierarchical
-name. It keeps that package's shape one-to-one: an `UnsignedGitIgnoreRegex` (a
-compiled pattern plus its directory-or-file kind), a signed `GitIgnoreRegex` (the
-unsigned pattern plus a sign a leading `!` flips), the `GitIgnoreRegexKind` enum,
-and the `is_directory_match`/`is_file_match`/`is_path_match` aggregators, each
-with an unsigned any-match variant. Pattern compilation delegates to `globset`
-rather than the C# hand-built regex, so `*`, `?`, `[...]`, and `**` follow real
+`node list` takes several patterns matched with `.gitignore` rules, replacing
+the single `match_glob`/`PathGlob` glob. The matcher is a new dependency-light
+crate, `pathspec`, a Rust port of the C# `com.tyleo.gitignore` package the game
+uses to enable loggers by hierarchical name. It keeps that package's shape
+one-to-one: an `UnsignedGitIgnoreRegex` (a compiled pattern plus its
+directory-or-file kind), a signed `GitIgnoreRegex` (the unsigned pattern plus a
+sign a leading `!` flips), the `GitIgnoreRegexKind` enum, and the
+`is_directory_match`/`is_file_match`/`is_path_match` aggregators, each with an
+unsigned any-match variant. Pattern compilation delegates to `globset` rather
+than the C# hand-built regex, so `*`, `?`, `[...]`, and `**` follow real
 gitignore and the C# restrictive character class and literal `?` are dropped as
-bugs. A pattern with no `/` and no `**` gets a `**/` prefix to float at any depth;
-a leading or interior `/` anchors it. The array-and-span overload pairs collapse
-to one slice function each.
+bugs. A pattern with no `/` and no `**` gets a `**/` prefix to float at any
+depth; a leading or interior `/` anchors it. The array-and-span overload pairs
+collapse to one slice function each.
 
 It lives in its own crate rather than in vxl because it is reusable across tyt
 tools and must stay free of `tyt-common` and `tyt-injection`, the same
@@ -1019,3 +1018,8 @@ profiled command's path, `object mesh`. `object mesh` then takes its input
 unconditionally. The profiles moved in `.vxlconfig` from the top-level `mesh`
 section to `object.mesh`, read through an `ObjectConfig` holding one entry per
 configurable `object` command.
+
+`hierarchy show` became `node list`. The scene graph needs no group of its own
+because `node link` and `object link` write its edges. The tree lists a
+document's nodes with the objects they place as leaves. The voxsmith `hierarchy`
+feature folded into `node`.

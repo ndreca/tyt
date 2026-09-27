@@ -1,5 +1,5 @@
 /// How each node's transform renders under
-/// [`HierarchyViews`](crate::operations::hierarchy::HierarchyViews).
+/// [`NodeListViews`](crate::operations::node::NodeListViews).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct TransformView {
     /// Render in world space; local otherwise.

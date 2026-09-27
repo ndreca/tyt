@@ -18,7 +18,7 @@ pub struct ObjectSetEditBounds {
     #[command(flatten)]
     selection: RequiredSelection,
 
-    /// The box's min corner, as `hierarchy show --show-edit-bounds` prints it.
+    /// The box's min corner, as `node list --show-edit-bounds` prints it.
     #[arg(
         value_names = ["x", "y", "z"],
         long,
@@ -29,7 +29,7 @@ pub struct ObjectSetEditBounds {
     )]
     min: Vec<i32>,
 
-    /// The box's max corner, as `hierarchy show --show-edit-bounds` prints it.
+    /// The box's max corner, as `node list --show-edit-bounds` prints it.
     #[arg(
         value_names = ["x", "y", "z"],
         long,

@@ -32,9 +32,9 @@ texel per distinct flattened material the object uses.
    [The palette atlas](../../../../../ref/mesh/mesh.md#the-palette-atlas). An
    `unwrap` layout is deferred with `object mesh`'s.
 3. `--select <glob>`: restrict the material set to objects by hierarchy path,
-   matched as `hierarchy show` matches node paths so a node path selects its
-   subtree, the same selector as `object mesh`. Repeatable; unions with
-   `--select-index` and may cover several objects. See
+   matched as `node list` matches node paths so a node path selects its subtree,
+   the same selector as `object mesh`. Repeatable; unions with `--select-index`
+   and may cover several objects. See
    [Object selectors](../conventions.md#object-selectors).
 4. `--select-index <index>`: restrict the material set to objects at the given
    position, an integer or an `a-b` range, the same selector as `object mesh`.

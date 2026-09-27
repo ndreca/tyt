@@ -1,18 +1,18 @@
-# `vxl hierarchy show`
+# `vxl node list`
 
-*Part of [`vxl hierarchy`](README.md) in the [Vxl Command-Line Reference](../../README.md).*
+*Part of [`vxl node`](README.md) in the [Vxl Command-Line Reference](../../README.md).*
 
 ```
-vxl hierarchy show <input> [pattern...] [options]
+vxl node list <input> [pattern...] [options]
 ```
 
 Prints the scene graph as a tree with box-drawing glyphs, modeled on the FBX
 hierarchy view. The graph is a DAG, not a tree: a node may have multiple
 parents, which is instancing, and the roots are exactly the nodes listed in
-`rootNodes`. `show` marks shared and instanced nodes and lists
-unplaced library nodes, defined as nodes that are neither a root nor a child,
-so the structure stays visible rather than implying a strict tree. Each node
-shows its name and its referenced child objects. See
+`rootNodes`. `list` marks shared and instanced nodes and lists unplaced library
+nodes, defined as nodes that are neither a root nor a child, so the structure
+stays visible rather than implying a strict tree. Each node shows its name and
+its referenced child objects. See
 [Hierarchy Nodes](../../../../../../projects/voxel-formats/voxj/docs/voxel-json-file-format.md#hierarchy-nodes).
 
 1. `pattern...`: optional gitignore-style patterns matched against the path of

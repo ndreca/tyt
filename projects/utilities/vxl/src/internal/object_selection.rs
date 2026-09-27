@@ -8,9 +8,9 @@ use voxsmith::utilities::{IndexRange, select_objects};
 /// that narrows its work to some of a document's objects.
 #[derive(Clone, Debug, Args)]
 pub struct ObjectSelection {
-    /// Choose objects by hierarchy-path glob, matched as `hierarchy show`
-    /// matches node paths, so a node path selects its subtree. Repeatable;
-    /// unions with `--select-index`.
+    /// Choose objects by hierarchy-path glob, matched as `node list` matches
+    /// node paths, so a node path selects its subtree. Repeatable; unions with
+    /// `--select-index`.
     #[arg(value_name = "select", long)]
     select: Vec<String>,
 

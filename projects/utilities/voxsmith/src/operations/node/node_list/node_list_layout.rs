@@ -1,7 +1,7 @@
-/// How [`hierarchy_show`](crate::operations::hierarchy::hierarchy_show())
-/// renders the scene graph.
+/// How [`node_list`](crate::operations::node::node_list()) renders the scene
+/// graph.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum HierarchyShowLayout {
+pub enum NodeListLayout {
     /// The scene graph as a box-glyph tree, each entity's tag and view rows
     /// inline on its nodes.
     #[default]

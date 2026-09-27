@@ -1,8 +1,5 @@
 //! One module per vxl command group, each behind a feature of the same name.
 
-#[cfg(feature = "hierarchy")]
-pub mod hierarchy;
-
 #[cfg(feature = "mesh_doc")]
 pub mod mesh_doc;
 

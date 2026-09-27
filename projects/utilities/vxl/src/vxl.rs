@@ -1,6 +1,6 @@
 use crate::{
     Dependencies, Result,
-    commands::{Hierarchy, MeshDoc, Node, Object, ObjectVoxels, Palette, Profile, VoxDoc},
+    commands::{MeshDoc, Node, Object, ObjectVoxels, Palette, Profile, VoxDoc},
 };
 use clap::Subcommand;
 
@@ -10,8 +10,6 @@ use clap::Subcommand;
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 pub enum Vxl {
-    #[command(name = "hierarchy")]
-    Hierarchy(Hierarchy),
     #[command(name = "mesh-doc")]
     MeshDoc(MeshDoc),
     #[command(name = "node")]
@@ -31,7 +29,6 @@ pub enum Vxl {
 impl Vxl {
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
-            Vxl::Hierarchy(hierarchy) => hierarchy.execute(dependencies),
             Vxl::MeshDoc(mesh_doc) => mesh_doc.execute(dependencies),
             Vxl::Node(node) => node.execute(dependencies),
             Vxl::Object(object) => object.execute(dependencies),

@@ -1,10 +1,9 @@
-use crate::operations::hierarchy::{OriginView, TransformView};
+use crate::operations::node::{OriginView, TransformView};
 
 /// The per-node and per-object subtree views
-/// [`hierarchy_show`](crate::operations::hierarchy::hierarchy_show()) can
-/// append, all off by default.
+/// [`node_list`](crate::operations::node::node_list()) can append.
 #[derive(Clone, Copy, Debug, Default)]
-pub struct HierarchyViews {
+pub struct NodeListViews {
     /// Prepend each node's transform subtree.
     pub transforms: Option<TransformView>,
 

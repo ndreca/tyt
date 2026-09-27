@@ -62,9 +62,8 @@ branch in the tree, and the other two behave the same way.
 `md-tables` (default `box-hierarchy`): how to render the listing.
 
 1. `box-hierarchy` (default): the indented tree above, in the
-   [`hierarchy show`](../hierarchy/show.md) idiom, a `palettes` header over one
-   branch per palette index, with the material count as a `materials: <n>`
-   leaf and
+   [`node list`](../node/list.md) idiom, a `palettes` header over one branch per
+   palette index, with the material count as a `materials: <n>` leaf and
    `properties` and `objects` as subtrees. Property keys and object names are
    user-entered, so they print quoted.
 2. `box-tables`: the `md-tables` record table drawn with box glyphs under a
