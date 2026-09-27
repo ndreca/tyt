@@ -4,6 +4,7 @@ _Part of the [mesh plan](README.md)._
 
 ```sh
 vxl mesh <input> [output] [options]
+vxl mesh --list-profiles
 ```
 
 `vxl mesh` triangulates one object's voxels into a mesh. It bakes the object's
@@ -209,7 +210,14 @@ multi-object document needs a selector. See
     profile's `valuesFrom` imports first. Any writer elements the profile holds
     stay behind. See [profile language](profile-language.md).
 
-18. `--select <glob>`
+18. `--list-profiles`
+    - Repeatable: no
+
+    Lists the profiles a run can apply and writes no mesh. Each line names a
+    profile and the `.vxlconfig` supplying it, or `built in`. The flag stands
+    alone: any other argument, the input included, errors.
+
+19. `--select <glob>`
     - Default: `*`, selecting every object
     - Repeatable: yes
 
@@ -218,20 +226,20 @@ multi-object document needs a selector. See
     default, so `--select-index` alone never unions with `*`. See
     [Object selectors](../../plan/open/vxl-commands/reference/conventions.md#object-selectors).
 
-19. `--select-index <index>`
+20. `--select-index <index>`
     - Repeatable: yes
 
     Chooses the object by position, an integer or an `a-b` range. Unions with
     `--select`.
 
-20. `--write-file-json-value <dst-file> <dst-name> <src-expr> <linear | srgb>`
+21. `--write-file-json-value <dst-file> <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes a value to a JSON file under `<dst-name>` with the specified
     transfer. Each file holds one object, so repeating the flag on one path
     merges into that file; see [JSON files](value-language.md#json-files).
 
-21. `--write-file-png-value <dst-file> <src-expr> <linear | srgb>`
+22. `--write-file-png-value <dst-file> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes a [swatch, voxel, face, or corner](value-language.md#domains) array
@@ -245,7 +253,7 @@ multi-object document needs a selector. See
     1. `linear`: applies no transfer.
     2. `srgb`: applies the sRGB transfer, for an image a viewer reads as color.
 
-22. `--write-material-extra-image-file <material-index> <dst-name> <src-file>`
+23. `--write-material-extra-image-file <material-index> <dst-name> <src-file>`
     - Repeatable: yes
 
     Sets a custom `extras.vxl.values.<dst-name>` entry on the indexed material
@@ -253,7 +261,7 @@ multi-object document needs a selector. See
     points at `<src-file>` by relative path; see
     [Material slots](value-language.md#material-slots).
 
-23. `--write-material-extra-image-value <material-index> <dst-name> <src-expr> <linear | srgb>`
+24. `--write-material-extra-image-value <material-index> <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes an array value as an embedded image. The custom
@@ -261,28 +269,28 @@ multi-object document needs a selector. See
     texture index. A plain value errors; see
     [Material slots](value-language.md#material-slots).
 
-24. `--write-material-extra-json-file <material-index> <dst-name> <src-file>`
+25. `--write-material-extra-json-file <material-index> <dst-name> <src-file>`
     - Repeatable: yes
 
     Sets a custom `extras.vxl.values.<dst-name>` entry on the indexed material
     to a `{ "uri": "<src-file>" }` pointer, the path relative; see
     [Material slots](value-language.md#material-slots).
 
-25. `--write-material-extra-json-value <material-index> <dst-name> <src-expr> <linear | srgb>`
+26. `--write-material-extra-json-value <material-index> <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes a value's numbers into a custom `extras.vxl.values.<dst-name>` entry
     on the indexed material. A plain value writes as its numbers, and an array
     writes as rows; see [Material slots](value-language.md#material-slots).
 
-26. `--write-material-slot-file <material-index> <dst-property> <src-file>`
+27. `--write-material-slot-file <material-index> <dst-property> <src-file>`
     - Repeatable: yes
 
     Sets the texture property `<dst-property>` of the indexed material to
     reference `<src-file>` by relative path; see
     [Material slots](value-language.md#material-slots).
 
-27. `--write-material-slot-value <material-index> <dst-property> <src-expr>`
+28. `--write-material-slot-value <material-index> <dst-property> <src-expr>`
     - Repeatable: yes
 
     Sets the property `<dst-property>` of the indexed material. A plain value
@@ -290,7 +298,7 @@ multi-object document needs a selector. See
     the glb's binary chunk or the `.gltf`'s data URI; see
     [Material slots](value-language.md#material-slots).
 
-28. `--write-mesh-extra-image-file <dst-name> <src-file>`
+29. `--write-mesh-extra-image-file <dst-name> <src-file>`
     - Repeatable: yes
 
     Sets a mesh `extras.vxl.values.<dst-name>` entry to an image reference. The
@@ -298,7 +306,7 @@ multi-object document needs a selector. See
     relative path. The image samples through a stream some primitive writes;
     see [UV streams](#uv-streams) and [Palettes](#palettes).
 
-29. `--write-mesh-extra-image-value <dst-name> <src-expr> <linear | srgb>`
+30. `--write-mesh-extra-image-value <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes an array value as an embedded image. The mesh
@@ -306,21 +314,21 @@ multi-object document needs a selector. See
     samples through a stream some primitive writes; see
     [UV streams](#uv-streams). A plain value errors; see [Palettes](#palettes).
 
-30. `--write-mesh-extra-json-file <dst-name> <src-file>`
+31. `--write-mesh-extra-json-file <dst-name> <src-file>`
     - Repeatable: yes
 
     Sets a mesh `extras.vxl.values.<dst-name>` entry to a
     `{ "uri": "<src-file>" }` pointer, the path relative; see
     [Palettes](#palettes).
 
-31. `--write-mesh-extra-json-value <dst-name> <src-expr> <linear | srgb>`
+32. `--write-mesh-extra-json-value <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes a value's numbers into a mesh `extras.vxl.values.<dst-name>` entry. A
     plain value writes as its numbers. An array writes as rows, one row per
     entry in the domain's order; see [Palettes](#palettes).
 
-32. `--write-primitive-builtin-value <primitive-index> <dst-attribute> <src-expr>`
+33. `--write-primitive-builtin-value <primitive-index> <dst-attribute> <src-expr>`
     - Repeatable: yes
 
     Writes a value to an attribute glTF defines, `COLOR_0`, on the indexed
@@ -330,7 +338,7 @@ multi-object document needs a selector. See
     fixes the encoding. An underscore name errors; see
     [Vertex attributes](value-language.md#vertex-attributes).
 
-33. `--write-primitive-custom-value <primitive-index> <dst-name> <src-expr> <linear | srgb>`
+34. `--write-primitive-custom-value <primitive-index> <dst-name> <src-expr> <linear | srgb>`
     - Repeatable: yes
 
     Writes a value to a custom vertex attribute on the indexed primitive.
@@ -341,7 +349,7 @@ multi-object document needs a selector. See
     an integer errors. A `u32` value errors, glTF forbidding the width on an
     attribute; see [Vertex attributes](value-language.md#vertex-attributes).
 
-34. `--write-primitive-normal <primitive-index> <false | true>`
+35. `--write-primitive-normal <primitive-index> <false | true>`
     - Default: `true`
     - Repeatable: yes
 
@@ -350,7 +358,7 @@ multi-object document needs a selector. See
     flat normals from the triangles. A voxel face is flat, so a conforming
     viewer draws the same pixels either way. `false` drops the stream.
 
-35. `--write-primitive-uv <primitive-index> <corner | face | swatch | voxel>`
+36. `--write-primitive-uv <primitive-index> <corner | face | swatch | voxel>`
     - Default: the material's stream list
     - Repeatable: yes
 

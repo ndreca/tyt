@@ -1,46 +1,66 @@
 use crate::{
     Error, Result,
-    commands::{Profile, built_in_profiles},
+    commands::{Profile, ProfileOrigin, built_in_profiles},
 };
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, path::PathBuf};
 
 /// The profiles a run can apply, one namespace merged from the layers of the
-/// cascade. Each name reads from the last layer supplying it, wholesale.
+/// cascade. Each name reads from the last layer supplying it, wholesale, and
+/// remembers that layer as its origin.
 #[derive(Clone, Debug)]
 pub(crate) struct ProfileSet {
-    profiles: BTreeMap<String, Profile>,
+    profiles: BTreeMap<String, (ProfileOrigin, Profile)>,
 }
 
 impl ProfileSet {
     /// The built-ins alone, the bottom layer of the cascade.
     #[cfg(test)]
     pub(crate) fn built_in() -> Self {
-        ProfileSet {
-            profiles: built_in_profiles(),
-        }
+        Self::layered([])
     }
 
-    /// The built-ins under `layers`, each name reading from the last layer
-    /// supplying it.
-    pub(crate) fn layered(layers: impl IntoIterator<Item = BTreeMap<String, Profile>>) -> Self {
-        let mut profiles = built_in_profiles();
+    /// The built-ins under `layers`, each a `.vxlconfig` path with its
+    /// profiles, each name reading from the last layer supplying it.
+    pub(crate) fn layered(
+        layers: impl IntoIterator<Item = (PathBuf, BTreeMap<String, Profile>)>,
+    ) -> Self {
+        let mut profiles: BTreeMap<_, _> = built_in_profiles()
+            .into_iter()
+            .map(|(name, profile)| (name, (ProfileOrigin::BuiltIn, profile)))
+            .collect();
 
-        for layer in layers {
-            profiles.extend(layer);
+        for (path, layer) in layers {
+            profiles.extend(
+                layer
+                    .into_iter()
+                    .map(|(name, profile)| (name, (ProfileOrigin::File(path.clone()), profile))),
+            );
         }
 
         ProfileSet { profiles }
     }
 
-    /// A set holding `profiles` alone.
+    /// A set holding `profiles` alone, as built-ins.
     #[cfg(test)]
     pub(crate) fn from_profiles(profiles: BTreeMap<String, Profile>) -> Self {
-        ProfileSet { profiles }
+        ProfileSet {
+            profiles: profiles
+                .into_iter()
+                .map(|(name, profile)| (name, (ProfileOrigin::BuiltIn, profile)))
+                .collect(),
+        }
+    }
+
+    /// Every name with its origin, in name order.
+    pub(crate) fn origins(&self) -> impl Iterator<Item = (&str, &ProfileOrigin)> {
+        self.profiles
+            .iter()
+            .map(|(name, (origin, _))| (name.as_str(), origin))
     }
 
     /// The profile `name`, which `origin` asks for.
     pub(crate) fn get(&self, origin: &str, name: &str) -> Result<&Profile> {
-        self.profiles.get(name).ok_or_else(|| {
+        self.profiles.get(name).map(|(_, profile)| profile).ok_or_else(|| {
             let names: Vec<_> = self
                 .profiles
                 .keys()
@@ -58,25 +78,28 @@ impl ProfileSet {
 #[cfg(test)]
 mod tests {
     use super::ProfileSet;
-    use crate::commands::Profile;
-    use std::collections::BTreeMap;
+    use crate::commands::{Profile, ProfileOrigin};
+    use std::{collections::BTreeMap, path::PathBuf};
 
-    /// A layer holding the profile `name` with `values`.
-    fn layer(name: &str, values: &[&str]) -> BTreeMap<String, Profile> {
+    /// A layer at `path` holding the profile `name` with `values`.
+    fn layer(path: &str, name: &str, values: &[&str]) -> (PathBuf, BTreeMap<String, Profile>) {
         let profile = Profile {
             values: values.iter().map(|value| (*value).to_owned()).collect(),
             ..Profile::default()
         };
 
-        BTreeMap::from([(name.to_owned(), profile)])
+        (
+            PathBuf::from(path),
+            BTreeMap::from([(name.to_owned(), profile)]),
+        )
     }
 
     #[test]
     fn a_later_layer_replaces_a_name_wholesale() {
         let profiles = ProfileSet::layered([
-            layer("orm", &["orm = 1"]),
-            layer("a", &["a = 1"]),
-            layer("orm", &["orm = 2"]),
+            layer("/home/.vxlconfig", "orm", &["orm = 1"]),
+            layer("/repo/.vxlconfig", "a", &["a = 1"]),
+            layer("/repo/sub/.vxlconfig", "orm", &["orm = 2"]),
         ]);
 
         let orm = profiles.get("the test", "orm").unwrap();
@@ -84,6 +107,20 @@ mod tests {
         assert!(orm.materials.is_empty());
         assert!(profiles.get("the test", "a").is_ok());
         assert!(profiles.get("the test", "pbr").is_ok());
+
+        let origins: Vec<_> = profiles.origins().collect();
+        assert_eq!(
+            origins[0],
+            ("a", &ProfileOrigin::File(PathBuf::from("/repo/.vxlconfig")))
+        );
+        assert_eq!(origins[1], ("albedo", &ProfileOrigin::BuiltIn));
+        assert_eq!(
+            origins[4],
+            (
+                "orm",
+                &ProfileOrigin::File(PathBuf::from("/repo/sub/.vxlconfig"))
+            )
+        );
     }
 
     #[test]

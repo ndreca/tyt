@@ -5,9 +5,10 @@ use crate::{
         MaterialTable, PrimitiveTable, Profile, ProfileSet, ProgramBuilder, ProgramFlag,
         ProgramFlags, apply_profile_files, apply_profile_materials, apply_profile_mesh_extras,
         apply_profile_primitives, check_expression, check_image_sources,
-        declare_profile_primitives, flag_occurrences, load_profile_set, parse_flag_index,
-        parse_flag_value, parse_texture_shape, push_file_write, push_unique, push_uv_stream,
-        resolve_gltf_container, select_one_object, stack_profiles, written_file_name,
+        declare_profile_primitives, flag_occurrences, list_profiles, load_profile_set,
+        parse_flag_index, parse_flag_value, parse_texture_shape, push_file_write, push_unique,
+        push_uv_stream, resolve_gltf_container, select_one_object, stack_profiles,
+        written_file_name,
     },
 };
 use branded_id::U32Id;
@@ -33,13 +34,21 @@ use voxsmith::{
 /// palette materials into values that ride along as textures, material
 /// fields, and files beside the mesh.
 #[derive(Clone, Debug, Parser)]
-#[command(name = "mesh")]
+#[command(
+    name = "mesh",
+    override_usage = "vxl mesh [OPTIONS] <input> [output]\n       vxl mesh --list-profiles",
+    mut_arg("path", |arg| arg
+        .index(1)
+        .required(false)
+        .required_unless_present("list_profiles"))
+)]
 pub struct Mesh {
+    /// The input, which only `--list-profiles` runs without.
     #[command(flatten)]
-    input: VoxelInput,
+    input: Option<VoxelInput>,
 
     /// The output mesh. Defaults to the input path with the mesh extension.
-    #[arg(value_name = "output")]
+    #[arg(value_name = "output", index = 2)]
     output: Option<PathBuf>,
 
     /// Target mesh container, glTF text (`.gltf`) or binary (`.glb`). Inferred
@@ -163,6 +172,12 @@ pub struct Mesh {
     /// directory, a name reading from the last file supplying it.
     #[arg(value_name = "profile", long, action = ArgAction::Append)]
     profile: Vec<String>,
+
+    /// Lists the profiles a run can apply, each with the `.vxlconfig`
+    /// supplying it or `built in`, and writes no mesh. Takes no other
+    /// argument.
+    #[arg(value_name = "list-profiles", long, exclusive = true)]
+    list_profiles: bool,
 
     #[command(flatten)]
     program_flags: ProgramFlags,
@@ -343,6 +358,12 @@ pub struct Mesh {
 
 impl Mesh {
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
+        if self.list_profiles {
+            let profiles = load_profile_set(&dependencies)?;
+
+            return Ok(dependencies.write_stdout(list_profiles(&profiles).as_bytes())?);
+        }
+
         let (container, output) = self.resolve_output();
 
         let profiles = self
@@ -352,9 +373,11 @@ impl Mesh {
 
         let record = self.record(&output, profiles.as_ref())?;
 
-        let from = self.input.resolve_format()?;
+        let input = self.input();
 
-        let main: VoxMain = load(&dependencies, from, &self.input.path)?;
+        let from = input.resolve_format()?;
+
+        let main: VoxMain = load(&dependencies, from, &input.path)?;
 
         let object = select_one_object(&main, &self.selection)?;
 
@@ -370,12 +393,19 @@ impl Mesh {
         Ok(save(&dependencies, &format, document, &output)?)
     }
 
+    /// The input, which every run but `--list-profiles` names.
+    fn input(&self) -> &VoxelInput {
+        self.input
+            .as_ref()
+            .expect("the input is required without --list-profiles")
+    }
+
     /// The output container and path, from the flags or the input.
     fn resolve_output(&self) -> (GltfContainer, PathBuf) {
         let container = resolve_gltf_container(self.to, self.output.as_deref());
 
         let output = self
-            .input
+            .input()
             .output_path(self.output.clone(), container.extension());
 
         (container, output)
@@ -985,7 +1015,7 @@ mod tests {
     use branded_id::U32Id;
     use clap::Parser;
     use meshconv::gltf::GltfContainer;
-    use std::collections::BTreeMap;
+    use std::{collections::BTreeMap, path::PathBuf};
     use ty_preferences::{DeserializePrefs, JsoncCodec};
     use voxsmith::operations::mesh::{
         ArrayDomain, AttributeWrite, Computation, ExtraForm, ExtraSource, FileForm, MeshRecord,
@@ -999,15 +1029,22 @@ mod tests {
         Mesh::try_parse_from(argv).unwrap()
     }
 
-    /// The record `args` lower into over the built-ins under `layers`, or the
-    /// error they raise.
+    /// The record `args` lower into over the built-ins under `layers`, each
+    /// layer a `.vxlconfig` of the cascade, or the error they raise.
     fn try_record_over(
         layers: Vec<BTreeMap<String, Profile>>,
         args: &[&str],
     ) -> Result<MeshRecord> {
         let mesh = parse(args);
         let (_, output) = mesh.resolve_output();
-        let profiles = mesh.uses_profiles().then(|| ProfileSet::layered(layers));
+        let profiles = mesh.uses_profiles().then(|| {
+            ProfileSet::layered(
+                layers
+                    .into_iter()
+                    .enumerate()
+                    .map(|(depth, layer)| (PathBuf::from(format!("/{depth}/.vxlconfig")), layer)),
+            )
+        });
         mesh.record(&output, profiles.as_ref())
     }
 
@@ -1057,6 +1094,19 @@ mod tests {
         "emissiveFactor",
         "emissiveStrength",
     ];
+
+    #[test]
+    fn list_profiles_stands_alone() {
+        let mesh = Mesh::try_parse_from(["mesh", "--list-profiles"]).unwrap();
+        assert!(mesh.list_profiles);
+
+        assert!(!parse(&[]).list_profiles);
+        assert!(Mesh::try_parse_from(["mesh"]).is_err());
+        assert!(Mesh::try_parse_from(["mesh", "--from", "voxj"]).is_err());
+        assert!(Mesh::try_parse_from(["mesh", "model.voxj", "--list-profiles"]).is_err());
+        assert!(Mesh::try_parse_from(["mesh", "--list-profiles", "--profile", "pbr"]).is_err());
+        assert!(Mesh::try_parse_from(["mesh", "--list-profiles", "--select", "*"]).is_err());
+    }
 
     #[test]
     fn the_output_and_container_default_from_the_input() {

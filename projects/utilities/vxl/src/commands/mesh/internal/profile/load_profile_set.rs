@@ -26,9 +26,9 @@ pub(crate) fn load_profile_set(
         )
     })?;
 
-    Ok(ProfileSet::layered(
-        layers.into_iter().map(|layer| layer.prefs.profiles),
-    ))
+    Ok(ProfileSet::layered(layers.into_iter().map(|layer| {
+        (layer.dir.join(".vxlconfig"), layer.prefs.profiles)
+    })))
 }
 
 #[cfg(test)]
@@ -115,6 +115,23 @@ mod tests {
         assert_eq!(values(&profiles, "b"), ["b = a"]);
         assert_eq!(values(&profiles, "orm"), ["orm = 1"]);
         assert!(profiles.get("the test", "pbr").is_ok());
+
+        let origins: Vec<_> = profiles
+            .origins()
+            .map(|(name, origin)| format!("{name} {origin}"))
+            .collect();
+        assert_eq!(
+            origins,
+            [
+                "a /repo/.vxlconfig",
+                "albedo built in",
+                "b /repo/sub/.vxlconfig",
+                "defaults built in",
+                "emissive built in",
+                "orm /home/.vxlconfig",
+                "pbr built in",
+            ]
+        );
     }
 
     #[test]
