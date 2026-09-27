@@ -1,11 +1,21 @@
+mod frame_rotation;
+mod frame_translation;
 mod insert_synthesized_scene_node;
 mod material_type_token;
 mod mvox_ext_from_file;
 mod scene_node_kind;
+mod scene_node_kind_of;
+mod synthesized_node_body;
+mod synthesized_shape_model;
 mod transform_from_frames;
 
+pub(crate) use frame_rotation::*;
+pub(crate) use frame_translation::*;
 pub(crate) use insert_synthesized_scene_node::*;
 pub(crate) use material_type_token::*;
 pub(crate) use mvox_ext_from_file::*;
 pub(crate) use scene_node_kind::*;
+pub(crate) use scene_node_kind_of::*;
+pub(crate) use synthesized_node_body::*;
+pub(crate) use synthesized_shape_model::*;
 pub(crate) use transform_from_frames::*;

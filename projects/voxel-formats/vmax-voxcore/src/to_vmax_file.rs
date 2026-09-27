@@ -184,7 +184,7 @@ mod tests {
     };
     use branded_id::U32Id;
     use std::collections::{BTreeMap, BTreeSet, HashMap};
-    use ty_math::{TyQuaternionF64, TyVector3F64, TyVector3U32};
+    use ty_math::{TyQuaternionF64, TyVector3F64, TyVector3I32, TyVector3U32};
     use vmax::{
         VMaxContentsVmaxbFile, VMaxFile, VMaxGroup, VMaxMaterial, VMaxMaterialDispersion,
         VMaxObject, VMaxPalettePngFile, VMaxPaletteSettingsVmaxpsbFile, VMaxSceneCamera,
@@ -564,6 +564,35 @@ mod tests {
 
         let reloaded = from_vmax_file(&file).unwrap();
         assert_eq!(reloaded.ext().hierarchy_nodes.len(), 3);
+    }
+
+    /// A voxel remap moves the object's camera target by as much as the
+    /// content center moved, and keeps its uuid.
+    #[test]
+    fn a_voxel_remap_moves_the_camera_target_with_the_content() {
+        let mut main = from_vmax_file(&sample()).unwrap();
+        let palette_id = U32Id::<BVoxPalette>::from_u32(0);
+        let mut object = VoxObject::new(String::new(), TyVector3U32::splat(1)).unwrap();
+        object.retain_layer(palette_id, U32Id::<BVoxMaterial>::from_u32(0));
+        object
+            .retain_voxel(U32Id::from_u32(0), &[U32Id::<BVoxMaterial>::from_u32(0)])
+            .unwrap();
+        let object_id = main.retain_object(object).unwrap();
+        let uuid = main.ext().object_states[&object_id].uuid.clone();
+
+        // The canvas widens by 2 and recenters 1 lower, and the voxel moves 2
+        // up, so the content center moves 1 along x.
+        main.remap_object_voxels(object_id, TyVector3U32::new(3, 1, 1), |p| {
+            p.as_ivec3() + TyVector3I32::new(2, 0, 0)
+        })
+        .unwrap();
+
+        let object_state = &main.ext().object_states[&object_id];
+        assert_eq!(
+            object_state.cam.as_ref().map(|cam| cam.o),
+            Some([128.5, 127.5, 0.5])
+        );
+        assert_eq!(object_state.uuid, uuid);
     }
 
     /// A node rotated after the load writes its live rotation on Voxel Max's

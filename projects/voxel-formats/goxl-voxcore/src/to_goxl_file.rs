@@ -258,7 +258,7 @@ mod tests {
         GoxlBlock, GoxlCamera, GoxlDict, GoxlFile, GoxlImage, GoxlLayer, GoxlLayerBlock, GoxlLight,
         GoxlMaterial, GoxlPreview, GoxlShape, GoxlUnknownChunk, GoxlVoxel,
     };
-    use ty_math::{TyTransformF64, TyVector3F64, TyVector3U32};
+    use ty_math::{TyTransformF64, TyVector3F64, TyVector3I32, TyVector3U32};
     use voxcore::{BVoxHierarchyNode, BVoxObject, Error as VoxError, VoxHierarchyNode, VoxObject};
 
     /// A `4 x 4` matrix with distinct float cells, for transform and box
@@ -592,6 +592,65 @@ mod tests {
         let reloaded = from_goxl_file(&rebuilt).unwrap();
 
         assert_eq!(reloaded.ext(), &expected);
+    }
+
+    /// Each setter moves the stamps it affects by as much as the stamped box
+    /// moved. A children change stamps a new object once and drops a removed
+    /// one.
+    #[test]
+    fn setters_move_the_stamps_they_affect() {
+        let mut main = from_goxl_file(&placed_blocks_file()).unwrap();
+
+        // Y-up `(1, 2, 3)` is Z-up `[1, -3, 2]`.
+        main.set_hierarchy_node_transform(
+            node(0),
+            TyTransformF64::from_translation(TyVector3F64::new(1.0, 2.0, 3.0)),
+        )
+        .unwrap();
+
+        main.set_object_origin(object(2), TyVector3I32::new(0, 1, -16))
+            .unwrap();
+
+        // Two more cells of depth lower the stamp two on Goxel's `y`.
+        main.remap_object_voxels(object(1), TyVector3U32::new(16, 16, 18), |p| p.as_ivec3())
+            .unwrap();
+
+        let placements =
+            |main: &GoxlVoxMain, index: u32| main.ext().layers[&node(index)].placements.clone();
+
+        assert_eq!(
+            placements(&main, 0),
+            [
+                placement(0, [1, -3, 2]),
+                placement(1, [17, -5, 2]),
+                placement(0, [33, -3, 2]),
+            ]
+        );
+
+        assert_eq!(placements(&main, 1), [placement(1, [0, 14, 0])]);
+
+        assert_eq!(
+            placements(&main, 2),
+            [placement(2, [0, 0, 17]), placement(2, [0, 0, 33])]
+        );
+
+        set_child_objects(&mut main, 0, vec![0]);
+
+        set_child_objects(&mut main, 2, vec![0, 2]);
+
+        assert_eq!(
+            placements(&main, 0),
+            [placement(0, [1, -3, 2]), placement(0, [33, -3, 2])]
+        );
+
+        assert_eq!(
+            placements(&main, 2),
+            [
+                placement(0, [0, 0, 0]),
+                placement(2, [0, 0, 17]),
+                placement(2, [0, 0, 33]),
+            ]
+        );
     }
 
     /// A node retained after the load gets a synthesized entry on the spot:

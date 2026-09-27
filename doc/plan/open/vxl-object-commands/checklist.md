@@ -13,7 +13,7 @@ The design is in the [README](README.md). Each step builds the commands the
 
 ## Steps
 
-- [ ] **S1. voxcore hooks.** Add the setters and hooks from
+- [x] **S1. voxcore hooks.** Add the setters and hooks from
       [voxcore hooks](README.md#voxcore-hooks) to `VoxMain` and `VoxExt`.
       Forward the hooks in voxconv's `CompositeVoxExt`. Make the vmax, goxl, and
       mvox exts refresh on them. `set_object_origin` and `move_object` exist

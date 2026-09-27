@@ -1,5 +1,6 @@
 use crate::{
-    Error, MVoxExt, MVoxExtNode, MVoxVoxMain, Result, SceneNodeKind, insert_synthesized_scene_node,
+    Error, MVoxExt, MVoxExtNode, MVoxVoxMain, Result, SceneNodeKind, frame_translation,
+    insert_synthesized_scene_node,
 };
 use branded_id::U32Id;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -284,7 +285,7 @@ impl<'a> Builder<'a> {
     fn emit_node(&mut self, old_id: U32Id<BVoxHierarchyNode>) -> Result<U32Id<BVoxHierarchyNode>> {
         let old: &'a HashMap<_, _> = self.old;
         let node = old.get(&old_id).expect("a root or child is a listed node");
-        let translation = translation_of(&node.transform.position);
+        let translation = frame_translation(node.transform.position);
         let transform = self.emit(
             SceneNodeKind::Transform,
             transform_vox_node(translation, &node.name),
@@ -342,12 +343,6 @@ fn transform_vox_node(translation: [i32; 3], name: &str) -> VoxHierarchyNode {
         ),
         ..Default::default()
     }
-}
-
-/// One scene-frame translation, on MagicaVoxel's Z-up axes, rounded from a
-/// node's local position.
-fn translation_of(position: &TyVector3F64) -> [i32; 3] {
-    position.yup_to_zup().round().as_ivec3().to_array()
 }
 
 /// The `(bounds, origin)` of `object`'s grid on MagicaVoxel's Z-up axes.

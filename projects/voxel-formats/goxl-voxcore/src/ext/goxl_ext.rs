@@ -5,11 +5,11 @@ use crate::{
 use branded_id::U32Id;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use ty_math::TyVector3F64;
+use std::collections::{BTreeMap, HashMap, HashSet};
+use ty_math::{TyTransformF64, TyVector3F64, TyVector3I32, TyVector3U32};
 use voxcore::{
-    BVoxHierarchyNode, BVoxObject, Error as VoxError, Result as VoxResult, VoxExt, VoxGcRemap,
-    VoxObject, VoxState,
+    BVoxHierarchyNode, BVoxObject, BVoxVoxel, Error as VoxError, Result as VoxResult, VoxExt,
+    VoxGcRemap, VoxObject, VoxState,
 };
 
 /// The `goxl` ext payload stashed on a [`VoxMain`](voxcore::VoxMain): the
@@ -77,16 +77,54 @@ pub struct GoxlExt {
     pub unknown_chunks: Vec<GoxlExtUnknownChunk>,
 }
 
-/// Where `object`'s box lands on Goxel's Z-up axes under a node at
-/// `node_position`, as the writer turns the object.
-fn stamp_position(node_position: TyVector3F64, object: &VoxObject) -> [i32; 3] {
-    let corner = node_position.round().as_ivec3() + object.origin();
-    let depth = object.bounds().z as i32;
-    [corner.x, -(corner.z + depth), corner.y]
+/// Where a box of `bounds` at `origin` lands on Goxel's Z-up axes under a
+/// node at `node_position`, as the writer turns the object.
+fn stamp_position(
+    node_position: TyVector3F64,
+    origin: TyVector3I32,
+    bounds: TyVector3U32,
+) -> TyVector3I32 {
+    let corner = node_position.round().as_ivec3() + origin;
+    TyVector3I32::new(corner.x, -(corner.z + bounds.z as i32), corner.y)
+}
+
+fn object_stamp_position(node_position: TyVector3F64, object: &VoxObject) -> [i32; 3] {
+    stamp_position(node_position, object.origin(), object.bounds()).to_array()
+}
+
+fn layer_mut(
+    layers: &mut BTreeMap<U32Id<BVoxHierarchyNode>, GoxlExtLayer>,
+    node_id: U32Id<BVoxHierarchyNode>,
+) -> VoxResult<&mut GoxlExtLayer> {
+    layers.get_mut(&node_id).ok_or_else(|| VoxError::Ext {
+        reason: format!("goxl ext has no layer entry for node {}", node_id.to_u32()),
+    })
+}
+
+fn shift_object_placements(
+    layers: &mut BTreeMap<U32Id<BVoxHierarchyNode>, GoxlExtLayer>,
+    state: &VoxState,
+    object_id: U32Id<BVoxObject>,
+    shift: impl Fn(TyVector3F64) -> TyVector3I32,
+) {
+    for (&node_id, layer) in layers.iter_mut() {
+        let node = state
+            .hierarchy_node(node_id)
+            .expect("a layer's node is live");
+        let delta = shift(node.transform.position);
+        for placement in &mut layer.placements {
+            if placement.object_id == object_id {
+                placement.position =
+                    (TyVector3I32::from_array(placement.position) + delta).to_array();
+            }
+        }
+    }
 }
 
 /// A node another entry clones refuses its release, because the clone's
-/// `base_id` would dangle.
+/// `base_id` would dangle. A node transform, object origin, or object bounds
+/// change shifts each affected placement by as much as the stamped box moved,
+/// which keeps the authored offsets.
 impl VoxExt for GoxlExt {
     fn hierarchy_node_did_retain(
         &mut self,
@@ -101,7 +139,7 @@ impl VoxExt for GoxlExt {
             .iter()
             .map(|&object_id| GoxlExtPlacement {
                 object_id,
-                position: stamp_position(
+                position: object_stamp_position(
                     node.transform.position,
                     state.object(object_id).expect("a placed object is live"),
                 ),
@@ -143,6 +181,102 @@ impl VoxExt for GoxlExt {
         }
 
         self.layers.remove(&node_id);
+        Ok(())
+    }
+
+    fn hierarchy_node_transform_did_set(
+        &mut self,
+        state: &VoxState,
+        node_id: U32Id<BVoxHierarchyNode>,
+        old_transform: TyTransformF64,
+    ) -> VoxResult<()> {
+        let node = state.hierarchy_node(node_id).expect("a set node is live");
+        let layer = layer_mut(&mut self.layers, node_id)?;
+        for placement in &mut layer.placements {
+            let object = state
+                .object(placement.object_id)
+                .expect("a placed object is live");
+            let delta = stamp_position(node.transform.position, object.origin(), object.bounds())
+                - stamp_position(old_transform.position, object.origin(), object.bounds());
+            placement.position = (TyVector3I32::from_array(placement.position) + delta).to_array();
+        }
+        Ok(())
+    }
+
+    fn hierarchy_node_children_did_set(
+        &mut self,
+        state: &VoxState,
+        node_id: U32Id<BVoxHierarchyNode>,
+        _old_child_node_ids: &[U32Id<BVoxHierarchyNode>],
+        _old_child_object_ids: &[U32Id<BVoxObject>],
+    ) -> VoxResult<()> {
+        let node = state.hierarchy_node(node_id).expect("a set node is live");
+        let layer = layer_mut(&mut self.layers, node_id)?;
+        layer
+            .placements
+            .retain(|placement| node.child_object_ids.contains(&placement.object_id));
+        for &object_id in &node.child_object_ids {
+            if !layer
+                .placements
+                .iter()
+                .any(|placement| placement.object_id == object_id)
+            {
+                layer.placements.push(GoxlExtPlacement {
+                    object_id,
+                    position: object_stamp_position(
+                        node.transform.position,
+                        state.object(object_id).expect("a placed object is live"),
+                    ),
+                });
+            }
+        }
+
+        // The writer checks that the first-stamped order matches the child
+        // order. When the new child order breaks it, the placements regroup
+        // by child.
+        let mut seen = HashSet::new();
+        let stamped: Vec<_> = layer
+            .placements
+            .iter()
+            .map(|placement| placement.object_id)
+            .filter(|object_id| seen.insert(*object_id))
+            .collect();
+        if stamped != node.child_object_ids {
+            layer.placements.sort_by_key(|placement| {
+                node.child_object_ids
+                    .iter()
+                    .position(|&object_id| object_id == placement.object_id)
+            });
+        }
+        Ok(())
+    }
+
+    fn object_origin_did_set(
+        &mut self,
+        state: &VoxState,
+        object_id: U32Id<BVoxObject>,
+        old_origin: TyVector3I32,
+    ) -> VoxResult<()> {
+        let object = state.object(object_id).expect("a set object is live");
+        shift_object_placements(&mut self.layers, state, object_id, |node_position| {
+            stamp_position(node_position, object.origin(), object.bounds())
+                - stamp_position(node_position, old_origin, object.bounds())
+        });
+        Ok(())
+    }
+
+    fn object_voxels_did_remap(
+        &mut self,
+        state: &VoxState,
+        object_id: U32Id<BVoxObject>,
+        old_bounds: TyVector3U32,
+        _voxel_ids: &HashMap<U32Id<BVoxVoxel>, U32Id<BVoxVoxel>>,
+    ) -> VoxResult<()> {
+        let object = state.object(object_id).expect("a remapped object is live");
+        shift_object_placements(&mut self.layers, state, object_id, |node_position| {
+            stamp_position(node_position, object.origin(), object.bounds())
+                - stamp_position(node_position, object.origin(), old_bounds)
+        });
         Ok(())
     }
 

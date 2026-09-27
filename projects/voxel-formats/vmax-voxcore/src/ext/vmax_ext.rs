@@ -1,15 +1,20 @@
 use crate::{
-    VMaxExtMaterial, VMaxExtNode, VMaxExtObjectState, VMaxExtPalette, synthesized_node,
-    synthesized_object_state,
+    VMaxExtMaterial, VMaxExtNode, VMaxExtObjectState, VMaxExtPalette, place_object,
+    synthesized_node, synthesized_object_state,
 };
 use branded_id::U32Id;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, fmt::Display, mem};
+use std::{
+    collections::{BTreeMap, HashMap},
+    fmt::Display,
+    mem,
+};
+use ty_math::TyVector3U32;
 use vmax::VMaxSceneJsonFile;
 use voxcore::{
-    BVoxHierarchyNode, BVoxObject, BVoxPalette, Error as VoxError, Result as VoxResult, VoxExt,
-    VoxGcRemap, VoxState,
+    BVoxHierarchyNode, BVoxObject, BVoxPalette, BVoxVoxel, Error as VoxError, Result as VoxResult,
+    VoxExt, VoxGcRemap, VoxObject, VoxState,
     material::{BASE_COLOR, EMISSIVE_COLOR},
 };
 
@@ -86,8 +91,9 @@ fn rekey<K: Copy + Display + Ord, V>(
 
 /// A retained node, object, or palette takes the entry
 /// [`to_vmax_vox_main`](crate::to_vmax_vox_main) would synthesize for it. A
-/// gc rekeys every entry. An exact material list follows its material pools'
-/// surviving values.
+/// voxel remap moves an object's camera target by as much as its content
+/// center moved, which keeps the author's framing. A gc rekeys every entry.
+/// An exact material list follows its material pools' surviving values.
 impl VoxExt for VMaxExt {
     fn hierarchy_node_did_retain(
         &mut self,
@@ -125,6 +131,32 @@ impl VoxExt for VMaxExt {
         object_id: U32Id<BVoxObject>,
     ) -> VoxResult<()> {
         remove(&mut self.object_states, object_id, "object").map(|_| ())
+    }
+
+    fn object_voxels_did_remap(
+        &mut self,
+        state: &VoxState,
+        object_id: U32Id<BVoxObject>,
+        old_bounds: TyVector3U32,
+        voxel_ids: &HashMap<U32Id<BVoxVoxel>, U32Id<BVoxVoxel>>,
+    ) -> VoxResult<()> {
+        let Some(object_state) = self.object_states.get_mut(&object_id) else {
+            return Err(refuse(format!(
+                "vmax ext holds no entry for object {object_id}"
+            )));
+        };
+        let Some(cam) = object_state.cam.as_mut() else {
+            return Ok(());
+        };
+
+        let object = state.object(object_id).expect("a remapped object is live");
+        let (_, placement) = place_object(object);
+        let old_center = content_center(old_bounds, voxel_ids.keys().copied());
+        for ((target, center), old_center) in cam.o.iter_mut().zip(placement.center).zip(old_center)
+        {
+            *target += center - old_center;
+        }
+        Ok(())
     }
 
     fn palette_did_retain(
@@ -175,6 +207,22 @@ impl VoxExt for VMaxExt {
         }
         Ok(())
     }
+}
+
+/// The content center (`e_c`) of an object on a grid of `bounds` live at
+/// `voxel_ids`.
+fn content_center(
+    bounds: TyVector3U32,
+    voxel_ids: impl Iterator<Item = U32Id<BVoxVoxel>>,
+) -> [f64; 3] {
+    let mut shell =
+        VoxObject::new(String::new(), bounds).expect("the old grid was within the cell cap");
+    for voxel_id in voxel_ids {
+        shell
+            .retain_voxel(voxel_id, &[])
+            .expect("an old live voxel is within the old grid");
+    }
+    place_object(&shell).1.center
 }
 
 /// An exact material list after a gc of the material pools it indexes by

@@ -1,11 +1,14 @@
 use crate::{
-    MVoxExtCamera, MVoxExtLayer, MVoxExtMaterial, MVoxExtNode, MVoxExtNodeBody,
-    MVoxExtUnknownChunk, SceneNodeKind, insert_synthesized_scene_node,
+    MVoxExtCamera, MVoxExtFrame, MVoxExtLayer, MVoxExtMaterial, MVoxExtNode, MVoxExtNodeBody,
+    MVoxExtUnknownChunk, frame_rotation, frame_translation, insert_synthesized_scene_node,
+    scene_node_kind_of, synthesized_node_body, synthesized_shape_model,
 };
 use branded_id::U32Id;
+use mvox::MVoxRotation;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, mem};
+use ty_math::TyTransformF64;
 use voxcore::{
     BVoxHierarchyNode, BVoxMaterial, BVoxObject, BVoxPalette, Error, Result, VoxExt, VoxGcRemap,
     VoxState,
@@ -108,6 +111,11 @@ pub struct MVoxExt {
     pub unknown_chunks: Vec<MVoxExtUnknownChunk>,
 }
 
+/// A node keeps its kind while its children still fit it, and otherwise takes
+/// the kind a retained node would. A transform node's first frame follows the
+/// node's transform. A transform no frame can hold, such as a position off the
+/// voxel grid, is left for the writer to report.
+///
 /// The index map follows a material release through `gc`: a byte for a
 /// released material keeps its index, now an empty color, until the
 /// compaction frees one, which keeps the map a permutation. An object release
@@ -122,14 +130,71 @@ impl VoxExt for MVoxExt {
         let node = state
             .hierarchy_node(node_id)
             .expect("a retained node is live");
-        let kind = if !node.child_object_ids.is_empty() {
-            SceneNodeKind::Shape
-        } else if node.child_node_ids.len() == 1 {
-            SceneNodeKind::Transform
-        } else {
-            SceneNodeKind::Group
+        insert_synthesized_scene_node(
+            &mut self.scene_nodes,
+            node_id,
+            scene_node_kind_of(node),
+            node,
+        );
+        Ok(())
+    }
+
+    fn hierarchy_node_transform_did_set(
+        &mut self,
+        state: &VoxState,
+        node_id: U32Id<BVoxHierarchyNode>,
+        _old_transform: TyTransformF64,
+    ) -> Result<()> {
+        let node = state.hierarchy_node(node_id).expect("a set node is live");
+        let MVoxExtNodeBody::Transform { frames, .. } = &mut scene_node_mut(self, node_id)?.body
+        else {
+            return Ok(());
         };
-        insert_synthesized_scene_node(&mut self.scene_nodes, node_id, kind, node);
+
+        if frames.is_empty() {
+            frames.push(MVoxExtFrame {
+                rotation: MVoxRotation::IDENTITY.0,
+                ..Default::default()
+            });
+        }
+
+        let frame = &mut frames[0];
+        frame.translation = frame_translation(node.transform.position);
+        if let Some(rotation) = frame_rotation(&node.transform) {
+            frame.rotation = rotation;
+        }
+        Ok(())
+    }
+
+    fn hierarchy_node_children_did_set(
+        &mut self,
+        state: &VoxState,
+        node_id: U32Id<BVoxHierarchyNode>,
+        _old_child_node_ids: &[U32Id<BVoxHierarchyNode>],
+        _old_child_object_ids: &[U32Id<BVoxObject>],
+    ) -> Result<()> {
+        let node = state.hierarchy_node(node_id).expect("a set node is live");
+        let entry = scene_node_mut(self, node_id)?;
+        let fits = match &entry.body {
+            MVoxExtNodeBody::Transform { .. } => {
+                node.child_node_ids.len() == 1 && node.child_object_ids.is_empty()
+            }
+            MVoxExtNodeBody::Group => node.child_object_ids.is_empty(),
+            MVoxExtNodeBody::Shape { .. } => node.child_node_ids.is_empty(),
+        };
+        if !fits {
+            entry.body = synthesized_node_body(scene_node_kind_of(node), node);
+            return Ok(());
+        }
+
+        if let MVoxExtNodeBody::Shape { models } = &mut entry.body {
+            models.retain(|model| node.child_object_ids.contains(&model.object));
+            for &object_id in &node.child_object_ids {
+                if !models.iter().any(|model| model.object == object_id) {
+                    models.push(synthesized_shape_model(object_id));
+                }
+            }
+        }
         Ok(())
     }
 
@@ -260,6 +325,18 @@ impl VoxExt for MVoxExt {
 
         Ok(())
     }
+}
+
+fn scene_node_mut(
+    ext: &mut MVoxExt,
+    node_id: U32Id<BVoxHierarchyNode>,
+) -> Result<&mut MVoxExtNode> {
+    ext.scene_nodes.get_mut(&node_id).ok_or_else(|| Error::Ext {
+        reason: format!(
+            "mvox ext has no scene node for hierarchy node {}",
+            node_id.to_u32()
+        ),
+    })
 }
 
 /// The error for an entry keyed by an id the gc found dead.

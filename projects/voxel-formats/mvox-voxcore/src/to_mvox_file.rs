@@ -489,8 +489,9 @@ mod tests {
     use std::{
         array,
         collections::{BTreeMap, BTreeSet},
+        f64::consts::FRAC_PI_2,
     };
-    use ty_math::{TyTransformF64, TyVector3F64};
+    use ty_math::{TyQuaternionF64, TyTransformF64, TyVector3F64};
     use voxcore::{
         BVoxHierarchyNode, BVoxMaterial, BVoxObject, BVoxPalette, VoxHierarchyNode, VoxPalette,
         VoxValuePoolValueRef, material::IOR,
@@ -1126,18 +1127,43 @@ mod tests {
         assert!(to_mvox_file(&main).is_err());
     }
 
-    /// A node whose children no longer fit its entry's kind errors: a
-    /// transform over two nodes, a group placing an object, a shape placing
-    /// a node.
+    /// A node whose children no longer fit its kind takes the kind a retained
+    /// node would: a transform over two nodes becomes a group. A shape placing
+    /// one more object draws it on the first frame.
     #[test]
-    fn children_that_do_not_fit_the_kind_error() {
-        let file = placed_models_file();
-
-        let mut main = from_mvox_file(&file).unwrap();
+    fn children_that_leave_the_kind_refresh_it() {
+        let mut main = from_mvox_file(&placed_models_file()).unwrap();
 
         set_children(&mut main, 0, vec![node(1), node(2)], Vec::new());
 
-        assert!(to_mvox_file(&main).is_err());
+        set_children(&mut main, 3, Vec::new(), vec![object(0), object(1)]);
+
+        let rebuilt = to_mvox_file(&main).unwrap();
+
+        assert_eq!(
+            rebuilt.scene_nodes[0].body,
+            MVoxSceneNodeBody::Group(MVoxGroupNode {
+                children: vec![1, 2]
+            })
+        );
+
+        let MVoxSceneNodeBody::Shape(shape) = &rebuilt.scene_nodes[3].body else {
+            panic!("node 3 is a shape");
+        };
+
+        let models: Vec<_> = shape
+            .models
+            .iter()
+            .map(|model| (model.model, model.frame_index))
+            .collect();
+
+        assert_eq!(models, [(0, Some(0)), (1, Some(0))]);
+    }
+
+    /// A node placing both objects and child nodes fits no kind and errors.
+    #[test]
+    fn children_no_kind_fits_error() {
+        let file = placed_models_file();
 
         let mut main = from_mvox_file(&file).unwrap();
 
@@ -1157,34 +1183,45 @@ mod tests {
         assert!(to_mvox_file(&main).is_err());
     }
 
-    /// A transform node moved after the load errors until its frames follow.
+    /// A transform node's first frame follows its transform, so a moved and
+    /// quarter-turned node writes and reloads as set. A position off the voxel
+    /// grid has no frame and errors.
     #[test]
-    fn a_moved_transform_errors_until_its_frames_follow() {
+    fn a_moved_transform_writes_with_its_frames_following() {
         let mut main = from_mvox_file(&placed_models_file()).unwrap();
+
+        let transform = TyTransformF64::new(
+            TyVector3F64::new(2.0, 0.0, -1.0),
+            TyQuaternionF64::from_rotation_y(FRAC_PI_2),
+            TyVector3F64::ONE,
+        );
+
+        main.set_hierarchy_node_transform(node(2), transform)
+            .unwrap();
+
+        let rebuilt = to_mvox_file(&main).unwrap();
+
+        let MVoxSceneNodeBody::Transform(written) = &rebuilt.scene_nodes[2].body else {
+            panic!("node 2 is a transform");
+        };
+
+        assert_eq!(written.frames[0].translation, [2, 1, 0]);
+
+        let reloaded = from_mvox_file(&rebuilt).unwrap();
+
+        let reloaded_transform = reloaded.hierarchy_node(node(2)).unwrap().transform;
+
+        assert_eq!(reloaded_transform.position, transform.position);
+
+        assert!(reloaded_transform.rotation.dot(transform.rotation).abs() > 1.0 - 1e-9);
 
         main.set_hierarchy_node_transform(
             node(2),
-            TyTransformF64::from_translation(TyVector3F64::new(2.0, 0.0, 0.0)),
+            TyTransformF64::from_translation(TyVector3F64::new(0.5, 0.0, 0.0)),
         )
         .unwrap();
 
         assert!(to_mvox_file(&main).is_err());
-
-        let MVoxExtNodeBody::Transform { frames, .. } =
-            &mut main.ext_mut().scene_nodes.get_mut(&node(2)).unwrap().body
-        else {
-            panic!("node 2 is a transform");
-        };
-
-        frames[0].translation = [2, 0, 0];
-
-        let rebuilt = to_mvox_file(&main).unwrap();
-
-        let MVoxSceneNodeBody::Transform(transform) = &rebuilt.scene_nodes[2].body else {
-            panic!("node 2 is a transform");
-        };
-
-        assert_eq!(transform.frames[0].translation, [2, 0, 0]);
     }
 
     /// A second palette has no place in a MagicaVoxel file, and neither does

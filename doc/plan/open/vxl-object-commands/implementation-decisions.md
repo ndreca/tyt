@@ -30,3 +30,24 @@ vmax, goxl, and mvox refreshes.
   `branded_id::soa::IdRemap` has no public constructor.
 - voxconv takes `ty-math` as an optional dependency of its `ext` feature, for
   the hook signatures.
+- vmax refreshes only on a voxel remap. The content center (`e_c`) depends on
+  bounds and live voxels, not `origin`, and the build volume `vp` is already
+  derived on write. The camera target `cam.o` moves by as much as the center
+  moved, keeping the author's framing, rather than reframing on the center.
+- goxl moves each affected placement by as much as its stamped box moved, for
+  a node transform, an object origin, or an object bounds change. A children
+  change drops the placements of unplaced objects and stamps each new object
+  once. The placements group by child order only when the new order breaks the
+  writer's first-stamped check, so an edit that keeps the order keeps the
+  stored stamp order.
+- mvox keeps a node's kind while its children still fit it, and otherwise
+  gives it the kind and body a retained node would. A transform's first frame
+  takes the rounded translation and, when it is a signed permutation, the
+  node's rotation and scale. A frame the transform cannot become is left for
+  the writer's existing check to report, since the output of these commands
+  is voxj and an mvox-only limit should not block the edit.
+- A setter hook refuses when the ext has no entry for the node or object it
+  refreshes, since the ext was already out of step.
+- The mvox writer ignores object `origin`, and the loader never sets one, so an
+  `origin` or bounds change has nothing to refresh there. This is existing
+  behavior outside the plan.
