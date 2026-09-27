@@ -32,7 +32,7 @@ The design is in the [README](README.md). Each step builds the commands the
       it or rebuild copies through `new`, `retain_layer`, and `retain_voxel`,
       and log the choice. `add` remaps
       palette, material, and value pool ids from the source.
-- [ ] **S5. `object-voxels`.** Tests check that four turns and two flips leave
+- [x] **S5. `object-voxels`.** Tests check that four turns and two flips leave
       an object unchanged.
 - [ ] **S6. Node setters.** `glam`'s `DQuat::from_euler(EulerRot::XYZEx, ...)`
       inverts the `to_euler_radians` that `hierarchy show` prints with.

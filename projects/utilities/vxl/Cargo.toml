@@ -34,6 +34,7 @@ voxsmith = { version = "0.3.0", default-features = false, features = [
     "info",
     "mesh",
     "object",
+    "object_voxels",
     "palette_list",
     "palette_show",
     "to",

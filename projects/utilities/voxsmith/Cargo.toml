@@ -32,6 +32,7 @@ default = [
     "info",
     "mesh",
     "object",
+    "object_voxels",
     "palette_list",
     "palette_show",
     "to",
@@ -43,6 +44,7 @@ hierarchy_show = ["_treegrid", "dep:treeselect"]
 info = ["_treegrid"]
 mesh = ["_treegrid", "dep:serde_json", "dep:vox-value-language"]
 object = []
+object_voxels = []
 palette_list = ["_treegrid"]
 palette_show = ["_treegrid", "dep:serde_json"]
 to = []

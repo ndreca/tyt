@@ -142,3 +142,20 @@ vmax, goxl, and mvox refreshes.
 - `object add` resolves `--source-from` inline, the way `VoxelInput` and
   `MeshInput` each do for `--from`.
 - `HookRecorder` also logs `palette_did_retain`.
+
+## S5. object-voxels
+
+- voxsmith gains an `object_voxels` feature for `operations/object_voxels/`.
+- The axis is ty-math's new `TyAxis3`, which other commands can share. The
+  turn count is voxsmith's `QuarterTurns`. vxl gives both their CLI names
+  through `CliValue`, so `--turns` accepts only `1`, `2`, and `3`.
+- `rotate` works on the two axes an axis turns, taken in the cyclic order
+  that makes a positive turn carry the first toward the second. Each turn
+  count has its own formula, so two turns need no equal dimensions.
+- The error for one or three turns on unequal dimensions comes from voxsmith
+  and points at `node set rotation`.
+- `translate` checks every live voxel before it remaps, so the error reports
+  the offset and grid the user gave. `flip` and `rotate` cannot leave the
+  grid.
+- The three commands check and remap one object at a time, as S3's do. vxl
+  writes nothing when any object errors.

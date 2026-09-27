@@ -12,6 +12,9 @@ pub mod mesh;
 #[cfg(feature = "object")]
 pub mod object;
 
+#[cfg(feature = "object_voxels")]
+pub mod object_voxels;
+
 #[cfg(feature = "palette_list")]
 pub mod palette_list;
 

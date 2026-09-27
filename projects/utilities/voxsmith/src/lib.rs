@@ -8,7 +8,8 @@
 //! each behind a feature of the same name. `info`, `validate`,
 //! `hierarchy_show`, `palette_list`, and `palette_show` render reports through
 //! treegrid. `mesh` triangulates one object into a meshdoc document under a
-//! record of the run. `object` edits objects in place. `to` prunes a main to a
+//! record of the run. `object` edits objects in place. `object_voxels` moves
+//! an object's voxels within its grid. `to` prunes a main to a
 //! chosen set of objects for conversion. `voxelize` turns a meshdoc document
 //! into a main. Neither sees a mesh file format; meshconv decodes a mesh
 //! document into a `MeshMain` and encodes one back.

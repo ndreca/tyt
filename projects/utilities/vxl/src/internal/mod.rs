@@ -20,6 +20,7 @@ mod read_format;
 mod require_file_name;
 mod required_selection;
 mod rgba;
+mod ty_axis3;
 mod vector3_i32;
 mod vector_component;
 mod voxel_input;

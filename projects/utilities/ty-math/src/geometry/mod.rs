@@ -1,3 +1,4 @@
+mod ty_axis3;
 mod ty_bounds;
 mod ty_bounds_f32;
 mod ty_bounds_f64;
@@ -24,6 +25,7 @@ mod ty_vector4_f64;
 mod unit_rotation_tolerance;
 mod zero_length_tolerance;
 
+pub use ty_axis3::*;
 pub(crate) use ty_bounds::*;
 pub use ty_bounds_f32::*;
 pub use ty_bounds_f64::*;
