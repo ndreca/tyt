@@ -16,4 +16,7 @@ pub(crate) struct QuantizePlan {
     /// Each partition's representatives, the only targets a dithered snap of
     /// that partition's materials picks among.
     pub(crate) partition_representatives: Vec<Vec<QuantizePoint>>,
+
+    /// How many leading axes the points use; the rest stay zero.
+    pub(crate) dimensions: usize,
 }

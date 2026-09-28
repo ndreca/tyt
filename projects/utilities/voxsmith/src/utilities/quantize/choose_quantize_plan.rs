@@ -41,7 +41,7 @@ pub(crate) fn choose_quantize_plan<T: VoxExt>(
     })?;
     let value_pool = property_value_pool(main, palette, property_id);
 
-    let reading = Reading::resolve(options, value_pool.kind())?;
+    let (reading, dimensions) = Reading::resolve(options, value_pool.kind())?;
     let partition_properties =
         partition_properties(main, palette, palette_index, property_id, options)?;
 
@@ -123,6 +123,7 @@ pub(crate) fn choose_quantize_plan<T: VoxExt>(
         representative_ids: HashMap::new(),
         points: HashMap::new(),
         partition_representatives: vec![Vec::new(); partition_count],
+        dimensions,
     };
 
     for cluster in clusters {
@@ -164,8 +165,9 @@ enum ColorEncoding {
 }
 
 impl Reading {
-    /// Resolves `options`'s reading of a property whose values are `kind`.
-    fn resolve(options: &QuantizeOptions, kind: &VoxValuePoolKind) -> Result<Self> {
+    /// Resolves `options`'s reading of a property whose values are `kind`,
+    /// with the number of axes its points use.
+    fn resolve(options: &QuantizeOptions, kind: &VoxValuePoolKind) -> Result<(Self, usize)> {
         let name = &options.property;
         let kind_name = kind_name(kind);
 
@@ -261,7 +263,7 @@ impl Reading {
             )));
         }
 
-        Ok(reading)
+        Ok((reading, dimensions))
     }
 
     /// `value` as a clustering point, with its alpha when alpha partitions, or

@@ -507,6 +507,43 @@ mod tests {
     }
 
     #[test]
+    fn ordered_dither_never_moves_a_voxel_off_its_representative() {
+        // A 4x4x4 grid of red and blue with one near red beside red. Red and
+        // blue stay the representatives, so every red or blue voxel keeps its
+        // color whatever the Bayer offset at its position.
+        let colors = ["#FF0000FF", "#FE0000FF", "#0000FFFF"];
+        let mut voxels = Vec::new();
+        for x in 0..4 {
+            for y in 0..4 {
+                for z in 0..4 {
+                    let color_index = if (x + y + z) % 2 == 0 { 0 } else { 2 };
+                    voxels.push((TyVector3U32::new(x, y, z), color_index));
+                }
+            }
+        }
+        voxels[1].1 = 1;
+        let (mut main, palette_id, object_id) =
+            grid_main(TyVector3U32::new(4, 4, 4), &colors, &voxels);
+
+        let ordered = QuantizeOptions {
+            dither: Dither::Ordered,
+            ..options(2)
+        };
+        quantize_palette(&mut main, 0, &ordered).unwrap();
+
+        for &(position, color_index) in &voxels {
+            if color_index == 1 {
+                continue;
+            }
+            assert_eq!(
+                voxel_color(&main, object_id, palette_id, position),
+                colors[color_index],
+                "position {position:?}"
+            );
+        }
+    }
+
+    #[test]
     fn floyd_steinberg_dither_lands_a_known_pattern() {
         // The same x-axis colors on a (1,1,10) line: the mid voxels are the
         // highest ids (z=6..9) so error diffuses only among them; the black and

@@ -470,11 +470,13 @@ walk are per layer, since each object is its own grid.
 - `ordered` adds a per-axis offset read from a repeating 3D Bayer matrix of
   side `4` (64 levels). The matrix doubles a 2x2x2 base that numbers the cube
   corners even parity first, the 3D analog of `[[0, 2], [3, 1]]`:
-  `M(p) = 8*base(p mod 2) + base(p/2 mod 2)`. Each of the four axes reads the
-  matrix at a different permutation of the voxel position, and a threshold maps
-  to `[-0.5, 0.5) * spacing`. `spacing` is the mean distance from each of the
-  partition's representatives to its nearest other one, so a lone
-  representative disables the offset.
+  `M(p) = 8*base(p mod 2) + base(p/2 mod 2)`. Each of the reading's axes
+  reads the matrix at a different permutation of the voxel position, and a
+  threshold maps to `[-0.5, 0.5) * spacing / sqrt(axes)`. `spacing` is the
+  distance from the voxel's representative to the nearest other one in its
+  partition, so the offset stays shorter than half that distance and a voxel
+  on its representative never moves. A lone representative disables the
+  offset.
 - `floyd-steinberg` carries a sparse per-voxel error keyed by voxel id and
   pushes each snap's error to the raster-forward neighbors: `(x, y, z+1)` takes
   `3/8`, `(x, y+1, z)` takes `3/8`, and `(x+1, y, z)` takes `2/8`. Error past a

@@ -5,7 +5,7 @@ use crate::{
 use branded_id::U32Id;
 use std::{cmp::Ordering, collections::HashMap};
 use ty_math::{TyVector3U32, TyVector4F64};
-use voxcore::{BVoxLayer, BVoxObject, VoxExt, VoxMain};
+use voxcore::{BVoxLayer, BVoxMaterial, BVoxObject, VoxExt, VoxMain};
 
 /// Snaps every live sample of `layers` onto its representative in `plan`. A
 /// dithered snap instead picks the nearest representative in the material's
@@ -16,11 +16,7 @@ pub(crate) fn apply_quantize_plan<T: VoxExt>(
     layers: &[(U32Id<BVoxObject>, U32Id<BVoxLayer>)],
     dither: Dither,
 ) -> Result<()> {
-    let spacings: Vec<f64> = plan
-        .partition_representatives
-        .iter()
-        .map(|representatives| representative_spacing(representatives))
-        .collect();
+    let spacings = representative_spacings(plan);
 
     for &(object_id, layer_id) in layers {
         let object = main
@@ -63,7 +59,11 @@ pub(crate) fn apply_quantize_plan<T: VoxExt>(
 
                         Dither::None => unreachable!("an undithered snap takes the plan's"),
 
-                        Dither::Ordered => ordered_offset(position, spacings[partition_index]),
+                        Dither::Ordered => ordered_offset(
+                            position,
+                            spacings[&plan.representative_ids[&material_id]],
+                            plan.dimensions,
+                        ),
                     };
 
                     let target = point.coords + offset;
@@ -147,41 +147,51 @@ fn diffuse_error(
     push(position.x + 1 < bounds.x, voxel_id + plane, 2.0 / 8.0);
 }
 
-/// The mean nearest-neighbor distance between representatives, scaling the
-/// ordered-dither threshold to about one step between them. Zero for a lone
-/// representative, disabling the perturbation.
-fn representative_spacing(representatives: &[QuantizePoint]) -> f64 {
-    if representatives.len() < 2 {
-        return 0.0;
-    }
+/// Each representative's distance to the nearest other representative of its
+/// partition, zero for a lone one, which disables the ordered offset.
+fn representative_spacings(plan: &QuantizePlan) -> HashMap<U32Id<BVoxMaterial>, f64> {
+    let mut spacings = HashMap::new();
 
-    let mut total = 0.0;
-    for (index, representative) in representatives.iter().enumerate() {
-        let mut nearest = f64::INFINITY;
-        for (other_index, other) in representatives.iter().enumerate() {
-            if index != other_index {
-                nearest = nearest.min((representative.coords - other.coords).length());
-            }
+    for representatives in &plan.partition_representatives {
+        for representative in representatives {
+            let nearest = representatives
+                .iter()
+                .filter(|other| other.material_id != representative.material_id)
+                .map(|other| (representative.coords - other.coords).length())
+                .fold(f64::INFINITY, f64::min);
+
+            let spacing = match nearest.is_finite() {
+                true => nearest,
+                false => 0.0,
+            };
+            spacings.insert(representative.material_id, spacing);
         }
-        total += nearest;
     }
 
-    total / representatives.len() as f64
+    spacings
 }
 
-/// A per-axis ordered-dither offset from the 3D Bayer matrix, scaled to
-/// `spacing`. Each axis reads a permutation of the position so the axes
-/// decorrelate.
-fn ordered_offset(position: TyVector3U32, spacing: f64) -> TyVector4F64 {
-    let level = |raw: u32| ((raw as f64 + 0.5) / BAYER_LEVELS as f64 - 0.5) * spacing;
+/// A per-axis ordered-dither offset from the 3D Bayer matrix over the first
+/// `dimensions` axes, each axis reading a permutation of the position so the
+/// axes decorrelate. Each axis spans `spacing / sqrt(dimensions)`, so the
+/// offset stays shorter than half of `spacing` and never carries a
+/// representative's own voxel to another representative.
+fn ordered_offset(position: TyVector3U32, spacing: f64, dimensions: usize) -> TyVector4F64 {
+    let scale = spacing / (dimensions as f64).sqrt();
+    let level = |raw: u32| ((raw as f64 + 0.5) / BAYER_LEVELS as f64 - 0.5) * scale;
     let (x, y, z) = (position.x, position.y, position.z);
 
-    TyVector4F64::new(
+    let mut offset = [
         level(bayer(x, y, z)),
         level(bayer(y, z, x)),
         level(bayer(z, x, y)),
         level(bayer(x, z, y)),
-    )
+    ];
+    for axis in &mut offset[dimensions..] {
+        *axis = 0.0;
+    }
+
+    TyVector4F64::from_array(offset)
 }
 
 /// Side of the 3D Bayer matrix, a power of two for the doubling recurrence.
