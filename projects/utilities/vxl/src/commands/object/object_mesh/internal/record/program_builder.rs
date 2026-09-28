@@ -1,6 +1,6 @@
 use crate::{
-    Error, Result,
-    commands::{ProfileSet, parse_fragment},
+    Error, ProfileSet, Result,
+    commands::{MeshProfile, parse_fragment},
 };
 use std::collections::HashSet;
 use voxsmith::operations::object::{Computation, ComputedBinding};
@@ -9,7 +9,7 @@ use voxsmith::operations::object::{Computation, ComputedBinding};
 /// the flags' first and then each landed profile's. A profile lands once, at
 /// its first arrival, its `valuesFrom` imports depth-first ahead of it.
 pub(crate) struct ProgramBuilder<'a> {
-    profiles: Option<&'a ProfileSet>,
+    profiles: Option<&'a ProfileSet<MeshProfile>>,
     computed: Vec<ComputedBinding>,
     hand_computed: usize,
     fragments: Vec<String>,
@@ -18,7 +18,10 @@ pub(crate) struct ProgramBuilder<'a> {
 
 impl<'a> ProgramBuilder<'a> {
     /// A builder over `profiles` holding the flags' `computed` bindings.
-    pub(crate) fn new(profiles: Option<&'a ProfileSet>, computed: Vec<ComputedBinding>) -> Self {
+    pub(crate) fn new(
+        profiles: Option<&'a ProfileSet<MeshProfile>>,
+        computed: Vec<ComputedBinding>,
+    ) -> Self {
         ProgramBuilder {
             profiles,
             hand_computed: computed.len(),
@@ -139,7 +142,10 @@ impl<'a> ProgramBuilder<'a> {
 #[cfg(test)]
 mod tests {
     use super::ProgramBuilder;
-    use crate::commands::{MeshProfile, ProfileSet};
+    use crate::{
+        ProfileSet,
+        commands::{MeshProfile, built_in_profiles},
+    };
     use std::collections::{BTreeMap, BTreeSet};
     use vox_value_language::{Dimension, Domain, Scalar, Type, TypeEnvironment, check, parse};
     use voxcore::material::{
@@ -149,7 +155,7 @@ mod tests {
     use voxsmith::operations::object::{ArrayDomain, Computation, ComputedBinding};
 
     /// A set of the built-ins under the profiles `entries` defines as json.
-    fn profiles(entries: &[(&str, &str)]) -> ProfileSet {
+    fn profiles(entries: &[(&str, &str)]) -> ProfileSet<MeshProfile> {
         let profiles: BTreeMap<String, MeshProfile> = entries
             .iter()
             .map(|(name, json)| ((*name).to_owned(), serde_json::from_str(json).unwrap()))
@@ -160,7 +166,7 @@ mod tests {
 
     #[test]
     fn imports_land_depth_first_and_each_profile_once() {
-        let profiles = ProfileSet::built_in();
+        let profiles = ProfileSet::layered(built_in_profiles(), []);
         let mut builder = ProgramBuilder::new(Some(&profiles), Vec::new());
 
         builder.land_profile("--profile", "pbr").unwrap();
@@ -192,7 +198,7 @@ mod tests {
 
     #[test]
     fn the_built_ins_read_the_recommended_material_properties() {
-        let profiles = ProfileSet::built_in();
+        let profiles = ProfileSet::layered(built_in_profiles(), []);
         let mut builder = ProgramBuilder::new(Some(&profiles), Vec::new());
 
         builder.land_profile("--profile", "pbr").unwrap();
@@ -253,7 +259,7 @@ mod tests {
 
     #[test]
     fn values_append_at_their_position() {
-        let profiles = ProfileSet::built_in();
+        let profiles = ProfileSet::layered(built_in_profiles(), []);
         let mut builder = ProgramBuilder::new(Some(&profiles), Vec::new());
 
         builder.push_value("a = 1").unwrap();

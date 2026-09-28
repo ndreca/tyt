@@ -1,6 +1,6 @@
 use crate::{
     Dependencies, Result, cli_value_parser,
-    commands::{list_profiles, load_profile_set},
+    commands::{list_profiles, load_mesh_profile_set},
 };
 use clap::Parser;
 use voxsmith::operations::profile::ProfileListLayout;
@@ -22,7 +22,7 @@ pub struct ProfileObjectMeshList {
 
 impl ProfileObjectMeshList {
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
-        let profiles = load_profile_set(&dependencies)?;
+        let profiles = load_mesh_profile_set(&dependencies)?;
 
         Ok(dependencies.write_stdout(list_profiles(&profiles, self.layout).as_bytes())?)
     }

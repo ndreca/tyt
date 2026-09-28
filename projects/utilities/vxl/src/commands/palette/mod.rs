@@ -1,3 +1,5 @@
+// Public API
+
 #[allow(clippy::module_inception)]
 mod palette;
 mod palette_command;
@@ -8,3 +10,8 @@ pub use palette::*;
 pub use palette_command::*;
 pub use palette_list::*;
 pub use palette_show::*;
+
+// Internal API
+
+mod internal;
+pub(crate) use internal::*;

@@ -1,7 +1,10 @@
+use serde::Deserialize;
 use std::str::FromStr;
 
-/// A line-width budget for wrapped output.
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// A line-width budget for wrapped output. A profile writes it as the flag's
+/// keyword or a column count.
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[serde(try_from = "WidthRepr")]
 pub enum Width {
     /// Wrap to the terminal width, or not at all when stdout is not a terminal.
     Terminal,
@@ -28,6 +31,24 @@ impl FromStr for Width {
     }
 }
 
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum WidthRepr {
+    Keyword(String),
+    Columns(usize),
+}
+
+impl TryFrom<WidthRepr> for Width {
+    type Error = String;
+
+    fn try_from(repr: WidthRepr) -> Result<Self, String> {
+        match repr {
+            WidthRepr::Keyword(keyword) => keyword.parse(),
+            WidthRepr::Columns(columns) => Ok(Width::Columns(columns)),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::Width;
@@ -43,5 +64,19 @@ mod tests {
     fn rejects_other_text() {
         assert!("wide".parse::<Width>().is_err());
         assert!("-1".parse::<Width>().is_err());
+    }
+
+    #[test]
+    fn a_profile_writes_a_keyword_or_a_count() {
+        assert_eq!(
+            serde_json::from_str::<Width>("\"unlimited\"").unwrap(),
+            Width::Unlimited
+        );
+        assert_eq!(
+            serde_json::from_str::<Width>("80").unwrap(),
+            Width::Columns(80)
+        );
+        assert!(serde_json::from_str::<Width>("\"wide\"").is_err());
+        assert!(serde_json::from_str::<Width>("-1").is_err());
     }
 }

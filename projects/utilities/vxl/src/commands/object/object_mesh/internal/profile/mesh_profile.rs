@@ -1,6 +1,9 @@
-use crate::commands::{
-    BoundNames, ComputeIndexEntry, ExtraEntry, FileEntries, MaterialEntry, NamedCliValue,
-    PrimitiveEntry, TextureShapeEntry,
+use crate::{
+    NamedCliValue,
+    commands::{
+        BoundNames, ComputeIndexEntry, ExtraEntry, FileEntries, MaterialEntry, PrimitiveEntry,
+        TextureShapeEntry,
+    },
 };
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -51,7 +54,10 @@ pub(crate) struct MeshProfile {
 #[cfg(test)]
 mod tests {
     use super::MeshProfile;
-    use crate::commands::{ExtraEntry, NamedCliValue, SlotEntry, TextureShapeEntry, ValueEntry};
+    use crate::{
+        NamedCliValue,
+        commands::{ExtraEntry, SlotEntry, TextureShapeEntry, ValueEntry},
+    };
     use voxsmith::operations::object::{Method, TextureShape, Transfer};
 
     #[test]

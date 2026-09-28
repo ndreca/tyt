@@ -15,7 +15,7 @@ impl<'de, T: CliValue> Deserialize<'de> for NamedCliValue<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::NamedCliValue;
+    use crate::NamedCliValue;
     use voxsmith::operations::object::Transfer;
 
     #[test]

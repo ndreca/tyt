@@ -1,7 +1,4 @@
-use crate::{
-    Error, Result,
-    commands::{MeshProfile, ProfileSet},
-};
+use crate::{Error, ProfileSet, Result, commands::MeshProfile};
 use std::collections::BTreeMap;
 
 /// The profiles `names`, which `origin` lists, stacked into one profile to
@@ -10,7 +7,7 @@ use std::collections::BTreeMap;
 /// program elements because each member lands its values, imports, and
 /// computed bindings by name.
 pub(crate) fn stack_profiles(
-    profiles: &ProfileSet,
+    profiles: &ProfileSet<MeshProfile>,
     origin: &str,
     names: &[String],
 ) -> Result<MeshProfile> {
@@ -185,13 +182,15 @@ fn claim<'a>(claims: &mut BTreeMap<String, &'a str>, name: &'a str, element: Str
 
 #[cfg(test)]
 mod tests {
-    use super::stack_profiles;
-    use crate::commands::{MeshProfile, NamedCliValue, ProfileSet, SlotEntry};
+    use crate::{
+        NamedCliValue, ProfileSet,
+        commands::{MeshProfile, SlotEntry, built_in_profiles, stack_profiles},
+    };
     use std::collections::BTreeMap;
     use voxsmith::operations::object::Method;
 
     /// A set holding the profiles `entries` defines as json.
-    fn profiles(entries: &[(&str, &str)]) -> ProfileSet {
+    fn profiles(entries: &[(&str, &str)]) -> ProfileSet<MeshProfile> {
         let profiles: BTreeMap<String, MeshProfile> = entries
             .iter()
             .map(|(name, json)| ((*name).to_owned(), serde_json::from_str(json).unwrap()))
@@ -321,7 +320,7 @@ mod tests {
 
     #[test]
     fn a_member_listed_twice_errors() {
-        let profiles = ProfileSet::built_in();
+        let profiles = ProfileSet::layered(built_in_profiles(), []);
 
         let error = stack_profiles(&profiles, "--profile", &names(&["orm", "orm"]))
             .unwrap_err()
@@ -331,7 +330,7 @@ mod tests {
 
     #[test]
     fn an_undefined_member_errors() {
-        let profiles = ProfileSet::built_in();
+        let profiles = ProfileSet::layered(built_in_profiles(), []);
 
         assert!(stack_profiles(&profiles, "--profile", &names(&["albedo", "metal"])).is_err());
     }

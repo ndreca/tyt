@@ -1,40 +1,30 @@
 use crate::{
-    ResolvePrefsPaths, Result,
-    commands::{ObjectConfig, ProfileSet},
+    ProfileSet, ResolvePrefsPaths, Result,
+    commands::{MeshProfile, ObjectConfig, built_in_profiles},
+    load_profile_set,
 };
-use std::io::Error as IOError;
-use ty_preferences::{Dependencies as PreferencesDependencies, JsoncCodec, load_application_prefs};
+use ty_preferences::Dependencies as PreferencesDependencies;
 
-/// The profiles a run can apply: the built-ins under the `.vxlconfig` layers,
-/// the user's first and the working directory's last.
-pub(crate) fn load_profile_set(
+/// The profiles `object mesh` can apply: the built-ins under the `.vxlconfig`
+/// layers' `object.mesh.profiles`, the user's first and the working
+/// directory's last.
+pub(crate) fn load_mesh_profile_set(
     dependencies: &(impl PreferencesDependencies + ResolvePrefsPaths),
-) -> Result<ProfileSet> {
-    let paths = dependencies.resolve_prefs_paths()?;
-
-    let layers = load_application_prefs::<ObjectConfig>(
+) -> Result<ProfileSet<MeshProfile>> {
+    load_profile_set(
         dependencies,
-        &JsoncCodec,
-        &paths,
-        ".vxlconfig",
         "object",
+        built_in_profiles(),
+        |config: ObjectConfig| config.mesh.profiles,
     )
-    .map_err(|error| {
-        IOError::new(
-            error.kind(),
-            format!("a `.vxlconfig` layer failed to load: {error}"),
-        )
-    })?;
-
-    Ok(ProfileSet::layered(layers.into_iter().map(|layer| {
-        (layer.dir.join(".vxlconfig"), layer.prefs.mesh.profiles)
-    })))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::load_profile_set;
-    use crate::{ResolvePrefsPaths, commands::ProfileSet};
+    use crate::{
+        ProfileSet, ResolvePrefsPaths,
+        commands::{MeshProfile, load_mesh_profile_set},
+    };
     use std::{
         collections::BTreeMap,
         io::Result as IOResult,
@@ -82,7 +72,7 @@ mod tests {
     }
 
     /// The values of the profile `name`.
-    fn values(profiles: &ProfileSet, name: &str) -> Vec<String> {
+    fn values(profiles: &ProfileSet<MeshProfile>, name: &str) -> Vec<String> {
         profiles.get("the test", name).unwrap().values.clone()
     }
 
@@ -109,7 +99,7 @@ mod tests {
             ],
         );
 
-        let profiles = load_profile_set(&cascade).unwrap();
+        let profiles = load_mesh_profile_set(&cascade).unwrap();
 
         assert_eq!(values(&profiles, "a"), ["a = 2"]);
         assert_eq!(values(&profiles, "b"), ["b = a"]);
@@ -148,7 +138,7 @@ mod tests {
             ],
         );
 
-        let profiles = load_profile_set(&cascade).unwrap();
+        let profiles = load_mesh_profile_set(&cascade).unwrap();
 
         assert_eq!(values(&profiles, "a"), ["a = 1"]);
         assert!(profiles.get("the test", "b").is_err());
@@ -158,7 +148,7 @@ mod tests {
     fn a_layer_without_the_section_supplies_nothing() {
         let cascade = Cascade::new(true, &[("/repo/.vxlconfig", r#"{ "fs": {} }"#)]);
 
-        let profiles = load_profile_set(&cascade).unwrap();
+        let profiles = load_mesh_profile_set(&cascade).unwrap();
 
         assert!(profiles.get("the test", "pbr").is_ok());
     }
@@ -171,7 +161,7 @@ mod tests {
         ] {
             let cascade = Cascade::new(true, &[("/repo/.vxlconfig", text)]);
 
-            let error = load_profile_set(&cascade).unwrap_err().to_string();
+            let error = load_mesh_profile_set(&cascade).unwrap_err().to_string();
             assert!(error.contains("`.vxlconfig`"), "{error}");
         }
     }

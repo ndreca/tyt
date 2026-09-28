@@ -3,8 +3,15 @@
 *Part of [`vxl palette`](README.md) in the [Vxl Command-Line Reference](../../README.md).*
 
 ```
-vxl palette show <input> [--property <palette> <property> <presentation> <reading>]... [--layout rows]
-    [--label concat] [--header-level <level>] [--table-shape nested] [--width terminal]
+vxl palette show <input>
+  [--profile <profile>]...
+  [--property <palette> <property> <presentation> <reading>]...
+  [--properties-from <profile>]...
+  [--layout text-rows]
+  [--label concat]
+  [--header-level <level>]
+  [--table-shape nested]
+  [--width terminal]
 ```
 
 Prints one or more palette value collections. A collection is a property's
@@ -30,11 +37,11 @@ palettes in a single command:
 4. `reading`: how the values spell, one of `auto`, `linear-float`, `plain`,
    `srgb-float`, and `srgb-hex`. See [Readings](#readings).
 
-When no `--property` is given the command defaults to a single
-`--property '*' '*' auto auto`, every palette's every property auto-rendered,
-so a bare `vxl palette show <file>` is useful on its own. The default applies
-only in the absence of any `--property`; one or more selectors replace it
-rather than adding to it. Examples:
+When no selector arrives, from a flag or a [profile](#profiles), the command
+defaults to a single `--property '*' '*' auto auto`, every palette's every
+property auto-rendered, so a bare `vxl palette show <file>` is useful on its
+own. One or more selectors replace the default rather than adding to it.
+Examples:
 
 ```
 vxl palette show model.voxj                    # every property, auto-rendered
@@ -230,7 +237,79 @@ line the terminal mangles. It takes one of:
 2. `unlimited`: never wrap; one line per collection.
 3. a column count, such as `--width 80`: wrap to that many columns.
 
-It applies to `text-rows`; the other layouts ignore it.
+It applies to `text-rows`, and every other layout errors on it.
+
+## Profiles
+
+A profile saves selectors and a layout under a name in a `.vxlconfig`,
+at `palette.show.profiles`. The files cascade as they do for
+[`object mesh` profiles](../../../../../ref/mesh/profile-language.md#loading),
+with no built-ins beneath them. `vxl profile palette show list` prints the
+merged set grouped by the file supplying each name.
+
+```jsonc
+{
+  "palette": {
+    "show": {
+      "profiles": {
+        "pbr": {
+          "properties": [
+            { "property": "baseColor", "presentation": "swatch-value", "reading": "srgb-hex" },
+            { "property": "metallic" },
+            { "property": "roughness" },
+          ],
+        },
+        "pbr-table": {
+          "propertiesFrom": ["pbr"],
+          "layout": { "kind": "md-tables", "tableShape": "flat" },
+        },
+      },
+    },
+  },
+}
+```
+
+Each `properties` entry spells the `--property` fields by name, in their
+command-line vocabulary. `property` has to be present, while `palette`
+defaults to `*` and `presentation` and `reading` to `auto`. An unknown key or
+value errors when the profiles load.
+
+`layout` carries the display flags with the layout that takes them. A bare
+name sets the layout alone, and an object names it by `kind` beside the
+elements that layout accepts, so an element foreign to the layout errors at
+load:
+
+| `kind`          | Elements                               |
+| --------------- | -------------------------------------- |
+| `box-hierarchy` | none                                   |
+| `box-tables`    | `tableShape`                           |
+| `json-compact`  | none                                   |
+| `json-pretty`   | none                                   |
+| `md-tables`     | `tableShape`, `label`, `headerLevel`   |
+| `text-columns`  | `label`, `headerLevel`                 |
+| `text-rows`     | `label`, `headerLevel`, `width`        |
+
+Two flags read a profile:
+
+1. `--profile <profile>` applies it whole, its selectors and its layout. Its
+   selectors come ahead of every `--property` wherever the flag sits. The flag
+   repeats, and a layout two profiles set errors. `--layout` replaces the
+   profile's layout with every element it carries, even under the same kind,
+   and the other display flags refine the layout that results.
+2. `--properties-from <profile>` appends only the profile's selectors, at the
+   flag's position among the `--property` selectors, and leaves its layout
+   behind.
+
+`propertiesFrom` imports the named profiles' selectors ahead of the profile's
+own, depth first, and their layouts stay behind. A profile lands
+once per run, so one reached twice, through imports or both flags, adds its
+selectors at its first arrival alone. An import cycle errors naming the chain.
+
+```
+vxl palette show model.voxj
+  --properties-from pbr
+  --layout box-tables
+```
 
 ## Deferred
 
@@ -270,6 +349,7 @@ read commands so they are settled once and shared:
 - [x] Add `--width terminal|unlimited|<columns>` to wrap the `row` layouts,
       defaulting to the terminal width and not wrapping when stdout is not a
       terminal.
+- [x] Error on `--width` under any layout other than `text-rows`.
 - [ ] Specify a locked input format on `--from` in conventions, distinguishing
       voxj and voxjz and naming a bare palette json, adopted by every read
       command.
@@ -278,3 +358,7 @@ read commands so they are settled once and shared:
       they migrate.
 - [ ] Accept a bare palette `.json` input on the palette commands, sharing the
       shape with `quantize` and `remap`.
+- [x] Read `.vxlconfig` profiles through `--profile` and
+      `--properties-from`, each profile holding selectors, `propertiesFrom`
+      imports, and a layout carrying the display flags it takes, listed by
+      `vxl profile palette show list`.

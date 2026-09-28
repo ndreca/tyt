@@ -1,11 +1,11 @@
 use crate::{
-    Dependencies, Error, NoneOr, ObjectSelection, PositiveF64, Result, VoxelInput,
+    Dependencies, Error, NoneOr, ObjectSelection, PositiveF64, ProfileSet, Result, VoxelInput,
     cli_value_parser,
     commands::{
-        MaterialTable, MeshProfile, MeshRun, PrimitiveTable, ProfileSet, ProgramBuilder,
-        ProgramFlag, ProgramFlags, apply_profile_files, apply_profile_materials,
-        apply_profile_mesh_extras, apply_profile_primitives, check_expression, check_image_sources,
-        declare_profile_primitives, flag_occurrences, load_profile_set, parse_flag_index,
+        MaterialTable, MeshProfile, MeshRun, PrimitiveTable, ProgramBuilder, ProgramFlag,
+        ProgramFlags, apply_profile_files, apply_profile_materials, apply_profile_mesh_extras,
+        apply_profile_primitives, check_expression, check_image_sources,
+        declare_profile_primitives, flag_occurrences, load_mesh_profile_set, parse_flag_index,
         parse_flag_value, parse_texture_shape, push_file_write, push_unique, push_uv_stream,
         resolve_gltf_container, select_mesh_objects, stack_profiles, written_file_name,
     },
@@ -358,7 +358,7 @@ impl ObjectMesh {
 
         let profiles = self
             .uses_profiles()
-            .then(|| load_profile_set(&dependencies))
+            .then(|| load_mesh_profile_set(&dependencies))
             .transpose()?;
 
         let input = &self.input;
@@ -451,7 +451,11 @@ impl ObjectMesh {
     /// stands at its destination, and the stack fills the rest. `profiles`
     /// holds the loaded set when any flag reads a profile. `file_stem` fills
     /// `{file-stem}` in the profile file templates.
-    fn record(&self, file_stem: &str, profiles: Option<&ProfileSet>) -> Result<MeshRecord> {
+    fn record(
+        &self,
+        file_stem: &str,
+        profiles: Option<&ProfileSet<MeshProfile>>,
+    ) -> Result<MeshRecord> {
         let profile = match self.profile.as_slice() {
             [] => None,
 
@@ -1023,8 +1027,8 @@ fn push_attribute(
 mod tests {
     use super::ObjectMesh;
     use crate::{
-        Result,
-        commands::{MeshProfile, ObjectConfig, ProfileSet},
+        ProfileSet, Result,
+        commands::{MeshProfile, ObjectConfig, built_in_profiles},
     };
     use branded_id::U32Id;
     use clap::Parser;
@@ -1053,6 +1057,7 @@ mod tests {
         let (_, output) = mesh.resolve_output();
         let profiles = mesh.uses_profiles().then(|| {
             ProfileSet::layered(
+                built_in_profiles(),
                 layers
                     .into_iter()
                     .enumerate()

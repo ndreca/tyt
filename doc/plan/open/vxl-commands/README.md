@@ -63,6 +63,8 @@ Every command sits under the noun it addresses, then its verb.
   palettes.
 - [`vxl profile object mesh list`](../../../ref/mesh/profile-language.md#loading):
   list the profiles `object mesh --profile` can apply.
+- [`vxl profile palette show list`](reference/palette/show.md#profiles): list
+  the profiles `palette show --profile` can apply.
 
 `vxl vox-doc to` already ships. The
 [object commands plan](../../closed/vxl-object-commands/README.md) covers the

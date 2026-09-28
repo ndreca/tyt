@@ -1023,3 +1023,34 @@ configurable `object` command.
 because `node link` and `object link` write its edges. The tree lists a
 document's nodes with the objects they place as leaves. The voxsmith `hierarchy`
 feature folded into `node`.
+
+## palette show profiles
+
+`palette show` reads profiles through the same cascade as `object mesh`. The
+set, its origins, and the loader became generic over the profile type in the
+crate's `internal` module: `ProfileSet<P>` takes its built-ins as an argument,
+and `load_profile_set` takes the `.vxlconfig` section and a function pulling
+the profiles out of it. `load_mesh_profile_set` and
+`load_palette_show_profile_set` supply the two commands' arguments, and one
+generic `list_profiles` serves both `profile ... list` commands. Palette
+profiles ship no built-ins.
+
+`--properties-from` answers the case of a profile's selectors under the
+reader's display, the counterpart of `--values-from`. A hand-built `Args`
+keeps it in line order with `--property`, which holds its four fields
+unparsed until the run so a bad field errors as a usage error naming the flag.
+The selector entries parse when the profiles load, through the same
+`parse_property_selector` the flag uses, since their fields draw from closed
+vocabularies.
+
+A profile's `layout` carries the display elements its layout takes, as an
+internally tagged object per kind with its own allowed keys. `--layout`
+replaces that object whole, so a profile's table shape leaves with its table
+layout instead of erroring under a flag that switched to `text-rows`. The
+flags stay flat because clap has no nesting to match. `--layout` and `--width`
+became optional so an absent flag lets the profile's element through.
+
+`--width` errors under any layout but `text-rows`. vxl makes the check because
+it alone knows whether the flag was given: voxsmith takes the width already
+resolved to a column count or `None`, which conflates `unlimited` and an
+unset flag, and passes it to treegrid for `text-rows` alone.

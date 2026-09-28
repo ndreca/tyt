@@ -35,8 +35,9 @@ These hold across the commands and match the existing `vox-doc to` commands.
    `json-pretty`, and `md-tables` (its default); `vox-doc show` adds
    `box-tables` to those three, and [`palette list`](palette/list.md) adds
    `box-hierarchy` (its default) and `box-tables`. `profile object mesh list`
-   offers `box-hierarchy` (its default), `box-tables`, `json-compact`,
-   `json-pretty`, `md-lists`, `md-tables`, or `text-rows`.
+   and `profile palette show list` offer `box-hierarchy` (their default),
+   `box-tables`, `json-compact`, `json-pretty`, `md-lists`, `md-tables`, or
+   `text-rows`.
 6. Multiple values are passed by repeating the flag, as in
    `--select-index 0 --select-index 3`, not as one comma-separated argument. The
    exception is the `--texture-map` channel list, where the comma-separated RGBA
