@@ -1,4 +1,4 @@
-use crate::{Error, Result, cli_value_parser};
+use crate::{Error, QuantizeProfile, Result, cli_value_parser};
 use clap::Args;
 use std::num::NonZeroUsize;
 use voxcore::material::BASE_COLOR;
@@ -8,25 +8,25 @@ use voxsmith::utilities::{
 };
 
 /// The flags `palette quantize` and `object voxels quantize` share, resolving
-/// to voxsmith's [`QuantizeOptions`].
+/// to voxsmith's [`QuantizeOptions`] over a profile.
 #[derive(Clone, Debug, Args)]
 pub struct QuantizeArgs {
-    /// The most materials each quantized layer may sample afterward.
+    /// The most materials each quantized layer may sample afterward. Required
+    /// unless a profile sets it.
     #[arg(value_name = "max-materials", long)]
-    max_materials: NonZeroUsize,
+    max_materials: Option<NonZeroUsize>,
 
-    /// The property to cluster on.
-    #[arg(value_name = "property", long, default_value = BASE_COLOR)]
-    property: String,
+    /// The property to cluster on, `baseColor` when omitted.
+    #[arg(value_name = "property", long)]
+    property: Option<String>,
 
-    /// How the property's values read as points.
+    /// How the property's values read as points, `auto` when omitted.
     #[arg(
         value_name = "interpret-property",
         long,
-        default_value = "auto",
         value_parser = cli_value_parser::<PropertyInterpretation>()
     )]
-    interpret_property: PropertyInterpretation,
+    interpret_property: Option<PropertyInterpretation>,
 
     /// How a 4-component color's alpha takes part, `partition` when omitted.
     /// Any other reading errors on it.
@@ -34,76 +34,95 @@ pub struct QuantizeArgs {
     alpha: Option<AlphaMode>,
 
     /// Merge materials only when they agree on this property. Repeatable; `*`
-    /// stands for every property other than `--property`.
+    /// stands for every property other than `--property`. Replaces the
+    /// profile's partitions.
     #[arg(value_name = "partition", long)]
     partition: Vec<String>,
 
-    /// Clustering algorithm.
+    /// Clustering algorithm, `median-cut` when omitted.
     #[arg(
         value_name = "method",
         long,
-        default_value = "median-cut",
         value_parser = cli_value_parser::<ReductionMethod>()
     )]
-    method: ReductionMethod,
+    method: Option<ReductionMethod>,
 
     /// The space a color reading measures distance in, `oklab` when omitted. A
     /// numeric reading errors on it.
     #[arg(value_name = "space", long, value_parser = cli_value_parser::<ColorSpace>())]
     space: Option<ColorSpace>,
 
-    /// Error diffusion applied when snapping samples to representatives.
-    #[arg(
-        value_name = "dither",
-        long,
-        default_value = "none",
-        value_parser = cli_value_parser::<Dither>()
-    )]
-    dither: Dither,
+    /// Error diffusion applied when snapping samples to representatives,
+    /// `none` when omitted.
+    #[arg(value_name = "dither", long, value_parser = cli_value_parser::<Dither>())]
+    dither: Option<Dither>,
 }
 
 impl QuantizeArgs {
-    /// The [`QuantizeOptions`] these flags set. Errors when `--partition '*'`
-    /// comes with a named partition.
-    pub fn resolve(&self) -> Result<QuantizeOptions> {
-        let named: Vec<_> = self
-            .partition
-            .iter()
-            .filter(|name| *name != "*")
-            .cloned()
-            .collect();
+    /// The [`QuantizeOptions`] these flags set over `profile`, each flag
+    /// overriding the element it mirrors. Errors when neither sets
+    /// `--max-materials` or when `--partition '*'` comes with a named
+    /// partition.
+    pub fn resolve(&self, profile: &QuantizeProfile) -> Result<QuantizeOptions> {
+        let max_materials = self
+            .max_materials
+            .or(profile.max_materials)
+            .ok_or_else(|| {
+                Error::usage("`--max-materials` is required unless a profile sets `maxMaterials`")
+            })?;
 
-        let partition = match named.len() < self.partition.len() {
-            true if !named.is_empty() => {
-                return Err(Error::usage(
-                    "`--partition '*'` covers every other property, so it takes no named \
-                     partition beside it",
-                ));
-            }
-
-            true => PartitionProperties::All,
-
-            false => PartitionProperties::Named(named),
+        let partition = match self.partition.is_empty() {
+            true => &profile.partition,
+            false => &self.partition,
         };
 
         Ok(QuantizeOptions {
-            max_materials: self.max_materials,
-            property: self.property.clone(),
-            interpret_property: self.interpret_property,
-            alpha: self.alpha,
-            partition,
-            method: self.method,
-            space: self.space,
-            dither: self.dither,
+            max_materials,
+            property: self
+                .property
+                .clone()
+                .or_else(|| profile.property.clone())
+                .unwrap_or_else(|| BASE_COLOR.to_owned()),
+            interpret_property: self
+                .interpret_property
+                .or(profile.interpret_property.map(|named| named.0))
+                .unwrap_or(PropertyInterpretation::Auto),
+            alpha: self.alpha.or(profile.alpha.map(|named| named.0)),
+            partition: partition_properties(partition)?,
+            method: self
+                .method
+                .or(profile.method.map(|named| named.0))
+                .unwrap_or(ReductionMethod::MedianCut),
+            space: self.space.or(profile.space.map(|named| named.0)),
+            dither: self
+                .dither
+                .or(profile.dither.map(|named| named.0))
+                .unwrap_or(Dither::None),
         })
+    }
+}
+
+/// The partition properties `names` lists, where `*` stands for all.
+fn partition_properties(names: &[String]) -> Result<PartitionProperties> {
+    let named: Vec<_> = names.iter().filter(|name| *name != "*").cloned().collect();
+
+    match named.len() < names.len() {
+        true if !named.is_empty() => Err(Error::usage(
+            "`--partition '*'` covers every other property, so it takes no named partition \
+             beside it",
+        )),
+
+        true => Ok(PartitionProperties::All),
+
+        false => Ok(PartitionProperties::Named(named)),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::QuantizeArgs;
+    use crate::{QuantizeArgs, QuantizeProfile};
     use clap::Parser;
-    use voxsmith::utilities::{PartitionProperties, QuantizeOptions};
+    use voxsmith::utilities::{Dither, PartitionProperties, QuantizeOptions, ReductionMethod};
 
     /// A command carrying only the quantize flags.
     #[derive(Parser)]
@@ -112,17 +131,33 @@ mod tests {
         quantize: QuantizeArgs,
     }
 
-    /// The options resolved from `args` after `--max-materials 4`.
-    fn resolve(args: &[&str]) -> crate::Result<QuantizeOptions> {
-        let mut argv = vec!["cli", "--max-materials", "4"];
+    /// The options `args` resolve to over `profile`.
+    fn resolve_over(args: &[&str], profile: &QuantizeProfile) -> crate::Result<QuantizeOptions> {
+        let mut argv = vec!["cli"];
         argv.extend_from_slice(args);
-        Cli::try_parse_from(argv).unwrap().quantize.resolve()
+        Cli::try_parse_from(argv).unwrap().quantize.resolve(profile)
+    }
+
+    /// The options `args` resolve to after `--max-materials 4`, with no
+    /// profile.
+    fn resolve(args: &[&str]) -> crate::Result<QuantizeOptions> {
+        let mut argv = vec!["--max-materials", "4"];
+        argv.extend_from_slice(args);
+        resolve_over(&argv, &QuantizeProfile::default())
+    }
+
+    /// The profile `json` defines.
+    fn profile(json: &str) -> QuantizeProfile {
+        serde_json::from_str(json).unwrap()
     }
 
     #[test]
-    fn max_materials_is_required_and_positive() {
-        assert!(Cli::try_parse_from(["cli"]).is_err());
+    fn max_materials_is_positive_and_required_without_a_profile() {
         assert!(Cli::try_parse_from(["cli", "--max-materials", "0"]).is_err());
+        let error = resolve_over(&[], &QuantizeProfile::default())
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("`--max-materials` is required"), "{error}");
     }
 
     #[test]
@@ -132,6 +167,7 @@ mod tests {
         assert_eq!(options.property, "baseColor");
         assert_eq!(options.alpha, None);
         assert_eq!(options.space, None);
+        assert_eq!(options.method, ReductionMethod::MedianCut);
         assert_eq!(options.partition, PartitionProperties::Named(Vec::new()));
     }
 
@@ -148,5 +184,38 @@ mod tests {
             PartitionProperties::All
         );
         assert!(resolve(&["--partition", "*", "--partition", "metallic"]).is_err());
+    }
+
+    #[test]
+    fn a_profile_fills_what_the_flags_leave_and_the_flags_win() {
+        let retro =
+            profile(r#"{ "maxMaterials": 16, "dither": "ordered", "partition": ["metallic"] }"#);
+
+        let options = resolve_over(&[], &retro).unwrap();
+        assert_eq!(options.max_materials.get(), 16);
+        assert_eq!(options.dither, Dither::Ordered);
+        assert_eq!(
+            options.partition,
+            PartitionProperties::Named(vec!["metallic".to_owned()])
+        );
+
+        let options = resolve_over(
+            &[
+                "--dither",
+                "none",
+                "--partition",
+                "ior",
+                "--max-materials",
+                "8",
+            ],
+            &retro,
+        )
+        .unwrap();
+        assert_eq!(options.max_materials.get(), 8);
+        assert_eq!(options.dither, Dither::None);
+        assert_eq!(
+            options.partition,
+            PartitionProperties::Named(vec!["ior".to_owned()])
+        );
     }
 }

@@ -98,7 +98,9 @@ command's design lives in [mesh](../../../../ref/mesh/mesh.md).
     `palette.quantize.profiles` and `object.voxels.quantize.profiles`, because
     each `.vxlconfig` key follows one command path. A profile holds the
     reduction recipe alone. The flags picking a run's target stay on the
-    command line, so one recipe applies to any document.
+    command line, so one recipe applies to any document. A run applies one
+    profile because nearly every element holds a single value, so two recipes
+    would mostly collide. A flag covers a one-off change to a recipe.
 
 ## Future and nice-to-haves
 

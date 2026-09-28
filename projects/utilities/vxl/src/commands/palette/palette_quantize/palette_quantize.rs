@@ -1,4 +1,7 @@
-use crate::{Dependencies, QuantizeArgs, Result, VoxelInput, VoxjOutput, edit_document};
+use crate::{
+    Dependencies, QuantizeArgs, QuantizeProfile, Result, VoxelInput, VoxjOutput,
+    commands::load_palette_quantize_profile_set, edit_document,
+};
 use clap::Parser;
 use voxsmith::operations::palette::quantize_palette;
 
@@ -19,13 +22,27 @@ pub struct PaletteQuantize {
     #[arg(value_name = "index", long, default_value_t = 0)]
     index: usize,
 
+    /// Applies saved quantize flags. A flag given here overrides the element
+    /// it mirrors. The profiles come from every
+    /// `.vxlconfig`'s `palette.quantize.profiles`, the user's `~/.vxlconfig`
+    /// first and then each directory from the git root down to the working
+    /// directory. A name reads from the last file supplying it.
+    #[arg(value_name = "profile", long)]
+    profile: Option<String>,
+
     #[command(flatten)]
     quantize: QuantizeArgs,
 }
 
 impl PaletteQuantize {
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
-        let options = self.quantize.resolve()?;
+        let profile = match &self.profile {
+            Some(name) => load_palette_quantize_profile_set(&dependencies)?
+                .get("--profile", name)?
+                .clone(),
+            None => QuantizeProfile::default(),
+        };
+        let options = self.quantize.resolve(&profile)?;
 
         edit_document(&dependencies, &self.input, self.output, |main| {
             Ok(quantize_palette(main, self.index, &options)?)

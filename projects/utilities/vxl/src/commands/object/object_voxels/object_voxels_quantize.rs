@@ -1,6 +1,6 @@
 use crate::{
-    Dependencies, ObjectSelection, QuantizeArgs, Result, VoxelInput, VoxjOutput, edit_document,
-    parse_index_range,
+    Dependencies, ObjectSelection, QuantizeArgs, QuantizeProfile, Result, VoxelInput, VoxjOutput,
+    commands::load_object_voxels_quantize_profile_set, edit_document, parse_index_range,
 };
 use clap::{ArgAction, Parser};
 use voxsmith::{operations::object::quantize_object_voxels, utilities::IndexRange};
@@ -38,13 +38,27 @@ pub struct ObjectVoxelsQuantize {
     )]
     shared: bool,
 
+    /// Applies saved quantize flags. A flag given here overrides the element
+    /// it mirrors. The profiles come from every
+    /// `.vxlconfig`'s `object.voxels.quantize.profiles`, the user's
+    /// `~/.vxlconfig` first and then each directory from the git root down to
+    /// the working directory. A name reads from the last file supplying it.
+    #[arg(value_name = "profile", long)]
+    profile: Option<String>,
+
     #[command(flatten)]
     quantize: QuantizeArgs,
 }
 
 impl ObjectVoxelsQuantize {
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
-        let options = self.quantize.resolve()?;
+        let profile = match &self.profile {
+            Some(name) => load_object_voxels_quantize_profile_set(&dependencies)?
+                .get("--profile", name)?
+                .clone(),
+            None => QuantizeProfile::default(),
+        };
+        let options = self.quantize.resolve(&profile)?;
 
         edit_document(&dependencies, &self.input, self.output, |main| {
             let object_ids = self.selection.resolve(main)?;

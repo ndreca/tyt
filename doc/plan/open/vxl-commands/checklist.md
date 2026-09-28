@@ -201,7 +201,7 @@ Material sampling (see [voxelize](reference/mesh-doc/voxelize.md) and
       errors.
 - [x] `--shared`: cluster every selected layer on one palette together instead
       of per object.
-- [ ] Profiles, landing after the command: `object.voxels.quantize.profiles`,
+- [x] Profiles, landing after the command: `object.voxels.quantize.profiles`,
       `--profile`, and `vxl profile object voxels quantize list`.
 
 ### palette ([reference/palette/](reference/palette/))
@@ -217,7 +217,7 @@ Material sampling (see [voxelize](reference/mesh-doc/voxelize.md) and
       candidates are the sampled materials, weighted by voxel count. Unsampled
       materials drop before the palette compacts. Every referencing object
       dithers.
-- [ ] `palette quantize` profiles, landing after the command:
+- [x] `palette quantize` profiles, landing after the command:
       `palette.quantize.profiles`, `--profile`, and
       `vxl profile palette quantize list`.
 - [ ] `palette remap`: `--target` (JSON `palettes` array) or `--target-index`,

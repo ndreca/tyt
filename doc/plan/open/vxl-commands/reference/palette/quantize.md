@@ -49,7 +49,7 @@ no voxel samples is dropped.
    a 2D image. Every referencing object dithers.
    [`object voxels quantize`](../object/voxels/quantize.md) takes the object
    selectors.
-10. `--profile <profile>`: apply a saved reduction recipe. The flag repeats. See
+10. `--profile <profile>`: apply a saved reduction recipe. See
     [Profiles](#profiles).
 
 Clustering runs on `--property`. Each cluster collapses onto a representative,
@@ -98,8 +98,8 @@ as an array, `method`, `space`, and `dither`. `--index` stays on the command
 line because it picks the run's target. An unknown key or value errors when the
 profiles load.
 
-Two profiles setting one element error, except `partition`, whose lists merge.
-A flag on the command line overrides the value a profile sets.
+A run applies at most one profile. A flag on the command line overrides the
+value the profile sets, and `--partition` replaces the profile's whole list.
 
 ```
 vxl palette quantize model.voxj

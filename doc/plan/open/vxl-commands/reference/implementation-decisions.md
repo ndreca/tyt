@@ -1031,3 +1031,16 @@ became optional so an absent flag lets the profile's element through.
 it alone knows whether the flag was given: voxsmith takes the width already
 resolved to a column count or `None`, which conflates `unlimited` and an
 unset flag, and passes it to treegrid for `text-rows` alone.
+
+## quantize profiles
+
+Both quantize commands take one `QuantizeProfile` type and one section shape,
+`QuantizeConfig`, since their elements match. Each command reads its own
+section, `palette.quantize` or `object.voxels.quantize`, through its loader,
+and one list command per section prints it. `--profile` takes one name.
+
+`QuantizeArgs` holds every flag as an `Option`, so an absent flag lets the
+profile's element through and the defaults apply last. `--max-materials` checks
+for a value after the profile applies, which moves its error from clap to a
+usage error. A `--partition` on the command line replaces the profile's list
+whole, the way every other flag replaces its element.

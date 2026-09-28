@@ -45,7 +45,7 @@ representative's values.
    [`palette quantize`](../../palette/quantize.md), defaulting the same way
    (`median-cut`, `oklab`, `none`). `--dither` walks each object's voxels in 3D
    order.
-10. `--profile <profile>`: apply a saved reduction recipe. The flag repeats. See
+10. `--profile <profile>`: apply a saved reduction recipe. See
     [Profiles](#profiles).
 
 A layer that already samples at most `--max-materials` materials stays

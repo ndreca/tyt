@@ -70,7 +70,10 @@ palette to at most `--max-materials` materials and snaps every voxel sampling
 it. Each cluster collapses onto its most-sampled material, and a merged voxel
 takes that whole material. Clustering runs on `--property`, `baseColor` by
 default. `--partition` keeps materials apart unless they agree on a property.
-Materials no voxel samples drop.
+Materials no voxel samples drop. Both quantize commands take `--profile`, which
+applies flags saved in a `.vxlconfig` under `palette.quantize.profiles` or
+`object.voxels.quantize.profiles`. `vxl profile palette quantize list` and
+`vxl profile object voxels quantize list` print them.
 
 ```sh
 # Reduces the first palette to Voxel Max's 255 colors.

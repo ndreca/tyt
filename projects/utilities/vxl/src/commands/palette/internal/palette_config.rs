@@ -1,4 +1,4 @@
-use crate::commands::PaletteShowConfig;
+use crate::{QuantizeConfig, commands::PaletteShowConfig};
 use serde::Deserialize;
 
 /// The `palette` section of a `.vxlconfig` layer, one entry per `palette`
@@ -6,6 +6,8 @@ use serde::Deserialize;
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields)]
 pub(crate) struct PaletteConfig {
+    pub(crate) quantize: QuantizeConfig,
+
     pub(crate) show: PaletteShowConfig,
 }
 
