@@ -188,6 +188,8 @@ Material sampling (see [voxelize](reference/mesh-doc/voxelize.md) and
       declares (sRGB for base color and emissive, linear data for
       metallic-roughness and occlusion), area-averaged and merged; a map a
       material lacks keeps its flat factor.
+- [x] Profiles: `meshDoc.voxelize.profiles`, `--profile`, and
+      `vxl profile mesh-doc voxelize list`.
 
 ### object voxels quantize ([reference/object/voxels/quantize.md](reference/object/voxels/quantize.md))
 

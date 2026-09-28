@@ -1,3 +1,4 @@
+use serde::{Deserialize, Deserializer, de::Error as DeError};
 use std::{fmt::Display, str::FromStr};
 
 /// `none` or a value of `T`. Parses the literal `none` to [`NoneOr::None`],
@@ -42,9 +43,22 @@ where
     }
 }
 
+impl<'de, T> Deserialize<'de> for NoneOr<T>
+where
+    T: FromStr,
+    T::Err: Display,
+{
+    /// Reads a string and parses it as the command line does.
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        String::deserialize(deserializer)?
+            .parse()
+            .map_err(D::Error::custom)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::NoneOr;
+    use crate::{NoneOr, Rgba};
 
     #[test]
     fn parses_none_case_insensitively() {
@@ -66,5 +80,18 @@ mod tests {
     fn value_maps_none_to_option() {
         assert_eq!(NoneOr::<u8>::None.value(), None);
         assert_eq!(NoneOr::Value(8u8).value(), Some(8));
+    }
+
+    #[test]
+    fn deserializes_from_the_command_line_string() {
+        assert_eq!(
+            serde_json::from_str::<NoneOr<Rgba>>(r#""none""#).unwrap(),
+            NoneOr::None
+        );
+        assert_eq!(
+            serde_json::from_str::<NoneOr<Rgba>>(r##""#ff0000""##).unwrap(),
+            NoneOr::Value(Rgba([255, 0, 0, 255]))
+        );
+        assert!(serde_json::from_str::<NoneOr<Rgba>>(r#""red""#).is_err());
     }
 }

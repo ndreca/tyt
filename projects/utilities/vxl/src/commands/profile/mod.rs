@@ -3,11 +3,13 @@
 #[allow(clippy::module_inception)]
 mod profile;
 mod profile_command;
+mod profile_mesh_doc;
 mod profile_object;
 mod profile_palette;
 
 pub use profile::*;
 pub use profile_command::*;
+pub use profile_mesh_doc::*;
 pub use profile_object::*;
 pub use profile_palette::*;
 

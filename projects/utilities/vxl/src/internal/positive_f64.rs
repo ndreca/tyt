@@ -1,8 +1,23 @@
+use serde::Deserialize;
 use std::str::FromStr;
 
 /// A positive `f64`: greater than zero and not NaN.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[serde(try_from = "f64")]
 pub struct PositiveF64(pub f64);
+
+impl TryFrom<f64> for PositiveF64 {
+    type Error = String;
+
+    /// Accepts a number greater than zero.
+    fn try_from(number: f64) -> Result<Self, Self::Error> {
+        if number <= 0.0 || number.is_nan() {
+            return Err(format!("`{number}` must be greater than 0"));
+        }
+
+        Ok(PositiveF64(number))
+    }
+}
 
 impl FromStr for PositiveF64 {
     type Err = String;
@@ -13,11 +28,7 @@ impl FromStr for PositiveF64 {
             .parse::<f64>()
             .map_err(|_| format!("`{value}` is not a number"))?;
 
-        if number <= 0.0 || number.is_nan() {
-            return Err(format!("`{value}` must be greater than 0"));
-        }
-
-        Ok(PositiveF64(number))
+        PositiveF64::try_from(number)
     }
 }
 
@@ -40,5 +51,15 @@ mod tests {
     #[test]
     fn rejects_a_non_number() {
         assert!("abc".parse::<PositiveF64>().is_err());
+    }
+
+    #[test]
+    fn deserializes_only_a_positive_number() {
+        assert_eq!(
+            serde_json::from_str::<PositiveF64>("0.25").unwrap(),
+            PositiveF64(0.25)
+        );
+        assert!(serde_json::from_str::<PositiveF64>("0").is_err());
+        assert!(serde_json::from_str::<PositiveF64>("-1").is_err());
     }
 }

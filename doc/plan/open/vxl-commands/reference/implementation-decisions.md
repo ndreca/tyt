@@ -1046,3 +1046,18 @@ profile's element through and the defaults apply last. `--max-materials` checks
 for a value after the profile applies, which moves its error from clap to a
 usage error. A `--partition` on the command line replaces the profile's list
 whole, the way every other flag replaces its element.
+
+## voxelize profiles
+
+`mesh-doc voxelize` reads `meshDoc.voxelize.profiles`. The section key
+camel-cases the `mesh-doc` group the way profile elements camel-case their
+flags. The profile type holds the voxel recipe only because the encoding
+options belong to `vox-doc to voxj` as much as to voxelize.
+
+Each recipe flag became an `Option` with its default applied after the profile,
+so `--fill-color none` can clear a profile's color. `GridResolutionOptions`
+resolves to `None` when neither flag is given. The two flags act as one
+element: either one on the command line replaces whichever key the profile set.
+The fill-color and world-reference checks moved onto the resolved
+`VoxelizeOptions` because a profile can set the flags they test.
+

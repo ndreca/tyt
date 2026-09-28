@@ -3,8 +3,7 @@ use clap::{ArgGroup, Args};
 use voxsmith::operations::mesh_doc::{GridResolution, ResolutionReference};
 
 /// The `mesh-doc voxelize` voxel-size controls. Flattened onto the command,
-/// which takes at most one of the two flags and defaults to one voxel per meter
-/// when neither is given.
+/// which takes at most one of the two flags.
 #[derive(Clone, Debug, Args)]
 #[command(group(
     ArgGroup::new("grid_resolution").args(["resolution", "voxel_size"])
@@ -29,9 +28,9 @@ pub struct GridResolutionOptions {
 }
 
 impl GridResolutionOptions {
-    /// Resolves the voxel-size flags into a [`GridResolution`]. Rejects an
-    /// unknown reference or a count below one.
-    pub fn resolve(&self) -> Result<GridResolution> {
+    /// Resolves the voxel-size flags into a [`GridResolution`], `None` when
+    /// neither is given. Rejects an unknown reference or a count below one.
+    pub fn resolve(&self) -> Result<Option<GridResolution>> {
         if let Some(values) = &self.resolution {
             // `num_args = 2` guarantees exactly two values when the flag is set.
             let [reference, count] = values.as_slice() else {
@@ -50,14 +49,12 @@ impl GridResolutionOptions {
                 }
             };
 
-            return Ok(GridResolution::ReferenceCount { reference, count });
+            return Ok(Some(GridResolution::ReferenceCount { reference, count }));
         }
 
-        if let Some(size) = self.voxel_size {
-            return Ok(GridResolution::VoxelSize(size.0));
-        }
-
-        Ok(GridResolution::VoxelSize(1.0))
+        Ok(self
+            .voxel_size
+            .map(|size| GridResolution::VoxelSize(size.0)))
     }
 }
 
@@ -76,7 +73,7 @@ mod tests {
     }
 
     /// The resolution `args` resolve to. Panics if they fail to parse or resolve.
-    fn resolve(args: &[&str]) -> GridResolution {
+    fn resolve(args: &[&str]) -> Option<GridResolution> {
         let mut argv = vec!["test"];
         argv.extend_from_slice(args);
         Harness::try_parse_from(argv)
@@ -100,24 +97,24 @@ mod tests {
     fn resolution_resolves_to_a_reference_count() {
         assert_eq!(
             resolve(&["--resolution", "longest-world", "32"]),
-            GridResolution::ReferenceCount {
+            Some(GridResolution::ReferenceCount {
                 reference: ResolutionReference::LongestWorld,
                 count: 32
-            }
+            })
         );
         assert_eq!(
             resolve(&["--resolution", "shortest-world", "16"]),
-            GridResolution::ReferenceCount {
+            Some(GridResolution::ReferenceCount {
                 reference: ResolutionReference::ShortestWorld,
                 count: 16
-            }
+            })
         );
         assert_eq!(
             resolve(&["--resolution", "world-y", "8"]),
-            GridResolution::ReferenceCount {
+            Some(GridResolution::ReferenceCount {
                 reference: ResolutionReference::WorldY,
                 count: 8
-            }
+            })
         );
     }
 
@@ -125,13 +122,13 @@ mod tests {
     fn voxel_size_resolves_to_a_size() {
         assert_eq!(
             resolve(&["--voxel-size", "0.25"]),
-            GridResolution::VoxelSize(0.25)
+            Some(GridResolution::VoxelSize(0.25))
         );
     }
 
     #[test]
-    fn neither_flag_defaults_to_one_meter_per_voxel() {
-        assert_eq!(resolve(&[]), GridResolution::VoxelSize(1.0));
+    fn neither_flag_resolves_to_none() {
+        assert_eq!(resolve(&[]), None);
     }
 
     #[test]

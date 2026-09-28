@@ -106,9 +106,59 @@ object.
    Only the interior voxels a `--fill-mode solid` body invents have no surface; a
    hollow `--fill-mode surface` shell is all surface, so under the sampling modes
    a set `--fill-color` is rejected there.
+9. `--profile <profile>`: apply a saved voxelize recipe. See
+   [Profiles](#profiles).
 
 `mesh-doc voxelize` writes a voxel-json document and shares `vox-doc to voxj`'s
 encoding options: `--format`, `--encoding-preset`, `--position-encoding`, and
 `--sample-encoding`, which default the same way they do there. It does not take
 `--ext` or `--edit-state`: a voxelized mesh has no source `ext` block to carry
 and no editor build volume to record.
+
+## Profiles
+
+A profile saves a voxelize recipe under a name in a `.vxlconfig`, at
+`meshDoc.voxelize.profiles`. The files cascade as they do for
+[`object mesh` profiles](../../../../../ref/mesh/profile-language.md#loading),
+with no built-ins beneath them. `vxl profile mesh-doc voxelize list` prints the
+merged set grouped by the file supplying each name.
+
+```jsonc
+{
+  "meshDoc": {
+    "voxelize": {
+      "profiles": {
+        "coarse-flat": {
+          "resolution": { "reference": "longest-world", "count": 16 },
+          "materialMode": "flat",
+          "fillColor": "#808080",
+        },
+        "props": {
+          "voxelSize": 0.0625,
+          "frame": "local",
+          "outOfRangeProperty": "clamp",
+        },
+      },
+    },
+  },
+}
+```
+
+A profile holds the voxelize flags by camel-case name with their command-line
+values: `resolution` as an object of `reference` and `count`, `voxelSize`,
+`frame`, `scale`, `fillMode`, `surfaceMode`, `materialMode`, `fillColor`, and
+`outOfRangeProperty`. A profile sets `resolution` or `voxelSize`, not both.
+`--from`, the output, and the encoding options stay on the command line because
+they describe the files. An unknown key or value errors when the profiles load.
+
+A run applies at most one profile. A flag on the command line overrides the
+value the profile sets. Either `--resolution` or `--voxel-size` replaces the
+profile's `resolution` and `voxelSize` alike. A profile's values meet the same
+checks as the flags, so a profile's world `resolution` under `--scale keep`
+errors.
+
+```
+vxl mesh-doc voxelize model.glb
+  --profile props
+  --frame world
+```
