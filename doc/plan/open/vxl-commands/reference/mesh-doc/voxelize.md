@@ -19,8 +19,10 @@ node named after its placing mesh node. Each object's grid sits on a lattice
 of voxel-size cubes anchored at the origin of its frame, and the object's
 lattice cell is recorded as its origin. `--frame` and `--scale` choose the
 frame. The voxel object is named after the mesh object, else its placing node,
-else the input file stem. The objects share one palette. An object with no
-triangles is an error that reports the object.
+else the input file stem. The objects share one palette holding every distinct
+sampled material. [`palette quantize`](../palette/quantize.md) can reduce the
+palette afterward. An object with no triangles is an error that reports the
+object.
 
 1. `--from` `gltf` | `glb`: source mesh format, glTF text or binary. Inferred
    from the input extension when omitted.
@@ -39,7 +41,16 @@ triangles is an error that reports the object.
    Each axis takes as many voxels as cover the mesh extent there, so the same
    `<meters>` yields a consistent real-world voxel size across meshes of
    different sizes. Mutually exclusive with `--resolution`, and used with
-   `<meters>` of `1` when neither flag is given.
+   `<meters>` of `1` when neither flag is given. The format carries no physical
+   units: one unit is one voxel, and real-world scale comes from hierarchy-node
+   transforms. Both flags resolve to one voxel size, which `mesh-doc voxelize`
+   records in the placing node's scale so the assembled model keeps its source
+   dimensions. glTF is meter-native, and under `--scale bake` any scene- or
+   node-level scale on the mesh is applied before voxelizing, so two glTF
+   exports of the same object at different authored scales voxelize alike,
+   mirroring [`vxl object mesh`](../../../../../ref/mesh/mesh.md)'s
+   `--voxel-size`. See
+   [Coordinate System](../../../../../../projects/voxel-formats/voxj/docs/voxel-json-file-format.md#coordinate-system).
 4. `--frame` `world` | `local` (default `world`): the frame each object's grid
    is built in. `world` applies the placing node's rotation and translation to
    the geometry, so every object's voxels align on one lattice and an object
@@ -95,39 +106,6 @@ triangles is an error that reports the object.
    Only the interior voxels a `--fill-mode solid` body invents have no surface; a
    hollow `--fill-mode surface` shell is all surface, so under the sampling modes
    a set `--fill-color` is rejected there.
-9. `--quantize-max-materials` `<n>` | `none` (default `256`): the most materials
-   the document's palette may hold. Sampling can yield many distinct materials,
-   `per-texel` especially; when the count exceeds `<n>` the palette is reduced
-   to it, never failing and never silently dropping materials. Reduction is the
-   designed default, firing on nearly every run, so it stays quiet. `256` keeps
-   each per-voxel sample index within one byte (the format packs it at
-   `ceil(log2(materials))` bits) and matches the familiar 256-color ceiling;
-   `none` disables the cap for bit-exact materials. Reduction clusters on
-   `baseColor` and a merged material takes its cluster representative's whole
-   set of values, so material follows color: materials that land in one color
-   cluster collapse to one real representative material, not an averaged one.
-   This is the same reduction [`palette quantize`](../palette/quantize.md) runs,
-   so `--quantize-max-materials <n>` matches piping the output through
-   `palette quantize --max-materials <n>`.
-10. `--quantize-method`, `--quantize-space`, and `--quantize-dither`: the
-    palette-reduction controls [`palette quantize`](../palette/quantize.md)
-    takes as `--method`, `--space`, and `--dither`, defaulting the same way
-    (`median-cut`, `oklab`, `none`). They shape the
-    `--quantize-max-materials` reduction and are inert when it does not fire;
-    `--quantize-dither` diffuses the snapping error across the voxels in 3D
-    order. The format carries no physical
-    units: one unit is one voxel, and real-world scale comes from hierarchy-node
-    transforms. Both flags resolve to one voxel size, which `mesh-doc voxelize`
-    records in the placing node's scale so the assembled model keeps its source
-    dimensions. glTF is meter-native, and under `--scale bake` any scene- or
-    node-level scale on the mesh is applied before voxelizing, so two glTF
-    exports of the same object at different authored scales voxelize alike,
-    mirroring [`vxl object mesh`](../../../../../ref/mesh/mesh.md)'s
-    `--voxel-size`. See
-    [Coordinate System](../../../../../../projects/voxel-formats/voxj/docs/voxel-json-file-format.md#coordinate-system).
-11. `--quantize-keep-unused-values` (default `false`): keep the value-pool
-    values the reduction leaves unreferenced. Without it, the reduced palette
-    keeps only the values its materials use.
 
 `mesh-doc voxelize` writes a voxel-json document and shares `vox-doc to voxj`'s
 encoding options: `--format`, `--encoding-preset`, `--position-encoding`, and

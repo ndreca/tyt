@@ -34,8 +34,9 @@ These hold across the commands and match the existing `vox-doc to` commands.
    `json-compact`, and `json-pretty`. `vox-doc validate` offers `json-compact`,
    `json-pretty`, and `md-tables` (its default); `vox-doc show` adds
    `box-tables` to those three, and [`palette list`](palette/list.md) adds
-   `box-hierarchy` (its default) and `box-tables`. `profile object mesh list`
-   and `profile palette show list` offer `box-hierarchy` (their default),
+   `box-hierarchy` (its default) and `box-tables`. `profile object mesh list`,
+   `profile object voxels quantize list`, `profile palette quantize list`, and
+   `profile palette show list` offer `box-hierarchy` (their default),
    `box-tables`, `json-compact`, `json-pretty`, `md-lists`, `md-tables`, or
    `text-rows`.
 6. Multiple values are passed by repeating the flag, as in

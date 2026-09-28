@@ -15,18 +15,17 @@ command's design lives in [mesh](../../../../ref/mesh/mesh.md).
    home for the material options, and leaves room for more mesh formats without
    a subcommand per format. glTF is the only mesh format for now.
    `mesh-doc voxelize` is the conventional verb for the inverse.
-3. Quantize, remap, and `mesh-doc voxelize`'s `--quantize-max-materials` share
-   one reduction rule: material follows color. Reducing the compared property
-   (`baseColor` by default) clusters materials by it and collapses each cluster
-   to one representative material, so a material's other properties ride along
-   with its color and a count bounds the material count, not just the property's
-   distinct values. The earlier rule kept materials that share a color but
-   differ in their other properties distinct; it was dropped so a count actually
-   bounds the palette, the representative stays a real material rather than an
-   average, and the three commands share one engine and its `--method` /
-   `--space` / `--dither` controls. The accepted cost is that fusing two colors
-   fuses their materials too. `--partition` opts a property out by keeping
-   materials that differ in it apart.
+3. Quantize and remap share one reduction rule: material follows color. Reducing
+   the compared property (`baseColor` by default) clusters materials by it and
+   collapses each cluster to one representative material, so a material's other
+   properties ride along with its color and a count bounds the material count,
+   not just the property's distinct values. The earlier rule kept materials that
+   share a color but differ in their other properties distinct; it was dropped
+   so a count actually bounds the palette, the representative stays a real
+   material rather than an average, and the commands share one engine and its
+   `--method` / `--space` / `--dither` controls. The accepted cost is that
+   fusing two colors fuses their materials too. `--partition` opts a property
+   out by keeping materials that differ in it apart.
 4. Remap takes either a full document or a bare palette JSON, the remap
    `--target` shape. The palette transform is the same either way; a document
    additionally carries voxels, so it can dither the rewritten samples in 3D
@@ -71,16 +70,15 @@ command's design lives in [mesh](../../../../ref/mesh/mesh.md).
    textured model implies wanting its surface color, while the explicit modes
    override that guess. The flat color mode is named `flat`, not `solid`, so it
    does not collide with `--fill-mode solid`, which is geometry.
-7. `voxelize --quantize-max-materials` bounds the generated palette, defaulting
-   to 256 (a one-byte sample index and the familiar color ceiling). It
-   auto-reduces with a warning rather than erroring or truncating, since a
-   textured mesh exceeding the cap is the normal case, and reuses the
-   `palette quantize` engine and its `--method` / `--space` / `--dither`
-   controls rather than inventing its own, so the inline cap and the standalone
-   command cannot diverge; `none` disables it for bit-exact materials. Sampling
-   drops no PBR: voxelize writes the same `baseColor`, `metallic`, `roughness`,
-   `emissiveColor`, `emissiveStrength`, and `occlusionStrength` properties
-   `object mesh` bakes, so the two are inverses.
+7. `mesh-doc voxelize` writes every distinct sampled material and leaves
+   reduction to `palette quantize` and `object voxels quantize`. Quantizing
+   afterward gives the result an inline cap would. Voxelize then needs no
+   mirror of every quantize flag and drops no color detail by default. A format
+   with a palette limit, such as Voxel Max at 255 colors, errors when
+   `vox-doc to` writes too many materials.
+   Sampling drops no PBR: voxelize writes the same `baseColor`, `metallic`,
+   `roughness`, `emissiveColor`, `emissiveStrength`, and `occlusionStrength`
+   properties `object mesh` bakes, so the two are inverses.
 8. `object voxels quantize` rewrites samples and leaves the palette alone
    because palettes are shared. Editing a palette to suit one object would
    repaint every other object referencing it. Snapping to materials the layer
@@ -91,6 +89,16 @@ command's design lives in [mesh](../../../../ref/mesh/mesh.md).
    they choose what changes. `palette quantize` changes every referencing
    object. Selectors there could only narrow the dither, giving the same flags a
    second meaning.
+9. Quantize's `--interpret-property` default follows the vocabulary rule
+   `palette show` reads by. A vocabulary color reads as a linear color, and a
+   custom vector reads as a color only through an explicit reading. `--alpha`
+   defaults to `partition` because merging a translucent material into an opaque
+   one is rarely wanted.
+10. Each quantize command reads its own profile set,
+    `palette.quantize.profiles` and `object.voxels.quantize.profiles`, because
+    each `.vxlconfig` key follows one command path. A profile holds the
+    reduction recipe alone. The flags picking a run's target stay on the
+    command line, so one recipe applies to any document.
 
 ## Future and nice-to-haves
 

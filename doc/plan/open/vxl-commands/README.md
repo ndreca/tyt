@@ -65,6 +65,10 @@ Every command sits under the noun it addresses, then its verb.
   palettes.
 - [`vxl profile object mesh list`](../../../ref/mesh/profile-language.md#loading):
   list the profiles `object mesh --profile` can apply.
+- [`vxl profile object voxels quantize list`](reference/object/voxels/quantize.md#profiles):
+  list the profiles `object voxels quantize --profile` can apply.
+- [`vxl profile palette quantize list`](reference/palette/quantize.md#profiles):
+  list the profiles `palette quantize --profile` can apply.
 - [`vxl profile palette show list`](reference/palette/show.md#profiles): list
   the profiles `palette show --profile` can apply.
 
