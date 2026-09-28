@@ -33,7 +33,7 @@ pub fn flip_object_voxels<T: VoxExt>(
 
 #[cfg(test)]
 mod tests {
-    use crate::{operations::object_voxels::flip_object_voxels, test_utilities::HookRecorder};
+    use crate::{operations::object::flip_object_voxels, test_utilities::HookRecorder};
     use branded_id::U32Id;
     use ty_math::{TyAxis3, TyVector3U32};
     use voxcore::{VoxMain, VoxObject};

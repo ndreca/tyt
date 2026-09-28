@@ -95,7 +95,7 @@ triangles is an error that reports the object.
    Only the interior voxels a `--fill-mode solid` body invents have no surface; a
    hollow `--fill-mode surface` shell is all surface, so under the sampling modes
    a set `--fill-color` is rejected there.
-9. `--max-palette-materials` `<n>` | `none` (default `256`): the most materials
+9. `--quantize-max-materials` `<n>` | `none` (default `256`): the most materials
    the document's palette may hold. Sampling can yield many distinct materials,
    `per-texel` especially; when the count exceeds `<n>` the palette is reduced
    to it, never failing and never silently dropping materials. Reduction is the
@@ -107,13 +107,15 @@ triangles is an error that reports the object.
    set of values, so material follows color: materials that land in one color
    cluster collapse to one real representative material, not an averaged one.
    This is the same reduction [`palette quantize`](../palette/quantize.md) runs,
-   so `--max-palette-materials <n>` matches piping the output through
-   `palette quantize --max-palette-materials <n>`.
-10. `--method`, `--space`, and `--dither`: the palette-reduction controls shared
-    with [`palette quantize`](../palette/quantize.md), defaulting the same way
-    (`median-cut`, `oklab`, `none`). They shape the `--max-palette-materials`
-    reduction and are inert when it does not fire; `--dither` diffuses the
-    snapping error across the voxels in 3D order. The format carries no physical
+   so `--quantize-max-materials <n>` matches piping the output through
+   `palette quantize --max-materials <n>`.
+10. `--quantize-method`, `--quantize-space`, and `--quantize-dither`: the
+    palette-reduction controls [`palette quantize`](../palette/quantize.md)
+    takes as `--method`, `--space`, and `--dither`, defaulting the same way
+    (`median-cut`, `oklab`, `none`). They shape the
+    `--quantize-max-materials` reduction and are inert when it does not fire;
+    `--quantize-dither` diffuses the snapping error across the voxels in 3D
+    order. The format carries no physical
     units: one unit is one voxel, and real-world scale comes from hierarchy-node
     transforms. Both flags resolve to one voxel size, which `mesh-doc voxelize`
     records in the placing node's scale so the assembled model keeps its source
@@ -123,6 +125,9 @@ triangles is an error that reports the object.
     mirroring [`vxl object mesh`](../../../../../ref/mesh/mesh.md)'s
     `--voxel-size`. See
     [Coordinate System](../../../../../../projects/voxel-formats/voxj/docs/voxel-json-file-format.md#coordinate-system).
+11. `--quantize-keep-unused-values` (default `false`): keep the value-pool
+    values the reduction leaves unreferenced. Without it, the reduced palette
+    keeps only the values its materials use.
 
 `mesh-doc voxelize` writes a voxel-json document and shares `vox-doc to voxj`'s
 encoding options: `--format`, `--encoding-preset`, `--position-encoding`, and

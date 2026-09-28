@@ -52,9 +52,11 @@ Every command sits under the noun it addresses, then its verb.
   only.
 - [`vxl object`](../../closed/vxl-object-commands/README.md#vxl-object): edit
   object properties, placements, and copies.
+- [`vxl object voxels quantize`](reference/object/voxels/quantize.md): reduce
+  the materials an object's voxels sample without changing its palettes.
 - [`vxl object downsample` and `vxl object upsample`](../vxl-resample-commands/README.md):
   change an object's grid resolution by a whole-number factor.
-- [`vxl object-voxels`](../../closed/vxl-object-commands/README.md#vxl-object-voxels):
+- [`vxl object voxels`](../../closed/vxl-object-commands/README.md#vxl-object-voxels):
   move voxels within an object's grid.
 - [`vxl node`](../../closed/vxl-object-commands/README.md#vxl-node): edit nodes
   and hierarchy edges.
@@ -68,7 +70,7 @@ Every command sits under the noun it addresses, then its verb.
 
 `vxl vox-doc to` already ships. The
 [object commands plan](../../closed/vxl-object-commands/README.md) covers the
-object, object-voxels, and node commands. This plan covers the rest.
+object, object voxels, and node commands. This plan covers the rest.
 
 ## Cross-cutting
 

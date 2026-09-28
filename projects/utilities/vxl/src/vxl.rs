@@ -1,6 +1,6 @@
 use crate::{
     Dependencies, Result,
-    commands::{MeshDoc, Node, Object, ObjectVoxels, Palette, Profile, VoxDoc},
+    commands::{MeshDoc, Node, Object, Palette, Profile, VoxDoc},
 };
 use clap::Subcommand;
 
@@ -16,8 +16,6 @@ pub enum Vxl {
     Node(Node),
     #[command(name = "object")]
     Object(Object),
-    #[command(name = "object-voxels")]
-    ObjectVoxels(ObjectVoxels),
     #[command(name = "palette")]
     Palette(Palette),
     #[command(name = "profile")]
@@ -32,7 +30,6 @@ impl Vxl {
             Vxl::MeshDoc(mesh_doc) => mesh_doc.execute(dependencies),
             Vxl::Node(node) => node.execute(dependencies),
             Vxl::Object(object) => object.execute(dependencies),
-            Vxl::ObjectVoxels(object_voxels) => object_voxels.execute(dependencies),
             Vxl::Palette(palette) => palette.execute(dependencies),
             Vxl::Profile(profile) => profile.execute(dependencies),
             Vxl::VoxDoc(vox_doc) => vox_doc.execute(dependencies),

@@ -1,5 +1,5 @@
 use crate::CliValue;
-use voxsmith::operations::object_voxels::QuarterTurns;
+use voxsmith::operations::object::QuarterTurns;
 
 impl CliValue for QuarterTurns {
     const VARIANTS: &'static [Self] = &[QuarterTurns::One, QuarterTurns::Two, QuarterTurns::Three];

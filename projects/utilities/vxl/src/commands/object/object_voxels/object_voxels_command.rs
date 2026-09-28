@@ -4,7 +4,7 @@ use crate::{
 };
 use clap::Subcommand;
 
-/// The `object-voxels` command group.
+/// The `object voxels` command group.
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 pub enum ObjectVoxelsCommand {

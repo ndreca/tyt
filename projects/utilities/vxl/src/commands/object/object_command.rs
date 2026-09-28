@@ -2,7 +2,7 @@ use crate::{
     Dependencies, Result,
     commands::{
         ObjectAdd, ObjectDownsample, ObjectDuplicate, ObjectLink, ObjectMesh, ObjectRemove,
-        ObjectReorder, ObjectSet, ObjectTrim, ObjectUnlink, ObjectUpsample,
+        ObjectReorder, ObjectSet, ObjectTrim, ObjectUnlink, ObjectUpsample, ObjectVoxels,
     },
 };
 use clap::Subcommand;
@@ -35,6 +35,8 @@ pub enum ObjectCommand {
     ObjectUnlink(ObjectUnlink),
     #[command(name = "upsample")]
     ObjectUpsample(ObjectUpsample),
+    #[command(name = "voxels")]
+    ObjectVoxels(ObjectVoxels),
 }
 
 impl ObjectCommand {
@@ -51,6 +53,7 @@ impl ObjectCommand {
             ObjectCommand::ObjectTrim(trim) => trim.execute(dependencies),
             ObjectCommand::ObjectUnlink(unlink) => unlink.execute(dependencies),
             ObjectCommand::ObjectUpsample(upsample) => upsample.execute(dependencies),
+            ObjectCommand::ObjectVoxels(voxels) => voxels.execute(dependencies),
         }
     }
 }

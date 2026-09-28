@@ -4,7 +4,7 @@ use crate::{
 };
 use clap::Parser;
 use ty_math::TyAxis3;
-use voxsmith::operations::object_voxels::{QuarterTurns, rotate_object_voxels};
+use voxsmith::operations::object::{QuarterTurns, rotate_object_voxels};
 
 /// Turns objects' voxels about the grid's center in quarter turns that follow
 /// the right-hand rule. One or three turns need the two turned dimensions to be
@@ -50,7 +50,7 @@ mod tests {
     use crate::commands::ObjectVoxelsRotate;
     use clap::Parser;
     use ty_math::TyAxis3;
-    use voxsmith::operations::object_voxels::QuarterTurns;
+    use voxsmith::operations::object::QuarterTurns;
 
     fn parse(turns: &str) -> Result<ObjectVoxelsRotate, clap::Error> {
         ObjectVoxelsRotate::try_parse_from([

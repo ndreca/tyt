@@ -15,7 +15,7 @@ command's design lives in [mesh](../../../../ref/mesh/mesh.md).
    home for the material options, and leaves room for more mesh formats without
    a subcommand per format. glTF is the only mesh format for now.
    `mesh-doc voxelize` is the conventional verb for the inverse.
-3. Quantize, remap, and `mesh-doc voxelize`'s `--max-palette-materials` share
+3. Quantize, remap, and `mesh-doc voxelize`'s `--quantize-max-materials` share
    one reduction rule: material follows color. Reducing the compared property
    (`baseColor` by default) clusters materials by it and collapses each cluster
    to one representative material, so a material's other properties ride along
@@ -25,13 +25,14 @@ command's design lives in [mesh](../../../../ref/mesh/mesh.md).
    bounds the palette, the representative stays a real material rather than an
    average, and the three commands share one engine and its `--method` /
    `--space` / `--dither` controls. The accepted cost is that fusing two colors
-   fuses their materials too.
-4. Quantize and remap take either a full document or a bare palette JSON, the
-   remap `--target` shape. The palette transform is the same either way; a
-   document additionally carries voxels, so it can dither the rewritten samples
-   in 3D order and narrow that dithering with the object selectors, while a bare
+   fuses their materials too. `--partition` opts a property out by keeping
+   materials that differ in it apart.
+4. Remap takes either a full document or a bare palette JSON, the remap
+   `--target` shape. The palette transform is the same either way; a document
+   additionally carries voxels, so it can dither the rewritten samples in 3D
+   order and narrow that dithering with the object selectors, while a bare
    palette has nothing to walk and skips both. Reusing the selectors keeps one
-   addressing model across mesh, material, quantize, and remap.
+   addressing model across mesh, material, `object voxels quantize`, and remap.
 5. `palette show` reads a property's meaning from its name, per the format's
    glTF vocabulary; a value pool carries only a shape, the same rule the
    [`object mesh` packings](../../../../ref/mesh/value-language.md) bake by. The
@@ -70,7 +71,7 @@ command's design lives in [mesh](../../../../ref/mesh/mesh.md).
    textured model implies wanting its surface color, while the explicit modes
    override that guess. The flat color mode is named `flat`, not `solid`, so it
    does not collide with `--fill-mode solid`, which is geometry.
-7. `voxelize --max-palette-materials` bounds the generated palette, defaulting
+7. `voxelize --quantize-max-materials` bounds the generated palette, defaulting
    to 256 (a one-byte sample index and the familiar color ceiling). It
    auto-reduces with a warning rather than erroring or truncating, since a
    textured mesh exceeding the cap is the normal case, and reuses the
@@ -80,6 +81,16 @@ command's design lives in [mesh](../../../../ref/mesh/mesh.md).
    drops no PBR: voxelize writes the same `baseColor`, `metallic`, `roughness`,
    `emissiveColor`, `emissiveStrength`, and `occlusionStrength` properties
    `object mesh` bakes, so the two are inverses.
+8. `object voxels quantize` rewrites samples and leaves the palette alone
+   because palettes are shared. Editing a palette to suit one object would
+   repaint every other object referencing it. Snapping to materials the layer
+   already samples keeps material indices stable. `palette quantize` runs the
+   same pass with `--shared` over every referencing layer, then compacts the
+   palette. The command sits under `object voxels` because it writes only voxel
+   samples. The object selectors live on `object voxels quantize` alone, where
+   they choose what changes. `palette quantize` changes every referencing
+   object. Selectors there could only narrow the dither, giving the same flags a
+   second meaning.
 
 ## Future and nice-to-haves
 
@@ -100,3 +111,12 @@ command's design lives in [mesh](../../../../ref/mesh/mesh.md).
    engine. The `--select` object selectors will inherit the same engine when
    they land. See
    [implementation decisions](implementation-decisions.md#gitignore-style-pattern-matching).
+6. A values-only mode for `palette quantize`. The mode snaps only the
+   clustered property's value-index, keeps each material's other values, and
+   merges the materials that end up identical. It bounds the property's
+   distinct values rather than the material count. `object voxels quantize`
+   cannot offer it because the snapped combination rarely exists as a material
+   in the palette.
+7. A bare palette JSON input for `palette quantize`, the remap `--target`
+   shape. A bare palette has no voxels to weight or drop materials by, so every
+   material would count at equal weight.

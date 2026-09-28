@@ -4,7 +4,7 @@ use crate::{
 };
 use clap::Parser;
 use ty_math::TyAxis3;
-use voxsmith::operations::object_voxels::flip_object_voxels;
+use voxsmith::operations::object::flip_object_voxels;
 
 /// Mirrors objects' voxels in place along one grid axis.
 #[derive(Clone, Debug, Parser)]

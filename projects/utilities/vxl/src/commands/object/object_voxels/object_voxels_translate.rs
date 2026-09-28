@@ -2,7 +2,7 @@ use crate::{
     Dependencies, RequiredSelection, Result, VoxelInput, VoxjOutput, edit_document, vector3_i32,
 };
 use clap::{ArgAction, Parser};
-use voxsmith::operations::object_voxels::translate_object_voxels;
+use voxsmith::operations::object::translate_object_voxels;
 
 /// Moves objects' voxels within their grids. Errors when a voxel would leave
 /// its grid.

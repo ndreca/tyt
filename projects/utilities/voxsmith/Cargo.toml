@@ -31,7 +31,6 @@ default = [
     "mesh_doc",
     "node",
     "object",
-    "object_voxels",
     "palette",
     "profile",
     "vox_doc",
@@ -40,7 +39,6 @@ default = [
 mesh_doc = []
 node = ["_treegrid", "dep:treeselect"]
 object = ["dep:serde_json", "dep:vox-value-language"]
-object_voxels = []
 palette = ["_treegrid", "dep:serde_json"]
 profile = ["_treegrid"]
 vox_doc = ["_treegrid"]

@@ -321,8 +321,7 @@ read commands so they are settled once and shared:
    palette `.json`, adopted by every read command. Specified once in
    [conventions](../conventions.md).
 2. A bare palette `.json` input holding just a `palettes` array, recognized by
-   its content the way the document forms are, shared with `quantize` and
-   `remap`.
+   its content the way the document forms are, shared with `remap`.
 3. One shared JSON envelope across `list`, `show`, `node list`,
    `vox-doc validate`, and `vox-doc show`. Settled by the
    [treegrid plan](../../../treegrid/README.md) as the record envelope above,
@@ -357,7 +356,7 @@ read commands so they are settled once and shared:
       record envelope `show` emits; the remaining read commands adopt it as
       they migrate.
 - [ ] Accept a bare palette `.json` input on the palette commands, sharing the
-      shape with `quantize` and `remap`.
+      shape with `remap`.
 - [x] Read `.vxlconfig` profiles through `--profile` and
       `--properties-from`, each profile holding selectors, `propertiesFrom`
       imports, and a layout carrying the display flags it takes, listed by

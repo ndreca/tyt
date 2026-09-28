@@ -9,9 +9,6 @@ pub mod node;
 #[cfg(feature = "object")]
 pub mod object;
 
-#[cfg(feature = "object_voxels")]
-pub mod object_voxels;
-
 #[cfg(feature = "palette")]
 pub mod palette;
 

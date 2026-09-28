@@ -3,7 +3,7 @@ use clap::Parser;
 
 /// Moves objects' voxels within their grids, writing Voxel JSON.
 #[derive(Clone, Debug, Parser)]
-#[command(name = "object-voxels")]
+#[command(name = "voxels")]
 pub struct ObjectVoxels {
     #[clap(subcommand)]
     pub command: ObjectVoxelsCommand,

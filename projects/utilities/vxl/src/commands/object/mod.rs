@@ -14,6 +14,7 @@ mod object_set;
 mod object_trim;
 mod object_unlink;
 mod object_upsample;
+mod object_voxels;
 
 pub use object::*;
 pub use object_add::*;
@@ -28,6 +29,7 @@ pub use object_set::*;
 pub use object_trim::*;
 pub use object_unlink::*;
 pub use object_upsample::*;
+pub use object_voxels::*;
 
 // Internal API
 

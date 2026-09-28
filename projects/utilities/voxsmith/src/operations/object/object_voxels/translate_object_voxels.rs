@@ -63,7 +63,7 @@ fn is_inside(position: TyVector3U32, offset: TyVector3I32, bounds: TyVector3U32)
 
 #[cfg(test)]
 mod tests {
-    use crate::{operations::object_voxels::translate_object_voxels, test_utilities::HookRecorder};
+    use crate::{operations::object::translate_object_voxels, test_utilities::HookRecorder};
     use branded_id::U32Id;
     use ty_math::{TyVector3I32, TyVector3U32};
     use voxcore::{VoxMain, VoxObject};

@@ -13,5 +13,5 @@ keys are the glTF vocabulary names such as `baseColor`.
 
 - [`vxl palette list`](list.md): overview of every palette in a document.
 - [`vxl palette show`](show.md): print one palette's selected properties.
-- [`vxl palette quantize`](quantize.md): reduce a palette's colors.
+- [`vxl palette quantize`](quantize.md): reduce a palette's materials.
 - [`vxl palette remap`](remap.md): remap voxels onto a target palette.

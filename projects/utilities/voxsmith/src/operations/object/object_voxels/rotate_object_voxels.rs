@@ -1,4 +1,4 @@
-use crate::{Error, Result, operations::object_voxels::QuarterTurns};
+use crate::{Error, Result, operations::object::QuarterTurns};
 use branded_id::U32Id;
 use ty_math::{TyAxis3, TyVector3I32};
 use voxcore::{BVoxObject, Error as VoxError, VoxExt, VoxMain};
@@ -64,7 +64,7 @@ pub fn rotate_object_voxels<T: VoxExt>(
 #[cfg(test)]
 mod tests {
     use crate::{
-        operations::object_voxels::{QuarterTurns, rotate_object_voxels},
+        operations::object::{QuarterTurns, rotate_object_voxels},
         test_utilities::HookRecorder,
     };
     use branded_id::U32Id;
