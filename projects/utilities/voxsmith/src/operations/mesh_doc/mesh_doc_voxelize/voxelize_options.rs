@@ -1,9 +1,5 @@
-use crate::{
-    operations::mesh_doc::{
-        FillMode, GridResolution, MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelFrame,
-        VoxelScale,
-    },
-    utilities::PaletteReduction,
+use crate::operations::mesh_doc::{
+    FillMode, GridResolution, MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelFrame, VoxelScale,
 };
 
 /// The options [`voxelize`](crate::operations::mesh_doc::voxelize()) voxelizes
@@ -40,8 +36,4 @@ pub struct VoxelizeOptions {
     /// Whether a material value outside its property's glTF range errors or
     /// clamps.
     pub out_of_range_property: OutOfRangeProperty,
-
-    /// The palette reduction to apply to the generated palette, or `None` to
-    /// keep every sampled material.
-    pub reduction: Option<PaletteReduction>,
 }

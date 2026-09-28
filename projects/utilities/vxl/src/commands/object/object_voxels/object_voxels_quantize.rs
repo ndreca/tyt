@@ -1,0 +1,83 @@
+use crate::{
+    Dependencies, ObjectSelection, QuantizeArgs, Result, VoxelInput, VoxjOutput, edit_document,
+    parse_index_range,
+};
+use clap::{ArgAction, Parser};
+use voxsmith::{operations::object::quantize_object_voxels, utilities::IndexRange};
+
+/// Rewrites objects' voxel samples so each quantized layer samples at most
+/// `--max-materials` materials of its palette. Palettes and value pools stay
+/// untouched. `palette quantize` reduces the palette itself.
+#[derive(Clone, Debug, Parser)]
+#[command(name = "quantize")]
+pub struct ObjectVoxelsQuantize {
+    #[command(flatten)]
+    input: VoxelInput,
+
+    #[command(flatten)]
+    output: VoxjOutput,
+
+    #[command(flatten)]
+    selection: ObjectSelection,
+
+    /// Quantize the layers at an index into each selected object's `layers`,
+    /// an integer or an `a-b` range. Repeatable. Without it, every layer whose
+    /// palette binds `--property` is quantized.
+    #[arg(value_name = "layer-index", long, value_parser = parse_index_range)]
+    layer_index: Vec<IndexRange>,
+
+    /// Cluster every selected layer on one palette together, where otherwise
+    /// each object clusters apart.
+    #[arg(
+        value_name = "shared",
+        long,
+        default_value_t = false,
+        default_missing_value = "true",
+        num_args = 0..=1,
+        action = ArgAction::Set
+    )]
+    shared: bool,
+
+    #[command(flatten)]
+    quantize: QuantizeArgs,
+}
+
+impl ObjectVoxelsQuantize {
+    pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
+        let options = self.quantize.resolve()?;
+
+        edit_document(&dependencies, &self.input, self.output, |main| {
+            let object_ids = self.selection.resolve(main)?;
+
+            Ok(quantize_object_voxels(
+                main,
+                &object_ids,
+                &self.layer_index,
+                self.shared,
+                &options,
+            )?)
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::commands::ObjectVoxelsQuantize;
+    use clap::Parser;
+
+    fn parse(args: &[&str]) -> Result<ObjectVoxelsQuantize, clap::Error> {
+        let mut argv = vec!["quantize", "scene.voxj", "--max-materials", "16"];
+        argv.extend_from_slice(args);
+        ObjectVoxelsQuantize::try_parse_from(argv)
+    }
+
+    #[test]
+    fn parses_layer_indices_and_shared() {
+        let quantize = parse(&["--layer-index", "0", "--layer-index", "2-3", "--shared"]).unwrap();
+
+        assert_eq!(quantize.layer_index.len(), 2);
+        assert!(quantize.shared);
+        assert!(!parse(&[]).unwrap().shared);
+        assert!(parse(&["--layer-index", "3-2"]).is_err());
+    }
+}

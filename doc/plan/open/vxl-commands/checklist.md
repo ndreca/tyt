@@ -80,31 +80,27 @@ off as they land.
       `--ext`/`--edit-state` stay on `vox-doc to voxj`.
 - [x] `ValueEnum`s for the palette ops: quantize method, color space, dither,
       and `palette show` format (`auto` | `swatch` | `swatch-value` | `value`).
-- [ ] Shared palette-reduction engine and a flattened options group (`--method`
-      / `--space` / `--dither`), reused by `palette quantize` and
+- [ ] Shared quantize engine and a flattened options group (`--method` /
+      `--space` / `--dither`), reused by `palette quantize` and
       `palette remap` (space/dither), on the one material-follows-color rule (a
       count bounds materials; a merged material takes its cluster
-      representative's whole material). Landed: the `PaletteReductionOptions`
-      group and voxsmith's `reduce_palette` with all three methods (`median-cut`
-      / `octree` / `kmeans`) in oklab/lab/rgb via `remove_material`+`gc`, plus
-      `--dither` (`floyd-steinberg` / `ordered`) as a per-voxel remap in 3D
-      raster order. Pending: `quantize` / `remap` will reuse the engine.
-- [ ] Split `reduce_palette` into two steps. The choose step maps a palette's
-      candidate materials and their populations to representatives. The apply
-      step rewrites the samples of the chosen object layers.
-      `object voxels quantize` runs both steps. `palette quantize` runs them and
-      then compacts the palette.
-- [ ] `--partition <property>` in the choose step. Median-cut seeds its boxes
+      representative's whole material). Landed: voxsmith's engine, and vxl's
+      `QuantizeArgs` group that both quantize commands flatten. Pending:
+      `remap` reusing the engine.
+- [x] Split the engine into two steps. The choose step maps the materials a
+      set of layers samples, weighted by voxel count, to representatives. The
+      apply step rewrites those layers' samples. `object voxels quantize` runs
+      both steps. `palette quantize` runs them and then compacts the palette.
+- [x] `--partition <property>` in the choose step. Median-cut seeds its boxes
       from the partitions. Octree and kmeans give each partition one slot and
       split the rest of the cap by voxel count. The choose step errors when
       partitions outnumber the cap.
-- [ ] Engine fixes, landing ahead of the commands:
-      1. Error when the materials lacking the clustered property alone exceed
-         the cap
+- [x] Engine fixes:
+      1. A palette lacking the clustered property errors
       2. `--alpha partition | distance | ignore`, with `partition` keeping an
          opaque and a translucent material of one color apart
-      3. Prune only the value-pool values the reduction orphaned
-- [ ] Take the clustered property and its `--interpret-property` reading in
+      3. Prune only the value-pool values the dropped materials held
+- [x] Take the clustered property and its `--interpret-property` reading in
       place of the hardcoded `baseColor`. Points widen to 4D for vec4 `numeric`
       values and under `--alpha distance`. Octree errors on 4D points.
 
@@ -182,9 +178,8 @@ Material sampling (see [voxelize](reference/mesh-doc/voxelize.md) and
       `flat`, the `solid`-fill interior under the sampling modes; a set color is
       rejected on a sampling-mode surface. An omitted interior adopts its nearest
       surface material.
-- [ ] Remove the `--quantize-*` flags and `QuantizeOptions` so voxelize writes
-      every distinct sampled material. `PaletteReductionOptions` moves out of
-      `mesh_doc_voxelize` for the quantize commands.
+- [x] Remove the `--quantize-*` flags and `QuantizeOptions` so voxelize writes
+      every distinct sampled material.
 - [x] `per-texel`: UV interpolation, image decode, area-average over the voxel
       footprint, epsilon-merge of near-identical tuples, and a `solid`-interior
       fallback to the nearest surface material. `auto` becomes texture-aware here.
@@ -196,15 +191,15 @@ Material sampling (see [voxelize](reference/mesh-doc/voxelize.md) and
 
 ### object voxels quantize ([reference/object/voxels/quantize.md](reference/object/voxels/quantize.md))
 
-- [ ] `object voxels quantize`: `--max-materials`, `--select` /
+- [x] `object voxels quantize`: `--max-materials`, `--select` /
       `--select-index`, `--property`, `--interpret-property`, `--alpha`,
       `--partition`, and the shared `--method` / `--space` / `--dither`. The
       command rewrites samples and leaves palettes and value pools untouched.
-- [ ] `--layer-index`: an integer or `a-b` range into each object's `layers`.
+- [x] `--layer-index`: an integer or `a-b` range into each object's `layers`.
       The flag repeats and defaults to every layer whose palette binds
       `--property`. A missing layer or a layer whose palette lacks the property
       errors.
-- [ ] `--shared`: cluster every selected layer on one palette together instead
+- [x] `--shared`: cluster every selected layer on one palette together instead
       of per object.
 - [ ] Profiles, landing after the command: `object.voxels.quantize.profiles`,
       `--profile`, and `vxl profile object voxels quantize list`.
@@ -216,12 +211,12 @@ Material sampling (see [voxelize](reference/mesh-doc/voxelize.md) and
 - [x] `palette show` (+ `--json`): `--index` / `--attribute` / `--format`. See
       the V2 follow-ups in [palette show](reference/palette/show.md) for the
       broader version.
-- [ ] `palette quantize`: `--max-materials`, `--index`, `--property`,
+- [x] `palette quantize`: `--max-materials`, `--index`, `--property`,
       `--interpret-property`, `--alpha`, `--partition`, and the shared
       `--method` / `--space` / `--dither`, without `--keep-unused-values`. The
       candidates are the sampled materials, weighted by voxel count. Unsampled
-      materials drop before the palette compacts. The input is a document.
-      Every referencing object dithers.
+      materials drop before the palette compacts. Every referencing object
+      dithers.
 - [ ] `palette quantize` profiles, landing after the command:
       `palette.quantize.profiles`, `--profile`, and
       `vxl profile palette quantize list`.
@@ -285,7 +280,7 @@ Material sampling (see [voxelize](reference/mesh-doc/voxelize.md) and
       See [implementation decisions](reference/implementation-decisions.md).
 - [ ] stdin / stdout via `-`; dry-run for destructive palette ops.
 - [x] Move the palette reduction from vxl into voxsmith as a general operation
-      (public `reduce_palette` + plain enums; vxl maps its clap `ValueEnum`s like
+      (public `quantize_palette` + plain enums; vxl maps its clap `ValueEnum`s like
       `FillMode` / `MaterialMode` do). See
       [implementation decisions](reference/implementation-decisions.md).
 - [x] Adopt richer typed color types (one struct per space with `from_` / `to_`

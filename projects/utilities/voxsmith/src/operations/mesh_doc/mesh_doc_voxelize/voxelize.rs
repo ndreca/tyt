@@ -5,7 +5,7 @@ use crate::{
         GridResolution, MeshInput, ResolutionReference, VoxelScale, VoxelizeOptions,
         mesh_input_from_mesh_main, voxelize_mesh,
     },
-    utilities::{order_palette_colors, reduce_palette},
+    utilities::order_palette_colors,
 };
 use meshdoc::{MeshExt, MeshMain};
 use ty_math::TyVector3F64;
@@ -14,11 +14,11 @@ use voxcore::VoxMain;
 /// Voxelizes the mesh document `main` under `options` into a [`VoxMain`] of
 /// one object per placed mesh object, each on a voxel lattice anchored at the
 /// origin of the frame `options.frame` chooses. The objects share one
-/// palette, reduced when `options.reduction` is set and left canonical:
-/// colors in material order, ids compacted. `dependencies` decodes the
-/// document's images for per-texel sampling. Errors when the document places
-/// no object, an object has no triangle geometry, the resolution's reference
-/// side has no extent, or a world reference is asked for under a kept scale.
+/// canonical palette holding every sampled material: colors in material order,
+/// ids compacted. `dependencies` decodes the document's images for per-texel
+/// sampling. Errors when the document places no object, an object has no
+/// triangle geometry, the resolution's reference side has no extent, or a world
+/// reference is asked for under a kept scale.
 pub fn voxelize<D: DecodeImage, T: MeshExt>(
     dependencies: &D,
     main: &MeshMain<T>,
@@ -40,17 +40,13 @@ pub fn voxelize<D: DecodeImage, T: MeshExt>(
         .map(|(palette_id, _)| palette_id)
         .expect("voxelize_mesh builds one palette");
 
-    if let Some(reduction) = options.reduction {
-        reduce_palette(&mut main, palette_id, reduction)?;
-    }
-
     // Canonicalize the generated palette: its materials reference colors in
-    // listing order, whatever order voxelize and the reduction left.
+    // listing order, whatever order voxelize left.
     order_palette_colors(&mut main, palette_id);
 
-    // The reduction and the reorder both keep value ids stable, so compact
-    // them to listing order: a writer serializes each material cell as an
-    // index into the value pool it emits in listing order.
+    // The reorder keeps value ids stable, so compact them to listing order: a
+    // writer serializes each material cell as an index into the value pool it
+    // emits in listing order.
     main.gc()?;
 
     Ok(main)
@@ -207,7 +203,6 @@ mod document_tests {
             box_primitive, document_of, full_square, pbr_quad_main, png_rgba, textured_quad_main,
             triangle_of, voxel_attribute, voxel_hex, voxel_number, voxelize,
         },
-        utilities::{ColorSpace, Dither, PaletteReduction, ReductionMethod},
     };
     use meshdoc::{MeshHierarchyNode, MeshMain, MeshMaterial, MeshObject, MeshPrimitive};
     use ty_math::{
@@ -239,7 +234,6 @@ mod document_tests {
             fill_color: None,
             fallback_name: Some("voxelized".to_owned()),
             out_of_range_property: OutOfRangeProperty::Error,
-            reduction: None,
         }
     }
 
@@ -886,7 +880,7 @@ mod document_tests {
     }
 
     #[test]
-    fn sizes_the_grid_names_the_object_and_keeps_every_material_without_a_reduction() {
+    fn sizes_the_grid_names_the_object_and_keeps_every_material() {
         let document = cells_main(&[
             TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0),
             TyLinSrgbaF64::new(0.0, 1.0, 0.0, 1.0),
@@ -902,50 +896,5 @@ mod document_tests {
 
         let (_, palette) = main.iter_palettes().next().unwrap();
         assert_eq!(palette.material_count(), 3);
-    }
-
-    #[test]
-    fn a_reduction_caps_the_generated_palette_and_the_state_stays_valid() {
-        let document = cells_main(&[
-            TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0),
-            TyLinSrgbaF64::new(0.99, 0.0, 0.0, 1.0),
-            TyLinSrgbaF64::new(0.0, 0.0, 1.0, 1.0),
-        ]);
-
-        let reduction = PaletteReduction {
-            max_materials: 2,
-            method: ReductionMethod::MedianCut,
-            space: ColorSpace::Oklab,
-            dither: Dither::None,
-            keep_unused_values: false,
-        };
-
-        let main = run(
-            &document,
-            &VoxelizeOptions {
-                reduction: Some(reduction),
-                ..shell(1.0, MaterialMode::PerPrimitive)
-            },
-        );
-
-        let (palette_id, palette) = main.iter_palettes().next().unwrap();
-        assert_eq!(palette.material_count(), 2);
-
-        // The merged-away color is pruned and the survivors are compacted to
-        // ids `0..2`, in material order.
-        let color_property_id = palette.property_id_by_name(BASE_COLOR).unwrap();
-        let value_pool_id = palette.property(color_property_id).unwrap().value_pool_id;
-        assert_eq!(main.value_pool(value_pool_id).unwrap().len(), 2);
-        let value_ids: Vec<u32> = palette
-            .iter_materials()
-            .map(|material_id| {
-                palette
-                    .value_id(material_id, color_property_id)
-                    .unwrap()
-                    .to_u32()
-            })
-            .collect();
-        assert_eq!(value_ids, [0, 1]);
-        assert_eq!(main.palette(palette_id).unwrap().material_count(), 2);
     }
 }

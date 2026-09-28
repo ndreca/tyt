@@ -395,116 +395,93 @@ covering all its maps together. New synthetic-glTF tests lock in the linear
 metallic-roughness decode, the sRGB emissive collapse, the occlusion strength
 formula, and each map reading its own TEXCOORD set.
 
-## Palette reduction
+## Quantize engine
 
-The `--max-palette-cells` cap and the shared `--method` / `--space` / `--dither`
-controls reduce a palette to at most N cells. The flag is named
-`--max-palette-cells` (not `--count` or `--max-palette`) and `palette quantize`
-takes the same name, since both run the identical operation: clustering M cells
-into N > M is a no-op, so a "count" is really a ceiling. Its value is a
-`MaxPaletteCells` of `none` or a positive count; `mesh-doc voxelize` defaults it
-to 256, `quantize` will require it. The `--method` / `--space` / `--dither` trio
-is a flattened `PaletteReductionOptions` clap group, paired with the per-command
-cap flag into a plain `PaletteReduction` the trait carries, so the group can be
-shared while the caps differ (default vs required).
+The engine lives in voxsmith's `utilities::quantize`, shared by
+`palette quantize` and `object voxels quantize`. Its public surface is
+`QuantizeOptions` and the plain enums it holds (`ReductionMethod`,
+`ColorSpace`, `Dither`, `AlphaMode`, `PropertyInterpretation`,
+`PartitionProperties`), which vxl's clap values map onto. The two steps stay
+crate-internal:
 
-`reduce_palette` is the engine, a public voxsmith operation on the assembled
-`VoxMain`: reduction is a general voxel operation, not vxl policy, so it lives
-beside voxsmith's other `VoxMain` work rather than in the CLI. voxsmith defines
-the plain `ReductionMethod` / `ColorSpace` / `Dither` enums; vxl keeps its
-`--method` / `--space` / `--dither` clap `ValueEnum`s and maps to them, exactly as
-`FillMode` / `MaterialMode` map to their voxsmith counterparts, while the
-`PaletteReductionOptions` group and the `--max-palette-cells` cap stay in vxl.
-voxsmith builds the full palette and vxl caps it by calling the engine after
-voxsmith returns the state. The material-follows-color rule falls out of voxcore's
-`remove_cell`, which repaints every voxel of a merged cell onto a real
-representative cell (never an average) and drops the merged cell; a final `gc`
-compacts the holes. The representative is the most-sampled cell in its cluster
-(ties to the lowest id), so the common color wins and the choice is deterministic.
-Clustering is on the `rgba` color converted to the chosen space (a cell without
-`rgba` survives untouched); alpha is not a clustering dimension but rides along in
-the representative's row. The `branded-id` dependency moved to voxsmith with the
-engine, so vxl no longer depends on it.
+1. `choose_quantize_plan` takes a palette and a set of `(object, layer)` pairs
+   and returns a `QuantizePlan` mapping each sampled material to its
+   representative, or `None` when the layers already sample few enough
+   materials
+2. `apply_quantize_plan` snaps the same layers' samples through the plan
 
-All three methods are built, in all three spaces (oklab, lab, rgb). `median-cut`
-recursively splits the widest color axis at its median; `octree` builds a
-fixed-depth octree over the color cube and folds the least-populated all-leaf
-nodes up until the leaf count fits, so it merges the rarest colors first; `kmeans`
-seeds centroids by farthest-point (deterministic, no random start) and runs
-population-weighted Lloyd iterations to a step cap. All cluster on the same
-`Point` set and collapse each cluster to its most-sampled representative, so the
-method only changes the grouping. Octree's eight-way folds are coarser than the
-two-way median split, so it can stop a little under the cap. `--dither` is built
-too (see [Dithering](#dithering)); every reduction control now applies when the
-reduction fires and is inert when it does not. The cap fires quietly, never
-failing: reduction is the designed default, so a note would print on nearly
-every run.
+`quantize_palette` runs both over every layer referencing the palette, then
+releases the materials no voxel samples and the values only they held, then
+calls `gc`. `max_materials` is a `NonZeroUsize`, which vxl parses directly.
+
+Every material row holds a value for every property of its palette, so a
+palette binds the clustered property for all of its materials or for none. A
+palette without it errors. The options resolve against the property's value
+pool kind before the cap check, so a misfit option errors even when nothing
+has to merge.
+
+Points are `TyVector4F64` with unused axes zero. A zero axis adds nothing to a
+distance and never wins a median-cut split, so one point type serves 1D to 4D
+readings. Octree reads the first three axes, and the choose step rejects a 4D
+reading under it. Color readings convert the stored f64 components directly.
+`--alpha distance` scales alpha by the lightness span of the space: 100 for
+lab, 1 for oklab and srgb. A non-finite point errors.
+
+Median cut splits a box at the boundary between distinct values nearest its
+count median, so materials sharing a value on the split axis stay together. A
+numeric property with few distinct values would otherwise spread one value
+across two clusters.
+
+A partition key holds the partition properties' values, compared by value, and
+the alpha under `--alpha partition`. Partitions form in material listing order.
+Median cut starts from one box per partition, and boxes never merge. Octree and
+kmeans cluster each partition apart. Their slots start at one per partition,
+and each further slot goes to the partition with the most voxels per slot, ties
+to the lower index, never past one slot per point. Each cluster's
+representative is its most-sampled material, ties to the lowest id.
+
+The apply step rewrites each changed voxel through `retain_voxel` with its full
+sample row, one layer at a time. voxcore's `repaint_materials` repaints every
+layer on a palette, so it cannot quantize one layer of an object. Each layer's
+rows gather before any retain, so every snap reads the layer as it was.
+
+The prune collects the values the dropped materials held and releases those no
+material of any palette still holds. A value nothing held beforehand stays.
+
+vxl's `QuantizeArgs` holds the flags both commands flatten and resolves them
+into `QuantizeOptions`. `--alpha` and `--space` parse into `Option`s, so the
+engine can tell a flag the reading has no use for from its default. Both
+commands read any voxel document and write Voxel JSON through `edit_document`.
 
 ## Dithering
 
-`--dither` (`floyd-steinberg` | `ordered`, default `none`) is built for both
-methods. It differs from the `--method` options in kind, not degree.
-`median-cut` / `octree` / `kmeans` only change how cells cluster; the collapse
-then repaints every voxel of a merged cell onto one representative uniformly,
-through voxcore's `remove_cell`. Dithering is a per-voxel remap: each voxel
-independently snaps to the nearest representative given the diffused error, so
-voxels of one original color deliberately land on different representatives. The
-material-follows-color rule still holds: a dithered voxel adopts the whole
-representative row, so the pattern lands in the material, not just the color.
+`--dither` (`floyd-steinberg` | `ordered`, default `none`) changes the apply
+step from a lookup into a per-voxel snap. Each voxel snaps to the nearest
+representative of its material's partition after the diffused error, so voxels
+of one original material can land on different representatives. A dithered
+voxel still adopts the whole representative row.
 
-When `dither != none`, a per-object pass runs after the clusters and their
-representatives are chosen but before the cell-level collapse:
+The apply step walks each layer's live voxels in voxcore's raster order
+(`x*Y*Z + y*Z + z`, so `z` varies fastest). The snap takes the material's
+clustering point, adds the offset, and picks the nearest representative by
+Euclidean distance, ties to the lowest material id. The error buffer and the
+walk are per layer, since each object is its own grid.
 
-1. Cluster and pick representatives exactly as the no-dither path does. The
-   cluster coordinates are already in the working space, so each colored cell's
-   color and each representative's snap coordinates are read straight off the
-   clusters, once, and shared across objects.
-2. For each object referencing the palette, walk its live voxels in voxcore's
-   voxel-id raster order (`x*Y*Z + y*Z + z`, so `z` varies fastest) via
-   `iter_live`, recovering each position with `voxel_position`.
-3. For each voxel, take its original color's clustering-space coordinate, add the
-   diffused error, find the nearest representative by Euclidean distance (ties to
-   the lowest cell id), and, when that differs from the current cell, reassign the
-   voxel with `retain_voxel`: read the voxel's full sample row and swap only this
-   palette reference's cell. A voxel on a colorless survivor is skipped.
-4. Diffuse the snapping error to not-yet-visited neighbors (floyd-steinberg only).
+- `ordered` adds a per-axis offset read from a repeating 3D Bayer matrix of
+  side `4` (64 levels). The matrix doubles a 2x2x2 base that numbers the cube
+  corners even parity first, the 3D analog of `[[0, 2], [3, 1]]`:
+  `M(p) = 8*base(p mod 2) + base(p/2 mod 2)`. Each of the four axes reads the
+  matrix at a different permutation of the voxel position, and a threshold maps
+  to `[-0.5, 0.5) * spacing`. `spacing` is the mean distance from each of the
+  partition's representatives to its nearest other one, so a lone
+  representative disables the offset.
+- `floyd-steinberg` carries a sparse per-voxel error keyed by voxel id and
+  pushes each snap's error to the raster-forward neighbors: `(x, y, z+1)` takes
+  `3/8`, `(x, y+1, z)` takes `3/8`, and `(x+1, y, z)` takes `2/8`. Error past a
+  grid edge drops.
 
-The collapse then runs unchanged: after the pass no live voxel samples a
-non-representative colored cell, so `remove_cell`'s repaint is a no-op and only
-the cell drop takes effect, then `gc` compacts. The reduced palette is the
-representative cells plus the untouched survivors, and every representative
-survives even if the dither left it unused, so the final cell count matches the
-no-dither path.
-
-Error diffusion, per method:
-
-- `ordered` adds a per-axis offset read from a repeating 3D Bayer threshold
-  matrix, scaled to the palette's spacing, before the nearest-representative snap.
-  No error buffer, fully deterministic, position-only. The matrix is side `4` (64
-  levels), one doubling of a 2x2x2 base that numbers the cube corners by parity
-  (the even-parity corners before the odd), the 3D analog of the classic
-  `[[0, 2], [3, 1]]` Bayer base: `M(p) = 8*base(p mod 2) + base(p/2 mod 2)`. Each
-  axis reads the matrix at a rotation of the voxel position so the three channels
-  decorrelate, and a raw threshold maps to `[-0.5, 0.5) * spacing`. `spacing` is
-  the mean distance from each representative to its nearest other representative in
-  the clustering space, so the offset perturbs a color by about one palette step;
-  a lone representative has spacing `0`, disabling the offset.
-- `floyd-steinberg` carries a per-voxel error, sparse (a `HashMap` keyed by voxel
-  id, since only diffused voxels hold one), and pushes the snapping error forward
-  to the not-yet-visited neighbors. 2D Floyd-Steinberg has a canonical kernel
-  (`7/16`, `3/16`, `5/16`, `1/16`); 3D has none, so this defines one over the
-  three raster-forward axis neighbors, weights summing to 1: `(x, y, z+1)` = `3/8`,
-  `(x, y+1, z)` = `3/8`, `(x+1, y, z)` = `2/8`. Error pushed past a grid edge is
-  dropped, as at a 2D image border.
-
-Both diffuse in the clustering space (oklab by default), so the error is
-perceptually meaningful. The traversal and error buffer are per object, since
-each object is its own grid; the reduction still runs once over the shared
-palette, then dithers each referencing object. The reassignment needs mutable
-object access, so voxcore's `VoxMain` gained an `object_mut` accessor mirroring
-`object`. Determinism holds with no RNG: object order, raster order, the
-nearest-representative tie-break, the Bayer matrix, and the forward diffusion are
-all fixed, so a given input always yields the same pattern.
+Both diffuse in the clustering space. No step draws randomness, so a given
+input always yields the same pattern.
 
 ## Typed colors and the generic mesh
 

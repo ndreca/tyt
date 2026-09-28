@@ -14,7 +14,7 @@ impl CliValue for Dither {
 
     fn help(self) -> &'static str {
         match self {
-            Dither::None => "No diffusion; snap each sample to the nearest value",
+            Dither::None => "No diffusion; snap each sample to its representative",
             Dither::FloydSteinberg => "Floyd-Steinberg diffusion in 3D voxel order",
             Dither::Ordered => "Ordered, threshold-matrix dithering",
         }

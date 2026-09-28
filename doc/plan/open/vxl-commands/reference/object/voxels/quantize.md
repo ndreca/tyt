@@ -14,8 +14,7 @@ unchanged.
 The candidates are the materials a layer samples, each weighted by its voxel
 count. Clustering runs on `--property`. Each cluster snaps onto a
 representative, its most-sampled material. Every merged voxel takes all of the
-representative's values. A material lacking the property passes through
-unmerged but still counts toward `--max-materials`.
+representative's values.
 
 1. `--max-materials <n>` (required unless a profile sets it): the most materials
    each selected layer may sample afterward.
@@ -28,8 +27,8 @@ unmerged but still counts toward `--max-materials`.
 4. `--layer-index <index>`: quantize the layers at an index into each selected
    object's `layers`, an integer or an `a-b` range. The flag repeats. Without
    it, every layer whose palette binds `--property` is quantized. The command
-   errors when a selected object lacks a named layer or a named layer's palette
-   lacks `--property`.
+   errors when a selected object lacks a named layer, a named layer's palette
+   lacks `--property`, or no selected layer's palette binds it.
 5. `--shared` (default `false`): cluster together every selected layer that
    references one palette. The whole selection then shares at most
    `--max-materials` materials per palette. Without `--shared`, each object

@@ -20,6 +20,16 @@ impl IndexRange {
         Ok(IndexRange { start, end })
     }
 
+    /// The first index of the range.
+    pub fn start(self) -> usize {
+        self.start
+    }
+
+    /// The last index of the range.
+    pub fn end(self) -> usize {
+        self.end
+    }
+
     /// Whether `index` falls in the range.
     pub fn contains(self, index: usize) -> bool {
         self.start <= index && index <= self.end

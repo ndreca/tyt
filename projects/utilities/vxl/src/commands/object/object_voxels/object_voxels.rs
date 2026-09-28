@@ -1,7 +1,7 @@
 use crate::{Dependencies, Result, commands::ObjectVoxelsCommand};
 use clap::Parser;
 
-/// Moves objects' voxels within their grids, writing Voxel JSON.
+/// Moves and quantizes objects' voxels within their grids, writing Voxel JSON.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "voxels")]
 pub struct ObjectVoxels {

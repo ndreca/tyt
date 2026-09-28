@@ -1,7 +1,6 @@
 use crate::{
     CliValue, Dependencies, Error, MeshInput, NoneOr, Result, Rgba, VoxjEncodingOptions,
-    cli_value_parser,
-    commands::{GridResolutionOptions, QuantizeOptions},
+    cli_value_parser, commands::GridResolutionOptions,
 };
 use clap::Parser;
 use meshconv::load;
@@ -101,9 +100,6 @@ pub struct MeshDocVoxelize {
     out_of_range_property: OutOfRangeProperty,
 
     #[command(flatten)]
-    quantize_options: QuantizeOptions,
-
-    #[command(flatten)]
     encoding_options: VoxjEncodingOptions,
 }
 
@@ -143,7 +139,6 @@ impl MeshDocVoxelize {
             fill_color: self.fill_color.value().map(|color| color.0),
             fallback_name: Some(stem.to_owned()),
             out_of_range_property: self.out_of_range_property,
-            reduction: self.quantize_options.resolve(),
         };
 
         let from = self.input.resolve_format()?;

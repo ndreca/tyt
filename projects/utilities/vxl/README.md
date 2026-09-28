@@ -4,8 +4,8 @@ A command-line tool for working with voxels.
 
 ## Editing
 
-The `object` and `node` commands edit a document. Each reads
-any format voxconv reads and writes Voxel JSON beside the input by default.
+The `object`, `node`, and `palette quantize` commands edit a document. Each
+reads any format voxconv reads and writes Voxel JSON beside the input by default.
 `object mesh` writes a mesh instead. `node list` only prints the scene graph.
 `--select` takes a hierarchy-path glob. `--select-index` takes an index or a
 range. Both repeat and pick what the command acts on. `--select-parent` and
@@ -44,15 +44,37 @@ vxl object upsample scene.voxj --select crate --factor 10
 
 ## Object Voxels
 
-`object voxels` commands move voxels within the grid and never change `origin`
+`object voxels` commands edit voxels within the grid and never change `origin`
 or `bounds`. `translate` shifts the voxels, `flip` mirrors them, and `rotate`
 turns them in quarter turns that follow the right-hand rule. One or three turns
 need the two turned dimensions to be equal. `node set rotation` turns any
 object.
 
+`quantize` rewrites the materials voxels sample so each quantized layer samples
+at most `--max-materials` materials of its palette. The palettes stay as they
+are. Each object clusters apart unless `--shared` clusters the whole selection
+together. The clustering flags match `palette quantize`'s.
+
 ```sh
 # Turns the 6 x 8 x 6 crate a quarter turn about y.
 vxl object voxels rotate scene.voxj --select crate --axis y --turns 1
+
+# Brings the crate down to 16 materials, keeping metals and dielectrics apart.
+vxl object voxels quantize scene.voxj --select crate --max-materials 16 --partition metallic
+```
+
+## Palettes
+
+`palette list` and `palette show` print palettes. `palette quantize` reduces a
+palette to at most `--max-materials` materials and snaps every voxel sampling
+it. Each cluster collapses onto its most-sampled material, and a merged voxel
+takes that whole material. Clustering runs on `--property`, `baseColor` by
+default. `--partition` keeps materials apart unless they agree on a property.
+Materials no voxel samples drop.
+
+```sh
+# Reduces the first palette to Voxel Max's 255 colors.
+vxl palette quantize scene.voxj --max-materials 255
 ```
 
 ## Nodes

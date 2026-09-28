@@ -18,8 +18,10 @@ impl CliValue for ReductionMethod {
 
     fn help(self) -> &'static str {
         match self {
-            ReductionMethod::MedianCut => "Recursively split the color box along its longest axis",
-            ReductionMethod::Octree => "Cluster through an octree over the color cube",
+            ReductionMethod::MedianCut => {
+                "Recursively split the widest box of points at its median"
+            }
+            ReductionMethod::Octree => "Cluster through an octree over 3D points",
             ReductionMethod::Kmeans => "Iteratively refine k clusters by nearest centroid",
         }
     }

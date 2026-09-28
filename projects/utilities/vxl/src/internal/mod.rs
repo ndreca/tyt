@@ -2,8 +2,11 @@
 //! unrelated commands, or is a cross-cutting primitive with no command of its
 //! own. Command-specific items live under their command's `internal`.
 
+mod alpha_mode;
 mod cli_value;
 mod cli_value_parser;
+mod color_space;
+mod dither;
 mod edit_document;
 mod edit_state_mode;
 mod file_name;
@@ -17,11 +20,13 @@ mod object_selection;
 mod parent_selection;
 mod parse_finite_f64;
 mod parse_index_range;
-mod positive_count;
 mod positive_f64;
 mod profile_origin;
 mod profile_set;
+mod property_interpretation;
+mod quantize_args;
 mod read_format;
+mod reduction_method;
 mod require_file_name;
 mod required_selection;
 mod rgba;
@@ -51,10 +56,10 @@ pub(crate) use object_selection::*;
 pub(crate) use parent_selection::*;
 pub(crate) use parse_finite_f64::*;
 pub(crate) use parse_index_range::*;
-pub(crate) use positive_count::*;
 pub(crate) use positive_f64::*;
 pub(crate) use profile_origin::*;
 pub(crate) use profile_set::*;
+pub(crate) use quantize_args::*;
 pub(crate) use require_file_name::*;
 pub(crate) use required_selection::*;
 pub(crate) use rgba::*;

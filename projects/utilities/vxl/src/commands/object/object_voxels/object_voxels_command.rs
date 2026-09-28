@@ -1,6 +1,6 @@
 use crate::{
     Dependencies, Result,
-    commands::{ObjectVoxelsFlip, ObjectVoxelsRotate, ObjectVoxelsTranslate},
+    commands::{ObjectVoxelsFlip, ObjectVoxelsQuantize, ObjectVoxelsRotate, ObjectVoxelsTranslate},
 };
 use clap::Subcommand;
 
@@ -10,6 +10,8 @@ use clap::Subcommand;
 pub enum ObjectVoxelsCommand {
     #[command(name = "flip")]
     ObjectVoxelsFlip(ObjectVoxelsFlip),
+    #[command(name = "quantize")]
+    ObjectVoxelsQuantize(ObjectVoxelsQuantize),
     #[command(name = "rotate")]
     ObjectVoxelsRotate(ObjectVoxelsRotate),
     #[command(name = "translate")]
@@ -20,6 +22,7 @@ impl ObjectVoxelsCommand {
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             ObjectVoxelsCommand::ObjectVoxelsFlip(flip) => flip.execute(dependencies),
+            ObjectVoxelsCommand::ObjectVoxelsQuantize(quantize) => quantize.execute(dependencies),
             ObjectVoxelsCommand::ObjectVoxelsRotate(rotate) => rotate.execute(dependencies),
             ObjectVoxelsCommand::ObjectVoxelsTranslate(translate) => {
                 translate.execute(dependencies)

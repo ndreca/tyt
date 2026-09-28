@@ -1,4 +1,4 @@
-/// The color space a palette reduction compares colors in.
+/// The space a color reading measures distance in.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ColorSpace {
     /// OKLab perceptual distance.
@@ -7,6 +7,6 @@ pub enum ColorSpace {
     /// CIELAB distance.
     Lab,
 
-    /// Naive distance on the stored sRGB components.
+    /// Naive distance on the sRGB-encoded components.
     Srgb,
 }
