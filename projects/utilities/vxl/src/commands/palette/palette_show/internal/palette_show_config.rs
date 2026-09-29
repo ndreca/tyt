@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 /// The `palette.show` section of a `.vxlconfig` layer.
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields)]
-pub(crate) struct PaletteShowConfig {
+pub struct PaletteShowConfig {
     pub(crate) profiles: BTreeMap<String, PaletteShowProfile>,
 }
 

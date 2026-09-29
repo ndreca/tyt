@@ -13,11 +13,15 @@ use voxsmith::operations::palette::{PaletteShowLabel, PaletteShowLayout, Palette
 /// name, or an object whose `kind` selects the layout and whose other keys hold
 /// that layout's elements.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct PaletteShowLayoutEntry {
+pub struct PaletteShowLayoutEntry {
     pub(crate) layout: PaletteShowLayout,
+
     pub(crate) label: Option<PaletteShowLabel>,
+
     pub(crate) header_level: Option<NonZeroU8>,
+
     pub(crate) table_shape: Option<PaletteShowTableShape>,
+
     pub(crate) width: Option<Width>,
 }
 
@@ -80,18 +84,23 @@ enum LayoutObject {
 
     MdTables {
         table_shape: Option<NamedCliValue<PaletteShowTableShape>>,
+
         label: Option<NamedCliValue<PaletteShowLabel>>,
+
         header_level: Option<NonZeroU8>,
     },
 
     TextColumns {
         label: Option<NamedCliValue<PaletteShowLabel>>,
+
         header_level: Option<NonZeroU8>,
     },
 
     TextRows {
         label: Option<NamedCliValue<PaletteShowLabel>>,
+
         header_level: Option<NonZeroU8>,
+
         width: Option<Width>,
     },
 }

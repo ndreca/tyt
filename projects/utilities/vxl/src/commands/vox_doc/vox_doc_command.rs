@@ -10,13 +10,16 @@ use clap::Subcommand;
 pub enum VoxDocCommand {
     #[command(name = "show")]
     VoxDocShow(VoxDocShow),
+
     #[command(name = "to")]
     VoxDocTo(VoxDocTo),
+
     #[command(name = "validate")]
     VoxDocValidate(VoxDocValidate),
 }
 
 impl VoxDocCommand {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             VoxDocCommand::VoxDocShow(show) => show.execute(dependencies),

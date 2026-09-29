@@ -1,3 +1,7 @@
+//! Operations over a whole vox document.
+
+// Public API
+
 mod keep_objects;
 mod vox_doc_show;
 mod vox_doc_validate;

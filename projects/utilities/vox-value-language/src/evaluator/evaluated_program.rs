@@ -1,4 +1,4 @@
-use crate::{Groupings, Value, evaluator::Lengths};
+use crate::{Groupings, Lengths, Value};
 use std::collections::HashMap;
 
 /// A program with every binding's value computed, the input to
@@ -6,7 +6,9 @@ use std::collections::HashMap;
 #[derive(Clone, Debug, PartialEq)]
 pub struct EvaluatedProgram {
     pub(crate) values: HashMap<String, Value>,
+
     pub(crate) groupings: Groupings,
+
     pub(crate) lengths: Lengths,
 }
 

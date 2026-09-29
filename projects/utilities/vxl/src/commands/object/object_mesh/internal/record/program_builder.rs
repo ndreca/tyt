@@ -1,18 +1,20 @@
-use crate::{
-    Error, ProfileSet, Result,
-    commands::{MeshProfile, parse_fragment},
-};
+use crate::{Error, ProfileSet, Result, commands::MeshProfile};
 use std::collections::HashSet;
+use vox_value_language::parse;
 use voxsmith::operations::object::{Computation, ComputedBinding};
 
 /// Joins the program from its fragments and gathers the computed bindings,
 /// the flags' first and then each landed profile's. A profile lands once, at
 /// its first arrival, its `valuesFrom` imports depth-first ahead of it.
-pub(crate) struct ProgramBuilder<'a> {
+pub struct ProgramBuilder<'a> {
     profiles: Option<&'a ProfileSet<MeshProfile>>,
+
     computed: Vec<ComputedBinding>,
+
     hand_computed: usize,
+
     fragments: Vec<String>,
+
     landed: HashSet<String>,
 }
 
@@ -139,30 +141,44 @@ impl<'a> ProgramBuilder<'a> {
     }
 }
 
+/// The program fragment `text`, which `origin` holds, with its terminator
+/// appended. An all-whitespace fragment errors, as does one that does not
+/// parse.
+fn parse_fragment(origin: &str, text: &str) -> Result<String> {
+    if text.trim().is_empty() {
+        return Err(Error::usage(format!(
+            "{origin} holds only whitespace where bindings go"
+        )));
+    }
+
+    let fragment = format!("{text};");
+
+    parse(&fragment).map_err(|error| {
+        Error::usage(format!(
+            "{origin} holds `{text}`, which does not parse: {error}"
+        ))
+    })?;
+
+    Ok(fragment)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::ProgramBuilder;
     use crate::{
         ProfileSet,
-        commands::{MeshProfile, built_in_profiles},
+        commands::{
+            ProgramBuilder, built_in_profiles,
+            object::object_mesh::internal::record::program_builder::parse_fragment,
+        },
+        profile_set_from_json,
     };
-    use std::collections::{BTreeMap, BTreeSet};
+    use std::collections::BTreeSet;
     use vox_value_language::{Dimension, Domain, Scalar, Type, TypeEnvironment, check, parse};
     use voxcore::material::{
         BASE_COLOR, EMISSIVE_COLOR, EMISSIVE_STRENGTH, IOR, METALLIC, OCCLUSION_STRENGTH,
         ROUGHNESS, TRANSMISSION,
     };
     use voxsmith::operations::object::{ArrayDomain, Computation, ComputedBinding};
-
-    /// A set of the built-ins under the profiles `entries` defines as json.
-    fn profiles(entries: &[(&str, &str)]) -> ProfileSet<MeshProfile> {
-        let profiles: BTreeMap<String, MeshProfile> = entries
-            .iter()
-            .map(|(name, json)| ((*name).to_owned(), serde_json::from_str(json).unwrap()))
-            .collect();
-
-        ProfileSet::from_profiles(profiles)
-    }
 
     #[test]
     fn imports_land_depth_first_and_each_profile_once() {
@@ -276,7 +292,7 @@ mod tests {
 
     #[test]
     fn an_import_cycle_errors() {
-        let profiles = profiles(&[
+        let profiles = profile_set_from_json(&[
             ("a", r#"{ "valuesFrom": ["b"] }"#),
             ("b", r#"{ "valuesFrom": ["a"] }"#),
         ]);
@@ -291,7 +307,7 @@ mod tests {
 
     #[test]
     fn a_computed_name_keeps_the_flags_binding_and_two_profiles_collide() {
-        let profiles = profiles(&[
+        let profiles = profile_set_from_json(&[
             ("face", r#"{ "computeIndex": { "face": "ao" } }"#),
             ("occlusion", r#"{ "computeOcclusion": "ao" }"#),
         ]);
@@ -311,7 +327,7 @@ mod tests {
 
     #[test]
     fn a_broken_profile_value_errors_at_its_entry() {
-        let profiles = profiles(&[("broken", r#"{ "values": ["a = 1", "b ="] }"#)]);
+        let profiles = profile_set_from_json(&[("broken", r#"{ "values": ["a = 1", "b ="] }"#)]);
         let mut builder = ProgramBuilder::new(Some(&profiles), Vec::new());
 
         let error = builder
@@ -319,5 +335,29 @@ mod tests {
             .unwrap_err()
             .to_string();
         assert!(error.contains("`broken`'s values entry 1"), "{error}");
+    }
+
+    #[test]
+    fn a_fragment_gains_its_terminator() {
+        assert_eq!(parse_fragment("--value", "a = 1").unwrap(), "a = 1;");
+        assert_eq!(
+            parse_fragment("--value", "a = 1; b = a;").unwrap(),
+            "a = 1; b = a;;"
+        );
+    }
+
+    #[test]
+    fn whitespace_and_broken_fragments_error_at_their_origin() {
+        let error = parse_fragment("--value", "  ").unwrap_err().to_string();
+        assert!(error.contains("--value"), "{error}");
+
+        let error = parse_fragment("the profile `x`'s values entry 0", "a =")
+            .unwrap_err()
+            .to_string();
+        assert!(
+            error.contains("the profile `x`'s values entry 0"),
+            "{error}"
+        );
+        assert!(error.contains("`a =`"), "{error}");
     }
 }

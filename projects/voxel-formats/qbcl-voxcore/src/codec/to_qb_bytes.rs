@@ -2,8 +2,8 @@ use crate::{QbVoxMain, Result, to_qb_file};
 use qbcl_codec::qb::to_qb_file_bytes;
 
 /// Writes a [`QbVoxMain`] and its ext to the bytes of a Qubicle Binary `.qb`
-/// file, the bytes form of [`to_qb_file`] and the inverse of
-/// [`from_qb_bytes`](crate::codec::from_qb_bytes).
+/// file, the bytes form of [`to_qb_file()`] and the inverse of
+/// [`from_qb_bytes`](crate::codec::from_qb_bytes()).
 pub fn to_qb_bytes(main: &QbVoxMain) -> Result<Vec<u8>> {
     let file = to_qb_file(main)?;
 

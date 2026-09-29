@@ -37,6 +37,7 @@ pub struct ObjectDownsample {
 }
 
 impl ObjectDownsample {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         edit_document(&dependencies, &self.input, self.output, |main| {
             let object_ids = self.selection.resolve_objects(main)?;
@@ -54,10 +55,10 @@ impl ObjectDownsample {
 #[cfg(test)]
 mod tests {
     use crate::commands::ObjectDownsample;
-    use clap::Parser;
+    use clap::{Error as ClapError, Parser};
     use voxsmith::operations::object::KeepRule;
 
-    fn parse(extra: &[&str]) -> Result<ObjectDownsample, clap::Error> {
+    fn parse(extra: &[&str]) -> Result<ObjectDownsample, ClapError> {
         let mut argv = vec!["downsample", "scene.voxj", "--select", "crate"];
         argv.extend_from_slice(extra);
         ObjectDownsample::try_parse_from(argv)

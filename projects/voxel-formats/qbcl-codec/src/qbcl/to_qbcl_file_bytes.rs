@@ -1,17 +1,8 @@
-use crate::{ByteWriter, CompressZlib};
+use crate::{ByteWriter, CompressZlib, NODE_COMPOUND, NODE_MATRIX, NODE_MODEL, qbcl::RLE_MASK};
 use qbcl::qbcl::{
     QbclCompound, QbclFile, QbclMatrix, QbclMetadata, QbclModel, QbclNode, QbclNodeBody,
     QbclThumbnail, QbclVoxel,
 };
-
-/// The matrix node type id.
-const NODE_MATRIX: u32 = 0;
-
-/// The model node type id.
-const NODE_MODEL: u32 = 1;
-
-/// The compound node type id.
-const NODE_COMPOUND: u32 = 2;
 
 /// The `u32` after every node's type id; always `1` in reference files.
 const NODE_RESERVED: u32 = 1;
@@ -19,15 +10,12 @@ const NODE_RESERVED: u32 = 1;
 /// The middle of a node's three flag bytes (visible, this, locked); always `1`.
 const NODE_FLAG: u8 = 1;
 
-/// The RLE marker placed in a stream integer's mask (high) byte.
-const RLE_MASK: u32 = 2;
-
 /// The longest run a single RLE marker can encode (its length is one byte).
 const MAX_RUN: usize = 255;
 
 /// Serializes a [`QbclFile`] to a Qubicle Construction Library `.qbcl` file
 /// through `dependencies`, the inverse of
-/// [`from_qbcl_file_bytes`](crate::qbcl::from_qbcl_file_bytes).
+/// [`from_qbcl_file_bytes`](crate::qbcl::from_qbcl_file_bytes()).
 ///
 /// Writes the header, thumbnail, metadata, and scene tree in turn,
 /// run-length-encoding and zlib-compressing each matrix's voxel grid. The
@@ -171,8 +159,8 @@ fn encode_voxels(matrix: &QbclMatrix) -> Vec<u8> {
             let mut left = run;
             while left > 0 {
                 let chunk = left.min(MAX_RUN);
-                if chunk > 1 || cells[i].mask == RLE_MASK as u8 {
-                    column_data.write_u32(RLE_MASK << 24 | chunk as u32);
+                if chunk > 1 || cells[i].mask == RLE_MASK {
+                    column_data.write_u32(u32::from(RLE_MASK) << 24 | chunk as u32);
                     column_data.write_u32(value);
                     integers += 2;
                 } else {
@@ -188,11 +176,16 @@ fn encode_voxels(matrix: &QbclMatrix) -> Vec<u8> {
             integers <= u16::MAX as usize,
             "voxel column has {integers} integers; the .qbcl format stores the count in a u16"
         );
-        out.write_u16(integers as u16);
+        write_u16(&mut out, integers as u16);
         out.write_bytes(&column_data.into_bytes());
     }
 
     out.into_bytes()
+}
+
+/// Appends a little-endian `u16`.
+fn write_u16(out: &mut ByteWriter, value: u16) {
+    out.write_bytes(&value.to_le_bytes());
 }
 
 /// Encodes a voxel into its four little-endian stream bytes (`r`, `g`, `b`,

@@ -107,13 +107,13 @@ mod tests {
     fn reads_a_section_with_comments_and_trailing_commas() {
         let config = br#"{
   // comment
-  "fs": {
+  "section": {
     "flag": true,
   },
 }
 "#;
 
-        let section: Option<Value> = JsoncCodec.deserialize_prefs(config, "fs").unwrap();
+        let section: Option<Value> = JsoncCodec.deserialize_prefs(config, "section").unwrap();
 
         assert_eq!(section, Some(json!({ "flag": true })));
     }
@@ -121,7 +121,7 @@ mod tests {
     #[test]
     fn returns_none_for_an_absent_section() {
         let section: Option<Value> = JsoncCodec
-            .deserialize_prefs(b"{ \"fs\": {} }", "oai")
+            .deserialize_prefs(b"{ \"section\": {} }", "other")
             .unwrap();
 
         assert_eq!(section, None);
@@ -129,14 +129,17 @@ mod tests {
 
     #[test]
     fn returns_none_for_a_comments_only_file() {
-        let section: Option<Value> = JsoncCodec.deserialize_prefs(b"// comment\n", "fs").unwrap();
+        let section: Option<Value> = JsoncCodec
+            .deserialize_prefs(b"// comment\n", "section")
+            .unwrap();
 
         assert_eq!(section, None);
     }
 
     #[test]
     fn rejects_single_quoted_strings() {
-        let result: IOResult<Option<Value>> = JsoncCodec.deserialize_prefs(b"{ 'fs': {} }", "fs");
+        let result: IOResult<Option<Value>> =
+            JsoncCodec.deserialize_prefs(b"{ 'section': {} }", "section");
 
         assert!(result.is_err());
     }
@@ -145,23 +148,23 @@ mod tests {
     fn replaces_the_section_and_preserves_comments() {
         let existing = br#"{
   // comment
-  "fs": {
+  "section": {
     "old": true
   },
-  "oai": {}
+  "other": {}
 }
 "#;
 
         let bytes = JsoncCodec
-            .serialize_prefs(&json!({ "new": 1 }), "fs", Some(existing))
+            .serialize_prefs(&json!({ "new": 1 }), "section", Some(existing))
             .unwrap();
 
         let expected = r#"{
   // comment
-  "fs": {
+  "section": {
     "new": 1
   },
-  "oai": {}
+  "other": {}
 }
 "#;
         assert_eq!(String::from_utf8(bytes).unwrap(), expected);
@@ -170,17 +173,17 @@ mod tests {
     #[test]
     fn appends_an_absent_section() {
         let existing = br#"{
-  "oai": {}
+  "other": {}
 }
 "#;
 
         let bytes = JsoncCodec
-            .serialize_prefs(&json!({ "new": 1 }), "fs", Some(existing))
+            .serialize_prefs(&json!({ "new": 1 }), "section", Some(existing))
             .unwrap();
 
         let expected = r#"{
-  "oai": {},
-  "fs": {
+  "other": {},
+  "section": {
     "new": 1
   }
 }
@@ -191,11 +194,11 @@ mod tests {
     #[test]
     fn creates_the_file_when_existing_is_none() {
         let bytes = JsoncCodec
-            .serialize_prefs(&json!({ "new": 1 }), "fs", None)
+            .serialize_prefs(&json!({ "new": 1 }), "section", None)
             .unwrap();
 
         let expected = r#"{
-  "fs": {
+  "section": {
     "new": 1
   }
 }
@@ -205,7 +208,7 @@ mod tests {
 
     #[test]
     fn rejects_a_non_object_root() {
-        let result = JsoncCodec.serialize_prefs(&json!({ "new": 1 }), "fs", Some(b"[]\n"));
+        let result = JsoncCodec.serialize_prefs(&json!({ "new": 1 }), "section", Some(b"[]\n"));
 
         assert!(result.is_err());
     }

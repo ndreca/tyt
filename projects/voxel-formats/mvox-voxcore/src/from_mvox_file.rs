@@ -1,10 +1,15 @@
 use crate::{
-    Error, MVoxVoxMain, Result, material_type_token, mvox_ext_from_file, transform_from_frames,
+    Error, MVoxExt, MVoxExtCamera, MVoxExtFrame, MVoxExtLayer, MVoxExtMaterial, MVoxExtNode,
+    MVoxExtNodeBody, MVoxExtShapeModel, MVoxExtUnknownChunk, MVoxVoxMain, PALETTE_COLORS, Result,
+    transform_from_frames,
 };
 use branded_id::U32Id;
-use mvox::{MVoxFile, MVoxMaterial, MVoxModel, MVoxSceneNodeBody};
+use mvox::{
+    MVoxCamera, MVoxFile, MVoxFrame, MVoxLayer, MVoxMaterial, MVoxMaterialType, MVoxModel,
+    MVoxSceneNode, MVoxSceneNodeBody,
+};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     hash::Hash,
 };
 use ty_math::{TySrgbaU8, TyTransformF64, TyVector3U32};
@@ -13,9 +18,6 @@ use voxcore::{
     VoxPalette, VoxValuePool, color::lin_srgba_f64_from_srgba_u8, material::BASE_COLOR,
 };
 
-/// Color indices in a MagicaVoxel palette: one material per index `0..=255`.
-const PALETTE_CELLS: usize = 256;
-
 /// MagicaVoxel's default shading token, taken by a color slot with no material.
 const DEFAULT_MATERIAL_TYPE: &str = "_diffuse";
 
@@ -23,7 +25,7 @@ const DEFAULT_MATERIAL_TYPE: &str = "_diffuse";
 type ScalarField = fn(&MVoxMaterial) -> Option<f32>;
 
 /// Loads a decoded MagicaVoxel [`MVoxFile`] into a [`MVoxVoxMain`], the inverse
-/// of [`to_mvox_file`](crate::to_mvox_file). Models become objects, the
+/// of [`to_mvox_file`](crate::to_mvox_file()). Models become objects, the
 /// 256-color palette plus the `MATL` materials become one shared palette of
 /// value pools, and the `nTRN` / `nGRP` / `nSHP` scene graph becomes the
 /// hierarchy nodes, one per scene node. MagicaVoxel is Z-up, so every grid and
@@ -59,6 +61,139 @@ pub fn from_mvox_file(file: &MVoxFile) -> Result<MVoxVoxMain> {
     Ok(main.put_ext(ext))
 }
 
+/// The ext of a read of `file`: the MagicaVoxel state with no native voxcore
+/// home. Scene node `n` in stored order keys hierarchy node `n`, a model index
+/// keys the object at that listing index, and a material's `MATL` id keys the
+/// material. Errors on a material id outside `0..=255`, since no material of
+/// the loaded palette has it.
+fn mvox_ext_from_file(file: &MVoxFile) -> Result<MVoxExt> {
+    let mut materials = BTreeMap::new();
+    for material in &file.materials {
+        let Ok(id) = u8::try_from(material.id) else {
+            return Err(Error::invalid(format!(
+                "material id {} is outside the palette index range 0..=255",
+                material.id
+            )));
+        };
+        materials.insert(
+            U32Id::from_u32(id as u32),
+            MVoxExtMaterial {
+                material_type: material.material_type.as_ref().map(material_type_token),
+                weight: material.weight,
+                rough: material.rough,
+                spec: material.spec,
+                ior: material.ior,
+                att: material.att,
+                flux: material.flux,
+                extra: material.extra.0.clone(),
+            },
+        );
+    }
+
+    Ok(MVoxExt {
+        version: file.version,
+        palette_present: file.palette.is_some(),
+        materials,
+        scene_nodes: file
+            .scene_nodes
+            .iter()
+            .enumerate()
+            .map(|(index, node)| (U32Id::from_u32(index as u32), node_provenance(node)))
+            .collect(),
+        layers: file.layers.iter().map(layer_provenance).collect(),
+        render_objects: file
+            .render_objects
+            .iter()
+            .map(|render_object| render_object.attributes.0.clone())
+            .collect(),
+        cameras: file.cameras.iter().map(camera_provenance).collect(),
+        palette_notes: file.palette_notes.clone(),
+        index_map: file.index_map.map(|map| map.to_vec()),
+        unknown_chunks: file
+            .unknown_chunks
+            .iter()
+            .map(|chunk| MVoxExtUnknownChunk {
+                id: chunk.id,
+                content: chunk.content.clone(),
+                children: chunk.children.clone(),
+            })
+            .collect(),
+    })
+}
+
+/// The ext entry for one scene node.
+fn node_provenance(node: &MVoxSceneNode) -> MVoxExtNode {
+    MVoxExtNode {
+        id: node.id,
+        hidden: node.attributes.hidden,
+        attr_extra: node.attributes.extra.0.clone(),
+        body: match &node.body {
+            MVoxSceneNodeBody::Transform(transform) => MVoxExtNodeBody::Transform {
+                layer: transform.layer,
+                frames: transform.frames.iter().map(frame_provenance).collect(),
+            },
+            MVoxSceneNodeBody::Group(_) => MVoxExtNodeBody::Group,
+            MVoxSceneNodeBody::Shape(shape) => MVoxExtNodeBody::Shape {
+                models: shape
+                    .models
+                    .iter()
+                    .map(|model| MVoxExtShapeModel {
+                        object: U32Id::from_u32(model.model),
+                        frame_index: model.frame_index,
+                        extra: model.extra.0.clone(),
+                    })
+                    .collect(),
+            },
+        },
+    }
+}
+
+/// The ext provenance for one transform-node frame.
+fn frame_provenance(frame: &MVoxFrame) -> MVoxExtFrame {
+    MVoxExtFrame {
+        rotation: frame.rotation.0,
+        translation: frame.translation,
+        frame_index: frame.frame_index,
+        extra: frame.extra.0.clone(),
+    }
+}
+
+/// The ext provenance for one layer.
+fn layer_provenance(layer: &MVoxLayer) -> MVoxExtLayer {
+    MVoxExtLayer {
+        id: layer.id,
+        name: layer.name.clone(),
+        hidden: layer.hidden,
+        extra: layer.extra.0.clone(),
+    }
+}
+
+/// The ext provenance for one camera.
+fn camera_provenance(camera: &MVoxCamera) -> MVoxExtCamera {
+    MVoxExtCamera {
+        id: camera.id,
+        mode: camera.mode.clone(),
+        focus: camera.focus,
+        angle: camera.angle,
+        radius: camera.radius,
+        frustum: camera.frustum,
+        fov: camera.fov,
+        extra: camera.extra.0.clone(),
+    }
+}
+
+/// The `_type` token for a material shading model. Known variants map to their
+/// documented tokens; an unmodeled variant keeps its stored string.
+fn material_type_token(material_type: &MVoxMaterialType) -> String {
+    match material_type {
+        MVoxMaterialType::Diffuse => "_diffuse".to_owned(),
+        MVoxMaterialType::Metal => "_metal".to_owned(),
+        MVoxMaterialType::Glass => "_glass".to_owned(),
+        MVoxMaterialType::Emit => "_emit".to_owned(),
+        MVoxMaterialType::Other(token) => token.clone(),
+    }
+}
+
 /// Builds the shared palette: one material per color index `0..=255`, so a
 /// material's index is its color index. `baseColor` binds a color
 /// value pool; with materials, `type` and the six scalar fields bind their own
@@ -73,11 +208,11 @@ fn build_palette(main: &mut VoxMain<()>, file: &MVoxFile) -> Result<VoxPalette> 
     let mut material_by_id: HashMap<i32, &MVoxMaterial> =
         HashMap::with_capacity(file.materials.len());
     for material in &file.materials {
-        if material.id < 0 || material.id as usize >= PALETTE_CELLS {
+        if material.id < 0 || material.id as usize >= PALETTE_COLORS {
             return Err(Error::invalid(format!(
                 "material id {} is outside the palette index range 0..={}",
                 material.id,
-                PALETTE_CELLS - 1
+                PALETTE_COLORS - 1
             )));
         }
         if material_by_id.insert(material.id, material).is_some() {
@@ -122,7 +257,7 @@ fn build_palette(main: &mut VoxMain<()>, file: &MVoxFile) -> Result<VoxPalette> 
             ("flux", |m| m.flux),
         ];
 
-        let types: Vec<String> = (0..PALETTE_CELLS)
+        let types: Vec<String> = (0..PALETTE_COLORS)
             .map(|index| {
                 material_by_id
                     .get(&(index as i32))
@@ -140,7 +275,7 @@ fn build_palette(main: &mut VoxMain<()>, file: &MVoxFile) -> Result<VoxPalette> 
         attribute_indices.push(type_indices);
 
         for (name, read) in SCALARS {
-            let values: Vec<f64> = (0..PALETTE_CELLS)
+            let values: Vec<f64> = (0..PALETTE_COLORS)
                 .map(|index| {
                     material_by_id
                         .get(&(index as i32))
@@ -165,7 +300,7 @@ fn build_palette(main: &mut VoxMain<()>, file: &MVoxFile) -> Result<VoxPalette> 
         }
     }
 
-    for index in 0..PALETTE_CELLS {
+    for index in 0..PALETTE_COLORS {
         let mut value_ids = vec![U32Id::from_u32(color_indices[index])];
         for column in &attribute_indices {
             value_ids.push(U32Id::from_u32(column[index]));

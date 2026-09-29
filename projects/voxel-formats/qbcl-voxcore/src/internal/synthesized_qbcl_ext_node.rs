@@ -7,7 +7,7 @@ use voxcore::VoxHierarchyNode;
 /// body for a node placing an object beside children or further objects, and
 /// a model body with the default transform chunk for any other node. A grid
 /// body pivots at the grid origin.
-pub(crate) fn synthesized_qbcl_ext_node(node: &VoxHierarchyNode) -> QbclExtNode {
+pub fn synthesized_qbcl_ext_node(node: &VoxHierarchyNode) -> QbclExtNode {
     let body = match node.child_object_ids.as_slice() {
         [] => QbclExtNodeBody::Model {
             transform: QbclModel::DEFAULT_TRANSFORM.to_vec(),

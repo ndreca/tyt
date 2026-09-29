@@ -3,7 +3,7 @@ use voxsmith::operations::profile::{ProfileListGroup, ProfileListLayout, profile
 
 /// The profiles of `profiles` in `layout`: one group per origin in cascade
 /// order, each holding the names it supplies in name order.
-pub(crate) fn list_profiles<P>(profiles: &ProfileSet<P>, layout: ProfileListLayout) -> String {
+pub fn list_profiles<P>(profiles: &ProfileSet<P>, layout: ProfileListLayout) -> String {
     let groups: Vec<_> = profiles
         .by_origin()
         .into_iter()

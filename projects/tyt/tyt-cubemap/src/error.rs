@@ -8,9 +8,14 @@ use tyt_common::ExecFailed;
 /// An error from a cubemap operation.
 #[derive(Debug)]
 pub enum Error {
+    /// `ffmpeg` failed.
     Ffmpeg(ExecFailed),
-    Magick(ExecFailed),
+
+    /// An I/O operation failed.
     IO(IOError),
+
+    /// `magick` failed.
+    Magick(ExecFailed),
 }
 
 impl Display for Error {
@@ -33,6 +38,9 @@ impl Display for Error {
                 }
                 Ok(())
             }
+
+            Error::IO(e) => e.fmt(f),
+
             Error::Magick(ExecFailed {
                 exit_code,
                 stdout,
@@ -50,7 +58,6 @@ impl Display for Error {
                 }
                 Ok(())
             }
-            Error::IO(e) => e.fmt(f),
         }
     }
 }

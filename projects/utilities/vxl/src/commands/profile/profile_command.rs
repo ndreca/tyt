@@ -10,13 +10,16 @@ use clap::Subcommand;
 pub enum ProfileCommand {
     #[command(name = "mesh-doc")]
     ProfileMeshDoc(ProfileMeshDoc),
+
     #[command(name = "object")]
     ProfileObject(ProfileObject),
+
     #[command(name = "palette")]
     ProfilePalette(ProfilePalette),
 }
 
 impl ProfileCommand {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             ProfileCommand::ProfileMeshDoc(mesh_doc) => mesh_doc.execute(dependencies),

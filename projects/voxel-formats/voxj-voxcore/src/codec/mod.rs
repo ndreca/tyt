@@ -1,5 +1,7 @@
-//! Reads and writes `.voxj` / `.voxjz` document bytes, gated behind the
-//! `codec` feature.
+//! Reads and writes `.voxj` / `.voxjz` document bytes, gated behind the `codec`
+//! feature.
+
+// Public API
 
 mod check_voxj_bytes;
 mod from_voxj_bytes;
@@ -15,6 +17,6 @@ pub use to_voxj_pretty_bytes::*;
 pub use to_voxjz_bytes::*;
 pub use voxj_version_from_bytes::*;
 
-// Re-exported so a caller can name the dependencies the functions here take
-// and bind them through the codec's impl behind `impl`.
+// Re-exported so a caller can name the dependencies the functions here take and
+// bind them through the codec's impl behind `impl`.
 pub use voxj_codec::dependencies;

@@ -11,7 +11,7 @@ use vox_value_language::{Components, Domain, Scalar, Value, eval_expression};
 
 /// Lands `attributes` on `primitive`, each read at the corners of `faces`
 /// with lower domains climbing in.
-pub(crate) fn write_attributes(
+pub fn write_attributes(
     primitive: &mut MeshPrimitive,
     primitive_id: U32Id<BMeshPrimitive>,
     attributes: &[AttributeWrite],

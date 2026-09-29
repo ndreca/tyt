@@ -5,7 +5,7 @@ use ty_math::{TyLinSrgbaF64, TyTransformF64};
 /// A document of one box spanning `[0, sx]`, `[0, sy]`, `[0, sz]` under a
 /// node named `node_name`. The primitive draws `material` as `(base_color,
 /// metallic, roughness)`, or the default when `None`.
-pub(crate) fn box_main(
+pub fn box_main(
     sx: f64,
     sy: f64,
     sz: f64,

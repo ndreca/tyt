@@ -26,6 +26,7 @@ pub struct RenameNode {
 }
 
 impl RenameNode {
+    /// Renames the selected nodes in `scene.json`.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let scene_path = self.input_vmax.join("scene.json");
         let bytes = dependencies.read_file(&scene_path)?;

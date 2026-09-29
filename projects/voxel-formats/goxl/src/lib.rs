@@ -12,6 +12,8 @@
 //! The format is defined by Goxel's own reader and writer in
 //! [`src/formats/gox.c`](https://github.com/guillaumechereau/goxel/blob/master/src/formats/gox.c).
 
+// Public API
+
 mod goxl_block;
 mod goxl_camera;
 mod goxl_dict;

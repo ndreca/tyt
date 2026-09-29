@@ -3,7 +3,7 @@ use crate::{
     color::{CellColor, resolve_cell_color},
 };
 
-/// [`resolve_cell_color`], reading transparent black when no layer supplies
+/// [`resolve_cell_color()`], reading transparent black when no layer supplies
 /// `baseColor`.
 pub fn resolve_cell_color_or_transparent<'a, T: VoxExt>(
     state: &VoxMain<T>,

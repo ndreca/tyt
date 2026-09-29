@@ -1,21 +1,22 @@
-use crate::{Error, QbtExtNode, QbtVoxMain, Result, face_mask};
+use crate::{
+    Error, QbtExtNode, QbtVoxMain, Result, face_mask, placed_objects, rounded_translation,
+};
 use branded_id::U32Id;
 use qbcl::qbt::{
     QbtColor, QbtCompound, QbtFile, QbtMatrix, QbtModel, QbtNode, QbtUnknownNode, QbtVoxel,
 };
-use ty_math::TyVector3I32;
 use voxcore::{
     BVoxHierarchyNode, VoxHierarchyNode, VoxObject, color::resolve_cell_color_or_transparent,
 };
 
 /// Writes a [`QbtVoxMain`] to a decoded Qubicle Binary Tree [`QbtFile`], the
-/// inverse of [`from_qbt_file`](crate::from_qbt_file). The scene tree is
+/// inverse of [`from_qbt_file`](crate::from_qbt_file()). The scene tree is
 /// walked from the single root. Each node is named for its hierarchy node at
 /// its translation rounded to whole voxels. Each matrix or compound object
-/// emits its grid with colors from the palette and, per solid voxel, the
-/// mask of the faces its neighbors leave uncovered. The entry supplies what
-/// the scene cannot derive. A state from
-/// [`to_qbt_vox_main`](crate::to_qbt_vox_main) writes as a file synthesized
+/// emits its grid with colors from the palette and, per solid voxel, the mask
+/// of the faces its neighbors leave uncovered. The entry supplies what the
+/// scene cannot derive. A state from
+/// [`to_qbt_vox_main`](crate::to_qbt_vox_main()) writes as a file synthesized
 /// from the scene.
 ///
 /// Errors if:
@@ -272,23 +273,6 @@ fn synthesized_matrix(
     fill_grid(main, object, matrix)
 }
 
-/// The objects a hierarchy node places, in order.
-fn placed_objects<'a>(hierarchy: &VoxHierarchyNode, main: &'a QbtVoxMain) -> Vec<&'a VoxObject> {
-    hierarchy
-        .child_object_ids
-        .iter()
-        .map(|&object_id| {
-            main.object(object_id)
-                .expect("a placed object is one of the state's")
-        })
-        .collect()
-}
-
-/// A node's translation rounded to a Qubicle position's whole voxels.
-fn rounded_translation(node: &VoxHierarchyNode) -> TyVector3I32 {
-    node.transform.position.round().as_ivec3()
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{QbtExtNode, QbtVoxMain, from_qbt_file, to_qbt_file};
@@ -387,11 +371,11 @@ mod tests {
         &mut root.children
     }
 
-    fn node(index: u32) -> U32Id<BVoxHierarchyNode> {
+    fn node_id(index: u32) -> U32Id<BVoxHierarchyNode> {
         U32Id::from_u32(index)
     }
 
-    fn object(index: u32) -> U32Id<BVoxObject> {
+    fn object_id(index: u32) -> U32Id<BVoxObject> {
         U32Id::from_u32(index)
     }
 
@@ -465,13 +449,13 @@ mod tests {
         let file = sample_file();
         let mut main = from_qbt_file(&file).unwrap();
 
-        set_children(&mut main, node(5), vec![node(0)], Vec::new());
-        set_children(&mut main, node(3), Vec::new(), Vec::new());
+        set_children(&mut main, node_id(5), vec![node_id(0)], Vec::new());
+        set_children(&mut main, node_id(3), Vec::new(), Vec::new());
         for index in [1, 2, 3, 4] {
-            main.release_hierarchy_node(node(index)).unwrap();
+            main.release_hierarchy_node(node_id(index)).unwrap();
         }
         for index in [1, 2] {
-            main.release_object(object(index)).unwrap();
+            main.release_object(object_id(index)).unwrap();
         }
 
         let mut want = file;
@@ -483,7 +467,7 @@ mod tests {
         let ext = main.ext();
         assert_eq!(ext.nodes.len(), 2);
         assert_eq!(
-            ext.nodes[&node(0)],
+            ext.nodes[&node_id(0)],
             QbtExtNode::Matrix {
                 local_scale: [1, 1, 1],
                 pivot: [0.5, 0.0, 0.0],
@@ -499,13 +483,13 @@ mod tests {
         let file = sample_file();
         let mut main = from_qbt_file(&file).unwrap();
 
-        set_children(&mut main, node(5), vec![node(3)], Vec::new());
-        set_children(&mut main, node(3), vec![node(2)], Vec::new());
+        set_children(&mut main, node_id(5), vec![node_id(3)], Vec::new());
+        set_children(&mut main, node_id(3), vec![node_id(2)], Vec::new());
         for index in [0, 1, 4] {
-            main.release_hierarchy_node(node(index)).unwrap();
+            main.release_hierarchy_node(node_id(index)).unwrap();
         }
         for index in [0, 2] {
-            main.release_object(object(index)).unwrap();
+            main.release_object(object_id(index)).unwrap();
         }
         main.gc().unwrap();
 
@@ -531,7 +515,7 @@ mod tests {
         let file = sample_file();
         let mut main = from_qbt_file(&file).unwrap();
 
-        set_children(&mut main, node(0), Vec::new(), Vec::new());
+        set_children(&mut main, node_id(0), Vec::new(), Vec::new());
 
         assert!(to_qbt_file(&main).is_err());
     }
@@ -544,7 +528,7 @@ mod tests {
         let mut main = from_qbt_file(&file).unwrap();
 
         let object_id = retain_added_object(&mut main);
-        let node_id = main
+        let placed_node_id = main
             .retain_hierarchy_node(VoxHierarchyNode {
                 name: "placed".to_owned(),
                 child_node_ids: Vec::new(),
@@ -554,13 +538,13 @@ mod tests {
             .unwrap();
         set_children(
             &mut main,
-            node(5),
-            vec![node(0), node(3), node(4), node_id],
+            node_id(5),
+            vec![node_id(0), node_id(3), node_id(4), placed_node_id],
             Vec::new(),
         );
 
         assert_eq!(
-            main.ext().nodes[&node_id],
+            main.ext().nodes[&placed_node_id],
             QbtExtNode::Matrix {
                 local_scale: [1, 1, 1],
                 pivot: [0.0, 0.0, 0.0],
@@ -580,7 +564,7 @@ mod tests {
         let mut main = from_qbt_file(&file).unwrap();
 
         let object_id = retain_added_object(&mut main);
-        set_children(&mut main, node(1), Vec::new(), vec![object_id]);
+        set_children(&mut main, node_id(1), Vec::new(), vec![object_id]);
 
         let mut want = file;
         let QbtNode::Compound(compound) = &mut root_children(&mut want)[1] else {
@@ -597,13 +581,13 @@ mod tests {
         let file = sample_file();
         let mut main = from_qbt_file(&file).unwrap();
 
-        let object_id = retain_added_object(&mut main);
-        set_children(&mut main, node(3), vec![node(2)], vec![object(2)]);
+        let added_object_id = retain_added_object(&mut main);
+        set_children(&mut main, node_id(3), vec![node_id(2)], vec![object_id(2)]);
         set_children(
             &mut main,
-            node(0),
-            vec![node(1)],
-            vec![object(0), object_id],
+            node_id(0),
+            vec![node_id(1)],
+            vec![object_id(0), added_object_id],
         );
 
         let mut want = file;
@@ -631,13 +615,13 @@ mod tests {
         let file = sample_file();
 
         let mut main = from_qbt_file(&file).unwrap();
-        let object_id = retain_added_object(&mut main);
-        set_children(&mut main, node(4), Vec::new(), vec![object_id]);
+        let added_object_id = retain_added_object(&mut main);
+        set_children(&mut main, node_id(4), Vec::new(), vec![added_object_id]);
         assert!(to_qbt_file(&main).is_err());
 
         let mut main = from_qbt_file(&file).unwrap();
-        set_children(&mut main, node(3), vec![node(2)], vec![object(2)]);
-        set_children(&mut main, node(4), vec![node(1)], Vec::new());
+        set_children(&mut main, node_id(3), vec![node_id(2)], vec![object_id(2)]);
+        set_children(&mut main, node_id(4), vec![node_id(1)], Vec::new());
         assert!(to_qbt_file(&main).is_err());
     }
 
@@ -648,16 +632,21 @@ mod tests {
         let file = sample_file();
 
         let mut main = from_qbt_file(&file).unwrap();
-        main.ext_mut().nodes.remove(&node(4));
+        main.ext_mut().nodes.remove(&node_id(4));
         assert!(to_qbt_file(&main).is_err());
 
-        set_children(&mut main, node(5), vec![node(0), node(3)], Vec::new());
+        set_children(
+            &mut main,
+            node_id(5),
+            vec![node_id(0), node_id(3)],
+            Vec::new(),
+        );
         assert_eq!(
-            main.release_hierarchy_node(node(4)),
+            main.release_hierarchy_node(node_id(4)),
             Err(VoxError::Ext {
                 reason: "qbt ext has no entry for node 4".to_owned(),
             })
         );
-        assert!(main.hierarchy_node(node(4)).is_some());
+        assert!(main.hierarchy_node(node_id(4)).is_some());
     }
 }

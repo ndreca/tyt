@@ -85,6 +85,7 @@ pub enum Tyt {
 }
 
 impl Tyt {
+    /// Runs the selected sub-crate command.
     pub fn execute(self, deps: impl Dependencies) -> Result<()> {
         match self {
             Tyt::Claude { claude } => claude.execute(deps.tyt_claude_dependencies())?,

@@ -1,3 +1,7 @@
+//! Qubicle Binary (`.qb`) data types, gated behind the `qb` feature.
+
+// Public API
+
 mod qb_color_format;
 mod qb_file;
 mod qb_matrix;

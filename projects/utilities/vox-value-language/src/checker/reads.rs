@@ -1,7 +1,4 @@
-use crate::{
-    Domain,
-    checker::{CheckedKind, CheckedNode},
-};
+use crate::{CheckedKind, CheckedNode, Domain};
 use std::collections::BTreeSet;
 
 /// The names an expression reads and the arrays it gathers entries from.

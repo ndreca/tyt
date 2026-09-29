@@ -9,7 +9,7 @@ use vox_value_language::{Components, Domain, Value};
 /// Bakes `value` onto the `bake` atlas under `transfer`, a cell per entry
 /// with a lower value climbing into each face. Unused cells stay transparent
 /// black.
-pub(crate) fn bake_png(
+pub fn bake_png(
     element: &MeshElement,
     value: &Value,
     transfer: Transfer,

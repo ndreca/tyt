@@ -19,7 +19,7 @@ use vox_value_language::{Components, Dimension, Domain, Value, eval_expression};
 
 /// Retains the record's materials into `document` in table order, each slot
 /// filling its modeled field and each extra a named property.
-pub(crate) fn write_materials<D: EncodePng>(
+pub fn write_materials<D: EncodePng>(
     context: &WriteContext<'_, D>,
     document: &mut MeshMain<()>,
     images: &mut Images,

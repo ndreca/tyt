@@ -44,18 +44,19 @@ const IOR_EXTENSION: &str = "KHR_materials_ior";
 const TRANSMISSION_EXTENSION: &str = "KHR_materials_transmission";
 
 /// Writes a [`GltfMeshMain`] to a glTF [`GltfFile`], the inverse of
-/// [`from_gltf_file`](crate::from_gltf_file). A loaded file writes back exactly
-/// through its ext. A state [`to_gltf_mesh_main`](crate::to_gltf_mesh_main)
-/// gave its ext writes as a file synthesized from the document. Every entity
-/// writes at its listing index. The geometry packs into one buffer, one view
-/// per stream. Positions, normals, tangents, and node transforms copy straight
-/// because meshdoc shares glTF's frame. Each root in no scene joins the default
-/// scene, so a node retained after the load is reachable. The document's files
-/// land as the loose files under their names. A material's and an object's
-/// properties land in its `extras.vxl.values`, and a primitive's name in its
-/// `extras.vxl.name`. A primitive with no vertices leaves the file because
-/// glTF forbids an empty accessor. `options` picks where the images go.
-/// `dependencies` encodes the data URIs of the images that go there.
+/// [`from_gltf_file`](crate::from_gltf_file()). A loaded file writes back
+/// exactly through its ext. A state
+/// [`to_gltf_mesh_main`](crate::to_gltf_mesh_main()) gave its ext writes as a
+/// file synthesized from the document. Every entity writes at its listing
+/// index. The geometry packs into one buffer, one view per stream. Positions,
+/// normals, tangents, and node transforms copy straight because meshdoc shares
+/// glTF's frame. Each root in no scene joins the default scene, so a node
+/// retained after the load is reachable. The document's files land as the loose
+/// files under their names. A material's and an object's properties land in its
+/// `extras.vxl.values`, and a primitive's name in its `extras.vxl.name`. A
+/// primitive with no vertices leaves the file because glTF forbids an empty
+/// accessor. `options` picks where the images go. `dependencies` encodes the
+/// data URIs of the images that go there.
 ///
 /// Errors if:
 ///

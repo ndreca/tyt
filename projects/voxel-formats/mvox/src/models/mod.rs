@@ -1,3 +1,5 @@
+// Public API
+
 mod mvox_model;
 mod mvox_voxel;
 

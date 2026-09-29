@@ -34,7 +34,7 @@ use ty_math::{
 };
 
 /// Loads a glTF [`GltfFile`] into a [`GltfMeshMain`], the inverse of
-/// [`to_gltf_file`](crate::to_gltf_file). The images become images, the
+/// [`to_gltf_file`](crate::to_gltf_file()). The images become images, the
 /// textures textures, the materials materials, the meshes objects of one
 /// primitive per glTF primitive, and the nodes hierarchy nodes, with every
 /// scene's nodes and every parentless node as the roots. The loose files the

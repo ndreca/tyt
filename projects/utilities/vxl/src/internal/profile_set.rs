@@ -5,7 +5,7 @@ use std::{collections::BTreeMap, path::PathBuf};
 /// the cascade. Each name reads from the last layer supplying it, wholesale,
 /// and remembers that layer as its origin.
 #[derive(Clone, Debug)]
-pub(crate) struct ProfileSet<P> {
+pub struct ProfileSet<P> {
     /// The layers in cascade order, the built-ins first.
     cascade: Vec<ProfileOrigin>,
 

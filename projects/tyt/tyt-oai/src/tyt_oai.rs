@@ -1,4 +1,4 @@
-use crate::commands::Img;
+use crate::{Dependencies, Result, commands::Img};
 use clap::Subcommand;
 
 /// Commands for working with the OpenAI API.
@@ -10,7 +10,8 @@ pub enum TytOAI {
 }
 
 impl TytOAI {
-    pub fn execute(self, dependencies: impl crate::Dependencies) -> crate::Result<()> {
+    /// Runs the command.
+    pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             TytOAI::Img(img) => img.execute(dependencies),
         }

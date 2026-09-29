@@ -1,4 +1,7 @@
-use crate::{Dependencies, Error, Result, utilities};
+use crate::{
+    COMMON_PY, Dependencies, Error, FBX_HIERARCHY_JSON_PY, Result, RotUnit, Script,
+    embed_blender_script, extract_json, match_hierarchy_paths,
+};
 use clap::{ArgGroup, Parser, ValueEnum};
 use std::{
     ffi::{OsStr, OsString},
@@ -6,15 +9,13 @@ use std::{
     path::PathBuf,
 };
 
-#[derive(Clone, Copy, Debug, ValueEnum)]
-enum RotUnit {
-    Rad,
-    Deg,
-}
+/// The Blender script that writes transform components on named objects.
+const FBX_TRANSFORM_PY: Script = embed_blender_script!("fbx_transform.py");
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
 enum Space {
     Local,
+
     World,
 }
 
@@ -394,6 +395,7 @@ pub struct Transform {
 }
 
 impl Transform {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let Transform {
             input_fbx,
@@ -457,8 +459,8 @@ impl Transform {
         let bak_scl_y = (bake_all_scl || bak_scl_y).then_some(1.0);
         let bak_scl_z = (bake_all_scl || bak_scl_z).then_some(1.0);
 
-        // Expand set/mod aggregates into per-axis Options. Clap already
-        // rejects combinations like `--set-pos X Y Z --set-pos-x W`.
+        // Expand set/mod aggregates into per-axis Options. Clap already rejects
+        // combinations like `--set-pos X Y Z --set-pos-x W`.
         let expand_triple = |triple: Option<Vec<f64>>| -> [Option<f64>; 3] {
             match triple {
                 Some(v) => [Some(v[0]), Some(v[1]), Some(v[2])],
@@ -515,17 +517,16 @@ impl Transform {
 
         // Phase 1: get hierarchy JSON from Blender.
         let args: [&OsStr; 1] = [input_fbx.as_ref()];
-        let stdout =
-            dependencies.exec_temp_blender_script(&utilities::FBX_HIERARCHY_JSON_PY, args)?;
+        let stdout = dependencies.exec_temp_blender_script(&FBX_HIERARCHY_JSON_PY, args)?;
 
-        let json = utilities::extract_json(&stdout, b'[', b']')?;
+        let json = extract_json(&stdout, b'[', b']')?;
         let entries = dependencies.parse_hierarchy_json(json)?;
 
         let mut patterns = vec![pattern];
         patterns.extend(select);
 
         let candidate_paths: Vec<&str> = entries.iter().map(|(_, path, _)| path.as_str()).collect();
-        let matched = utilities::match_hierarchy_paths(&dependencies, &patterns, &candidate_paths)?;
+        let matched = match_hierarchy_paths(&dependencies, &patterns, &candidate_paths)?;
 
         let matched_names: Vec<&str> = entries
             .iter()
@@ -541,10 +542,7 @@ impl Transform {
             )));
         }
 
-        let to_radians = |v: f64| match rot_unit {
-            RotUnit::Rad => v,
-            RotUnit::Deg => v.to_radians(),
-        };
+        let to_radians = |v: f64| rot_unit.to_radians(v);
 
         let transform_slots = [
             set_pos_x,
@@ -605,8 +603,8 @@ impl Transform {
         }
 
         dependencies.exec_temp_blender_scripts_with_stdout(
-            &utilities::FBX_TRANSFORM_PY,
-            [&utilities::COMMON_PY],
+            &FBX_TRANSFORM_PY,
+            [&COMMON_PY],
             args,
         )?;
 

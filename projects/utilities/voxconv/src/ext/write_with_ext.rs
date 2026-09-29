@@ -20,6 +20,7 @@ pub fn write_with_ext<D: Dependencies>(
 /// The typed write of one format.
 struct WriteWithExt<'a, D> {
     dependencies: &'a D,
+
     main: VoxconvVoxMain,
 }
 

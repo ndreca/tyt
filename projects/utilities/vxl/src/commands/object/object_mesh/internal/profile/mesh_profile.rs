@@ -13,7 +13,7 @@ use voxsmith::operations::object::Method;
 /// errors at load.
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields, rename_all = "camelCase")]
-pub(crate) struct MeshProfile {
+pub struct MeshProfile {
     /// Mirrors `--values-from` per entry. Writers never travel.
     pub(crate) values_from: Vec<String>,
 
@@ -53,10 +53,9 @@ pub(crate) struct MeshProfile {
 
 #[cfg(test)]
 mod tests {
-    use super::MeshProfile;
     use crate::{
         NamedCliValue,
-        commands::{ExtraEntry, SlotEntry, TextureShapeEntry, ValueEntry},
+        commands::{ExtraEntry, MeshProfile, SlotEntry, TextureShapeEntry, ValueEntry},
     };
     use voxsmith::operations::object::{Method, TextureShape, Transfer};
 

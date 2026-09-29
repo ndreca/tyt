@@ -1,5 +1,7 @@
 #![deny(rustdoc::broken_intra_doc_links)]
 
+// Public API
+
 mod common;
 mod models;
 mod palette;

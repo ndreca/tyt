@@ -10,6 +10,7 @@ pub enum ProfilePaletteQuantizeCommand {
 }
 
 impl ProfilePaletteQuantizeCommand {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             ProfilePaletteQuantizeCommand::ProfilePaletteQuantizeList(list) => {

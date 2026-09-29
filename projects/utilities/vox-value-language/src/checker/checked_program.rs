@@ -1,11 +1,13 @@
-use crate::{CheckedExpression, Type, TypeEnvironment, checker::CheckedBinding};
+use crate::{CheckedBinding, CheckedExpression, Type, TypeEnvironment};
 use std::collections::HashMap;
 
 /// A program with every binding's type settled, the input to `eval`.
 #[derive(Clone, Debug, PartialEq)]
 pub struct CheckedProgram {
     pub(crate) environment: TypeEnvironment,
+
     pub(crate) bindings: Vec<CheckedBinding>,
+
     pub(crate) scope: HashMap<String, Type>,
 }
 

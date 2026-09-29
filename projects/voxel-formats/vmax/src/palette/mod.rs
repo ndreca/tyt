@@ -2,6 +2,8 @@
 //! [`VMaxPaletteSettingsVmaxpsbFile`](crate::VMaxPaletteSettingsVmaxpsbFile)
 //! embeds when a palette ships no sibling `palette*.png`.
 
+// Public API
+
 mod decode_palette_colors;
 mod error;
 mod result;

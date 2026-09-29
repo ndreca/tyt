@@ -1,3 +1,5 @@
+// Public API
+
 #[allow(clippy::module_inception)]
 mod profile_object_voxels_quantize;
 mod profile_object_voxels_quantize_command;

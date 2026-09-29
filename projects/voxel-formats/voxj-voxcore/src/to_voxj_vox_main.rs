@@ -2,7 +2,7 @@ use crate::{VoxjVoxExt, VoxjVoxMain};
 use voxcore::VoxMain;
 
 /// Gives a bare main an empty `ext` block, the [`VoxjVoxMain`]
-/// [`to_voxj_file`](crate::to_voxj_file) writes with no block.
+/// [`to_voxj_file`](crate::to_voxj_file()) writes with no block.
 pub fn to_voxj_vox_main(main: VoxMain<()>) -> VoxjVoxMain {
     main.put_ext(VoxjVoxExt::default())
 }

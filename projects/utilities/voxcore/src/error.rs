@@ -54,13 +54,16 @@ pub enum Error {
     /// grid of `bounds`.
     RemappedVoxelOutsideGrid {
         voxel_id: U32Id<BVoxVoxel>,
+
         position: TyVector3I32,
+
         bounds: TyVector3U32,
     },
 
     /// A voxel remap moved two live voxels onto one cell.
     RemappedVoxelCollision {
         voxel_id: U32Id<BVoxVoxel>,
+
         other_voxel_id: U32Id<BVoxVoxel>,
     },
 
@@ -68,6 +71,7 @@ pub enum Error {
     /// `bounds`.
     ResampleSourceOutsideGrid {
         position: TyVector3U32,
+
         bounds: TyVector3U32,
     },
 
@@ -75,6 +79,7 @@ pub enum Error {
     /// no colors.
     NonColorProperty {
         palette_id: U32Id<BVoxPalette>,
+
         property_id: U32Id<BVoxProperty>,
     },
 
@@ -85,6 +90,7 @@ pub enum Error {
     /// lists the sampling objects, in listing order.
     MaterialInUse {
         material_id: U32Id<BVoxMaterial>,
+
         object_ids: Vec<U32Id<BVoxObject>>,
     },
 
@@ -92,6 +98,7 @@ pub enum Error {
     /// the drawing palettes, in listing order.
     ValuePoolValueInUse {
         value_id: U32Id<BVoxValuePoolValue>,
+
         palette_ids: Vec<U32Id<BVoxPalette>>,
     },
 
@@ -99,6 +106,7 @@ pub enum Error {
     /// lists the referencing objects, in listing order.
     PaletteInUse {
         palette_id: U32Id<BVoxPalette>,
+
         object_ids: Vec<U32Id<BVoxObject>>,
     },
 
@@ -106,6 +114,7 @@ pub enum Error {
     /// `palette_ids` lists the referencing palettes, in listing order.
     ValuePoolInUse {
         value_pool_id: U32Id<BVoxValuePool>,
+
         palette_ids: Vec<U32Id<BVoxPalette>>,
     },
 
@@ -113,6 +122,7 @@ pub enum Error {
     /// lists the placing nodes, in listing order.
     ObjectInUse {
         object_id: U32Id<BVoxObject>,
+
         node_ids: Vec<U32Id<BVoxHierarchyNode>>,
     },
 
@@ -121,7 +131,9 @@ pub enum Error {
     /// it.
     HierarchyNodeInUse {
         node_id: U32Id<BVoxHierarchyNode>,
+
         parent_ids: Vec<U32Id<BVoxHierarchyNode>>,
+
         root: bool,
     },
 
@@ -141,6 +153,7 @@ pub enum Error {
     /// state's.
     PropertyValuePoolRef {
         property_id: U32Id<BVoxProperty>,
+
         value_pool_id: U32Id<BVoxValuePool>,
     },
 
@@ -148,6 +161,7 @@ pub enum Error {
     /// not one of the property's value pool's.
     MaterialValueRef {
         property_id: U32Id<BVoxProperty>,
+
         material_id: U32Id<BVoxMaterial>,
     },
 
@@ -155,6 +169,7 @@ pub enum Error {
     /// state's.
     LayerPaletteRef {
         layer_id: U32Id<BVoxLayer>,
+
         palette_id: U32Id<BVoxPalette>,
     },
 
@@ -162,7 +177,9 @@ pub enum Error {
     /// materials.
     LayerSampleMaterial {
         layer_id: U32Id<BVoxLayer>,
+
         voxel_id: U32Id<BVoxVoxel>,
+
         material_id: U32Id<BVoxMaterial>,
     },
 
@@ -170,6 +187,7 @@ pub enum Error {
     /// batch, lists the same child node more than once.
     InsertedDuplicateChildNode {
         index: usize,
+
         child_id: U32Id<BVoxHierarchyNode>,
     },
 
@@ -177,6 +195,7 @@ pub enum Error {
     /// batch, places the same object more than once.
     InsertedDuplicateChildObject {
         index: usize,
+
         object_id: U32Id<BVoxObject>,
     },
 
@@ -199,13 +218,16 @@ pub enum Error {
     /// A value pool holds a value outside its kind's value domain.
     ValuePoolValue {
         value_pool_id: U32Id<BVoxValuePool>,
+
         value_id: U32Id<BVoxValuePoolValue>,
     },
 
     /// A palette property references a value pool that does not exist.
     PropertyValuePool {
         palette_id: U32Id<BVoxPalette>,
+
         property_id: U32Id<BVoxProperty>,
+
         value_pool_id: U32Id<BVoxValuePool>,
     },
 
@@ -213,32 +235,39 @@ pub enum Error {
     /// values.
     MaterialValue {
         palette_id: U32Id<BVoxPalette>,
+
         property_id: U32Id<BVoxProperty>,
+
         material_id: U32Id<BVoxMaterial>,
     },
 
     /// An object references a palette that does not exist.
     PaletteRef {
         object_id: U32Id<BVoxObject>,
+
         palette_id: U32Id<BVoxPalette>,
     },
 
     /// A live voxel samples a material beyond its layer's palette.
     SampleMaterial {
         object_id: U32Id<BVoxObject>,
+
         voxel_id: U32Id<BVoxVoxel>,
+
         material_id: U32Id<BVoxMaterial>,
     },
 
     /// A node lists a child node that does not exist.
     ChildNode {
         node_id: U32Id<BVoxHierarchyNode>,
+
         child_id: U32Id<BVoxHierarchyNode>,
     },
 
     /// A node places an object that does not exist.
     ChildObject {
         node_id: U32Id<BVoxHierarchyNode>,
+
         object_id: U32Id<BVoxObject>,
     },
 
@@ -251,12 +280,14 @@ pub enum Error {
     /// A node lists the same child node more than once.
     DuplicateChildNode {
         node_id: U32Id<BVoxHierarchyNode>,
+
         child_id: U32Id<BVoxHierarchyNode>,
     },
 
     /// A node places the same object more than once.
     DuplicateChildObject {
         node_id: U32Id<BVoxHierarchyNode>,
+
         object_id: U32Id<BVoxObject>,
     },
 

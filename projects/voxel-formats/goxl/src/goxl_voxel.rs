@@ -1,6 +1,6 @@
 /// One cell of a [`GoxlBlock`](crate::GoxlBlock) grid: an `RGBA` color whose
-/// alpha channel doubles as presence. Stored on disk as one pixel of the block's
-/// `BL16` PNG.
+/// alpha channel doubles as presence. Stored on disk as one pixel of the
+/// block's `BL16` PNG.
 ///
 /// [`a`](Self::a)` == 0` is an empty cell; a non-zero alpha is a solid voxel
 /// (Goxel writes `255`). The `RGB` channels carry the voxel's color.

@@ -4,7 +4,7 @@ use voxcore::{BVoxHierarchyNode, Error as VoxError, Result as VoxResult, VoxGcRe
 
 /// `nodes` rekeyed through `remap` after a gc. An entry whose node the remap
 /// released is an ext out of step, reported as an ext error naming `format`.
-pub(crate) fn rekey_hierarchy_nodes<T>(
+pub fn rekey_hierarchy_nodes<T>(
     format: &str,
     nodes: BTreeMap<U32Id<BVoxHierarchyNode>, T>,
     remap: &VoxGcRemap,

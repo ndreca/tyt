@@ -1,9 +1,16 @@
 /// A PNG's channel format.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PngChannels {
+    /// Grey alone.
     Grey,
+
+    /// Grey then alpha.
     GreyAlpha,
+
+    /// Red, green, then blue.
     Rgb,
+
+    /// Red, green, blue, then alpha.
     Rgba,
 }
 

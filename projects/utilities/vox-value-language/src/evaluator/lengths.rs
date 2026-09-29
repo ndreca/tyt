@@ -2,10 +2,13 @@ use crate::{Domain, Error, Groupings, Result};
 
 /// The entry count of every domain, fixed by the groupings.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) struct Lengths {
+pub struct Lengths {
     pub(crate) swatches: usize,
+
     pub(crate) voxels: usize,
+
     pub(crate) faces: usize,
+
     pub(crate) corners: usize,
 }
 
@@ -61,10 +64,7 @@ impl Lengths {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        Domain, Groupings,
-        evaluator::{Lengths, groupings},
-    };
+    use crate::{Domain, Groupings, Lengths, groupings};
 
     #[test]
     fn the_swatch_count_is_one_past_the_largest_swatch_a_voxel_names() {

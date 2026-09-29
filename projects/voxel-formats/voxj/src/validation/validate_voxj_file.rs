@@ -1,5 +1,7 @@
-use crate::validation::{Error, Result, collect_voxj_failures};
-use crate::{DecodeBase64, VoxjFile};
+use crate::{
+    DecodeBase64, VoxjFile,
+    validation::{Error, Result, collect_voxj_failures},
+};
 
 /// Checks a [`VoxjFile`] against the format's document rules, returning the
 /// first failure. This is the fail-fast counterpart of
@@ -18,88 +20,18 @@ pub fn validate_voxj_file<D: DecodeBase64>(dependencies: &D, file: &VoxjFile) ->
 
 #[cfg(all(test, feature = "impl"))]
 mod tests {
-    use crate::validation::validate_voxj_file;
     use crate::{
-        DependenciesImpl, EncodeBase64, VoxjFile, VoxjHierarchyNode, VoxjMain, VoxjObject,
-        VoxjPalette, VoxjPositionBlock, VoxjProperty, VoxjRuntimeState, VoxjSampleBlock,
-        VoxjTransform, VoxjValuePool,
+        DependenciesImpl, VoxjPalette, VoxjPositionBlock, VoxjProperty, VoxjSampleBlock,
+        VoxjValuePool,
+        test::{node, standard_base64, valid_file},
+        validation::validate_voxj_file,
     };
-
-    /// Standard base64 of `bytes`, for hand-built blocks.
-    fn base64(bytes: &[u8]) -> String {
-        DependenciesImpl.encode_base64(bytes)
-    }
-
-    /// A `vec-4-float` value pool of four colors backing the property's
-    /// value-indices, and an unreferenced one-value `float` value pool.
-    fn value_pools() -> Vec<VoxjValuePool> {
-        vec![
-            VoxjValuePool::Vec4Float(vec![[0.0, 0.0, 0.0, 1.0]; 4]),
-            VoxjValuePool::Float(vec![1.5]),
-        ]
-    }
 
     /// A property of `name` bound to value pool `value_pool`.
     fn property(name: &str, value_pool: usize) -> VoxjProperty {
         VoxjProperty {
             name: name.to_owned(),
             value_pool,
-        }
-    }
-
-    /// A palette of `materials` materials: one property binding
-    /// `baseColor` to value pool 0, its rows the value-indices
-    /// `0..materials`.
-    fn palette(materials: usize) -> VoxjPalette {
-        VoxjPalette {
-            properties: vec![property("baseColor", 0)],
-            materials: (0..materials).map(|i| vec![i]).collect(),
-        }
-    }
-
-    /// The identity transform: zero translation, identity rotation, unit scale.
-    fn identity() -> VoxjTransform {
-        VoxjTransform {
-            position: [0.0, 0.0, 0.0],
-            rotation: [0.0, 0.0, 0.0, 1.0],
-            scale: [1.0, 1.0, 1.0],
-        }
-    }
-
-    /// A node with the given children and an identity transform.
-    fn node(child_nodes: Vec<usize>, child_objects: Vec<usize>) -> VoxjHierarchyNode {
-        VoxjHierarchyNode {
-            name: "n".to_owned(),
-            child_nodes,
-            child_objects,
-            transform: identity(),
-        }
-    }
-
-    /// A small but complete valid document: one four-material palette over a
-    /// single color value pool, an object sampling it across two in-bounds
-    /// voxels (raw-json blocks), and a two-node DAG with a root.
-    fn valid_file() -> VoxjFile {
-        VoxjFile {
-            version: 1,
-            main: VoxjMain {
-                runtime_state: VoxjRuntimeState {
-                    value_pools: value_pools(),
-                    palettes: vec![palette(4)],
-                    objects: vec![VoxjObject {
-                        name: "o".to_owned(),
-                        layers: vec![0],
-                        bounds: [2, 1, 1],
-                        origin: [0, 0, 0],
-                        voxel_positions: VoxjPositionBlock::RawJson(vec![[0, 0, 0], [1, 0, 0]]),
-                        voxel_samples: VoxjSampleBlock::RawJson(vec![vec![1, 3]]),
-                    }],
-                    nodes: vec![node(vec![1], vec![0]), node(vec![], vec![])],
-                    root_nodes: vec![0],
-                },
-                edit_state: None,
-                ext: None,
-            },
         }
     }
 
@@ -371,7 +303,7 @@ mod tests {
         // Cells 0 and 1 of the [2, 1, 1] grid occupied: bits 11 then six zero
         // pad bits, byte 0xC0. Two voxels, so the raw samples still fit.
         file.main.runtime_state.objects[0].voxel_positions =
-            VoxjPositionBlock::BitmapBase64(base64(&[0xC0]));
+            VoxjPositionBlock::BitmapBase64(standard_base64(&[0xC0]));
         assert!(validate_voxj_file(&DependenciesImpl, &file).is_ok());
     }
 
@@ -394,7 +326,7 @@ mod tests {
         let mut file = valid_file();
         // Byte 0xC1 sets one of the six pad bits past the two occupied cells.
         file.main.runtime_state.objects[0].voxel_positions =
-            VoxjPositionBlock::BitmapBase64(base64(&[0xC1]));
+            VoxjPositionBlock::BitmapBase64(standard_base64(&[0xC1]));
         assert!(validate_voxj_file(&DependenciesImpl, &file).is_err());
     }
 
@@ -427,7 +359,7 @@ mod tests {
         // which is how the strictly-positive-delta rule is enforced.
         file.main.runtime_state.objects[0].bounds = [1, 1, 1];
         file.main.runtime_state.objects[0].voxel_positions =
-            VoxjPositionBlock::HilbertDeltaVarintBase64(base64(&[0x00, 0x00]));
+            VoxjPositionBlock::HilbertDeltaVarintBase64(standard_base64(&[0x00, 0x00]));
         file.main.runtime_state.objects[0].voxel_samples =
             VoxjSampleBlock::RawJson(vec![vec![0, 0]]);
         assert!(validate_voxj_file(&DependenciesImpl, &file).is_err());
@@ -439,7 +371,7 @@ mod tests {
         // Palette 0 has four materials, so packed width is 2. Two values fill
         // the top four bits; 0x71 sets one of the four pad bits.
         file.main.runtime_state.objects[0].voxel_samples =
-            VoxjSampleBlock::PackedBase64(vec![base64(&[0x71])]);
+            VoxjSampleBlock::PackedBase64(vec![standard_base64(&[0x71])]);
         assert!(validate_voxj_file(&DependenciesImpl, &file).is_err());
     }
 

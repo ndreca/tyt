@@ -3,9 +3,10 @@ use crate::qbcl::QbclColor;
 /// The preview image embedded in a `.qbcl` file's header: a `width` by `height`
 /// grid of uncompressed pixels.
 ///
-/// [`pixels`](Self::pixels) holds all `width * height` cells in row order (left to
-/// right, top to bottom), so `(x, y)` is at index `x + width * y`. The pixels are
-/// stored on disk as `BGRA`; they are normalized to [`QbclColor`]'s `RGBA` here.
+/// [`pixels`](Self::pixels) holds all `width * height` cells in row order (left
+/// to right, top to bottom), so `(x, y)` is at index `x + width * y`. The
+/// pixels are stored on disk as `BGRA`; they are normalized to [`QbclColor`]'s
+/// `RGBA` here.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct QbclThumbnail {
     /// Image width in pixels.

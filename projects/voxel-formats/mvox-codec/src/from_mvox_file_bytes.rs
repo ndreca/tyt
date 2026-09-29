@@ -1,7 +1,4 @@
-use crate::{
-    ByteReader, Result, invalid, parse_u32, read_chunk, take, take_bool, take_f32, take_i32,
-    take_u32, take_vec3f, take_vec3i,
-};
+use crate::{ByteReader, Chunk, Result, invalid};
 use mvox::{
     MVoxCamera, MVoxColor, MVoxDict, MVoxFile, MVoxFrame, MVoxGroupNode, MVoxLayer, MVoxMaterial,
     MVoxMaterialType, MVoxModel, MVoxNodeAttributes, MVoxPalette, MVoxRenderObject, MVoxRotation,
@@ -128,6 +125,21 @@ pub fn from_mvox_file_bytes(bytes: &[u8]) -> Result<MVoxFile> {
     }
 
     Ok(file)
+}
+
+/// Reads one chunk header and its content / child regions from `reader`,
+/// advancing past the whole chunk.
+fn read_chunk<'a>(reader: &mut ByteReader<'a>) -> Result<Chunk<'a>> {
+    let id = reader.read_array::<4>()?;
+    let content_len = reader.read_u32()? as usize;
+    let children_len = reader.read_u32()? as usize;
+    let content = reader.read_bytes(content_len)?;
+    let children = reader.read_bytes(children_len)?;
+    Ok(Chunk {
+        id,
+        content,
+        children,
+    })
 }
 
 /// Reads an `XYZI` chunk's voxels, paired with its `SIZE`.
@@ -374,9 +386,109 @@ fn read_note(content: &mut ByteReader) -> Result<Vec<String>> {
     Ok(names)
 }
 
+/// Removes every pair whose key is `key`, returning the first such value. Taking
+/// all occurrences (not just the first) keeps a modeled key from lingering in
+/// the leftover `extra` dictionary when a malformed `DICT` repeats it, which
+/// would otherwise re-lift onto the typed field on the next decode.
+fn take(pairs: &mut Vec<(String, String)>, key: &str) -> Option<String> {
+    let mut value = None;
+    pairs.retain(|(pair_key, pair_value)| {
+        if pair_key != key {
+            return true;
+        }
+        if value.is_none() {
+            value = Some(pair_value.clone());
+        }
+        false
+    });
+    value
+}
+
+/// [`take`], then parse the value as an `f32`.
+fn take_f32(pairs: &mut Vec<(String, String)>, key: &str) -> Result<Option<f32>> {
+    take(pairs, key).map(|value| parse_f32(&value)).transpose()
+}
+
+/// [`take`], then parse the value as an `i32`.
+fn take_i32(pairs: &mut Vec<(String, String)>, key: &str) -> Result<Option<i32>> {
+    take(pairs, key).map(|value| parse_i32(&value)).transpose()
+}
+
+/// [`take`], then parse the value as a `u32`.
+fn take_u32(pairs: &mut Vec<(String, String)>, key: &str) -> Result<Option<u32>> {
+    take(pairs, key).map(|value| parse_u32(&value)).transpose()
+}
+
+/// [`take`], then read the value as a `0` / `1` boolean flag.
+fn take_bool(pairs: &mut Vec<(String, String)>, key: &str) -> Option<bool> {
+    take(pairs, key).map(|value| parse_bool(&value))
+}
+
+/// [`take`], then parse the value as a space-separated `[f32; 3]`.
+fn take_vec3f(pairs: &mut Vec<(String, String)>, key: &str) -> Result<Option<[f32; 3]>> {
+    take(pairs, key)
+        .map(|value| parse_vec3f(&value))
+        .transpose()
+}
+
+/// [`take`], then parse the value as a space-separated `[i32; 3]`.
+fn take_vec3i(pairs: &mut Vec<(String, String)>, key: &str) -> Result<Option<[i32; 3]>> {
+    take(pairs, key)
+        .map(|value| parse_vec3i(&value))
+        .transpose()
+}
+
+/// Parses an `f32`, mapping a malformed value to an error.
+fn parse_f32(value: &str) -> Result<f32> {
+    value
+        .trim()
+        .parse()
+        .map_err(|_| invalid(format!("expected a float, found {value:?}")))
+}
+
+/// Parses an `i32`, mapping a malformed value to an error.
+fn parse_i32(value: &str) -> Result<i32> {
+    value
+        .trim()
+        .parse()
+        .map_err(|_| invalid(format!("expected an integer, found {value:?}")))
+}
+
+/// Parses a `u32`, mapping a malformed value to an error.
+fn parse_u32(value: &str) -> Result<u32> {
+    value
+        .trim()
+        .parse()
+        .map_err(|_| invalid(format!("expected an unsigned integer, found {value:?}")))
+}
+
+/// Reads MagicaVoxel's `0` / `1` flag encoding; any value other than `"1"`
+/// (including a missing key, handled by the caller) reads as `false`.
+fn parse_bool(value: &str) -> bool {
+    value.trim() == "1"
+}
+
+/// Parses three space-separated floats.
+fn parse_vec3f(value: &str) -> Result<[f32; 3]> {
+    let parts: Vec<&str> = value.split_whitespace().collect();
+    let [a, b, c] = parts[..] else {
+        return Err(invalid(format!("expected three floats, found {value:?}")));
+    };
+    Ok([parse_f32(a)?, parse_f32(b)?, parse_f32(c)?])
+}
+
+/// Parses three space-separated integers.
+fn parse_vec3i(value: &str) -> Result<[i32; 3]> {
+    let parts: Vec<&str> = value.split_whitespace().collect();
+    let [a, b, c] = parts[..] else {
+        return Err(invalid(format!("expected three integers, found {value:?}")));
+    };
+    Ok([parse_i32(a)?, parse_i32(b)?, parse_i32(c)?])
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{from_mvox_file_bytes, to_mvox_file_bytes};
+    use crate::{from_mvox_file_bytes, from_mvox_file_bytes::take, to_mvox_file_bytes};
     use mvox::{
         MVoxCamera, MVoxColor, MVoxDict, MVoxFile, MVoxFrame, MVoxGroupNode, MVoxLayer,
         MVoxMaterial, MVoxMaterialType, MVoxModel, MVoxNodeAttributes, MVoxPalette,
@@ -650,5 +762,14 @@ mod tests {
         bytes.extend_from_slice(&0u32.to_le_bytes());
         bytes.extend_from_slice(&100u32.to_le_bytes());
         assert!(from_mvox_file_bytes(&bytes).is_err());
+    }
+
+    #[test]
+    fn take_removes_every_occurrence_and_returns_the_first() {
+        // A repeated modeled key must not survive in the leftover `extra`.
+        let mut pairs = vec![pair("_r", "4"), pair("keep", "x"), pair("_r", "105")];
+        assert_eq!(take(&mut pairs, "_r"), Some("4".to_owned()));
+        assert_eq!(pairs, vec![pair("keep", "x")]);
+        assert_eq!(take(&mut pairs, "_r"), None);
     }
 }

@@ -120,7 +120,7 @@ fn partition_properties(names: &[String]) -> Result<PartitionProperties> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{QuantizeArgs, QuantizeProfile};
+    use crate::{QuantizeArgs, QuantizeProfile, Result};
     use clap::Parser;
     use voxsmith::utilities::{Dither, PartitionProperties, QuantizeOptions, ReductionMethod};
 
@@ -132,7 +132,7 @@ mod tests {
     }
 
     /// The options `args` resolve to over `profile`.
-    fn resolve_over(args: &[&str], profile: &QuantizeProfile) -> crate::Result<QuantizeOptions> {
+    fn resolve_over(args: &[&str], profile: &QuantizeProfile) -> Result<QuantizeOptions> {
         let mut argv = vec!["cli"];
         argv.extend_from_slice(args);
         Cli::try_parse_from(argv).unwrap().quantize.resolve(profile)
@@ -140,7 +140,7 @@ mod tests {
 
     /// The options `args` resolve to after `--max-materials 4`, with no
     /// profile.
-    fn resolve(args: &[&str]) -> crate::Result<QuantizeOptions> {
+    fn resolve(args: &[&str]) -> Result<QuantizeOptions> {
         let mut argv = vec!["--max-materials", "4"];
         argv.extend_from_slice(args);
         resolve_over(&argv, &QuantizeProfile::default())

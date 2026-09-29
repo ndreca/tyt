@@ -10,6 +10,7 @@ pub struct Node {
 }
 
 impl Node {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         self.command.execute(dependencies)
     }

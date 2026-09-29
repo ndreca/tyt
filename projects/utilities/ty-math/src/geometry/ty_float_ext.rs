@@ -15,8 +15,8 @@ pub trait TyFloatExt {
     /// `-0.75` both map to `0.25`.
     fn wrap01(self) -> Self;
 
-    /// Linearly interpolates from `self` towards `other` by `t`, with `t` of `0`
-    /// returning `self` and `1` returning `other`.
+    /// Linearly interpolates from `self` towards `other` by `t`, with `t` of
+    /// `0` returning `self` and `1` returning `other`.
     fn lerp(self, other: Self, t: Self) -> Self;
 
     /// Clamps `self` to `[0, 1]` and scales it to an 8-bit unsigned-normalized
@@ -57,6 +57,7 @@ macro_rules! impl_ty_float_ext {
 }
 
 impl_ty_float_ext!(f32);
+
 impl_ty_float_ext!(f64);
 
 #[cfg(test)]

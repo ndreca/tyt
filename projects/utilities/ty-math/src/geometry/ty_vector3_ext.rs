@@ -2,12 +2,13 @@ use crate::{TyFloatExt, TyVector3U32};
 use glam::{DQuat, DVec3, Quat, Vec3};
 
 /// The tyt-specific 3D vector operations glam does not provide, carried on the
-/// glam vector aliases so callers keep `v.foo()` with `use ty_math::TyVector3Ext`.
+/// glam vector aliases so callers keep `v.foo()` with
+/// `use ty_math::TyVector3Ext`.
 pub trait TyVector3Ext {
     /// The scalar component type, `f64` or `f32`.
     type Scalar;
 
-    /// The matching quaternion type, [`DQuat`](glam::DQuat) or [`Quat`](glam::Quat).
+    /// The matching quaternion type, [`DQuat`] or [`Quat`].
     type Quaternion;
 
     /// The unnormalized normal of triangle `a`, `b`, `c`, the cross product
@@ -16,11 +17,13 @@ pub trait TyVector3Ext {
     fn triangle_normal(a: Self, b: Self, c: Self) -> Self;
 
     /// This vector rotated from Z-up to Y-up axes, `(x, y, z) -> (x, z, -y)`: a
-    /// +90 degree rotation about X. The inverse of [`yup_to_zup`](Self::yup_to_zup).
+    /// +90 degree rotation about X. The inverse of
+    /// [`yup_to_zup`](Self::yup_to_zup).
     fn zup_to_yup(self) -> Self;
 
     /// This vector rotated from Y-up to Z-up axes, `(x, y, z) -> (x, -z, y)`: a
-    /// -90 degree rotation about X. The inverse of [`zup_to_yup`](Self::zup_to_yup).
+    /// -90 degree rotation about X. The inverse of
+    /// [`zup_to_yup`](Self::zup_to_yup).
     fn yup_to_zup(self) -> Self;
 
     /// A vector with the given `x` and zero `y` and `z`.
@@ -32,8 +35,8 @@ pub trait TyVector3Ext {
     /// A vector with the given `z` and zero `x` and `y`.
     fn from_z(z: Self::Scalar) -> Self;
 
-    /// This vector's `x`, taken as a uniform scale factor. Assumes the components
-    /// are equal.
+    /// This vector's `x`, taken as a uniform scale factor. Assumes the
+    /// components are equal.
     fn to_scale(self) -> Self::Scalar;
 
     /// This vector as a pure quaternion `(x, y, z, 0)`.
@@ -43,9 +46,9 @@ pub trait TyVector3Ext {
     /// normalized first.
     fn rotation_around(self, angle: Self::Scalar) -> Self::Quaternion;
 
-    /// The shortest-arc rotation carrying `self` onto `target`, both taken to be
-    /// unit length. Named to avoid glam's inherent `rotate_towards`, which rotates
-    /// a vector toward another by a capped angle.
+    /// The shortest-arc rotation carrying `self` onto `target`, both taken to
+    /// be unit length. Named to avoid glam's inherent `rotate_towards`, which
+    /// rotates a vector toward another by a capped angle.
     fn rotation_towards(self, target: Self) -> Self::Quaternion;
 
     /// True when `self` and `other` point in approximately the same direction,
@@ -57,7 +60,8 @@ pub trait TyVector3Ext {
     fn is_approximately_equal(self, other: Self, tolerance: Self::Scalar) -> bool;
 
     /// True when `self` and `other`, both taken to be unit length, point in
-    /// approximately the same direction, within `tolerance` on their dot product.
+    /// approximately the same direction, within `tolerance` on their dot
+    /// product.
     #[allow(clippy::wrong_self_convention)]
     fn is_normalized_approximately_equal(self, other: Self, tolerance: Self::Scalar) -> bool;
 
@@ -65,12 +69,12 @@ pub trait TyVector3Ext {
     /// matching components of `low` and `high`, one bucket index per axis.
     fn quantize(self, low: Self, high: Self, buckets: u32) -> TyVector3U32;
 
-    /// The position on the uniform Catmull-Rom spline between `p1` and `p2`, with
-    /// neighbours `p0` and `p3`, at parameter `t` in `[0, 1]`.
+    /// The position on the uniform Catmull-Rom spline between `p1` and `p2`,
+    /// with neighbours `p0` and `p3`, at parameter `t` in `[0, 1]`.
     fn catmull_rom_position(p0: Self, p1: Self, p2: Self, p3: Self, t: Self::Scalar) -> Self;
 
-    /// The tangent of the uniform Catmull-Rom spline between `p1` and `p2`, with
-    /// neighbours `p0` and `p3`, at parameter `t` in `[0, 1]`.
+    /// The tangent of the uniform Catmull-Rom spline between `p1` and `p2`,
+    /// with neighbours `p0` and `p3`, at parameter `t` in `[0, 1]`.
     fn catmull_rom_tangent(p0: Self, p1: Self, p2: Self, p3: Self, t: Self::Scalar) -> Self;
 }
 
@@ -174,20 +178,13 @@ macro_rules! impl_ty_vector3_ext {
 }
 
 impl_ty_vector3_ext!(DVec3, f64, DQuat);
+
 impl_ty_vector3_ext!(Vec3, f32, Quat);
 
 #[cfg(test)]
 mod tests {
-    use crate::{TyQuaternionF64, TyVector3Ext, TyVector3F64, TyVector3U32};
+    use crate::{TyQuaternionF64, TyVector3Ext, TyVector3F64, TyVector3U32, close_vec};
     use std::f64::consts::PI;
-
-    fn close(a: f64, b: f64) -> bool {
-        (a - b).abs() < 1e-9
-    }
-
-    fn close_vec(a: TyVector3F64, b: TyVector3F64) -> bool {
-        close(a.x, b.x) && close(a.y, b.y) && close(a.z, b.z)
-    }
 
     #[test]
     fn zup_yup_axis_rotations_are_inverses() {
@@ -247,8 +244,8 @@ mod tests {
 
     #[test]
     fn quantize_buckets_each_component() {
-        // The midpoint of [0, 10] lands in the middle bucket; the high end clamps
-        // into the last bucket.
+        // The midpoint of [0, 10] lands in the middle bucket; the high end
+        // clamps into the last bucket.
         let bucketed = TyVector3F64::new(5.0, 0.0, 10.0).quantize(
             TyVector3F64::ZERO,
             TyVector3F64::splat(10.0),

@@ -2,7 +2,7 @@ use crate::render;
 
 /// Pads `value` on the right with spaces to a visible width of `width`,
 /// measuring past ANSI escapes.
-pub(crate) fn pad_right(value: &str, width: usize) -> String {
+pub fn pad_right(value: &str, width: usize) -> String {
     let visible = render::visible_width(value);
     let mut output = value.to_string();
     if width > visible {

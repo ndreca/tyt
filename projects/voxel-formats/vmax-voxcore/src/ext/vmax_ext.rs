@@ -90,11 +90,10 @@ fn rekey<K: Copy + Display + Ord, V>(
 }
 
 /// A retained node, object, or palette takes the entry
-/// [`to_vmax_vox_main`](crate::to_vmax_vox_main) would synthesize for it. A
+/// [`to_vmax_vox_main`](crate::to_vmax_vox_main()) would synthesize for it. A
 /// voxel remap or resample moves an object's camera target by as much as its
 /// content center moved, which keeps the author's framing. A gc rekeys every
-/// entry. An exact material list follows its material pools' surviving
-/// values.
+/// entry. An exact material list follows its material pools' surviving values.
 impl VoxExt for VMaxExt {
     fn hierarchy_node_did_retain(
         &mut self,

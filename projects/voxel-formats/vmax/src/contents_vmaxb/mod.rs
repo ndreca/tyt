@@ -1,3 +1,5 @@
+// Public API
+
 mod vmax_brush;
 mod vmax_brush_color;
 mod vmax_brush_entry;

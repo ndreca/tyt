@@ -10,6 +10,7 @@ pub struct ProfileObjectVoxelsQuantize {
 }
 
 impl ProfileObjectVoxelsQuantize {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         self.command.execute(dependencies)
     }

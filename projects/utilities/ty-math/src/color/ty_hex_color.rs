@@ -4,9 +4,9 @@ use crate::TySrgbaU8;
 /// 4/8-digit RGBA and drops the `#`, so this trait carries tyt's hex contract
 /// instead.
 pub trait TyHexColor: Sized {
-    /// Parses a `#RRGGBB` or `#RRGGBBAA` hex string, with or without the leading
-    /// `#`. A missing alpha defaults to opaque. Returns `None` when the value is
-    /// not six or eight hexadecimal digits.
+    /// Parses a `#RRGGBB` or `#RRGGBBAA` hex string, with or without the
+    /// leading `#`. A missing alpha defaults to opaque. Returns `None` when the
+    /// value is not six or eight hexadecimal digits.
     fn from_hex(hex: &str) -> Option<Self>;
 
     /// Formats the color as an uppercase `#RRGGBBAA` hex string. Round-trips

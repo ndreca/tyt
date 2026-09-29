@@ -44,35 +44,28 @@ impl ObjectSelection {
 
 #[cfg(test)]
 mod tests {
-    use crate::ObjectSelection;
-    use clap::Parser;
+    use crate::try_parse_object_selection;
     use voxcore::VoxMain;
-
-    /// A command carrying only the selectors.
-    #[derive(Debug, Parser)]
-    struct Cli {
-        #[command(flatten)]
-        selection: ObjectSelection,
-    }
-
-    /// The selectors parsed from `args`.
-    fn selection(args: &[&str]) -> ObjectSelection {
-        let mut argv = vec!["cli"];
-        argv.extend_from_slice(args);
-        Cli::try_parse_from(argv).unwrap().selection
-    }
 
     #[test]
     fn no_flags_give_no_selectors() {
-        assert!(!selection(&[]).has_selectors());
-        assert!(selection(&["--select", "door"]).has_selectors());
-        assert!(selection(&["--select-index", "0-2"]).has_selectors());
+        assert!(!try_parse_object_selection(&[]).unwrap().has_selectors());
+        assert!(
+            try_parse_object_selection(&["--select", "door"])
+                .unwrap()
+                .has_selectors()
+        );
+        assert!(
+            try_parse_object_selection(&["--select-index", "0-2"])
+                .unwrap()
+                .has_selectors()
+        );
     }
 
     #[test]
     fn a_bad_index_is_a_parse_error() {
-        assert!(Cli::try_parse_from(["cli", "--select-index", "x"]).is_err());
-        assert!(Cli::try_parse_from(["cli", "--select-index", "5-2"]).is_err());
+        assert!(try_parse_object_selection(&["--select-index", "x"]).is_err());
+        assert!(try_parse_object_selection(&["--select-index", "5-2"]).is_err());
     }
 
     #[test]
@@ -80,8 +73,24 @@ mod tests {
         // An empty document: nothing to match.
         let main: VoxMain = VoxMain::default();
 
-        assert!(selection(&["--select", "door"]).resolve(&main).is_err());
-        assert!(selection(&["--select-index", "3"]).resolve(&main).is_err());
-        assert!(selection(&[]).resolve(&main).unwrap().is_empty());
+        assert!(
+            try_parse_object_selection(&["--select", "door"])
+                .unwrap()
+                .resolve(&main)
+                .is_err()
+        );
+        assert!(
+            try_parse_object_selection(&["--select-index", "3"])
+                .unwrap()
+                .resolve(&main)
+                .is_err()
+        );
+        assert!(
+            try_parse_object_selection(&[])
+                .unwrap()
+                .resolve(&main)
+                .unwrap()
+                .is_empty()
+        );
     }
 }

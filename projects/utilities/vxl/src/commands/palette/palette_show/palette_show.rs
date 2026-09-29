@@ -3,7 +3,6 @@ use crate::{
     commands::{
         PaletteShowLayoutEntry, PaletteShowProfile, PropertyFlag, PropertyFlags,
         PropertySelectorBuilder, load_palette_show_profile_set, parse_property_selector,
-        stack_palette_show_profiles,
     },
 };
 use clap::{ArgAction, Parser};
@@ -77,6 +76,7 @@ pub struct PaletteShow {
 }
 
 impl PaletteShow {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let profiles = self
             .uses_profiles()
@@ -200,16 +200,51 @@ fn resolve_width<D: Dependencies>(dependencies: &D, width: Width) -> Option<usiz
     }
 }
 
+/// The profiles `names`, which `origin` lists, stacked into one profile to
+/// apply whole. A layout two members both set errors. The stack carries no
+/// selectors because each member lands its selectors and imports by name.
+fn stack_palette_show_profiles(
+    profiles: &ProfileSet<PaletteShowProfile>,
+    origin: &str,
+    names: &[String],
+) -> Result<PaletteShowProfile> {
+    let mut stack = PaletteShowProfile::default();
+    let mut layout_claim: Option<&str> = None;
+
+    for (position, name) in (0..).zip(names) {
+        if names[..position].contains(name) {
+            return Err(Error::usage(format!("{origin} lists `{name}` twice")));
+        }
+
+        let member = profiles.get(origin, name)?;
+
+        if let Some(layout) = member.layout {
+            if let Some(earlier) = layout_claim {
+                return Err(Error::usage(format!(
+                    "the profile `{name}` sets layout, which the profile `{earlier}` sets already"
+                )));
+            }
+
+            layout_claim = Some(name);
+            stack.layout = Some(layout);
+        }
+    }
+
+    Ok(stack)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
         ProfileSet, Width,
         commands::{
-            PaletteShow, PaletteShowLayoutEntry, PaletteShowProfile, parse_property_selector,
+            PaletteShow, PaletteShowLayoutEntry, PaletteShowProfile,
+            palette::palette_show::palette_show::stack_palette_show_profiles,
+            parse_property_selector,
         },
+        owned_names, profile_set_from_json,
     };
     use clap::Parser;
-    use std::collections::BTreeMap;
     use voxsmith::operations::palette::{
         PaletteShowLabel, PaletteShowLayout, PaletteShowTableShape, PropertySelector,
     };
@@ -222,7 +257,7 @@ mod tests {
     }
 
     fn profiles() -> ProfileSet<PaletteShowProfile> {
-        let profiles: BTreeMap<String, PaletteShowProfile> = [
+        profile_set_from_json(&[
             (
                 "pbr",
                 r#"{ "properties": [{ "property": "baseColor" }, { "property": "metallic" }] }"#,
@@ -239,12 +274,7 @@ mod tests {
                 "rows",
                 r#"{ "layout": { "kind": "text-rows", "width": 80 } }"#,
             ),
-        ]
-        .into_iter()
-        .map(|(name, json)| (name.to_owned(), serde_json::from_str(json).unwrap()))
-        .collect();
-
-        ProfileSet::from_profiles(profiles)
+        ])
     }
 
     /// The selector for `property` with the other fields defaulted.
@@ -399,5 +429,58 @@ mod tests {
             error.contains("the profile `table` sets layout, which the profile `orm` sets already"),
             "{error}"
         );
+    }
+
+    #[test]
+    fn the_layout_stacks_and_the_selectors_stay_behind() {
+        let profiles = profile_set_from_json(&[
+            ("pbr", r#"{ "properties": [{ "property": "baseColor" }] }"#),
+            (
+                "table",
+                r#"{ "layout": { "kind": "md-tables", "tableShape": "flat" } }"#,
+            ),
+        ]);
+
+        let stack =
+            stack_palette_show_profiles(&profiles, "--profile", &owned_names(&["pbr", "table"]))
+                .unwrap();
+
+        assert!(stack.properties.is_empty());
+        assert_eq!(
+            stack.layout,
+            Some(PaletteShowLayoutEntry {
+                table_shape: Some(PaletteShowTableShape::Flat),
+                ..PaletteShowLayoutEntry::from(PaletteShowLayout::MdTables)
+            })
+        );
+    }
+
+    #[test]
+    fn a_layout_two_members_set_errors_naming_both() {
+        let profiles = profile_set_from_json(&[
+            ("rows", r#"{ "layout": "text-rows" }"#),
+            ("table", r#"{ "layout": "md-tables" }"#),
+        ]);
+
+        let error =
+            stack_palette_show_profiles(&profiles, "--profile", &owned_names(&["rows", "table"]))
+                .unwrap_err()
+                .to_string();
+        assert!(
+            error
+                .contains("the profile `table` sets layout, which the profile `rows` sets already"),
+            "{error}"
+        );
+    }
+
+    #[test]
+    fn a_member_listed_twice_errors() {
+        let profiles = profile_set_from_json(&[("rows", r#"{ "layout": "text-rows" }"#)]);
+
+        let error =
+            stack_palette_show_profiles(&profiles, "--profile", &owned_names(&["rows", "rows"]))
+                .unwrap_err()
+                .to_string();
+        assert!(error.contains("--profile lists `rows` twice"), "{error}");
     }
 }

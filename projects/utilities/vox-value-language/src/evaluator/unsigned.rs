@@ -1,5 +1,5 @@
 /// An unsigned component type, widened to `u64` for the checked arithmetic.
-pub(crate) trait Unsigned: Copy + Ord {
+pub trait Unsigned: Copy + Ord {
     /// The value as a `u64`.
     fn to_u64(self) -> u64;
 

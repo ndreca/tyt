@@ -1,8 +1,8 @@
-use crate::parser::SyntaxNode;
+use crate::SyntaxNode;
 
 /// A `name = expr` statement.
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) struct SyntaxBinding {
+pub struct SyntaxBinding {
     /// The bound name.
     pub(crate) name: String,
 

@@ -1,10 +1,13 @@
+use crate::operations::mesh_doc::clamp_index;
 use ty_math::{TyBoundsF64, TyVector3F64, TyVector3I32, TyVector3U32};
 
 /// The map from world space onto the voxel grid. The rasterizer and the
 /// sampler share one so both agree on which cell a point falls in.
-pub(crate) struct GridSpace {
+pub struct GridSpace {
     min: TyVector3F64,
+
     size: TyVector3F64,
+
     counts: TyVector3U32,
 }
 
@@ -82,15 +85,6 @@ fn snap(cells: f64) -> f64 {
         whole
     } else {
         cells
-    }
-}
-
-/// A floored grid coordinate clamped to `0..=last`.
-pub(crate) fn clamp_index(value: f64, last: usize) -> usize {
-    if value < 0.0 {
-        0
-    } else {
-        (value as usize).min(last)
     }
 }
 

@@ -1,3 +1,5 @@
+// Public API
+
 mod mesh_doc;
 mod node;
 mod object;

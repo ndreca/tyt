@@ -1,9 +1,7 @@
-#[cfg(feature = "impl")]
+// Internal API
+
 mod memory_files;
-
-#[cfg(feature = "impl")]
-pub(crate) use memory_files::*;
-
 mod test_main;
 
+pub(crate) use memory_files::*;
 pub(crate) use test_main::*;

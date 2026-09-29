@@ -26,7 +26,7 @@ pub struct VMaxEditCommand {
     /// Brush command payload.
     pub b: VMaxValue,
 
-    /// Brush state ([`VMaxBrushState`](crate::VMaxBrushState)).
+    /// Brush state ([`VMaxBrushState`]).
     pub bs: VMaxBrushState,
 
     /// Selection mode; present on some commands.
@@ -62,12 +62,12 @@ pub struct VMaxEditCommand {
     /// Mode-detail payload.
     pub md: VMaxValue,
 
-    /// Mirror flag ([`VMaxFlag`](crate::VMaxFlag)); single- or per-axis.
+    /// Mirror flag ([`VMaxFlag`]); single- or per-axis.
     pub mir: VMaxFlag,
 
-    /// `str` tool flag ([`VMaxFlag`](crate::VMaxFlag)).
+    /// `str` tool flag ([`VMaxFlag`]).
     pub str: VMaxFlag,
 
-    /// `strf` tool flag ([`VMaxFlag`](crate::VMaxFlag)).
+    /// `strf` tool flag ([`VMaxFlag`]).
     pub strf: VMaxFlag,
 }

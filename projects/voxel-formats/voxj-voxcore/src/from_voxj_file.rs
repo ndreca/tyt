@@ -1,22 +1,23 @@
 use crate::{
-    Error, Result, VoxjVoxExt, VoxjVoxMain, vox_hierarchy_node_from_voxj_hierarchy_node,
-    vox_map_from_voxj_map, vox_object_from_voxj_decoded_object, vox_palette_from_voxj_palette,
-    vox_value_pool_from_voxj_value_pool,
+    Error, Result, VoxjVoxExt, VoxjVoxMain, vox_map_from_voxj_map, vox_value_from_voxj_value,
 };
-use branded_id::U32Id;
-use voxcore::VoxMain;
+use branded_id::{U32Id, ext::U32Ext};
+use ty_math::{TyQuaternionF64, TyTransformF64, TyVector3F64, TyVector3I32, TyVector3U32};
+use voxcore::{
+    BVoxMaterial, BVoxPalette, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette, VoxValuePool,
+};
 use voxj::{
-    DecodeBase64, VoxjFile,
-    objects::{decode_voxj_object, voxj_palette_material_counts},
+    DecodeBase64, VoxjFile, VoxjHierarchyNode, VoxjPalette, VoxjTransform, VoxjValuePool,
+    objects::{VoxjDecodedObject, decode_voxj_object, voxj_palette_material_counts},
 };
 
-/// Loads a [`VoxjFile`] into a [`VoxjVoxMain`] carrying its `ext` block as
-/// it was parsed, the inverse of [`to_voxj_file`](crate::to_voxj_file). A
-/// document with no block loads an empty ext. Each object's position and
-/// sample blocks decode through `dependencies`. Entities take ids in listing
-/// order, so each id equals its voxj array index and the cross-references
-/// carry over. The nodes land as one batch because the wire permits a node
-/// to list a child that appears later.
+/// Loads a [`VoxjFile`] into a [`VoxjVoxMain`] carrying its `ext` block as it
+/// was parsed, the inverse of [`to_voxj_file`](crate::to_voxj_file()). A
+/// document with no block loads an empty ext. Each object's position and sample
+/// blocks decode through `dependencies`. Entities take ids in listing order, so
+/// each id equals its voxj array index and the cross-references carry over. The
+/// nodes land as one batch because the wire permits a node to list a child that
+/// appears later.
 ///
 /// Errors if:
 ///
@@ -35,9 +36,9 @@ pub fn from_voxj_file<D: DecodeBase64>(dependencies: &D, file: &VoxjFile) -> Res
         main.retain_value_pool(vox_value_pool_from_voxj_value_pool(value_pool)?);
     }
 
-    // An insertion identifies the entity it rejected by the ids it holds,
-    // which are internal to the palette or object; the listing index points
-    // back into the document.
+    // An insertion identifies the entity it rejected by the ids it holds, which
+    // are internal to the palette or object; the listing index points back into
+    // the document.
     for (index, palette) in voxj_main.runtime_state.palettes.iter().enumerate() {
         main.retain_palette(vox_palette_from_voxj_palette(palette)?)
             .map_err(|error| Error::invalid(format!("palette {index}: {error}")))?;
@@ -85,12 +86,283 @@ pub fn from_voxj_file<D: DecodeBase64>(dependencies: &D, file: &VoxjFile) -> Res
     Ok(main.put_ext(VoxjVoxExt::new(slots)))
 }
 
+/// Converts a [`VoxjValuePool`] into a [`VoxValuePool`], kind by kind. Every
+/// kind maps one to one, carrying its values across unchanged. `json` values
+/// recurse through [`vox_value_from_voxj_value`].
+///
+/// Errors if a value is outside its kind's value domain.
+fn vox_value_pool_from_voxj_value_pool(value_pool: &VoxjValuePool) -> Result<VoxValuePool> {
+    Ok(match value_pool {
+        VoxjValuePool::Bool(values) => VoxValuePool::boolean(values.clone()),
+        VoxjValuePool::Float(values) => VoxValuePool::float(values.clone())?,
+        VoxjValuePool::Int(values) => VoxValuePool::int(values.clone())?,
+        VoxjValuePool::Json(values) => VoxValuePool::json(
+            values
+                .iter()
+                .map(vox_value_from_voxj_value)
+                .collect::<Result<_>>()?,
+        ),
+        VoxjValuePool::String(values) => VoxValuePool::string(values.clone()),
+        VoxjValuePool::Vec2Float(values) => VoxValuePool::vec_2_float(values.clone())?,
+        VoxjValuePool::Vec2Int(values) => VoxValuePool::vec_2_int(values.clone())?,
+        VoxjValuePool::Vec3Float(values) => VoxValuePool::vec_3_float(values.clone())?,
+        VoxjValuePool::Vec3Int(values) => VoxValuePool::vec_3_int(values.clone())?,
+        VoxjValuePool::Vec4Float(values) => VoxValuePool::vec_4_float(values.clone())?,
+        VoxjValuePool::Vec4Int(values) => VoxValuePool::vec_4_int(values.clone())?,
+    })
+}
+
+/// Builds a [`VoxPalette`] from a [`VoxjPalette`], in listing order so each
+/// property and material id equals its wire index.
+///
+/// Properties carry over as name plus value-pool reference, the wire
+/// `valuePool` becoming a value-pool id. `materials` carries over one row per
+/// material, a value-index per property.
+///
+/// Errors on a duplicate property name, a row whose length disagrees with the
+/// properties, or a value-index past the id space. Value-pool-reference and
+/// value-id ranges are checked when the palette is inserted by
+/// [`VoxMain::retain_palette`](voxcore::VoxMain::retain_palette).
+fn vox_palette_from_voxj_palette(palette: &VoxjPalette) -> Result<VoxPalette> {
+    let mut out = VoxPalette::default();
+
+    for property in &palette.properties {
+        out.retain_property(
+            property.name.clone(),
+            U32Id::from_u32(property.value_pool as u32),
+            // The back-fill for materials the palette already holds. The loop
+            // below adds every material, each carrying its own value ids.
+            U32Id::from_u32(0),
+        )
+        .map_err(|_| {
+            Error::Invalid(format!(
+                "palette declares property \"{}\" more than once",
+                property.name
+            ))
+        })?;
+    }
+
+    for (index, row) in palette.materials.iter().enumerate() {
+        let value_ids = row
+            .iter()
+            .map(|&value_index| {
+                // A wire index past the id space would wrap onto a real value
+                // and bind the material to a value the file never named.
+                u32::try_from(value_index)
+                    .map(U32Ext::to_u32_id)
+                    .map_err(|_| {
+                        Error::Invalid(format!(
+                            "palette material {index} names value-index {value_index}, past the \
+                             value-index space"
+                        ))
+                    })
+            })
+            .collect::<Result<Vec<_>>>()?;
+        out.retain_material(value_ids).map_err(|_| {
+            Error::Invalid(format!(
+                "palette material {index} has {} value-indices but {} properties",
+                row.len(),
+                palette.properties.len()
+            ))
+        })?;
+    }
+
+    Ok(out)
+}
+
+/// Builds a [`VoxObject`] from a [`VoxjDecodedObject`] and its optional build
+/// volume.
+///
+/// The decoded object holds the tight runtime grid. When `edit` is `Some`, the
+/// object is built in that build volume with each voxel shifted from the
+/// runtime grid into it, recovering the margin the document recorded. When
+/// `edit` is `None`, the build volume equals the tight grid.
+///
+/// Each `layers` entry becomes a layer over that palette. A decoded sample row
+/// holds one material index per layer. Errors on an oversized grid, a position
+/// outside the grid, or ragged sample rows. Cross-references are checked on
+/// insert by [`VoxMain::retain_object`](voxcore::VoxMain::retain_object).
+fn vox_object_from_voxj_decoded_object(
+    object: &VoxjDecodedObject,
+    edit: Option<([u32; 3], [i32; 3])>,
+) -> Result<VoxObject> {
+    // The grid the voxcore object lives in (its build volume), its placing
+    // origin, and the offset shifting a runtime-grid position into it.
+    let (bounds, origin, offset) = match edit {
+        Some((bounds, origin)) => (
+            bounds,
+            origin,
+            [
+                object.origin[0] - origin[0],
+                object.origin[1] - origin[1],
+                object.origin[2] - origin[2],
+            ],
+        ),
+        None => (object.bounds, object.origin, [0, 0, 0]),
+    };
+    let [size_x, size_y, size_z] = bounds;
+
+    let mut out =
+        VoxObject::new(object.name.clone(), TyVector3U32::from_array(bounds)).map_err(|_| {
+            Error::invalid(format!(
+                "object \"{}\" grid {size_x}x{size_y}x{size_z} exceeds the dense limit of {} cells",
+                object.name,
+                VoxObject::MAX_GRID_CELLS
+            ))
+        })?;
+
+    out.set_origin(TyVector3I32::from_array(origin));
+
+    // Back-fill material 0 as each layer's placeholder; live voxels overwrite
+    // their cells below.
+    let filler = 0u32.to_u32_id::<BVoxMaterial>();
+    for &palette_index in &object.layers {
+        out.retain_layer((palette_index as u32).to_u32_id::<BVoxPalette>(), filler);
+    }
+
+    if object.samples.len() != object.positions.len() {
+        return Err(Error::invalid(format!(
+            "object \"{}\" has {} sample rows but {} positions",
+            object.name,
+            object.samples.len(),
+            object.positions.len()
+        )));
+    }
+
+    for (&[x, y, z], row) in object.positions.iter().zip(&object.samples) {
+        let shifted = [
+            x as i64 + offset[0] as i64,
+            y as i64 + offset[1] as i64,
+            z as i64 + offset[2] as i64,
+        ];
+        let position = in_bounds(shifted, bounds).ok_or_else(|| {
+            Error::invalid(format!(
+                "object \"{}\" position [{x}, {y}, {z}] lies outside its grid [{size_x}, {size_y}, {size_z}]",
+                object.name
+            ))
+        })?;
+        // `in_bounds` already confirmed the position fits the grid.
+        let voxel_id = out.voxel_id(position).expect("position is within bounds");
+
+        if row.len() != object.layers.len() {
+            return Err(Error::invalid(format!(
+                "object \"{}\" sample row at [{x}, {y}, {z}] has {} values but references {} \
+                 layers",
+                object.name,
+                row.len(),
+                object.layers.len()
+            )));
+        }
+
+        let material_ids: Vec<U32Id<BVoxMaterial>> = row
+            .iter()
+            .map(|&material_index| material_index.to_u32_id::<BVoxMaterial>())
+            .collect();
+
+        out.retain_voxel(voxel_id, &material_ids)
+            .expect("the row has one material per layer");
+    }
+
+    Ok(out)
+}
+
+/// The `[x, y, z]` point as a grid position, or `None` if any axis is negative
+/// or reaches `bounds`.
+fn in_bounds(p: [i64; 3], bounds: [u32; 3]) -> Option<TyVector3U32> {
+    let inside = (0..3).all(|a| p[a] >= 0 && p[a] < bounds[a] as i64);
+    inside.then(|| TyVector3U32::new(p[0] as u32, p[1] as u32, p[2] as u32))
+}
+
+/// Builds a [`VoxHierarchyNode`] from a [`VoxjHierarchyNode`], mapping child
+/// indices to ids and the transform to its [`ty_math`] form. Child ids are
+/// checked on insert by
+/// [`VoxMain::retain_hierarchy_nodes`](voxcore::VoxMain::retain_hierarchy_nodes),
+/// not here.
+///
+/// Errors on a degenerate transform: non-finite position, non-finite or zero
+/// scale, or a non-finite / zero rotation.
+fn vox_hierarchy_node_from_voxj_hierarchy_node(
+    node: &VoxjHierarchyNode,
+) -> Result<VoxHierarchyNode> {
+    Ok(VoxHierarchyNode {
+        name: node.name.clone(),
+        child_node_ids: node
+            .child_nodes
+            .iter()
+            .map(|&index| U32Id::from_u32(index as u32))
+            .collect(),
+        child_object_ids: node
+            .child_objects
+            .iter()
+            .map(|&index| U32Id::from_u32(index as u32))
+            .collect(),
+        transform: vox_transform_from_voxj_transform(&node.transform)?,
+    })
+}
+
+/// Converts a [`VoxjTransform`] into a [`TyTransformF64`], validating it:
+/// position finite, scale finite and non-zero, rotation finite and non-zero.
+/// The rotation is normalized (tolerating a unit quaternion's float error).
+fn vox_transform_from_voxj_transform(transform: &VoxjTransform) -> Result<TyTransformF64> {
+    let [rotation_x, rotation_y, rotation_z, rotation_w] = transform.rotation;
+    let [scale_x, scale_y, scale_z] = transform.scale;
+
+    for value in transform.position {
+        if !value.is_finite() {
+            return Err(Error::invalid(format!(
+                "transform position component {value} must be finite"
+            )));
+        }
+    }
+
+    for value in [scale_x, scale_y, scale_z] {
+        if !value.is_finite() || value == 0.0 {
+            return Err(Error::invalid(format!(
+                "transform scale component {value} must be finite and non-zero"
+            )));
+        }
+    }
+
+    for value in [rotation_x, rotation_y, rotation_z, rotation_w] {
+        if !value.is_finite() {
+            return Err(Error::invalid(format!(
+                "transform rotation component {value} must be finite"
+            )));
+        }
+    }
+    let magnitude = (rotation_x * rotation_x
+        + rotation_y * rotation_y
+        + rotation_z * rotation_z
+        + rotation_w * rotation_w)
+        .sqrt();
+    if magnitude == 0.0 {
+        return Err(Error::invalid(
+            "transform rotation quaternion must not be zero".to_owned(),
+        ));
+    }
+
+    Ok(TyTransformF64::new(
+        TyVector3F64::from_array(transform.position),
+        TyQuaternionF64::from_xyzw(
+            rotation_x / magnitude,
+            rotation_y / magnitude,
+            rotation_z / magnitude,
+            rotation_w / magnitude,
+        ),
+        TyVector3F64::new(scale_x, scale_y, scale_z),
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        EditStateMode, VoxjVoxExt, VoxjVoxMain, VoxjWriteOptions, from_voxj_file, to_voxj_file,
-        vox_map_from_voxj_map,
+        EditStateMode, VoxjVoxExt, VoxjVoxMain, VoxjWriteOptions, from_voxj_file,
+        from_voxj_file::{
+            vox_hierarchy_node_from_voxj_hierarchy_node, vox_palette_from_voxj_palette,
+        },
+        to_voxj_file, vox_map_from_voxj_map,
     };
+    use branded_id::U32Id;
     use std::{collections::BTreeSet, f64::consts::FRAC_1_SQRT_2};
     use voxj::{
         VoxjEditObject, VoxjEditState, VoxjFile, VoxjHierarchyNode, VoxjMain, VoxjMap,
@@ -106,8 +378,8 @@ mod tests {
         VoxjValuePool::Float((0..n).map(|i| i as f64).collect())
     }
 
-    /// A one-property palette over `value_pool` with `n` materials,
-    /// material `m` reading value-index `m`, one row `[m]` per material.
+    /// A one-property palette over `value_pool` with `n` materials, material
+    /// `m` reading value-index `m`, one row `[m]` per material.
     fn numbered_palette(name: &str, value_pool: usize, n: usize) -> VoxjPalette {
         VoxjPalette {
             properties: vec![property(name, value_pool)],
@@ -279,8 +551,8 @@ mod tests {
         );
     }
 
-    /// A one-object document whose edit grid is larger than its runtime grid, so
-    /// the object carries margin.
+    /// A one-object document whose edit grid is larger than its runtime grid,
+    /// so the object carries margin.
     fn margin_file() -> VoxjFile {
         VoxjFile {
             version: 1,
@@ -403,8 +675,8 @@ mod tests {
         assert_eq!(dropped.main.ext, None);
     }
 
-    /// The typed loader keeps the parsed block. A document with no block
-    /// loads an empty ext.
+    /// The typed loader keeps the parsed block. A document with no block loads
+    /// an empty ext.
     #[test]
     fn the_typed_loader_keeps_the_block_and_none_loads_empty() {
         let file = sample_file();
@@ -553,8 +825,8 @@ mod tests {
         );
     }
 
-    /// Every vector kind maps one to one through the vox state: the values
-    /// come back bit-identical, colors and plain vectors alike.
+    /// Every vector kind maps one to one through the vox state: the values come
+    /// back bit-identical, colors and plain vectors alike.
     #[test]
     fn round_trips_vector_value_pools() {
         let file = vector_kind_file();
@@ -637,19 +909,156 @@ mod tests {
         assert!(from_voxj_file(&DependenciesImpl, &file).is_err());
     }
 
+    fn node_with_transform(transform: VoxjTransform) -> VoxjHierarchyNode {
+        VoxjHierarchyNode {
+            name: "n".to_owned(),
+            child_nodes: Vec::new(),
+            child_objects: Vec::new(),
+            transform,
+        }
+    }
+
+    #[test]
+    fn rejects_zero_scale_and_non_finite_components() {
+        let zero_scale = node_with_transform(VoxjTransform {
+            position: [0.0, 0.0, 0.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 0.0, 1.0],
+        });
+        assert!(vox_hierarchy_node_from_voxj_hierarchy_node(&zero_scale).is_err());
+
+        let nan_position = node_with_transform(VoxjTransform {
+            position: [f64::NAN, 0.0, 0.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+        });
+        assert!(vox_hierarchy_node_from_voxj_hierarchy_node(&nan_position).is_err());
+    }
+
+    #[test]
+    fn normalizes_a_non_unit_rotation() {
+        let node = node_with_transform(VoxjTransform {
+            position: [0.0, 0.0, 0.0],
+            // Magnitude 2; should normalize to the unit identity (w = 1).
+            rotation: [0.0, 0.0, 0.0, 2.0],
+            scale: [1.0, 1.0, 1.0],
+        });
+        let rotation = vox_hierarchy_node_from_voxj_hierarchy_node(&node)
+            .unwrap()
+            .transform
+            .rotation;
+        assert_eq!(
+            (rotation.x, rotation.y, rotation.z, rotation.w),
+            (0.0, 0.0, 0.0, 1.0)
+        );
+    }
+
+    #[test]
+    fn maps_material_rows_one_to_one() {
+        let palette = VoxjPalette {
+            properties: vec![property("baseColor", 0), property("metallic", 1)],
+            materials: vec![vec![0, 2], vec![1, 0], vec![2, 1]],
+        };
+        let out = vox_palette_from_voxj_palette(&palette).unwrap();
+        assert_eq!(out.property_count(), 2);
+        assert_eq!(out.material_count(), 3);
+
+        let base_property_id = out.property_id_by_name("baseColor").unwrap();
+        let metallic_property_id = out.property_id_by_name("metallic").unwrap();
+        let material_2_id = out.iter_materials().nth(2).unwrap();
+        // Material 2 reads value id 2 for base color and 1 for metallic.
+        assert_eq!(
+            out.value_id(material_2_id, base_property_id),
+            Some(U32Id::from_u32(2))
+        );
+        assert_eq!(
+            out.value_id(material_2_id, metallic_property_id),
+            Some(U32Id::from_u32(1))
+        );
+    }
+
+    #[test]
+    fn reads_a_property_less_palette_keeping_its_material_count() {
+        // With no properties every row is empty; each mints a material with no
+        // value ids.
+        let palette = VoxjPalette {
+            properties: vec![],
+            materials: vec![vec![], vec![], vec![]],
+        };
+        let out = vox_palette_from_voxj_palette(&palette).unwrap();
+        assert_eq!(out.property_count(), 0);
+        assert_eq!(out.material_count(), 3);
+    }
+
+    #[test]
+    fn rejects_a_non_empty_row_without_properties() {
+        let palette = VoxjPalette {
+            properties: vec![],
+            materials: vec![vec![0]],
+        };
+        assert!(vox_palette_from_voxj_palette(&palette).is_err());
+    }
+
+    #[test]
+    fn rejects_duplicate_property_name() {
+        let palette = VoxjPalette {
+            properties: vec![property("rgba", 0), property("rgba", 1)],
+            materials: vec![vec![0, 0]],
+        };
+        assert!(vox_palette_from_voxj_palette(&palette).is_err());
+    }
+
+    #[test]
+    fn rejects_a_short_material_row() {
+        let palette = VoxjPalette {
+            properties: vec![property("a", 0), property("b", 1)],
+            materials: vec![vec![0, 1], vec![0]],
+        };
+        assert!(vox_palette_from_voxj_palette(&palette).is_err());
+    }
+
+    #[test]
+    fn rejects_a_value_index_past_the_id_space() {
+        // A `usize` index past `u32` would wrap onto a real value and bind the
+        // material to a value the file never named.
+        let palette = VoxjPalette {
+            properties: vec![property("a", 0)],
+            materials: vec![vec![1usize << 32]],
+        };
+        assert!(vox_palette_from_voxj_palette(&palette).is_err());
+    }
+
+    #[test]
+    fn rejects_a_long_material_row() {
+        let palette = VoxjPalette {
+            properties: vec![property("a", 0), property("b", 1)],
+            materials: vec![vec![0, 1], vec![0, 1, 2]],
+        };
+        assert!(vox_palette_from_voxj_palette(&palette).is_err());
+    }
+
     #[cfg(feature = "codec")]
     mod codec {
-        use super::*;
-        use crate::codec::{from_voxj_bytes, to_voxj_bytes, to_voxjz_bytes};
+        use crate::{
+            VoxjVoxMain, VoxjWriteOptions,
+            codec::{from_voxj_bytes, to_voxj_bytes, to_voxjz_bytes},
+            from_voxj_file,
+            from_voxj_file::tests::{
+                assert_file_eq, numbered_palette, numbered_value_pool, object, sample_file,
+            },
+            to_voxj_file,
+        };
         use branded_id::U32Id;
         use voxcore::{BVoxHierarchyNode, BVoxLayer, BVoxObject, BVoxPalette, VoxHierarchyNode};
+        use voxj::{VoxjFile, VoxjHierarchyNode, VoxjMain, VoxjRuntimeState};
+        use voxj_codec::DependenciesImpl;
 
-        /// [`sample_file`] after removing the "tight" object (id 1) and the palette
-        /// only it referenced (id 1), then compacting: the two survivors renumber
-        /// to objects 0 and 1, the lone palette stays 0, and the "leaf" node loses
-        /// its reference to the removed object. The value pools are untouched:
-        /// there is no value-pool removal, so the now-unreferenced value pools stay
-        /// in place.
+        /// [`sample_file`] after removing the "tight" object (id 1) and the
+        /// palette only it referenced (id 1), then compacting: the two
+        /// survivors renumber to objects 0 and 1, the lone palette stays 0, and
+        /// the "leaf" node loses its reference to the removed object. The value
+        /// pools are untouched: there is no value-pool removal, so the
+        /// now-unreferenced value pools stay in place.
         fn sample_file_without_tight() -> VoxjFile {
             let base = sample_file();
             VoxjFile {
@@ -719,8 +1128,8 @@ mod tests {
             assert_eq!(main.release_hierarchy_node(group_id), Ok(()));
             assert_eq!(main.release_hierarchy_node(leaf_id), Ok(()));
 
-            // Remove the "tight" object and the palette only it referenced, then
-            // compact so the save numbers entities by listing index again.
+            // Remove the "tight" object and the palette only it referenced,
+            // then compact so the save numbers entities by listing index again.
             assert_eq!(
                 main.release_object(U32Id::<BVoxObject>::from_u32(1)),
                 Ok(())
@@ -755,10 +1164,10 @@ mod tests {
         }
 
         /// Removing the first layer keeps the surviving layers' relative order
-        /// through a gc and a save: the document still lists the second and third
-        /// layers' palettes and samples in their original order. Removing the first
-        /// of three is the smallest case a swap-remove would get wrong, listing the
-        /// third layer before the second.
+        /// through a gc and a save: the document still lists the second and
+        /// third layers' palettes and samples in their original order. Removing
+        /// the first of three is the smallest case a swap-remove would get
+        /// wrong, listing the third layer before the second.
         #[test]
         fn remove_first_layer_then_gc_keeps_layer_order() {
             let palettes = vec![

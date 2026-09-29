@@ -8,10 +8,19 @@ use tyt_common::ExecFailed;
 /// An error from this crate.
 #[derive(Debug)]
 pub enum Error {
+    /// Neither `.tytconfig` nor `.tytusrconfig` exists in the git root.
     ConfigNotFound,
+
+    /// An I/O operation failed.
     IO(IOError),
+
+    /// No `fs.rel` key matches the given base name.
     RelBaseNotFound(String),
+
+    /// `rg` failed.
     Rg(ExecFailed),
+
+    /// `fs.move-to-scratch.scratchDir` is missing from `.tytconfig`.
     ScratchDirNotConfigured,
 }
 
@@ -21,15 +30,14 @@ impl Display for Error {
             Error::ConfigNotFound => {
                 write!(f, "no .tytconfig or .tytusrconfig found in the git root")
             }
+
             Error::IO(e) => e.fmt(f),
+
             Error::RelBaseNotFound(name) => write!(
                 f,
                 "no `fs.rel` entry named `{name}` found in .tytconfig or .tytusrconfig"
             ),
-            Error::ScratchDirNotConfigured => write!(
-                f,
-                "scratchDir is not configured; add {{\"fs\": {{\"move-to-scratch\": {{\"scratchDir\": \"<path>\"}}}}}} to .tytconfig"
-            ),
+
             Error::Rg(ExecFailed {
                 exit_code,
                 stdout,
@@ -47,6 +55,11 @@ impl Display for Error {
                 }
                 Ok(())
             }
+
+            Error::ScratchDirNotConfigured => write!(
+                f,
+                "scratchDir is not configured; add {{\"fs\": {{\"move-to-scratch\": {{\"scratchDir\": \"<path>\"}}}}}} to .tytconfig"
+            ),
         }
     }
 }

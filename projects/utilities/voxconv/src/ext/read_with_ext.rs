@@ -3,10 +3,10 @@ use crate::{
     ext::VoxconvVoxMain,
 };
 
-/// Decodes a document's files into a state carrying the format's ext, boxed.
-/// A Voxel Json document's `ext` block decodes into a `CompositeVoxExt`. A
+/// Decodes a document's files into a state carrying the format's ext, boxed. A
+/// Voxel Json document's `ext` block decodes into a `CompositeVoxExt`. A
 /// single-file format takes exactly one file. A package takes every file
-/// [`read_document_files`](crate::read_document_files) lists.
+/// [`read_document_files`](crate::read_document_files()) lists.
 pub fn read_with_ext<D: Dependencies>(
     dependencies: &D,
     format: ReadFormat,
@@ -21,6 +21,7 @@ pub fn read_with_ext<D: Dependencies>(
 /// The typed read of one format.
 struct ReadWithExt<'a, D> {
     dependencies: &'a D,
+
     files: &'a [VoxDocumentFile],
 }
 

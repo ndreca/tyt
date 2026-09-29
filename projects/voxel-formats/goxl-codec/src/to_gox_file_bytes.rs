@@ -1,7 +1,4 @@
-use crate::{
-    BLOCK_IMAGE_SIZE, ByteWriter, EncodePng, GoxlRgbaImage, push_bool, push_bytes, push_color,
-    push_f32, push_i32, push_marker, push_mat4, push_str, push_vec3f, push_vec4f,
-};
+use crate::{BLOCK_IMAGE_SIZE, ByteWriter, EncodePng, GoxlRgbaImage};
 use goxl::{
     GoxlBlock, GoxlCamera, GoxlFile, GoxlImage, GoxlLayer, GoxlLight, GoxlMaterial, GoxlPreview,
     GoxlShape, GoxlVoxel,
@@ -9,13 +6,13 @@ use goxl::{
 
 /// Serializes a [`GoxlFile`] to the bytes of a Goxel `.gox` file through
 /// `dependencies`, the inverse of
-/// [`from_gox_file_bytes`](crate::from_gox_file_bytes).
+/// [`from_gox_file_bytes`](crate::from_gox_file_bytes()).
 ///
 /// Chunks are written in Goxel's order: `IMG `, the `PREV` preview, the shared
 /// `BL16` blocks, `MATE` materials, `LAYR` layers, `CAMR` cameras, the `LIGH`
 /// settings, then any preserved unknown chunks. Each dictionary emits its
 /// modeled keys followed by the type's `extra` keys, so a file decoded by
-/// [`from_gox_file_bytes`](crate::from_gox_file_bytes) re-encodes to an
+/// [`from_gox_file_bytes`](crate::from_gox_file_bytes()) re-encodes to an
 /// equivalent file. Blocks and the preview are re-encoded as PNGs; the encoding
 /// may differ byte-for-byte from Goxel's, but it is lossless for the pixels, so
 /// the decoded model is unchanged.
@@ -23,7 +20,7 @@ use goxl::{
 /// The model is trusted, not validated: a block is written as exactly
 /// [`GoxlBlock::SIZE`]`^3` voxels and the preview as `width * height` pixels,
 /// padding with empty cells or truncating a mis-sized array.
-/// [`validate_gox_file`](crate::validate_gox_file) checks these invariants.
+/// [`validate_gox_file`](crate::validate_gox_file()) checks these invariants.
 pub fn to_gox_file_bytes<D: EncodePng>(dependencies: &D, file: &GoxlFile) -> Vec<u8> {
     let mut out = ByteWriter::new();
     out.write_bytes(b"GOX ");
@@ -72,8 +69,8 @@ fn write_image(out: &mut ByteWriter, image: &GoxlImage) {
 /// buffer could match) is skipped rather than encoded, so the writer never
 /// allocates an over-large buffer or overflows. The count is taken in `u64` to
 /// keep that comparison itself overflow-free.
-/// [`validate_gox_file`](crate::validate_gox_file) rejects such a preview, so this
-/// skip is not reached for a validated file.
+/// [`validate_gox_file`](crate::validate_gox_file()) rejects such a preview, so
+/// this skip is not reached for a validated file.
 fn write_preview<D: EncodePng>(dependencies: &D, out: &mut ByteWriter, preview: &GoxlPreview) {
     let count = preview.width as u64 * preview.height as u64;
     if preview.width == 0 || preview.height == 0 || preview.pixels.len() as u64 != count {
@@ -197,4 +194,68 @@ fn shape_id(shape: GoxlShape) -> &'static [u8] {
         GoxlShape::Cube => b"cube",
         GoxlShape::Cylinder => b"cylinder",
     }
+}
+
+/// Pushes `key` with raw `value` bytes.
+fn push_bytes(pairs: &mut Vec<(String, Vec<u8>)>, key: &str, value: &[u8]) {
+    pairs.push((key.to_owned(), value.to_vec()));
+}
+
+/// Pushes `key` with a UTF-8 string value.
+fn push_str(pairs: &mut Vec<(String, Vec<u8>)>, key: &str, value: &str) {
+    push_bytes(pairs, key, value.as_bytes());
+}
+
+/// Pushes `key` with a little-endian `f32` value.
+fn push_f32(pairs: &mut Vec<(String, Vec<u8>)>, key: &str, value: f32) {
+    push_bytes(pairs, key, &value.to_le_bytes());
+}
+
+/// Pushes `key` with a little-endian `i32` value.
+fn push_i32(pairs: &mut Vec<(String, Vec<u8>)>, key: &str, value: i32) {
+    push_bytes(pairs, key, &value.to_le_bytes());
+}
+
+/// Pushes `key` with Goxel's one-byte boolean encoding.
+fn push_bool(pairs: &mut Vec<(String, Vec<u8>)>, key: &str, value: bool) {
+    push_bytes(pairs, key, &[value as u8]);
+}
+
+/// Pushes `key` with a `4 x 4` matrix of little-endian `f32`s in row-major (C
+/// array) order.
+fn push_mat4(pairs: &mut Vec<(String, Vec<u8>)>, key: &str, value: [[f32; 4]; 4]) {
+    let mut bytes = Vec::with_capacity(64);
+    for cell in value.iter().flatten() {
+        bytes.extend_from_slice(&cell.to_le_bytes());
+    }
+    pairs.push((key.to_owned(), bytes));
+}
+
+/// Pushes `key` with four little-endian `f32`s.
+fn push_vec4f(pairs: &mut Vec<(String, Vec<u8>)>, key: &str, value: [f32; 4]) {
+    let mut bytes = Vec::with_capacity(16);
+    for component in value {
+        bytes.extend_from_slice(&component.to_le_bytes());
+    }
+    pairs.push((key.to_owned(), bytes));
+}
+
+/// Pushes `key` with three little-endian `f32`s.
+fn push_vec3f(pairs: &mut Vec<(String, Vec<u8>)>, key: &str, value: [f32; 3]) {
+    let mut bytes = Vec::with_capacity(12);
+    for component in value {
+        bytes.extend_from_slice(&component.to_le_bytes());
+    }
+    pairs.push((key.to_owned(), bytes));
+}
+
+/// Pushes `key` with four `[r, g, b, a]` bytes.
+fn push_color(pairs: &mut Vec<(String, Vec<u8>)>, key: &str, value: [u8; 4]) {
+    push_bytes(pairs, key, &value);
+}
+
+/// Pushes `key` as a marker: present, with a zero-length value. Goxel uses this
+/// for the active-camera flag.
+fn push_marker(pairs: &mut Vec<(String, Vec<u8>)>, key: &str) {
+    pairs.push((key.to_owned(), Vec::new()));
 }

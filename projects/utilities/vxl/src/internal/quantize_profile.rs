@@ -7,7 +7,7 @@ use voxsmith::utilities::{AlphaMode, ColorSpace, Dither, PropertyInterpretation,
 /// `object voxels quantize` share.
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields, rename_all = "camelCase")]
-pub(crate) struct QuantizeProfile {
+pub struct QuantizeProfile {
     /// Mirrors `--max-materials`.
     pub(crate) max_materials: Option<NonZeroUsize>,
 

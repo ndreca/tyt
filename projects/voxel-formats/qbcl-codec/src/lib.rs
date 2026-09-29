@@ -14,6 +14,15 @@ compile_error!("qbcl-codec needs at least one format feature enabled: qb, qbt, o
 
 pub mod dependencies;
 
+mod error;
+mod result;
+
+pub use dependencies::*;
+pub use error::*;
+pub use result::*;
+
+// Optional API
+
 #[cfg(feature = "qb")]
 pub mod qb;
 
@@ -22,13 +31,6 @@ pub mod qbcl;
 
 #[cfg(feature = "qbt")]
 pub mod qbt;
-
-mod error;
-mod result;
-
-pub use dependencies::*;
-pub use error::*;
-pub use result::*;
 
 // Internal API
 

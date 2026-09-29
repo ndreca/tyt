@@ -2,6 +2,8 @@
 //! filesystem and output. [`DependenciesImpl`] binds std's filesystem and
 //! standard output.
 
+// Public API
+
 #[allow(clippy::module_inception)]
 mod dependencies;
 mod dependencies_impl;

@@ -4,7 +4,7 @@ use std::{
     path::Path,
 };
 
-/// Removes a file, treating `NotFound` as success.
+/// Removes a file. A missing file counts as success.
 pub fn remove_file(path: &Path) -> Result<()> {
     match fs::remove_file(path) {
         Ok(()) => Ok(()),

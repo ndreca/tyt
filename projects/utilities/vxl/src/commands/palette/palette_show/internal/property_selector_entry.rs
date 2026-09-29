@@ -7,14 +7,17 @@ use voxsmith::operations::palette::PropertySelector;
 /// `auto`.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
 #[serde(try_from = "PropertySelectorRepr")]
-pub(crate) struct PropertySelectorEntry(pub(crate) PropertySelector);
+pub struct PropertySelectorEntry(pub(crate) PropertySelector);
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct PropertySelectorRepr {
     palette: Option<String>,
+
     property: String,
+
     presentation: Option<String>,
+
     reading: Option<String>,
 }
 

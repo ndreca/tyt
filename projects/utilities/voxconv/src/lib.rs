@@ -93,8 +93,6 @@ mod dependencies_impl;
 #[cfg(feature = "impl")]
 pub use dependencies_impl::*;
 
-// One module per format feature.
-
 #[cfg(feature = "goxl")]
 pub mod goxl;
 
@@ -110,10 +108,10 @@ pub mod vmax;
 #[cfg(feature = "voxj")]
 pub mod voxj;
 
-// Test support.
+// Test support
 
-#[cfg(test)]
+#[cfg(all(test, feature = "impl"))]
 mod test;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "impl"))]
 pub(crate) use test::*;

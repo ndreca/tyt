@@ -663,10 +663,12 @@ fn grid_too_large(counts: TyVector3U32) -> Error {
 
 #[cfg(test)]
 mod tests {
-    use super::build_palette;
     use crate::{
         Result,
-        operations::mesh_doc::{OutOfRangeProperty, VoxelMaterial},
+        operations::mesh_doc::{
+            OutOfRangeProperty, VoxelMaterial,
+            mesh_doc_voxelize::internal::voxelize_mesh::build_palette,
+        },
     };
     use branded_id::U32Id;
     use ty_math::TyLinSrgbaF64;

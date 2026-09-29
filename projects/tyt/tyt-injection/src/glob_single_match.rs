@@ -59,7 +59,7 @@ pub fn glob_single_match(pattern: &str) -> Result<PathBuf> {
             ErrorKind::NotFound,
             format!("missing file matching: {pattern}"),
         )),
-        1 => Ok(matches.into_iter().next().unwrap()),
+        1 => Ok(matches.into_iter().next().expect("one match")),
         n => {
             let mut msg = format!("multiple files ({n}) match '{pattern}':");
             for f in &matches {

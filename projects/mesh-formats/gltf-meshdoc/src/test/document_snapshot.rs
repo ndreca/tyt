@@ -10,11 +10,18 @@ use meshdoc::{
 #[derive(Debug, PartialEq)]
 pub struct DocumentSnapshot {
     pub files: Vec<MeshFile>,
+
     pub images: Vec<MeshImage>,
+
     pub textures: Vec<MeshTexture>,
+
     pub materials: Vec<MeshMaterial>,
+
     pub objects: Vec<(String, Vec<MeshProperty>, Vec<MeshPrimitive>)>,
+
     pub nodes: Vec<MeshHierarchyNode>,
+
     pub roots: Vec<U32Id<BMeshHierarchyNode>>,
+
     pub ext: GltfExt,
 }

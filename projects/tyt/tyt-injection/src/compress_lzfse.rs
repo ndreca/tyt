@@ -1,6 +1,7 @@
-/// Compresses `bytes` into an LZFSE block stream — the inverse of
-/// [`decompress_lzfse`](crate::decompress_lzfse). Grows the output buffer until
-/// the encode succeeds (LZFSE always succeeds given a large enough buffer).
+/// Compresses `bytes` into an LZFSE block stream, the inverse of
+/// [`decompress_lzfse`](crate::decompress_lzfse()). Grows the output buffer
+/// until the encode succeeds (LZFSE always succeeds given a large enough
+/// buffer).
 pub fn compress_lzfse(bytes: &[u8]) -> Vec<u8> {
     let mut capacity = bytes
         .len()

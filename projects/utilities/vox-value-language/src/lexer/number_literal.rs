@@ -1,9 +1,9 @@
-use crate::lexer::NumberSuffix;
+use crate::NumberSuffix;
 
 /// A number token: its digits, whether a decimal point made it an `f32`,
 /// and the suffix that pinned a type.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub(crate) struct NumberLiteral {
+pub struct NumberLiteral {
     /// The digits and the decimal point, without any suffix.
     pub(crate) text: String,
 

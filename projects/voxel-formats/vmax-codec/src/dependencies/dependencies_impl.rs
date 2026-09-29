@@ -222,7 +222,7 @@ impl EncodePng for DependenciesImpl {
 mod tests {
     use crate::{
         CompressLzfse, DecodePng, DecodeVMaxSceneJson, DecompressLzfse, DependenciesImpl,
-        EncodePng, EncodeVMaxSceneJson, decompress_lzfse_or_raw,
+        EncodePng, EncodeVMaxSceneJson,
     };
     use vmax::{VMaxImage, VMaxPalettePngFile, VMaxSceneJsonFile};
 
@@ -233,14 +233,6 @@ mod tests {
         assert!(stream.starts_with(b"bvx"));
         assert!(stream.len() < bytes.len());
         assert_eq!(DependenciesImpl.decompress_lzfse(&stream).unwrap(), bytes);
-    }
-
-    #[test]
-    fn unframed_bytes_pass_through_untouched() {
-        let raw = b"bplist00 not an lzfse stream";
-        assert_eq!(decompress_lzfse_or_raw(&DependenciesImpl, raw), raw);
-        let stream = DependenciesImpl.compress_lzfse(raw);
-        assert_eq!(decompress_lzfse_or_raw(&DependenciesImpl, &stream), raw);
     }
 
     #[test]

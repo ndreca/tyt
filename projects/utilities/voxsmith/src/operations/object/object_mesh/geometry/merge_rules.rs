@@ -21,12 +21,17 @@ const BLEND_TOLERANCE: f64 = 1e-4;
 /// geometry. Each voxel takes a class, and a span merges within one class
 /// where every corner value the mesh carries is the bilinear blend of the
 /// span's four outer corners.
-pub(crate) struct MergeRules<'a> {
+pub struct MergeRules<'a> {
     object: &'a VoxObject,
+
     swatches: &'a Swatches<'a>,
+
     culled: &'a MeshGeometry,
+
     classes: IdVec<BVoxel, u32>,
+
     corner_values: Vec<Value>,
+
     culled_faces: HashMap<(U32Id<BVoxVoxel>, usize, i32), usize>,
 }
 
@@ -286,8 +291,11 @@ impl<'a> MergeRules<'a> {
 #[derive(Default)]
 struct Gathered {
     same_swatch: bool,
+
     capped: bool,
+
     agreed: Vec<Value>,
+
     corner_values: Vec<Value>,
 }
 

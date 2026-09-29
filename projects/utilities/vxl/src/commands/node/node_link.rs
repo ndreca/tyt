@@ -23,6 +23,7 @@ pub struct NodeLink {
 }
 
 impl NodeLink {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         edit_document(&dependencies, &self.input, self.output, |main| {
             let node_ids = self.selection.resolve_nodes(main)?;

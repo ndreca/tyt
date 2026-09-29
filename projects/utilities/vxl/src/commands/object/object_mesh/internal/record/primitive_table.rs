@@ -6,8 +6,9 @@ use voxsmith::operations::object::PrimitiveRecord;
 
 /// The primitives the flags fill by index: the declarations in order, else
 /// the implicit whole-mesh primitive. An index at or above the count errors.
-pub(crate) struct PrimitiveTable {
+pub struct PrimitiveTable {
     records: Vec<PrimitiveRecord>,
+
     normals_set: HashSet<u32>,
 }
 

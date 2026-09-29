@@ -16,9 +16,8 @@ use voxj_voxcore::{
 };
 
 impl FormatExt for Voxj {
-    /// The `ext` block decodes into a
-    /// [`CompositeVoxExt`](crate::voxj::ext::CompositeVoxExt), with each
-    /// installed format's slot as that format's ext.
+    /// The `ext` block decodes into a [`CompositeVoxExt`], with each installed
+    /// format's slot as that format's ext.
     fn read_with_ext<D: Dependencies>(
         dependencies: &D,
         files: &[VoxDocumentFile],

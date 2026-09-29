@@ -6,7 +6,7 @@ use std::num::NonZeroU8;
 
 /// The markdown frame: `#` headings from `level` down, pipe tables, and
 /// cells with their pipes escaped.
-pub(crate) struct MdTableFrame {
+pub struct MdTableFrame {
     /// The level of the shallowest heading.
     pub(crate) level: NonZeroU8,
 }

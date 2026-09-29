@@ -35,6 +35,7 @@ impl FromStr for Width {
 #[serde(untagged)]
 enum WidthRepr {
     Keyword(String),
+
     Columns(usize),
 }
 

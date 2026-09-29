@@ -2,6 +2,7 @@
 
 // Public API
 
+/// The subcommands [`Vxl`] dispatches to.
 pub mod commands;
 pub mod dependencies;
 
@@ -18,3 +19,11 @@ pub use vxl::*;
 
 mod internal;
 pub(crate) use internal::*;
+
+// Test support
+
+#[cfg(test)]
+mod test;
+
+#[cfg(test)]
+pub(crate) use test::*;

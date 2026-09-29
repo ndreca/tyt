@@ -14,7 +14,7 @@ pub struct VMaxStats {
     /// Occupied-range maximum corner.
     pub max: Vec<i64>,
 
-    /// Snapshot [`VMaxExtent`](crate::VMaxExtent) (`{o: <order>}`).
+    /// Snapshot [`VMaxExtent`] (`{o: <order>}`).
     pub extent: VMaxExtent,
 
     /// Occupied voxel count.

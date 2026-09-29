@@ -57,6 +57,7 @@ pub struct NodeSetRotation {
 }
 
 impl NodeSetRotation {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let rotation = self.rotation();
 
@@ -91,10 +92,10 @@ impl NodeSetRotation {
 #[cfg(test)]
 mod tests {
     use crate::commands::NodeSetRotation;
-    use clap::Parser;
+    use clap::{Error as ClapError, Parser};
     use ty_math::{TyQuaternionExt, TyQuaternionF64, TyVector3F64};
 
-    fn parse(args: &[&str]) -> Result<NodeSetRotation, clap::Error> {
+    fn parse(args: &[&str]) -> Result<NodeSetRotation, ClapError> {
         let mut argv = vec!["rotation", "scene.voxj", "--select", "house/door"];
         argv.extend_from_slice(args);
 

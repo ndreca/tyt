@@ -1,10 +1,16 @@
-use crate::{Dependencies, Error, Result, utilities};
+use crate::{
+    COMMON_PY, Dependencies, Error, FBX_HIERARCHY_JSON_PY, Result, Script, embed_blender_script,
+    extract_json, match_hierarchy_paths,
+};
 use clap::Parser;
 use std::{
     ffi::OsStr,
     io::{Error as IOError, ErrorKind},
     path::PathBuf,
 };
+
+/// The Blender script that extracts one mesh into its own FBX file.
+const FBX_EXTRACT_MESH_PY: Script = embed_blender_script!("fbx_extract_mesh.py");
 
 /// Extracts a single mesh matching a selection pattern from the input FBX file,
 /// unparents it keeping the world transform, deletes everything else, and
@@ -52,6 +58,7 @@ pub struct Extract {
 }
 
 impl Extract {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let Extract {
             input_fbx,
@@ -66,10 +73,9 @@ impl Extract {
 
         // Phase 1: get hierarchy JSON from Blender.
         let args: [&OsStr; 1] = [input_fbx.as_ref()];
-        let stdout =
-            dependencies.exec_temp_blender_script(&utilities::FBX_HIERARCHY_JSON_PY, args)?;
+        let stdout = dependencies.exec_temp_blender_script(&FBX_HIERARCHY_JSON_PY, args)?;
 
-        let json = utilities::extract_json(&stdout, b'[', b']')?;
+        let json = extract_json(&stdout, b'[', b']')?;
         let entries = dependencies.parse_hierarchy_json(json)?;
 
         // Filter to MESH objects only.
@@ -82,7 +88,7 @@ impl Extract {
         patterns.extend(select);
 
         let candidate_paths: Vec<&str> = meshes.iter().map(|(_, path, _)| path.as_str()).collect();
-        let matched = utilities::match_hierarchy_paths(&dependencies, &patterns, &candidate_paths)?;
+        let matched = match_hierarchy_paths(&dependencies, &patterns, &candidate_paths)?;
 
         let matched_meshes: Vec<&&(String, String, String)> = meshes
             .iter()
@@ -129,8 +135,8 @@ impl Extract {
         ];
 
         dependencies.exec_temp_blender_scripts_with_stdout(
-            &utilities::FBX_EXTRACT_MESH_PY,
-            [&utilities::COMMON_PY],
+            &FBX_EXTRACT_MESH_PY,
+            [&COMMON_PY],
             args,
         )?;
 

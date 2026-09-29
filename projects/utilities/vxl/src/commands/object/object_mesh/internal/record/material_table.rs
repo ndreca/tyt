@@ -9,8 +9,9 @@ use voxsmith::operations::object::MaterialRecord;
 /// or above it errors, and an unmentioned index below it emits an empty
 /// placeholder. Without one the count derives as the highest mentioned index
 /// plus one, and a skipped index errors.
-pub(crate) struct MaterialTable {
+pub struct MaterialTable {
     declared: Option<(u32, String)>,
+
     records: BTreeMap<u32, MaterialRecord>,
 }
 

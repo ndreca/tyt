@@ -4,7 +4,7 @@ use voxcore::VoxMain;
 
 /// The first object's live voxels as `(position, material index)` in its
 /// first layer, in raster order.
-pub(crate) fn live_cells(main: &VoxMain<HookRecorder>) -> Vec<(TyVector3U32, u32)> {
+pub fn live_cells(main: &VoxMain<HookRecorder>) -> Vec<(TyVector3U32, u32)> {
     let (_, object) = main.iter_objects().next().unwrap();
 
     let (layer_id, _) = object.iter_layers().next().unwrap();

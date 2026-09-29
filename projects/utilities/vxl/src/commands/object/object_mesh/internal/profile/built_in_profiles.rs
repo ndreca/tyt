@@ -3,7 +3,7 @@ use jsonc_parser::{ParseOptions, parse_to_serde_value};
 use std::collections::BTreeMap;
 
 /// The built-in profiles, parsed from the jsonc map the binary embeds.
-pub(crate) fn built_in_profiles() -> BTreeMap<String, MeshProfile> {
+pub fn built_in_profiles() -> BTreeMap<String, MeshProfile> {
     let options = ParseOptions {
         allow_comments: true,
         allow_loose_object_property_names: false,
@@ -20,7 +20,7 @@ pub(crate) fn built_in_profiles() -> BTreeMap<String, MeshProfile> {
 
 #[cfg(test)]
 mod tests {
-    use super::built_in_profiles;
+    use crate::commands::built_in_profiles;
     use vox_value_language::parse;
 
     #[test]

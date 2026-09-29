@@ -1,11 +1,30 @@
-use crate::{Expression, Result, lexer, parser};
+use crate::{Expression, Parser, Result, SyntaxNode, Token, lex, unexpected};
 
 /// Parses one expression spanning the whole text.
 pub fn parse_expression(text: &str) -> Result<Expression> {
-    let tokens = lexer::lex(text)?;
-    let root = parser::parse_expression_tokens(&tokens, text.len())?;
+    let tokens = lex(text)?;
+    let root = parse_expression_tokens(&tokens, text.len())?;
 
     Ok(Expression { root })
+}
+
+/// Parses a token stream as one expression spanning the whole text.
+///
+/// # Arguments
+/// - `tokens`: the lexed text.
+/// - `end`: the text's byte length, where an unexpected end reports.
+fn parse_expression_tokens(tokens: &[Token], end: usize) -> Result<SyntaxNode> {
+    let mut parser = Parser {
+        tokens,
+        position: 0,
+        end,
+    };
+    let expression = parser.expression()?;
+
+    match parser.peek() {
+        None => Ok(expression),
+        Some(token) => Err(unexpected(token, "the end of the expression")),
+    }
 }
 
 #[cfg(test)]

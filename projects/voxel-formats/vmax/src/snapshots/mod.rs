@@ -3,8 +3,7 @@
 //! log holding an object's geometry. Decoding replays the log into
 //! model-space voxels and encoding rebuilds it from them.
 
-mod internal;
-pub(crate) use internal::*;
+// Public API
 
 mod decode_vmax_snapshots;
 mod encode_contents_vmaxb_file_from_voxels;
@@ -19,3 +18,8 @@ pub use encode_vmax_snapshots::*;
 pub use error::*;
 pub use result::*;
 pub use vmax_voxel::*;
+
+// Internal API
+
+mod internal;
+pub(crate) use internal::*;

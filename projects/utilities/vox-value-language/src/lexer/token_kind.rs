@@ -1,8 +1,8 @@
-use crate::{function::Function, lexer::NumberLiteral};
+use crate::{Function, NumberLiteral};
 
 /// What a token is.
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) enum TokenKind {
+pub enum TokenKind {
     /// `&&`.
     And,
 

@@ -8,14 +8,16 @@ use tyt_common::ExecFailed;
 /// An error from executing an external command.
 #[derive(Debug)]
 pub enum ExecError {
-    IO(IOError),
+    /// The command ran and failed.
     Failed(ExecFailed),
+
+    /// The command could not be run.
+    IO(IOError),
 }
 
 impl Display for ExecError {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
-            ExecError::IO(e) => e.fmt(f),
             ExecError::Failed(ExecFailed {
                 exit_code,
                 stdout,
@@ -33,6 +35,8 @@ impl Display for ExecError {
                 }
                 Ok(())
             }
+
+            ExecError::IO(e) => e.fmt(f),
         }
     }
 }
@@ -40,8 +44,8 @@ impl Display for ExecError {
 impl StdError for ExecError {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match self {
-            ExecError::IO(e) => Some(e),
             ExecError::Failed(_) => None,
+            ExecError::IO(e) => Some(e),
         }
     }
 }

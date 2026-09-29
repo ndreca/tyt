@@ -51,6 +51,7 @@ pub struct ObjectVoxelsQuantize {
 }
 
 impl ObjectVoxelsQuantize {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let profile = match &self.profile {
             Some(name) => load_object_voxels_quantize_profile_set(&dependencies)?
@@ -77,9 +78,9 @@ impl ObjectVoxelsQuantize {
 #[cfg(test)]
 mod tests {
     use crate::commands::ObjectVoxelsQuantize;
-    use clap::Parser;
+    use clap::{Error as ClapError, Parser};
 
-    fn parse(args: &[&str]) -> Result<ObjectVoxelsQuantize, clap::Error> {
+    fn parse(args: &[&str]) -> Result<ObjectVoxelsQuantize, ClapError> {
         let mut argv = vec!["quantize", "scene.voxj", "--max-materials", "16"];
         argv.extend_from_slice(args);
         ObjectVoxelsQuantize::try_parse_from(argv)

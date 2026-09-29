@@ -3,7 +3,7 @@ use voxconv::ext::{VoxconvVoxMain, load_with_ext, save_with_ext};
 use voxsmith::Error as VoxsmithError;
 
 /// The loaded ext rides through boxed into the voxj `ext` block.
-pub(crate) fn edit_document<D: Dependencies>(
+pub fn edit_document<D: Dependencies>(
     dependencies: &D,
     input: &VoxelInput,
     output: VoxjOutput,

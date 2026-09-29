@@ -21,6 +21,7 @@ pub struct ProfileObjectVoxelsQuantizeList {
 }
 
 impl ProfileObjectVoxelsQuantizeList {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let profiles = load_object_voxels_quantize_profile_set(&dependencies)?;
         Ok(dependencies.write_stdout(list_profiles(&profiles, self.layout).as_bytes())?)

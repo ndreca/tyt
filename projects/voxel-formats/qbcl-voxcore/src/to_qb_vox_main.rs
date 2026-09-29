@@ -1,20 +1,19 @@
-use crate::{QbVoxMain, Result, duplicate_object, qb_ext_from_file, qb_placements};
+use crate::{Error, QbVoxMain, Result, qb_ext_from_file, rounded_translation, translation};
 use branded_id::U32Id;
 use qbcl::qb::QbFile;
 use std::collections::HashSet;
-use ty_math::{TyTransformF64, TyVector3I32};
-use voxcore::{BVoxHierarchyNode, BVoxObject, VoxHierarchyNode, VoxMain};
+use ty_math::TyVector3I32;
+use voxcore::{BVoxHierarchyNode, BVoxObject, VoxHierarchyNode, VoxMain, VoxObject};
 
 /// Gives a bare state a synthesized [`QbExt`](crate::QbExt), the state
-/// [`to_qb_file`](crate::to_qb_file) writes as a file synthesized from the
-/// scene. Qubicle Binary has a flat matrix list and no hierarchy, so the
-/// scene flattens first: each object placement becomes one root node placing
-/// one object at the placement's world translation, summed down from the
-/// roots and rounded to whole voxels. An object placed several times is
-/// duplicated per extra placement. An object no node places gets a root at
-/// the origin, after the placed ones. The objects take placement order. The
-/// header takes the defaults: `RGBA`, left-handed, uncompressed, with plain
-/// visibility bytes.
+/// [`to_qb_file`](crate::to_qb_file()) writes as a file synthesized from the
+/// scene. Qubicle Binary has a flat matrix list and no hierarchy, so the scene
+/// flattens first: each object placement becomes one root node placing one
+/// object at the placement's world translation, summed down from the roots and
+/// rounded to whole voxels. An object placed several times is duplicated per
+/// extra placement. An object no node places gets a root at the origin, after
+/// the placed ones. The objects take placement order. The header takes the
+/// defaults: `RGBA`, left-handed, uncompressed, with plain visibility bytes.
 ///
 /// Lossy where Qubicle Binary cannot represent the source: grouping
 /// collapses, node rotation and scale drop, and a color's alpha drops
@@ -64,9 +63,7 @@ pub fn to_qb_vox_main(mut main: VoxMain<()>) -> Result<QbVoxMain> {
     for (placement, &object_id) in placements.iter().zip(&object_ids) {
         root_ids.push(main.retain_hierarchy_node(VoxHierarchyNode {
             name: placement.name.clone(),
-            transform: TyTransformF64::from_translation(
-                TyVector3I32::from_array(placement.position).as_dvec3(),
-            ),
+            transform: translation(placement.position),
             child_node_ids: Vec::new(),
             child_object_ids: vec![object_id],
         })?);
@@ -76,9 +73,131 @@ pub fn to_qb_vox_main(mut main: VoxMain<()>) -> Result<QbVoxMain> {
     Ok(main.put_ext(qb_ext_from_file(&QbFile::default())))
 }
 
+/// One matrix of the flattened scene.
+struct QbPlacement {
+    object_id: U32Id<BVoxObject>,
+
+    name: String,
+
+    position: [i32; 3],
+}
+
+/// The matrices the scene flattens to, one per object placement in hierarchy
+/// order. A placement lands at the world translation summed down from the
+/// roots and rounded to whole voxels. An object no node places lands once at
+/// the origin. A node's first object takes the node's name. The rest take
+/// the object's name.
+fn qb_placements(main: &VoxMain<()>) -> Vec<QbPlacement> {
+    let mut placements = Vec::new();
+    for &root_id in main.root_hierarchy_node_ids() {
+        push_node_placements(main, root_id, TyVector3I32::new(0, 0, 0), &mut placements);
+    }
+
+    let placed: HashSet<U32Id<BVoxObject>> = placements
+        .iter()
+        .map(|placement| placement.object_id)
+        .collect();
+    for (object_id, object) in main.iter_objects() {
+        if !placed.contains(&object_id) {
+            placements.push(QbPlacement {
+                object_id,
+                name: object.name().to_owned(),
+                position: [0, 0, 0],
+            });
+        }
+    }
+
+    placements
+}
+
+/// Walks `node_id` and its subtree. The translations sum into the world
+/// position each placement carries.
+fn push_node_placements(
+    main: &VoxMain<()>,
+    node_id: U32Id<BVoxHierarchyNode>,
+    parent: TyVector3I32,
+    placements: &mut Vec<QbPlacement>,
+) {
+    let node = main
+        .hierarchy_node(node_id)
+        .expect("a hierarchy id from the state resolves");
+    let world = parent + rounded_translation(node);
+
+    for (index, &object_id) in node.child_object_ids.iter().enumerate() {
+        let object = main
+            .object(object_id)
+            .expect("a placed object is one of the state's");
+        let name = if index == 0 {
+            node.name.clone()
+        } else {
+            object.name().to_owned()
+        };
+        placements.push(QbPlacement {
+            object_id,
+            name,
+            position: world.to_array(),
+        });
+    }
+
+    for &child_id in &node.child_node_ids {
+        push_node_placements(main, child_id, world, placements);
+    }
+}
+
+/// A fresh object with `object`'s name, grid, origin, layers, and live
+/// voxels, so a format that places one grid per object can give each extra
+/// placement an object. A layer's default material, which only the empty
+/// cells hold, is the material its first live voxel samples, or the palette's
+/// first material for a layer with no live voxel. Errors when such a layer's
+/// palette has no material, because the copy's empty cells need one.
+fn duplicate_object(main: &VoxMain<()>, object: &VoxObject) -> Result<VoxObject> {
+    let mut copy = VoxObject::new(object.name().to_owned(), object.bounds())
+        .expect("the source object's grid is within the dense limit");
+    copy.set_origin(object.origin());
+
+    let layer_ids: Vec<_> = object.iter_layers().collect();
+    let first_live = object.iter_live().next();
+    for &(layer_id, palette_id) in &layer_ids {
+        let sampled_id = first_live.and_then(|voxel_id| object.voxel_material(voxel_id, layer_id));
+        let default_material_id = match sampled_id {
+            Some(material_id) => material_id,
+            None => {
+                let palette = main
+                    .palette(palette_id)
+                    .expect("a layer references a live palette");
+                let Some(material_id) = palette.iter_materials().next() else {
+                    return Err(Error::Invalid(format!(
+                        "object {} has no live voxel and its palette {palette_id} has no \
+                         material to give the copy's empty cells",
+                        object.name()
+                    )));
+                };
+                material_id
+            }
+        };
+        copy.retain_layer(palette_id, default_material_id);
+    }
+
+    let mut sample_ids = Vec::with_capacity(layer_ids.len());
+    for voxel_id in object.iter_live() {
+        sample_ids.clear();
+        sample_ids.extend(layer_ids.iter().map(|&(layer_id, _)| {
+            object
+                .voxel_material(voxel_id, layer_id)
+                .expect("a live voxel samples every layer")
+        }));
+        copy.retain_voxel(voxel_id, &sample_ids)
+            .expect("the copy has the source's grid and layers");
+    }
+
+    Ok(copy)
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{from_qb_file, to_qb_file, to_qb_vox_main};
+    use crate::{
+        Error, from_qb_file, to_qb_file, to_qb_vox_main, to_qb_vox_main::duplicate_object,
+    };
     use branded_id::U32Id;
     use qbcl::qb::QbFile;
     use std::collections::BTreeSet;
@@ -317,5 +436,51 @@ mod tests {
         let file = to_qb_file(&main).unwrap();
 
         assert_eq!(file.matrices.len(), 3);
+    }
+
+    fn empty_object(main: &VoxMain<()>) -> VoxObject {
+        let palette_id = main.iter_palettes().next().unwrap().0;
+
+        let mut object = VoxObject::new("empty".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
+
+        object.retain_layer(palette_id, U32Id::from_u32(0));
+
+        object
+    }
+
+    #[test]
+    fn an_empty_layer_defaults_to_the_palettes_first_material() {
+        let mut main: VoxMain = VoxMain::default();
+
+        let value_pool_id = main.retain_value_pool(VoxValuePool::int(vec![1]).unwrap());
+
+        let mut palette = VoxPalette::default();
+
+        palette
+            .retain_property("v".to_owned(), value_pool_id, U32Id::from_u32(0))
+            .unwrap();
+
+        palette.retain_material(vec![U32Id::from_u32(0)]).unwrap();
+
+        main.retain_palette(palette).unwrap();
+
+        let copy = duplicate_object(&main, &empty_object(&main)).unwrap();
+
+        assert_eq!(copy.layer_count(), 1);
+
+        main.retain_object(copy).unwrap();
+
+        main.validate().unwrap();
+    }
+
+    #[test]
+    fn an_empty_layer_over_an_empty_palette_errors() {
+        let mut main: VoxMain = VoxMain::default();
+
+        main.retain_palette(VoxPalette::default()).unwrap();
+
+        let actual = duplicate_object(&main, &empty_object(&main));
+
+        assert!(matches!(actual, Err(Error::Invalid(_))));
     }
 }

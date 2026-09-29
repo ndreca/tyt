@@ -30,6 +30,7 @@ fn main() {
         Command::Completion { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "material", &mut io::stdout());
         }
+
         Command::TytMaterial(material) => {
             if let Err(e) = material.execute(DependenciesImpl) {
                 eprintln!("error: {e}");

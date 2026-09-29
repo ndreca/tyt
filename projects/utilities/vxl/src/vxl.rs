@@ -12,19 +12,25 @@ use clap::Subcommand;
 pub enum Vxl {
     #[command(name = "mesh-doc")]
     MeshDoc(MeshDoc),
+
     #[command(name = "node")]
     Node(Node),
+
     #[command(name = "object")]
     Object(Object),
+
     #[command(name = "palette")]
     Palette(Palette),
+
     #[command(name = "profile")]
     Profile(Profile),
+
     #[command(name = "vox-doc")]
     VoxDoc(VoxDoc),
 }
 
 impl Vxl {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             Vxl::MeshDoc(mesh_doc) => mesh_doc.execute(dependencies),

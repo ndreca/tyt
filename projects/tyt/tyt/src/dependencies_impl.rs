@@ -11,20 +11,31 @@ use tyt_oai::DependenciesImpl as TytOAIDependenciesImpl;
 use tyt_vmax::DependenciesImpl as TytVMaxDependenciesImpl;
 use vxl::DependenciesImpl as VxlDependenciesImpl;
 
+/// Provides every sub-crate's concrete `DependenciesImpl`.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct DependenciesImpl;
 
 impl Dependencies for DependenciesImpl {
     type TytClaudeDependencies = TytClaudeDependenciesImpl;
+
     type TytCubemapDependencies = TytCubemapDependenciesImpl;
+
     type TytFSDependencies = TytFSDependenciesImpl;
+
     type TytFbxDependencies = TytFbxDependenciesImpl;
+
     type TytImageDependencies = TytImageDependenciesImpl;
+
     type TytMaterialDependencies = TytMaterialDependenciesImpl;
+
     type TytMeshyDependencies = TytMeshyDependenciesImpl;
+
     type TytMetaDependencies = TytMetaDependenciesImpl;
+
     type TytOAIDependencies = TytOAIDependenciesImpl;
+
     type TytVMaxDependencies = TytVMaxDependenciesImpl;
+
     type VxlDependencies = VxlDependenciesImpl;
 
     fn tyt_claude_dependencies(&self) -> Self::TytClaudeDependencies {

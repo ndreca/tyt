@@ -23,9 +23,9 @@ const NO_LAYER: i32 = -1;
 ///
 /// Decoding rejects malformed bytes. A hand-built or edited [`MVoxFile`] can
 /// still hold dangling references that
-/// [`to_mvox_file_bytes`](crate::to_mvox_file_bytes) would write as a structurally
-/// valid but broken file. Decoding does not call this. Run it when you need the
-/// guarantee.
+/// [`to_mvox_file_bytes`](crate::to_mvox_file_bytes()) would write as a
+/// structurally valid but broken file. Decoding does not call this. Run it when
+/// you need the guarantee.
 pub fn validate_mvox_file(file: &MVoxFile) -> Result<()> {
     validate_models(file)?;
     validate_materials(file)?;
@@ -230,7 +230,7 @@ fn child_position(
 
 #[cfg(test)]
 mod tests {
-    use crate::validate_mvox_file;
+    use crate::{validate_mvox_file, validate_mvox_file::PALETTE_LEN};
     use mvox::{
         MVoxDict, MVoxFile, MVoxFrame, MVoxGroupNode, MVoxLayer, MVoxMaterial, MVoxModel,
         MVoxNodeAttributes, MVoxSceneNode, MVoxSceneNodeBody, MVoxShapeModel, MVoxShapeNode,
@@ -448,5 +448,5 @@ mod tests {
     }
 
     /// `PALETTE_LEN` as the `i32` a material id is, for the boundary test.
-    const PALETTE_LEN_AS_I32: i32 = super::PALETTE_LEN as i32;
+    const PALETTE_LEN_AS_I32: i32 = PALETTE_LEN as i32;
 }

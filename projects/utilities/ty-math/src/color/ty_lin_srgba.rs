@@ -11,8 +11,7 @@ mod tests {
 
     #[test]
     fn componentwise_multiply_tints_each_channel() {
-        // By-value `*` is the Hadamard product, alpha included, replacing tyt's
-        // `componentwise_multiply`.
+        // By-value `*` is the Hadamard product, alpha included.
         let tinted =
             TyLinSrgbaF64::new(0.5, 0.8, 1.0, 1.0) * TyLinSrgbaF64::new(0.5, 0.0, 0.25, 0.5);
         assert_eq!(tinted, TyLinSrgbaF64::new(0.25, 0.0, 0.25, 0.5));

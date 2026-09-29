@@ -4,8 +4,8 @@ use std::{
     path::Path,
 };
 
+/// Removes a directory and its contents. A missing directory counts as success.
 pub fn remove_dir_all(path: &Path) -> Result<()> {
-    // If it's already gone, treat as success.
     match fs::remove_dir_all(path) {
         Ok(()) => Ok(()),
         Err(e) if e.kind() == ErrorKind::NotFound => Ok(()),

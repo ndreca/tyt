@@ -1,4 +1,4 @@
-use crate::{Dependencies, Result, utilities};
+use crate::{Dependencies, Result, pixelate_faces};
 use clap::Parser;
 
 /// Pixelates (point-resizes) six cube face images.
@@ -16,16 +16,18 @@ pub struct PixelateFaces {
     #[arg(value_name = "size", short, long, default_value_t = 256)]
     size: u32,
 
-    /// Final output height in pixels for each face. When set, faces are point-resized
-    /// up to this height after pixelation, preserving hard edges at a larger resolution.
+    /// Final output height in pixels for each face. When set, faces are
+    /// point-resized up to this height after pixelation, preserving hard edges
+    /// at a larger resolution.
     #[arg(value_name = "output-size", long)]
     output_size: Option<u32>,
 }
 
 impl PixelateFaces {
+    /// Pixelates the faces with `magick` and reports the written paths.
     pub fn execute(self, deps: impl Dependencies) -> Result<()> {
         let out_base = self.out_base.unwrap_or_else(|| format!("{}-px", self.base));
-        utilities::pixelate_faces(&deps, &self.base, &out_base, self.size, self.output_size)?;
+        pixelate_faces(&deps, &self.base, &out_base, self.size, self.output_size)?;
         deps.write_stdout(format!("Wrote resized faces: {out_base}-*.png\n").as_bytes())?;
         Ok(())
     }

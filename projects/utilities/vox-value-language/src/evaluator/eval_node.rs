@@ -1,17 +1,14 @@
 use crate::{
-    Components, EvalFailure, Groupings, Scalar, Type, Value,
-    checker::{CheckedKind, CheckedNode, ElementwiseFunction, Fold, NumberValue},
-    evaluator::{
-        EntryPairTransform, EntryTransform, EvalResult, Lengths, Operand, Unsigned, ValueExt,
-        climb, componentwise, convert, oklab_from_rgb, oklch_from_rgb, per_entry, reduce,
-        rgb_from_oklab, rgb_from_oklch, transform_entries, transform_entry_pairs,
-    },
-    parser::{BinaryOperator, ComparisonOperator, LogicalOperator, UnaryOperator},
+    BinaryOperator, CheckedKind, CheckedNode, ComparisonOperator, Components, Domain,
+    ElementwiseFunction, EntryPairTransform, EntryTransform, EvalFailure, EvalResult, Fold,
+    Groupings, Lengths, LogicalOperator, NumberValue, Numeric, Operand, Reduction, Rounding,
+    Scalar, Type, UnaryOperator, Unsigned, Value,
 };
-use std::collections::HashMap;
+use branded_id::UsizeId;
+use std::{collections::HashMap, f64::consts::TAU};
 
 /// Computes a checked node's value over the names in scope.
-pub(crate) fn eval_node(
+pub fn eval_node(
     node: &CheckedNode,
     scope: &HashMap<String, Value>,
     groupings: &Groupings,
@@ -27,7 +24,9 @@ pub(crate) fn eval_node(
 
 struct Evaluator<'a> {
     scope: &'a HashMap<String, Value>,
+
     groupings: &'a Groupings,
+
     lengths: &'a Lengths,
 }
 
@@ -153,7 +152,7 @@ impl Evaluator<'_> {
         let components = match output.scalar {
             Scalar::F32 => {
                 let values =
-                    componentwise([left.f32s(), right.f32s()], entries, width, |[a, b]| {
+                    componentwise([f32s(&left), f32s(&right)], entries, width, |[a, b]| {
                         Ok(match operator {
                             BinaryOperator::Add => a + b,
                             BinaryOperator::Divide => a / b,
@@ -167,21 +166,21 @@ impl Evaluator<'_> {
 
             Scalar::U8 => Components::U8(unsigned_binary(
                 operator,
-                [left.u8s(), right.u8s()],
+                [u8s(&left), u8s(&right)],
                 entries,
                 width,
             )?),
 
             Scalar::U16 => Components::U16(unsigned_binary(
                 operator,
-                [left.u16s(), right.u16s()],
+                [u16s(&left), u16s(&right)],
                 entries,
                 width,
             )?),
 
             Scalar::U32 => Components::U32(unsigned_binary(
                 operator,
-                [left.u32s(), right.u32s()],
+                [u32s(&left), u32s(&right)],
                 entries,
                 width,
             )?),
@@ -213,7 +212,7 @@ impl Evaluator<'_> {
 
             // Only a constructor answers a bool, packing its vec1 parts.
             _ if output.scalar == Scalar::Bool => {
-                let parts: Vec<_> = values.iter().map(ValueExt::bools).collect();
+                let parts: Vec<_> = values.iter().map(bools).collect();
                 let mut packed = Vec::with_capacity(entries * width);
 
                 for entry in 0..entries {
@@ -251,8 +250,7 @@ impl Evaluator<'_> {
     fn fold(&self, fold: Fold, operand: &CheckedNode, output: Type) -> EvalResult<Value> {
         let operand = self.node(operand)?;
         let width = operand.dimension().width();
-        let folded = operand
-            .bools()
+        let folded = bools(&operand)
             .components
             .chunks(width)
             .map(|entry| match fold {
@@ -275,7 +273,7 @@ impl Evaluator<'_> {
         let right = self.lifted(right, output)?;
         let entries = self.lengths.of(output.domain);
         let width = output.dimension.width();
-        let answers = componentwise([left.bools(), right.bools()], entries, width, |[a, b]| {
+        let answers = componentwise([bools(&left), bools(&right)], entries, width, |[a, b]| {
             Ok(match operator {
                 LogicalOperator::And => *a && *b,
                 LogicalOperator::Or => *a || *b,
@@ -299,7 +297,7 @@ impl Evaluator<'_> {
         let transform = Mix {
             width: output.dimension.width(),
             chooser_width: chooser.dimension().width(),
-            chooser: chooser.bools().components,
+            chooser: bools(&chooser).components,
         };
 
         Ok(build(
@@ -317,16 +315,14 @@ impl Evaluator<'_> {
         let operand = self.node(operand)?;
         let components = match operator {
             UnaryOperator::Negate => Components::F32(
-                operand
-                    .f32s()
+                f32s(&operand)
                     .components
                     .iter()
                     .map(|value| -value)
                     .collect(),
             ),
             UnaryOperator::Not => Components::Bool(
-                operand
-                    .bools()
+                bools(&operand)
                     .components
                     .iter()
                     .map(|value| !value)
@@ -342,7 +338,9 @@ impl Evaluator<'_> {
 /// and the first elsewhere. A vec1 chooser picks whole entries.
 struct Mix<'a> {
     width: usize,
+
     chooser_width: usize,
+
     chooser: &'a [bool],
 }
 
@@ -372,6 +370,7 @@ impl EntryPairTransform for Mix<'_> {
 /// Reorders each entry's components by the swizzle's positions.
 struct Swizzle<'a> {
     width: usize,
+
     positions: &'a [usize],
 }
 
@@ -391,6 +390,7 @@ impl EntryTransform for Swizzle<'_> {
 /// Takes one entry.
 struct Take {
     width: usize,
+
     entry: usize,
 }
 
@@ -447,7 +447,7 @@ fn f32_call(
     entries: usize,
     width: usize,
 ) -> EvalResult<Vec<f32>> {
-    let operands = values.iter().map(ValueExt::f32s).collect::<Vec<_>>();
+    let operands = values.iter().map(f32s).collect::<Vec<_>>();
 
     match function {
         ElementwiseFunction::R
@@ -585,7 +585,7 @@ fn keep_call(
 
     Ok(match scalar {
         Scalar::F32 => {
-            let output = componentwise([first.f32s(), second.f32s()], entries, width, |[a, b]| {
+            let output = componentwise([f32s(first), f32s(second)], entries, width, |[a, b]| {
                 Ok(match function {
                     ElementwiseFunction::Max => a.max(*b),
                     ElementwiseFunction::Min => a.min(*b),
@@ -599,21 +599,21 @@ fn keep_call(
 
         Scalar::U8 => Components::U8(unsigned_keep(
             function,
-            [first.u8s(), second.u8s()],
+            [u8s(first), u8s(second)],
             entries,
             width,
         )?),
 
         Scalar::U16 => Components::U16(unsigned_keep(
             function,
-            [first.u16s(), second.u16s()],
+            [u16s(first), u16s(second)],
             entries,
             width,
         )?),
 
         Scalar::U32 => Components::U32(unsigned_keep(
             function,
-            [first.u32s(), second.u32s()],
+            [u32s(first), u32s(second)],
             entries,
             width,
         )?),
@@ -690,25 +690,24 @@ fn compare_values(
     width: usize,
 ) -> EvalResult<Vec<bool>> {
     match left.scalar() {
-        Scalar::F32 => componentwise([left.f32s(), right.f32s()], entries, width, |[a, b]| {
+        Scalar::F32 => componentwise([f32s(left), f32s(right)], entries, width, |[a, b]| {
             Ok(compare(operator, a, b))
         }),
-        Scalar::U8 => componentwise([left.u8s(), right.u8s()], entries, width, |[a, b]| {
+        Scalar::U8 => componentwise([u8s(left), u8s(right)], entries, width, |[a, b]| {
             Ok(compare(operator, a, b))
         }),
-        Scalar::U16 => componentwise([left.u16s(), right.u16s()], entries, width, |[a, b]| {
+        Scalar::U16 => componentwise([u16s(left), u16s(right)], entries, width, |[a, b]| {
             Ok(compare(operator, a, b))
         }),
-        Scalar::U32 => componentwise([left.u32s(), right.u32s()], entries, width, |[a, b]| {
+        Scalar::U32 => componentwise([u32s(left), u32s(right)], entries, width, |[a, b]| {
             Ok(compare(operator, a, b))
         }),
-        Scalar::String => componentwise(
-            [left.strings(), right.strings()],
-            entries,
-            width,
-            |[a, b]| Ok(compare(operator, a, b)),
-        ),
-        Scalar::Bool => componentwise([left.bools(), right.bools()], entries, width, |[a, b]| {
+        Scalar::String => {
+            componentwise([strings(left), strings(right)], entries, width, |[a, b]| {
+                Ok(compare(operator, a, b))
+            })
+        }
+        Scalar::Bool => componentwise([bools(left), bools(right)], entries, width, |[a, b]| {
             Ok(compare(operator, a, b))
         }),
     }
@@ -773,15 +772,627 @@ fn fixed<T: Copy, const N: usize>(operands: &[T]) -> [T; N] {
     operands.try_into().expect("the parser checks arity")
 }
 
+/// Lifts a value to a domain at or above its own, duplicating entries up the
+/// ladder. A value already there comes back untouched.
+fn climb(
+    value: &Value,
+    target: Domain,
+    groupings: &Groupings,
+    lengths: &Lengths,
+) -> EvalResult<Value> {
+    if value.domain() == target {
+        return Ok(value.clone());
+    }
+
+    let transform = Climb {
+        from: value.domain(),
+        to: target,
+        width: value.dimension().width(),
+        groupings,
+        lengths,
+    };
+    let components = transform_entries(value.components(), &transform)?;
+
+    Ok(Value::new(target, value.dimension(), components)
+        .expect("a climb fills every entry of the target"))
+}
+
+struct Climb<'a> {
+    from: Domain,
+
+    to: Domain,
+
+    width: usize,
+
+    groupings: &'a Groupings,
+
+    lengths: &'a Lengths,
+}
+
+impl EntryTransform for Climb<'_> {
+    fn apply<T: Clone + PartialEq>(&self, components: &[T]) -> EvalResult<Vec<T>> {
+        let mut current = components.to_vec();
+        let mut domain = self.from;
+
+        while domain < self.to {
+            let next = match domain {
+                Domain::Plain => Domain::Swatch,
+                Domain::Swatch => Domain::Voxel,
+                Domain::Voxel => Domain::Face,
+                Domain::Face => Domain::Corner,
+                Domain::Corner => unreachable!("corner is the ladder's top"),
+            };
+
+            current = self.step(&current, next)?;
+            domain = next;
+        }
+
+        Ok(current)
+    }
+}
+
+impl Climb<'_> {
+    /// Lifts entries one rung onto the given domain.
+    fn step<T: Clone + PartialEq>(&self, current: &[T], to: Domain) -> EvalResult<Vec<T>> {
+        let width = self.width;
+        let entry = |index: usize| &current[index * width..(index + 1) * width];
+        let mut next = Vec::with_capacity(self.lengths.of(to) * width);
+
+        match to {
+            Domain::Swatch => {
+                for _ in 0..self.lengths.swatches {
+                    next.extend_from_slice(entry(0));
+                }
+            }
+
+            Domain::Voxel => {
+                for swatch_id in self.groupings.voxel_swatches.iter() {
+                    next.extend_from_slice(entry(swatch_id.to_usize_id().to_usize()));
+                }
+            }
+
+            Domain::Face => {
+                for (face, pieces) in self.groupings.face_voxels.iter().enumerate() {
+                    let first = entry(pieces[0].to_usize_id().to_usize());
+
+                    if pieces
+                        .iter()
+                        .any(|voxel_id| entry(voxel_id.to_usize_id().to_usize()) != first)
+                    {
+                        return Err(EvalFailure::ClimbDisagreement {
+                            target: Domain::Face,
+                            entry: face,
+                        });
+                    }
+
+                    next.extend_from_slice(first);
+                }
+            }
+
+            Domain::Corner => {
+                for face in 0..self.lengths.faces {
+                    for _ in 0..4 {
+                        next.extend_from_slice(entry(face));
+                    }
+                }
+            }
+
+            Domain::Plain => unreachable!("nothing climbs onto plain"),
+        }
+
+        Ok(next)
+    }
+}
+
+/// Reduces an array into a domain below it, each destination entry
+/// gathering its source entries per component.
+fn reduce(
+    value: &Value,
+    reduction: Reduction,
+    target: Domain,
+    groupings: &Groupings,
+    lengths: &Lengths,
+) -> EvalResult<Value> {
+    let groups = groups(value.domain(), target, groupings, lengths);
+    let operation = reduction.name(target);
+    let width = value.dimension().width();
+    let components = match (reduction, value.components()) {
+        (Reduction::Avg, Components::F32(components)) => {
+            Components::F32(average(components, width, &groups, &operation, target)?)
+        }
+        (Reduction::Avg, Components::U8(components)) => {
+            Components::F32(average(components, width, &groups, &operation, target)?)
+        }
+        (Reduction::Avg, Components::U16(components)) => {
+            Components::F32(average(components, width, &groups, &operation, target)?)
+        }
+        (Reduction::Avg, Components::U32(components)) => {
+            Components::F32(average(components, width, &groups, &operation, target)?)
+        }
+        (_, Components::F32(components)) => Components::F32(fold(
+            components, width, &groups, reduction, &operation, target,
+        )?),
+        (_, Components::U8(components)) => Components::U8(fold(
+            components, width, &groups, reduction, &operation, target,
+        )?),
+        (_, Components::U16(components)) => Components::U16(fold(
+            components, width, &groups, reduction, &operation, target,
+        )?),
+        (_, Components::U32(components)) => Components::U32(fold(
+            components, width, &groups, reduction, &operation, target,
+        )?),
+        (_, Components::Bool(_) | Components::String(_)) => {
+            unreachable!("the checker rejects a reduction over bools and strings")
+        }
+    };
+
+    Ok(Value::new(target, value.dimension(), components)
+        .expect("a reduction fills every entry of the target"))
+}
+
+/// The mean of each group per component, accumulated in `f64`.
+fn average<T: Numeric>(
+    components: &[T],
+    width: usize,
+    groups: &[Vec<usize>],
+    operation: &str,
+    target: Domain,
+) -> EvalResult<Vec<f32>> {
+    let mut output = Vec::with_capacity(groups.len() * width);
+
+    for (entry, group) in groups.iter().enumerate() {
+        if group.is_empty() {
+            return Err(EvalFailure::EmptyDestination {
+                operation: operation.to_owned(),
+                target,
+                entry,
+            });
+        }
+
+        for position in 0..width {
+            let total = group
+                .iter()
+                .map(|&source| components[source * width + position].to_f64())
+                .sum::<f64>();
+            let mean = (total / group.len() as f64) as f32;
+
+            if !mean.is_finite() {
+                return Err(EvalFailure::NonFinite {
+                    operation: operation.to_owned(),
+                });
+            }
+
+            output.push(mean);
+        }
+    }
+
+    Ok(output)
+}
+
+/// The min, max, or sum of each group per component.
+fn fold<T: Numeric>(
+    components: &[T],
+    width: usize,
+    groups: &[Vec<usize>],
+    reduction: Reduction,
+    operation: &str,
+    target: Domain,
+) -> EvalResult<Vec<T>> {
+    let mut output = Vec::with_capacity(groups.len() * width);
+
+    for (entry, group) in groups.iter().enumerate() {
+        for position in 0..width {
+            let mut values = group
+                .iter()
+                .map(|&source| components[source * width + position]);
+            let value = match reduction {
+                Reduction::Sum => T::sum(values, operation)?,
+
+                Reduction::Max | Reduction::Min => {
+                    let first = values.next().ok_or_else(|| EvalFailure::EmptyDestination {
+                        operation: operation.to_owned(),
+                        target,
+                        entry,
+                    })?;
+
+                    values.fold(first, |best, value| match reduction {
+                        Reduction::Max if value > best => value,
+                        Reduction::Min if value < best => value,
+                        _ => best,
+                    })
+                }
+
+                Reduction::Avg => unreachable!("averages take their own path"),
+            };
+
+            output.push(value);
+        }
+    }
+
+    Ok(output)
+}
+
+/// The source entries each destination entry reduces, a merged face
+/// counting once per piece.
+fn groups(
+    source: Domain,
+    target: Domain,
+    groupings: &Groupings,
+    lengths: &Lengths,
+) -> Vec<Vec<usize>> {
+    let mut groups = vec![Vec::new(); lengths.of(target)];
+    let corners_of = |face: usize| face * 4..(face + 1) * 4;
+    let swatch_of = |voxel: usize| {
+        groupings.voxel_swatches[UsizeId::from_usize(voxel)]
+            .to_usize_id()
+            .to_usize()
+    };
+
+    match target {
+        Domain::Plain => groups[0].extend(0..lengths.of(source)),
+
+        Domain::Swatch if source == Domain::Voxel => {
+            for voxel in 0..lengths.voxels {
+                groups[swatch_of(voxel)].push(voxel);
+            }
+        }
+
+        Domain::Swatch | Domain::Voxel => {
+            for (face, pieces) in groupings.face_voxels.iter().enumerate() {
+                for voxel_id in pieces {
+                    let voxel = voxel_id.to_usize_id().to_usize();
+                    let destination = if target == Domain::Voxel {
+                        voxel
+                    } else {
+                        swatch_of(voxel)
+                    };
+
+                    match source {
+                        Domain::Face => groups[destination].push(face),
+                        Domain::Corner => groups[destination].extend(corners_of(face)),
+                        _ => {
+                            unreachable!("the checker keeps a reduction's source above its target")
+                        }
+                    }
+                }
+            }
+        }
+
+        Domain::Face => {
+            for (face, group) in groups.iter_mut().enumerate() {
+                group.extend(corners_of(face));
+            }
+        }
+
+        Domain::Corner => unreachable!("nothing reduces onto corner"),
+    }
+
+    groups
+}
+
+/// Converts a value's components to another numeric type, exactly or by the
+/// named rounding.
+fn convert(value: &Value, target: Scalar, rounding: Option<Rounding>) -> EvalResult<Value> {
+    let components = match (value.components(), target) {
+        (Components::F32(components), Scalar::F32) => Components::F32(components.clone()),
+        (Components::F32(components), Scalar::U8) => {
+            Components::U8(from_f32(components, rounding, target)?)
+        }
+        (Components::F32(components), Scalar::U16) => {
+            Components::U16(from_f32(components, rounding, target)?)
+        }
+        (Components::F32(components), Scalar::U32) => {
+            Components::U32(from_f32(components, rounding, target)?)
+        }
+
+        (Components::U8(components), Scalar::F32) => {
+            Components::F32(components.iter().map(|&value| f32::from(value)).collect())
+        }
+        (Components::U16(components), Scalar::F32) => {
+            Components::F32(components.iter().map(|&value| f32::from(value)).collect())
+        }
+        (Components::U32(components), Scalar::F32) => Components::F32(
+            components
+                .iter()
+                .map(|&value| {
+                    if value <= 1 << 24 {
+                        Ok(value as f32)
+                    } else {
+                        Err(EvalFailure::Inexact { value })
+                    }
+                })
+                .collect::<EvalResult<_>>()?,
+        ),
+
+        (Components::U8(components), Scalar::U8) => Components::U8(components.clone()),
+        (Components::U8(components), Scalar::U16) => Components::U16(between(components, target)?),
+        (Components::U8(components), Scalar::U32) => Components::U32(between(components, target)?),
+        (Components::U16(components), Scalar::U8) => Components::U8(between(components, target)?),
+        (Components::U16(components), Scalar::U16) => Components::U16(components.clone()),
+        (Components::U16(components), Scalar::U32) => Components::U32(between(components, target)?),
+        (Components::U32(components), Scalar::U8) => Components::U8(between(components, target)?),
+        (Components::U32(components), Scalar::U16) => Components::U16(between(components, target)?),
+        (Components::U32(components), Scalar::U32) => Components::U32(components.clone()),
+
+        (Components::Bool(_) | Components::String(_), _) | (_, Scalar::Bool | Scalar::String) => {
+            unreachable!("the checker converts numbers alone")
+        }
+    };
+
+    Ok(Value::new(value.domain(), value.dimension(), components)
+        .expect("a conversion keeps every entry"))
+}
+
+/// Converts `f32` components into an unsigned type, exactly or by the named
+/// rounding, then checks the range.
+fn from_f32<T: Unsigned>(
+    components: &[f32],
+    rounding: Option<Rounding>,
+    target: Scalar,
+) -> EvalResult<Vec<T>> {
+    components
+        .iter()
+        .map(|&value| {
+            let whole = match rounding {
+                None if value.fract() != 0.0 => {
+                    return Err(EvalFailure::Fraction { value, target });
+                }
+                None => value,
+                Some(Rounding::Ceil) => value.ceil(),
+                Some(Rounding::Floor) => value.floor(),
+                Some(Rounding::Round) => value.round(),
+            };
+            let out_of_range = || EvalFailure::OutOfRange {
+                value: f64::from(whole),
+                target,
+            };
+
+            if whole < 0.0 || f64::from(whole) > T::max_value().to_f64() {
+                return Err(out_of_range());
+            }
+
+            T::from_u64(whole as u64).ok_or_else(out_of_range)
+        })
+        .collect()
+}
+
+/// Converts between unsigned types under a range check.
+fn between<T: Unsigned, U: Unsigned>(components: &[T], target: Scalar) -> EvalResult<Vec<U>> {
+    components
+        .iter()
+        .map(|&value| {
+            U::from_u64(value.to_u64()).ok_or(EvalFailure::OutOfRange {
+                value: value.to_f64(),
+                target,
+            })
+        })
+        .collect()
+}
+
+/// Computes every output component from the operands' components at the
+/// same position, a vec1 operand broadcasting across each entry.
+fn componentwise<T, U, const N: usize>(
+    operands: [Operand<'_, T>; N],
+    entries: usize,
+    width: usize,
+    mut compute: impl FnMut([&T; N]) -> EvalResult<U>,
+) -> EvalResult<Vec<U>> {
+    let mut output = Vec::with_capacity(entries * width);
+
+    for entry in 0..entries {
+        for position in 0..width {
+            let inputs = operands
+                .each_ref()
+                .map(|operand| operand.component(entry, position));
+
+            output.push(compute(inputs)?);
+        }
+    }
+
+    Ok(output)
+}
+
+/// Computes every output entry from the operands' whole entries.
+fn per_entry<T, U, const N: usize>(
+    operands: [Operand<'_, T>; N],
+    entries: usize,
+    mut compute: impl FnMut([&[T]; N]) -> EvalResult<Vec<U>>,
+) -> EvalResult<Vec<U>> {
+    let mut output = Vec::new();
+
+    for entry in 0..entries {
+        let inputs = operands.each_ref().map(|operand| operand.entry(entry));
+
+        output.extend(compute(inputs)?);
+    }
+
+    Ok(output)
+}
+
+/// Applies a rearrangement to components of any type.
+fn transform_entries(
+    components: &Components,
+    transform: &impl EntryTransform,
+) -> EvalResult<Components> {
+    Ok(match components {
+        Components::F32(components) => Components::F32(transform.apply(components)?),
+        Components::U8(components) => Components::U8(transform.apply(components)?),
+        Components::U16(components) => Components::U16(transform.apply(components)?),
+        Components::U32(components) => Components::U32(transform.apply(components)?),
+        Components::Bool(components) => Components::Bool(transform.apply(components)?),
+        Components::String(components) => Components::String(transform.apply(components)?),
+    })
+}
+
+/// Applies a merge to two component lists of one type.
+fn transform_entry_pairs(
+    first: &Components,
+    second: &Components,
+    transform: &impl EntryPairTransform,
+) -> Components {
+    match (first, second) {
+        (Components::F32(first), Components::F32(second)) => {
+            Components::F32(transform.apply(first, second))
+        }
+        (Components::U8(first), Components::U8(second)) => {
+            Components::U8(transform.apply(first, second))
+        }
+        (Components::U16(first), Components::U16(second)) => {
+            Components::U16(transform.apply(first, second))
+        }
+        (Components::U32(first), Components::U32(second)) => {
+            Components::U32(transform.apply(first, second))
+        }
+        (Components::Bool(first), Components::Bool(second)) => {
+            Components::Bool(transform.apply(first, second))
+        }
+        (Components::String(first), Components::String(second)) => {
+            Components::String(transform.apply(first, second))
+        }
+        _ => unreachable!("the checker settles one type across the pair"),
+    }
+}
+
+/// Converts linear RGB to Oklch, with hue a turn in `[0, 1)` and 0 where
+/// the chroma reads as zero.
+fn oklch_from_rgb(rgb: [f32; 3]) -> [f32; 3] {
+    let [lightness, a, b] = oklab_from_rgb(rgb);
+    let (a, b) = (f64::from(a), f64::from(b));
+    let chroma = a.hypot(b);
+
+    if chroma < CHROMA_FLOOR {
+        return [lightness, 0.0, 0.0];
+    }
+
+    let turn = b.atan2(a) / TAU;
+    let hue = if turn < 0.0 { turn + 1.0 } else { turn };
+
+    [lightness, chroma as f32, hue as f32]
+}
+
+/// The chroma below which a color reads as gray, because the rounded
+/// matrices leave that much noise on one.
+const CHROMA_FLOOR: f64 = 1e-6;
+
+/// Converts Oklch to linear RGB, erroring on a hue outside `[0, 1]` or a
+/// negative chroma.
+fn rgb_from_oklch([lightness, chroma, hue]: [f32; 3]) -> EvalResult<[f32; 3]> {
+    if !(0.0..=1.0).contains(&hue) {
+        return Err(EvalFailure::HueRange { hue });
+    }
+
+    if chroma < 0.0 {
+        return Err(EvalFailure::Chroma { chroma });
+    }
+
+    let angle = f64::from(hue) * TAU;
+    let chroma = f64::from(chroma);
+
+    Ok(rgb_from_oklab([
+        lightness,
+        (chroma * angle.cos()) as f32,
+        (chroma * angle.sin()) as f32,
+    ]))
+}
+
+/// Converts linear RGB to Oklab in `f64` through the LMS cube roots.
+fn oklab_from_rgb([red, green, blue]: [f32; 3]) -> [f32; 3] {
+    let (red, green, blue) = (f64::from(red), f64::from(green), f64::from(blue));
+    let long = (0.412_221_470_8 * red + 0.536_332_536_3 * green + 0.051_445_992_9 * blue).cbrt();
+    let medium = (0.211_903_498_2 * red + 0.680_699_545_1 * green + 0.107_396_956_6 * blue).cbrt();
+    let short = (0.088_302_461_9 * red + 0.281_718_837_6 * green + 0.629_978_700_5 * blue).cbrt();
+
+    [
+        (0.210_454_255_3 * long + 0.793_617_785_0 * medium - 0.004_072_046_8 * short) as f32,
+        (1.977_998_495_1 * long - 2.428_592_205_0 * medium + 0.450_593_709_9 * short) as f32,
+        (0.025_904_037_1 * long + 0.782_771_766_2 * medium - 0.808_675_766_0 * short) as f32,
+    ]
+}
+
+/// Converts Oklab to linear RGB in `f64`, undoing the cube roots.
+fn rgb_from_oklab([lightness, a, b]: [f32; 3]) -> [f32; 3] {
+    let (lightness, a, b) = (f64::from(lightness), f64::from(a), f64::from(b));
+    let long = (lightness + 0.396_337_777_4 * a + 0.215_803_757_3 * b).powi(3);
+    let medium = (lightness - 0.105_561_345_8 * a - 0.063_854_172_8 * b).powi(3);
+    let short = (lightness - 0.089_484_177_5 * a - 1.291_485_548_0 * b).powi(3);
+
+    [
+        (4.076_741_662_1 * long - 3.307_711_591_3 * medium + 0.230_969_929_2 * short) as f32,
+        (-1.268_438_004_6 * long + 2.609_757_401_1 * medium - 0.341_319_396_5 * short) as f32,
+        (-0.004_196_086_3 * long - 0.703_418_614_7 * medium + 1.707_614_701_0 * short) as f32,
+    ]
+}
+
+/// The value's `f32` components.
+fn f32s(value: &Value) -> Operand<'_, f32> {
+    let Components::F32(components) = value.components() else {
+        unreachable!("the checker settled f32");
+    };
+
+    operand(components, value)
+}
+
+/// The value's `u8` components.
+fn u8s(value: &Value) -> Operand<'_, u8> {
+    let Components::U8(components) = value.components() else {
+        unreachable!("the checker settled u8");
+    };
+
+    operand(components, value)
+}
+
+/// The value's `u16` components.
+fn u16s(value: &Value) -> Operand<'_, u16> {
+    let Components::U16(components) = value.components() else {
+        unreachable!("the checker settled u16");
+    };
+
+    operand(components, value)
+}
+
+/// The value's `u32` components.
+fn u32s(value: &Value) -> Operand<'_, u32> {
+    let Components::U32(components) = value.components() else {
+        unreachable!("the checker settled u32");
+    };
+
+    operand(components, value)
+}
+
+/// The value's bool components.
+fn bools(value: &Value) -> Operand<'_, bool> {
+    let Components::Bool(components) = value.components() else {
+        unreachable!("the checker settled bool");
+    };
+
+    operand(components, value)
+}
+
+/// The value's string components.
+fn strings(value: &Value) -> Operand<'_, String> {
+    let Components::String(components) = value.components() else {
+        unreachable!("the checker settled string");
+    };
+
+    operand(components, value)
+}
+
+/// The components as an operand of the value's width.
+fn operand<'a, T>(components: &'a [T], value: &Value) -> Operand<'a, T> {
+    Operand {
+        components,
+        width: value.dimension().width(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        Components, Dimension, Domain, Error, EvalFailure, Scalar, Value, ValueEnvironment,
-        evaluator::{
-            assert_close, bools, buried, empty, evaluate, f32s, lamp, step, strings, u8s, u16s,
-            u32s, wide_bools,
-        },
+        Components, Dimension, Domain, Error, EvalFailure, Groupings, Result, Scalar, Value,
+        ValueEnvironment, assert_close, bools, check_expression, eval_expression, f32s, groupings,
+        lamp, parse_expression, run, step, strings, u8s, u32s,
     };
+    use std::collections::HashMap;
 
     fn value(text: &str) -> Value {
         match evaluate(text, &lamp()) {
@@ -823,6 +1434,54 @@ mod tests {
         EvalFailure::NonFinite {
             operation: operation.to_owned(),
         }
+    }
+
+    /// Two voxels of two swatches, the second voxel buried with no faces.
+    fn buried() -> ValueEnvironment {
+        let mut environment = ValueEnvironment {
+            values: HashMap::new(),
+            groupings: groupings(&[0, 1], &[&[0], &[0], &[0]]),
+        };
+
+        environment.values = [(
+            "faceValue".to_owned(),
+            f32s(Domain::Face, Dimension::Vec1, &[1.0, 2.0, 3.0]),
+        )]
+        .into_iter()
+        .collect();
+
+        environment
+    }
+
+    /// No voxels at all: every array domain is empty.
+    fn empty() -> ValueEnvironment {
+        ValueEnvironment {
+            values: [(
+                "faceValue".to_owned(),
+                f32s(Domain::Face, Dimension::Vec1, &[]),
+            )]
+            .into_iter()
+            .collect(),
+            groupings: Groupings::default(),
+        }
+    }
+
+    /// Evaluates one expression in the environment's scope.
+    fn evaluate(text: &str, environment: &ValueEnvironment) -> Result<Value> {
+        let (checked, evaluated) = run("", environment)?;
+        let expression = check_expression(&parse_expression(text)?, &checked)?;
+
+        eval_expression(&expression, &evaluated)
+    }
+
+    /// A value of `u16` components.
+    fn u16s(domain: Domain, dimension: Dimension, values: &[u16]) -> Value {
+        Value::new(domain, dimension, Components::U16(values.to_vec())).unwrap()
+    }
+
+    /// A value of bool components at any dimension.
+    fn wide_bools(domain: Domain, dimension: Dimension, values: &[bool]) -> Value {
+        Value::new(domain, dimension, Components::Bool(values.to_vec())).unwrap()
     }
 
     // Literals and names.

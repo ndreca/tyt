@@ -1,9 +1,9 @@
 use crate::{TyBoundsF64, TyQuaternionExt, TyUniformTrsF64};
 use glam::{DQuat, DVec3};
 
-/// A rigid pose with `f64` components: a rotation and position, no scale. Backed
-/// by glam.
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// A rigid pose with `f64` components: a rotation and position, no scale.
+/// Backed by glam.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct TyPoseF64 {
     /// The position.
     pub position: DVec3,
@@ -34,8 +34,8 @@ impl TyPoseF64 {
         )
     }
 
-    /// Transforms `aabb` by this pose, growing it to the axis-aligned bound of the
-    /// rotated box.
+    /// Transforms `aabb` by this pose, growing it to the axis-aligned bound of
+    /// the rotated box.
     pub fn transform_aabb_conservative(&self, aabb: &TyBoundsF64) -> TyBoundsF64 {
         let center = self.position + self.rotation * aabb.center;
         let extents = self.rotation.rotate_extents_abs(aabb.extents);
@@ -49,20 +49,10 @@ impl TyPoseF64 {
     }
 }
 
-impl Default for TyPoseF64 {
-    fn default() -> Self {
-        Self::IDENTITY
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::{TyPoseF64, TyQuaternionExt, TyQuaternionF64, TyVector3F64};
+    use crate::{TyPoseF64, TyQuaternionExt, TyQuaternionF64, TyVector3F64, close};
     use std::f64::consts::PI;
-
-    fn close(a: f64, b: f64) -> bool {
-        (a - b).abs() < 1e-9
-    }
 
     #[test]
     fn a_pose_relative_to_itself_is_the_identity() {
@@ -85,9 +75,9 @@ mod tests {
 
     #[test]
     fn relative_pose_undoes_the_parent_frame() {
-        // The parent sits at +x, rotated a quarter turn about z. The turn carries
-        // world +x onto the parent's local -y, so the target lands one unit
-        // along -y.
+        // The parent sits at +x, rotated a quarter turn about z. The turn
+        // carries world +x onto the parent's local -y, so the target lands one
+        // unit along -y.
         let parent = TyPoseF64::new(
             TyVector3F64::new(1.0, 0.0, 0.0),
             TyQuaternionF64::from_axis_angle(TyVector3F64::new(0.0, 0.0, 1.0), PI / 2.0),

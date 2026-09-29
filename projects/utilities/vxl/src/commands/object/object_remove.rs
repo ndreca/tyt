@@ -17,6 +17,7 @@ pub struct ObjectRemove {
 }
 
 impl ObjectRemove {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         edit_document(&dependencies, &self.input, self.output, |main| {
             let object_ids = self.selection.resolve_objects(main)?;

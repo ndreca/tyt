@@ -3,10 +3,7 @@ use std::cmp::Ordering;
 
 /// Splits `boxes` into at most `target` clusters by median cut. Boxes only
 /// split, so points of different seed boxes never share a cluster.
-pub(crate) fn median_cut(
-    mut boxes: Vec<Vec<QuantizePoint>>,
-    target: usize,
-) -> Vec<Vec<QuantizePoint>> {
+pub fn median_cut(mut boxes: Vec<Vec<QuantizePoint>>, target: usize) -> Vec<Vec<QuantizePoint>> {
     while boxes.len() < target {
         // The splittable box (two or more distinct points) with the widest
         // single axis.

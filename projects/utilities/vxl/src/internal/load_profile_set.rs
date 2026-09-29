@@ -6,7 +6,7 @@ use ty_preferences::{Dependencies as PreferencesDependencies, JsoncCodec, load_a
 /// The `built_ins` under each `.vxlconfig` layer's profiles, which `profiles`
 /// pulls from the layer's `section`. The user's layer comes first and the
 /// working directory's last.
-pub(crate) fn load_profile_set<C: DeserializeOwned, P>(
+pub fn load_profile_set<C: DeserializeOwned, P>(
     dependencies: &(impl PreferencesDependencies + ResolvePrefsPaths),
     section: &str,
     built_ins: BTreeMap<String, P>,

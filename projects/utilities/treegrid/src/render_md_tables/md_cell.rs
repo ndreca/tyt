@@ -1,5 +1,5 @@
 /// `text` safe for one table cell: pipes escaped, newlines flattened to spaces.
-pub(crate) fn md_cell(text: &str) -> String {
+pub fn md_cell(text: &str) -> String {
     text.replace('|', "\\|").replace(['\n', '\r'], " ")
 }
 

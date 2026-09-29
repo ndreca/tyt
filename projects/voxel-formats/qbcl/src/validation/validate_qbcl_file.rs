@@ -1,6 +1,6 @@
 use crate::{
     qbcl::{QbclFile, QbclMatrix, QbclNode, QbclNodeBody, QbclThumbnail},
-    validation::{Error, Result},
+    validation::{Error, Result, grid_cell_count},
 };
 
 /// Checks a decoded [`QbclFile`]: the thumbnail must hold exactly
@@ -46,15 +46,12 @@ fn validate_node(node: &QbclNode) -> Result<()> {
 
 /// Checks one matrix grid's length against its size.
 fn validate_matrix(matrix: &QbclMatrix) -> Result<()> {
-    let expected = (matrix.size[0] as usize)
-        .checked_mul(matrix.size[1] as usize)
-        .and_then(|xy| xy.checked_mul(matrix.size[2] as usize))
-        .ok_or_else(|| {
-            Error::Invalid(format!(
-                "matrix size {:?} overflows the addressable range",
-                matrix.size
-            ))
-        })?;
+    let expected = grid_cell_count(matrix.size).ok_or_else(|| {
+        Error::Invalid(format!(
+            "matrix size {:?} overflows the addressable range",
+            matrix.size
+        ))
+    })?;
     if matrix.voxels.len() != expected {
         return Err(Error::Invalid(format!(
             "matrix holds {} voxels but its size {:?} needs {expected}",

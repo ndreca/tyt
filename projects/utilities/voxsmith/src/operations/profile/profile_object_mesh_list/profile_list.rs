@@ -62,8 +62,8 @@ fn build_grid(
 
 #[cfg(test)]
 mod tests {
-    use super::profile_list;
-    use crate::operations::profile::{ProfileListGroup, ProfileListLayout};
+    use crate::operations::profile::{ProfileListGroup, ProfileListLayout, profile_list};
+    use serde_json::Value;
 
     /// Four built-ins, then a user layer and a repository layer.
     fn groups() -> Vec<ProfileListGroup> {
@@ -176,8 +176,8 @@ mod tests {
         let pretty = profile_list(&groups(), ProfileListLayout::JsonPretty);
         assert!(pretty.lines().count() > 3, "{pretty}");
         assert_eq!(
-            serde_json::from_str::<serde_json::Value>(&pretty).unwrap(),
-            serde_json::from_str::<serde_json::Value>(&compact).unwrap()
+            serde_json::from_str::<Value>(&pretty).unwrap(),
+            serde_json::from_str::<Value>(&compact).unwrap()
         );
     }
 

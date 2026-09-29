@@ -1,7 +1,7 @@
 use png::{BitDepth, ColorType, Encoder};
 
 /// Encodes `texels` (row-major RGBA8) into a PNG of the given size.
-pub(crate) fn png_rgba(width: u32, height: u32, texels: &[[u8; 4]]) -> Vec<u8> {
+pub fn png_rgba(width: u32, height: u32, texels: &[[u8; 4]]) -> Vec<u8> {
     let samples: Vec<u8> = texels.iter().flatten().copied().collect();
     let mut bytes = Vec::new();
     let mut encoder = Encoder::new(&mut bytes, width, height);

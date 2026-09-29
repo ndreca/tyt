@@ -1,21 +1,18 @@
 use crate::{
     qb::QbFile,
-    validation::{Error, Result},
+    validation::{Error, Result, grid_cell_count},
 };
 
 /// Checks a decoded [`QbFile`]: every matrix's grid must hold exactly
 /// `size[0] * size[1] * size[2]` cells.
 pub fn validate_qb_file(file: &QbFile) -> Result<()> {
     for (index, matrix) in file.matrices.iter().enumerate() {
-        let expected = (matrix.size[0] as usize)
-            .checked_mul(matrix.size[1] as usize)
-            .and_then(|xy| xy.checked_mul(matrix.size[2] as usize))
-            .ok_or_else(|| {
-                Error::Invalid(format!(
-                    "matrix {index} size {:?} overflows the addressable range",
-                    matrix.size
-                ))
-            })?;
+        let expected = grid_cell_count(matrix.size).ok_or_else(|| {
+            Error::Invalid(format!(
+                "matrix {index} size {:?} overflows the addressable range",
+                matrix.size
+            ))
+        })?;
         if matrix.voxels.len() != expected {
             return Err(Error::Invalid(format!(
                 "matrix {index} holds {} voxels but its size {:?} needs {expected}",

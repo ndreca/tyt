@@ -1,4 +1,4 @@
-use crate::commands;
+use crate::{Dependencies, Result, commands};
 use clap::Subcommand;
 
 /// Operations on cubemap images.
@@ -37,7 +37,8 @@ pub enum TytCubemap {
 }
 
 impl TytCubemap {
-    pub fn execute(self, dependencies: impl crate::Dependencies) -> crate::Result<()> {
+    /// Runs the command.
+    pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             TytCubemap::C6x1ToEquirect(cmd) => cmd.execute(dependencies),
             TytCubemap::C6x1ToFaces(cmd) => cmd.execute(dependencies),

@@ -16,8 +16,9 @@ use vox_value_language::{EvaluatedProgram, eval_expression};
 /// The document's textures, one per embedded value and one per referenced
 /// file. Two slots naming one value share its image.
 #[derive(Default)]
-pub(crate) struct Images {
+pub struct Images {
     embedded: HashMap<(String, ArrayDomain), (Transfer, MeshElement, U32Id<BMeshTexture>)>,
+
     files: HashMap<String, U32Id<BMeshTexture>>,
 }
 

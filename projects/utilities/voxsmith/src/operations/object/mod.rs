@@ -1,3 +1,7 @@
+//! Object operations.
+
+// Public API
+
 mod add_objects;
 mod downsample_objects;
 mod duplicate_objects;
@@ -25,3 +29,7 @@ pub use set_edit_bounds::*;
 pub use trim_objects::*;
 pub use unlink_objects::*;
 pub use upsample_objects::*;
+
+// Internal API
+
+mod error_object_ext;

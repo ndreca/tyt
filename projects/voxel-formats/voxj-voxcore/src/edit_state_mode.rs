@@ -1,4 +1,4 @@
-/// When [`to_voxj_file`](crate::to_voxj_file) records each object's editor
+/// When [`to_voxj_file`](crate::to_voxj_file()) records each object's editor
 /// build volume in the document's edit state. The build volume is the working
 /// grid an object was authored in, which can be larger than the tight grid its
 /// live voxels occupy.

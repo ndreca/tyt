@@ -1,10 +1,9 @@
 use voxcore::{VoxExt, VoxMapEntry, VoxValue};
 
-/// A document's `ext` block kept as it was parsed, one slot per key. An
-/// empty block stands for a document with no block. The block is not
-/// understood, so it follows no hook and goes stale under a mutation that
-/// moves a listing. A crate that knows the block's entries decodes them into
-/// an ext that follows.
+/// A document's `ext` block kept as it was parsed, one slot per key. An empty
+/// block stands for a document with no block. The block is not understood, so
+/// it follows no hook and goes stale under a mutation that moves a listing. A
+/// crate that knows the block's entries decodes them into an ext that follows.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct VoxjVoxExt(Vec<VoxMapEntry>);
 

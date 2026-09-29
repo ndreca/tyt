@@ -1,7 +1,7 @@
 use crate::render::Cell;
 
 /// How a table layout draws its headings, tables, and cells.
-pub(crate) trait TableFrame {
+pub trait TableFrame {
     /// The heading of a section `depth` levels down.
     fn heading(&self, depth: usize, text: &str) -> String;
 

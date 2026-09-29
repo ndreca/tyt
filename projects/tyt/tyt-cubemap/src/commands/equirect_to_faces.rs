@@ -17,7 +17,8 @@ pub struct EquirectToFaces {
     #[arg(value_name = "size", short, long, default_value_t = 512)]
     size: u32,
 
-    /// Use nearest-neighbor filtering on the final per-face `--output-size` resize.
+    /// Use nearest-neighbor filtering on the final per-face `--output-size`
+    /// resize.
     #[arg(value_name = "point", long)]
     point: bool,
 
@@ -43,6 +44,8 @@ const C3X2_FACES: &[(u32, u32, &str)] = &[
 ];
 
 impl EquirectToFaces {
+    /// Reprojects the panorama and crops each face in a temp directory, then
+    /// reports the written paths.
     pub fn execute(self, deps: impl Dependencies) -> Result<()> {
         let out_base = self
             .out_base

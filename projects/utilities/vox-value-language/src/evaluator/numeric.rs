@@ -1,10 +1,7 @@
-use crate::{
-    EvalFailure,
-    evaluator::{EvalResult, Unsigned},
-};
+use crate::{EvalFailure, EvalResult, Unsigned};
 
 /// A numeric component type under the reductions.
-pub(crate) trait Numeric: Copy + PartialOrd {
+pub trait Numeric: Copy + PartialOrd {
     /// The value as an `f64`.
     fn to_f64(self) -> f64;
 

@@ -8,7 +8,11 @@
 //! file's grids against their declared sizes. The `qbcl-codec` crate reads and
 //! writes the bytes.
 
+// Public API
+
 pub mod validation;
+
+// Optional API
 
 #[cfg(feature = "qb")]
 pub mod qb;

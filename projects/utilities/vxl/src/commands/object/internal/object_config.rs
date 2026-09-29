@@ -5,7 +5,7 @@ use serde::Deserialize;
 /// command that reads configuration.
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields)]
-pub(crate) struct ObjectConfig {
+pub struct ObjectConfig {
     pub(crate) mesh: MeshConfig,
 
     pub(crate) voxels: ObjectVoxelsConfig,
@@ -13,7 +13,7 @@ pub(crate) struct ObjectConfig {
 
 #[cfg(test)]
 mod tests {
-    use super::ObjectConfig;
+    use crate::commands::ObjectConfig;
     use std::io::Result as IOResult;
     use ty_preferences::{DeserializePrefs, JsoncCodec};
 

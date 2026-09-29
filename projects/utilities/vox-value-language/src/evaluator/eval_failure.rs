@@ -20,7 +20,9 @@ pub enum EvalFailure {
     /// nothing to reduce.
     EmptyDestination {
         operation: String,
+
         target: Domain,
+
         entry: usize,
     },
 
@@ -39,7 +41,9 @@ pub enum EvalFailure {
     /// A clamp or ramp took bounds in the wrong order.
     InvertedBounds {
         operation: String,
+
         low: f32,
+
         high: f32,
     },
 

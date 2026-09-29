@@ -2,8 +2,11 @@
 //! pipeline, and CLI binds and reads palette properties by these names. One
 //! table keeps producers and consumers in agreement. A property name stays a
 //! free string, which keeps a format's custom properties expressible. The
-//! constants cover only the recommended set. [`MaterialPropertyKind`] classifies a
-//! name and [`default_scalar`] gives a scalar name its standard default.
+//! constants cover only the recommended set. [`MaterialPropertyKind`]
+//! classifies a name and [`default_scalar()`] gives a scalar name its standard
+//! default.
+
+// Public API
 
 mod consts;
 mod default_scalar;

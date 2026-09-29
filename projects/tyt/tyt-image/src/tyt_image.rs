@@ -1,4 +1,4 @@
-use crate::commands;
+use crate::{Dependencies, Result, commands};
 use clap::Subcommand;
 
 /// Operations on images.
@@ -13,7 +13,8 @@ pub enum TytImage {
 }
 
 impl TytImage {
-    pub fn execute(self, dependencies: impl crate::Dependencies) -> crate::Result<()> {
+    /// Runs the command.
+    pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             TytImage::Pixelate(cmd) => cmd.execute(dependencies),
             TytImage::SquareImage(cmd) => cmd.execute(dependencies),

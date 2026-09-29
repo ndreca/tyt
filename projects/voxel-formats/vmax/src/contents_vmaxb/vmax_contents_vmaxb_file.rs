@@ -42,7 +42,7 @@ pub struct VMaxContentsVmaxbFile {
 
     /// Embedded palette dictionary some objects carry (e.g. MagicaVoxel
     /// exports); shape differs from a `.vmaxpsb`, so kept as untyped
-    /// [`VMaxValue`](crate::VMaxValue) (round-trips unchanged).
+    /// [`VMaxValue`] (round-trips unchanged).
     #[cfg_attr(
         feature = "serde",
         serde(default, skip_serializing_if = "Option::is_none")

@@ -1,5 +1,5 @@
 use crate::Error;
 use std::result::Result as StdResult;
 
-/// A result from a cubemap operation.
+/// A `Result` whose error is a tyt-cubemap [`Error`].
 pub type Result<T> = StdResult<T, Error>;

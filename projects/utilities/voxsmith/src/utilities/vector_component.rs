@@ -5,18 +5,25 @@
 pub enum VectorComponent {
     /// Index 0, spelled `r`.
     R,
+
     /// Index 1, spelled `g`.
     G,
+
     /// Index 2, spelled `b`.
     B,
+
     /// Index 3, spelled `a`.
     A,
+
     /// Index 0, spelled `x`.
     X,
+
     /// Index 1, spelled `y`.
     Y,
+
     /// Index 2, spelled `z`.
     Z,
+
     /// Index 3, spelled `w`.
     W,
 }

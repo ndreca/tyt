@@ -9,11 +9,10 @@ use voxcore::{
 
 /// Several exts as one: a Voxel Json document's `ext` block with each entry as
 /// an ext, in the block's order. Every hook forwards to every entry and stops
-/// at the first refusal. A decoded ext follows a mutation. An inert one
-/// cannot.
+/// at the first refusal. A decoded ext follows a mutation. An inert one cannot.
 /// `composite_vox_ext_from_voxj_vox_ext` builds one from a block, and
-/// [`voxj_vox_ext_from_ext`](crate::voxj::ext::voxj_vox_ext_from_ext) takes it
-/// back, erroring when two entries share a key.
+/// [`voxj_vox_ext_from_ext`](crate::voxj::ext::voxj_vox_ext_from_ext()) takes
+/// it back, erroring when two entries share a key.
 #[derive(Clone, Debug, Default)]
 pub struct CompositeVoxExt {
     /// The exts, in the block's order.

@@ -1,3 +1,5 @@
+// Public API
+
 #[allow(clippy::module_inception)]
 mod profile_palette_show;
 mod profile_palette_show_command;

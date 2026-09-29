@@ -1,14 +1,11 @@
-use crate::ByteWriter;
+use crate::{
+    ByteWriter,
+    qb::{CODE_FLAG, NEXT_SLICE_FLAG},
+};
 use qbcl::qb::{QbColorFormat, QbFile, QbMatrix, QbVoxel, QbZAxisOrientation};
 
-/// The run marker in `.qb` RLE data: the next two `u32`s are a count and color.
-const CODE_FLAG: u32 = 2;
-
-/// The end-of-slice marker in `.qb` RLE data.
-const NEXT_SLICE_FLAG: u32 = 6;
-
 /// Serializes a [`QbFile`] to a Qubicle Binary `.qb` file, the inverse of
-/// [`from_qb_file_bytes`](crate::qb::from_qb_file_bytes).
+/// [`from_qb_file_bytes`](crate::qb::from_qb_file_bytes()).
 ///
 /// Writes the header flags, then each matrix's name, size, position, and voxel
 /// grid. Voxel data is run-length encoded when the file's

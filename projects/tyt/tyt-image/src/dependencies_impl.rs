@@ -1,6 +1,7 @@
 use crate::{Dependencies, Error, Result};
 use std::ffi::OsStr;
 
+/// The [`Dependencies`] that run `magick` and write to the process's stdout.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct DependenciesImpl;
 

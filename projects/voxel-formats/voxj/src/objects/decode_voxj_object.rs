@@ -1,8 +1,10 @@
-use crate::objects::{
-    Error, MAX_HILBERT_BITS, Result, VoxjDecodedObject, decode_hilbert, decode_varint,
-    hilbert_bits, packed_width, unpack_bits,
+use crate::{
+    DecodeBase64, VoxjObject, VoxjPositionBlock, VoxjSampleBlock,
+    objects::{
+        Error, MAX_HILBERT_BITS, Result, VoxjDecodedObject, decode_hilbert, decode_varint,
+        hilbert_bits, packed_width, unpack_bits,
+    },
 };
-use crate::{DecodeBase64, VoxjObject, VoxjPositionBlock, VoxjSampleBlock};
 use std::iter;
 
 /// Decodes one [`VoxjObject`] into a [`VoxjDecodedObject`], the inverse of
@@ -223,16 +225,15 @@ fn rle_decode(rle: &[u32]) -> Result<Vec<u32>> {
 
 #[cfg(all(test, feature = "impl"))]
 mod tests {
-    use crate::objects::{
-        PositionEncoding, SampleEncoding, VoxjDecodedObject, decode_voxj_object, encode_voxj_object,
+    use crate::{
+        DependenciesImpl, VoxjObject, VoxjPositionBlock, VoxjSampleBlock,
+        objects::{
+            PositionEncoding, SampleEncoding, VoxjDecodedObject, decode_voxj_object,
+            encode_voxj_object,
+        },
+        test::standard_base64,
     };
-    use crate::{DependenciesImpl, EncodeBase64, VoxjObject, VoxjPositionBlock, VoxjSampleBlock};
     use std::collections::BTreeSet;
-
-    /// Standard base64 of `bytes`, for hand-built blocks.
-    fn base64(bytes: &[u8]) -> String {
-        DependenciesImpl.encode_base64(bytes)
-    }
 
     /// A one-layer object over the given bounds, position, and sample blocks.
     fn object(
@@ -261,6 +262,7 @@ mod tests {
         PositionEncoding::BitmapBase64,
         PositionEncoding::Hilbert,
     ];
+
     const SAMPLES: [SampleEncoding; 3] = [
         SampleEncoding::RawJson,
         SampleEncoding::RleJson,
@@ -428,7 +430,7 @@ mod tests {
     /// block longer than its bounds allow (spec rule 13.2).
     #[test]
     fn rejects_bitmap_with_extra_bytes() {
-        let bitmap = VoxjPositionBlock::BitmapBase64(base64(&[0xC0, 0x00]));
+        let bitmap = VoxjPositionBlock::BitmapBase64(standard_base64(&[0xC0, 0x00]));
         let object = object(
             [2, 1, 1],
             bitmap,
@@ -441,7 +443,7 @@ mod tests {
     /// byte's six pad bits is malformed (spec rule 13.2).
     #[test]
     fn rejects_bitmap_with_nonzero_pad_bits() {
-        let bitmap = VoxjPositionBlock::BitmapBase64(base64(&[0xC1]));
+        let bitmap = VoxjPositionBlock::BitmapBase64(standard_base64(&[0xC1]));
         let object = object(
             [2, 1, 1],
             bitmap,
@@ -454,7 +456,7 @@ mod tests {
     /// byte is too long (spec rule 11.3).
     #[test]
     fn rejects_packed_with_extra_bytes() {
-        let packed = VoxjSampleBlock::PackedBase64(vec![base64(&[0x70, 0x00])]);
+        let packed = VoxjSampleBlock::PackedBase64(vec![standard_base64(&[0x70, 0x00])]);
         let object = object([2, 1, 1], two_raw_positions(), packed);
         assert!(decode_voxj_object(&DependenciesImpl, &object, &[4]).is_err());
     }
@@ -463,7 +465,7 @@ mod tests {
     /// byte's four pad bits is malformed (spec rule 11.3).
     #[test]
     fn rejects_packed_with_nonzero_pad_bits() {
-        let packed = VoxjSampleBlock::PackedBase64(vec![base64(&[0x71])]);
+        let packed = VoxjSampleBlock::PackedBase64(vec![standard_base64(&[0x71])]);
         let object = object([2, 1, 1], two_raw_positions(), packed);
         assert!(decode_voxj_object(&DependenciesImpl, &object, &[4]).is_err());
     }
@@ -505,7 +507,7 @@ mod tests {
         // `u64::MAX` as a varint: nine 0x FF continuation bytes then 0x01.
         let mut varint = vec![0xFFu8; 9];
         varint.push(0x01);
-        let hilbert = VoxjPositionBlock::HilbertDeltaVarintBase64(base64(&varint));
+        let hilbert = VoxjPositionBlock::HilbertDeltaVarintBase64(standard_base64(&varint));
         let object = object(
             [2, 2, 2],
             hilbert,
@@ -518,7 +520,7 @@ mod tests {
     /// hilbert block does not decode (spec rule 13.3.1).
     #[test]
     fn rejects_truncated_hilbert_varint() {
-        let hilbert = VoxjPositionBlock::HilbertDeltaVarintBase64(base64(&[0x80]));
+        let hilbert = VoxjPositionBlock::HilbertDeltaVarintBase64(standard_base64(&[0x80]));
         let object = object(
             [2, 1, 1],
             hilbert,

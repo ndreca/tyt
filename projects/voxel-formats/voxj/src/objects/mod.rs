@@ -4,8 +4,7 @@
 //! [`DecodeBase64`](crate::DecodeBase64). The encoding search ranks its
 //! candidates through [`CostVoxjObject`](crate::CostVoxjObject).
 
-mod internal;
-pub(crate) use internal::*;
+// Public API
 
 mod decode_voxj_object;
 mod encode_voxj_object;
@@ -30,3 +29,9 @@ pub use result::*;
 pub use sample_encoding::*;
 pub use voxj_decoded_object::*;
 pub use voxj_palette_material_counts::*;
+
+// Internal API
+
+mod internal;
+
+pub(crate) use internal::*;

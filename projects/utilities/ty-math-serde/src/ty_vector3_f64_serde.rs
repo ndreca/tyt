@@ -4,8 +4,13 @@ use ty_math::TyVector3F64;
 /// Serde-compatible parity type for [`TyVector3F64`].
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct TyVector3F64Serde {
+    /// The x component.
     pub x: f64,
+
+    /// The y component.
     pub y: f64,
+
+    /// The z component.
     pub z: f64,
 }
 

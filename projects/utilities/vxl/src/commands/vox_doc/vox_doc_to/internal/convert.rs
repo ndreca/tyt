@@ -4,15 +4,14 @@ use voxconv::{
     ReadFormat, WriteFormat,
     ext::{load_with_ext, save_with_ext},
 };
-use voxsmith::Error as VoxsmithError;
-use voxsmith::operations::vox_doc::keep_objects;
+use voxsmith::{Error as VoxsmithError, operations::vox_doc::keep_objects};
 
 /// Converts the document at `input`, read as `from`, into the document at
 /// `output`, written as `to`. A `selection` narrows the written document to
 /// its objects and the hierarchy to what still places them. The source's ext
 /// rides through boxed, so a same-format write rebuilds the file exactly and
 /// a Voxel Json write keeps another format's ext in its `ext` block.
-pub(crate) fn convert<D: Dependencies>(
+pub fn convert<D: Dependencies>(
     dependencies: &D,
     input: &Path,
     from: ReadFormat,

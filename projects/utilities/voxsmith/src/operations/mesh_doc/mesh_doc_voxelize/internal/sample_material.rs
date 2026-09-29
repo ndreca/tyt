@@ -36,7 +36,7 @@ const THIRD: f64 = 1.0 / 3.0;
 /// * `triangles` - the triangles `grid` was rasterized from.
 /// * `grid` - the rasterized occupancy and per-cell covering triangle.
 /// * `space` - the grid `grid` was rasterized onto.
-pub(crate) fn sample_material(
+pub fn sample_material(
     mesh: &MeshInput<'_>,
     triangles: &[MeshTriangle],
     grid: &VoxelGrid,

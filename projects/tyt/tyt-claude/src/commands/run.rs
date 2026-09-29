@@ -21,6 +21,7 @@ pub struct Run {
 }
 
 impl Run {
+    /// Runs `claude` under the profile and exits with its code.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let resolved = dependencies.claude_prefs()?;
         let name = match self.profile {

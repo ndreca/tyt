@@ -10,15 +10,19 @@ use clap::Subcommand;
 pub enum ObjectVoxelsCommand {
     #[command(name = "flip")]
     ObjectVoxelsFlip(ObjectVoxelsFlip),
+
     #[command(name = "quantize")]
     ObjectVoxelsQuantize(ObjectVoxelsQuantize),
+
     #[command(name = "rotate")]
     ObjectVoxelsRotate(ObjectVoxelsRotate),
+
     #[command(name = "translate")]
     ObjectVoxelsTranslate(ObjectVoxelsTranslate),
 }
 
 impl ObjectVoxelsCommand {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             ObjectVoxelsCommand::ObjectVoxelsFlip(flip) => flip.execute(dependencies),

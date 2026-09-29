@@ -10,6 +10,7 @@ pub enum ProfileMeshDocVoxelizeCommand {
 }
 
 impl ProfileMeshDocVoxelizeCommand {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             ProfileMeshDocVoxelizeCommand::ProfileMeshDocVoxelizeList(list) => {

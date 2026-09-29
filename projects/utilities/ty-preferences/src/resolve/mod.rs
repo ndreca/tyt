@@ -1,3 +1,5 @@
+// Public API
+
 mod resolve_cwd;
 mod resolve_git_root_dir;
 mod resolve_git_root_dir_from_cwd;

@@ -5,14 +5,13 @@ use std::collections::BTreeMap;
 /// The `object.mesh` section of a `.vxlconfig` layer.
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields)]
-pub(crate) struct MeshConfig {
+pub struct MeshConfig {
     pub(crate) profiles: BTreeMap<String, MeshProfile>,
 }
 
 #[cfg(test)]
 mod tests {
-    use super::MeshConfig;
-    use crate::commands::ObjectConfig;
+    use crate::commands::{MeshConfig, ObjectConfig};
     use std::io::Result as IOResult;
     use ty_preferences::{DeserializePrefs, JsoncCodec};
 

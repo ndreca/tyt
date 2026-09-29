@@ -5,7 +5,7 @@ use crate::{
 
 /// The box frame: bare heading lines, box-glyph tables, and cells with
 /// their newlines flattened.
-pub(crate) struct BoxTableFrame;
+pub struct BoxTableFrame;
 
 impl TableFrame for BoxTableFrame {
     fn heading(&self, _depth: usize, text: &str) -> String {

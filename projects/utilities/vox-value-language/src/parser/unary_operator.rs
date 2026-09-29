@@ -2,8 +2,9 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 
 /// A prefix operator.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub(crate) enum UnaryOperator {
+pub enum UnaryOperator {
     Negate,
+
     Not,
 }
 

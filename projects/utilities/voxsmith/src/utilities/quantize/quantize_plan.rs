@@ -5,7 +5,7 @@ use voxcore::BVoxMaterial;
 
 /// A palette's chosen representatives over one set of layers.
 #[derive(Clone, Debug)]
-pub(crate) struct QuantizePlan {
+pub struct QuantizePlan {
     /// Each sampled material's representative, itself for a representative.
     pub(crate) representative_ids: HashMap<U32Id<BVoxMaterial>, U32Id<BVoxMaterial>>,
 

@@ -4,6 +4,8 @@
 //! `serde_json` and `flate2`, and voxj's over `voxj::DependenciesImpl`, so
 //! one value serves the whole family.
 
+// Public API
+
 mod decode_voxj_json;
 mod deflate;
 mod encode_voxj_json;
@@ -13,6 +15,8 @@ pub use decode_voxj_json::*;
 pub use deflate::*;
 pub use encode_voxj_json::*;
 pub use inflate::*;
+
+// Optional API
 
 #[cfg(feature = "impl")]
 mod dependencies_impl;

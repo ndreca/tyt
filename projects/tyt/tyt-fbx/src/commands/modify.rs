@@ -1,10 +1,16 @@
-use crate::{Dependencies, Error, Result, utilities};
+use crate::{
+    COMMON_PY, Dependencies, Error, FBX_HIERARCHY_JSON_PY, Result, Script, embed_blender_script,
+    extract_json, match_hierarchy_paths,
+};
 use clap::Parser;
 use std::{
     ffi::{OsStr, OsString},
     io::{Error as IOError, ErrorKind},
     path::PathBuf,
 };
+
+/// The Blender script that applies the modify operations to named objects.
+const FBX_MODIFY_PY: Script = embed_blender_script!("fbx_modify.py");
 
 /// Applies mutating operations to matched objects in an FBX.
 #[derive(Clone, Debug, Parser)]
@@ -35,6 +41,7 @@ pub struct Modify {
 }
 
 impl Modify {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let Modify {
             input_fbx,
@@ -48,17 +55,16 @@ impl Modify {
 
         // Phase 1: get hierarchy JSON from Blender.
         let args: [&OsStr; 1] = [input_fbx.as_ref()];
-        let stdout =
-            dependencies.exec_temp_blender_script(&utilities::FBX_HIERARCHY_JSON_PY, args)?;
+        let stdout = dependencies.exec_temp_blender_script(&FBX_HIERARCHY_JSON_PY, args)?;
 
-        let json = utilities::extract_json(&stdout, b'[', b']')?;
+        let json = extract_json(&stdout, b'[', b']')?;
         let entries = dependencies.parse_hierarchy_json(json)?;
 
         let mut patterns = vec![pattern];
         patterns.extend(select);
 
         let candidate_paths: Vec<&str> = entries.iter().map(|(_, path, _)| path.as_str()).collect();
-        let matched = utilities::match_hierarchy_paths(&dependencies, &patterns, &candidate_paths)?;
+        let matched = match_hierarchy_paths(&dependencies, &patterns, &candidate_paths)?;
 
         let matched_names: Vec<&str> = entries
             .iter()
@@ -86,11 +92,7 @@ impl Modify {
             args.push(OsStr::new(*name));
         }
 
-        dependencies.exec_temp_blender_scripts_with_stdout(
-            &utilities::FBX_MODIFY_PY,
-            [&utilities::COMMON_PY],
-            args,
-        )?;
+        dependencies.exec_temp_blender_scripts_with_stdout(&FBX_MODIFY_PY, [&COMMON_PY], args)?;
 
         Ok(())
     }

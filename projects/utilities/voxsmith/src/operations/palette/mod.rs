@@ -1,3 +1,7 @@
+//! Palette operations.
+
+// Public API
+
 mod palette_list;
 mod palette_show;
 mod quantize_palette;

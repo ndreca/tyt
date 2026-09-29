@@ -1,3 +1,5 @@
+// Public API
+
 mod vmax_brush_state;
 mod vmax_extent;
 mod vmax_extent_range;

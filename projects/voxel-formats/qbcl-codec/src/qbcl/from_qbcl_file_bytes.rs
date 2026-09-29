@@ -1,29 +1,15 @@
-use crate::{ByteReader, DecompressZlib, Error, Result, invalid};
+use crate::{
+    ByteReader, DecompressZlib, Error, MAX_DEPTH, NODE_COMPOUND, NODE_MATRIX, NODE_MODEL, Result,
+    invalid, qbcl::RLE_MASK, voxel_count,
+};
 use qbcl::qbcl::{
     QbclColor, QbclCompound, QbclFile, QbclMatrix, QbclMetadata, QbclModel, QbclNode, QbclNodeBody,
     QbclThumbnail, QbclVoxel,
 };
 use std::iter;
 
-/// The matrix node type id.
-const NODE_MATRIX: u32 = 0;
-
-/// The model node type id.
-const NODE_MODEL: u32 = 1;
-
-/// The compound node type id.
-const NODE_COMPOUND: u32 = 2;
-
 /// The file-format version this crate reads and writes.
 const FILE_VERSION: u32 = 2;
-
-/// The RLE marker: a stream integer whose mask byte (its high byte) is this is a
-/// run header, and its low byte is the run length.
-const RLE_MASK: u8 = 2;
-
-/// The deepest the reader will descend, so a pathologically nested file is
-/// rejected rather than overflowing the stack.
-const MAX_DEPTH: usize = 4096;
 
 /// Parses a Qubicle Construction Library `.qbcl` file into a [`QbclFile`]
 /// through `dependencies`.
@@ -105,6 +91,11 @@ fn read_metadata(reader: &mut ByteReader) -> Result<QbclMetadata> {
         website: read_len_string(reader)?,
         copyright: read_len_string(reader)?,
     })
+}
+
+/// Reads a little-endian `u16`.
+fn read_u16(reader: &mut ByteReader) -> Result<u16> {
+    Ok(u16::from_le_bytes(reader.read_array()?))
 }
 
 /// Reads a `u32`-length-prefixed UTF-8 string.
@@ -226,7 +217,7 @@ fn read_voxels<D: DecompressZlib>(
     let mut voxels = Vec::with_capacity(total);
     for _ in 0..columns {
         let mut produced = 0;
-        let data_num = inner.read_u16()? as usize;
+        let data_num = read_u16(&mut inner)? as usize;
         let mut read = 0;
         while read < data_num {
             let value = inner.read_u32()?;
@@ -287,18 +278,6 @@ fn pixel_count(width: u32, height: u32) -> Result<usize> {
         .ok_or_else(|| {
             invalid(format!(
                 "thumbnail {width}x{height} overflows the pixel range"
-            ))
-        })
-}
-
-/// The number of cells in a `size`, or an error if it overflows `usize`.
-fn voxel_count(size: [u32; 3]) -> Result<usize> {
-    (size[0] as usize)
-        .checked_mul(size[1] as usize)
-        .and_then(|xy| xy.checked_mul(size[2] as usize))
-        .ok_or_else(|| {
-            invalid(format!(
-                "matrix size {size:?} overflows the addressable range"
             ))
         })
 }

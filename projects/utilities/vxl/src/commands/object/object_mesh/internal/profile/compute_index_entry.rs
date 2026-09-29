@@ -5,10 +5,13 @@ use voxsmith::operations::object::ArrayDomain;
 /// A profile's `computeIndex`, each domain key holding its bound names.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq)]
 #[serde(default, deny_unknown_fields)]
-pub(crate) struct ComputeIndexEntry {
+pub struct ComputeIndexEntry {
     pub(crate) corner: BoundNames,
+
     pub(crate) face: BoundNames,
+
     pub(crate) swatch: BoundNames,
+
     pub(crate) voxel: BoundNames,
 }
 

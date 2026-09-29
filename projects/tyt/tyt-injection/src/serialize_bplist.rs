@@ -1,8 +1,8 @@
 use serde::Serialize;
 use std::io::{Error, ErrorKind, Result};
 
-/// Serializes `value` to a binary property list — the inverse of
-/// [`parse_bplist`](crate::parse_bplist).
+/// Serializes `value` to a binary property list, the inverse of
+/// [`parse_bplist`](crate::parse_bplist()).
 pub fn serialize_bplist<T: Serialize>(value: &T) -> Result<Vec<u8>> {
     let mut out = Vec::new();
     plist::to_writer_binary(&mut out, value).map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
@@ -17,7 +17,9 @@ mod tests {
     #[derive(Debug, Deserialize, PartialEq, Serialize)]
     struct Sample {
         name: String,
+
         values: Vec<u32>,
+
         flag: bool,
     }
 

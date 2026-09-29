@@ -1,4 +1,4 @@
-use crate::{Dependencies, Error, Result, utilities};
+use crate::{Dependencies, Error, Result, Script, embed_blender_script, extract_json};
 use clap::Parser;
 use std::{
     ffi::OsStr,
@@ -8,7 +8,12 @@ use std::{
 };
 use ty_math::{TySrgbaF32, TyVector3F64};
 
-/// Creates a cloud of random points inside a mesh volume (or on the surface with `--surface`) within an FBX file.
+/// The Blender script that prints a mesh's faces, vertices, and UVs as JSON.
+const EXTRACT_FACES_AND_VERTICES_PY: Script =
+    embed_blender_script!("extract_faces_and_vertices.py");
+
+/// Creates a cloud of random points inside a mesh volume (or on the surface
+/// with `--surface`) within an FBX file.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "create-point-cloud")]
 pub struct CreatePointCloud {
@@ -28,28 +33,36 @@ pub struct CreatePointCloud {
     #[arg(value_name = "surface", long)]
     surface: bool,
 
-    /// Maximum iterations for volume rejection sampling (default: num_points * 1000).
+    /// Maximum iterations for volume rejection sampling (default: num_points *
+    /// 1000).
     #[arg(value_name = "max-iterations", long)]
     max_iterations: Option<usize>,
 
-    /// Uniform scale factor applied to every output point position (e.g. 0.01 to convert centimeters to meters).
+    /// Uniform scale factor applied to every output point position (e.g. 0.01
+    /// to convert centimeters to meters).
     #[arg(value_name = "scale", long)]
     scale: Option<f64>,
 
-    /// Paths to texture images. Each texture produces a color layer by sampling at the surface UV of each point.
+    /// Paths to texture images. Each texture produces a color layer by
+    /// sampling at the surface UV of each point.
     #[arg(value_name = "texture", long)]
     texture: Vec<PathBuf>,
 }
 
 struct SampledPoint {
     position: TyVector3F64,
+
     triangle_index: usize,
+
     bary_u: f64,
+
     bary_v: f64,
+
     bary_w: f64,
 }
 
 impl CreatePointCloud {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let CreatePointCloud {
             input_fbx,
@@ -62,10 +75,9 @@ impl CreatePointCloud {
         } = self;
 
         let args: [&OsStr; 2] = [input_fbx.as_ref(), mesh_name.as_ref()];
-        let stdout = dependencies
-            .exec_temp_blender_script(&utilities::EXTRACT_FACES_AND_VERTICES_PY, args)?;
+        let stdout = dependencies.exec_temp_blender_script(&EXTRACT_FACES_AND_VERTICES_PY, args)?;
 
-        let json = utilities::extract_json(&stdout, b'{', b'}')?;
+        let json = extract_json(&stdout, b'{', b'}')?;
 
         let (vertices, triangles, uvs) = dependencies.parse_mesh_with_uvs_json(json)?;
 

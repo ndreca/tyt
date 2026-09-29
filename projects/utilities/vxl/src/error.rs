@@ -11,6 +11,7 @@ use voxsmith::Error as VoxsmithError;
 /// An error from this crate.
 #[derive(Debug)]
 pub enum Error {
+    /// An I/O failure.
     IO(IOError),
 
     /// A usage error, rendered and exited like a clap parse failure.

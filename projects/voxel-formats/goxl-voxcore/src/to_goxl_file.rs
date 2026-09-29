@@ -9,14 +9,14 @@ use ty_math::TyVector3U32;
 use voxcore::{BVoxObject, VoxHierarchyNode, VoxObject, color::resolve_cell_color_or_transparent};
 
 /// Writes a [`GoxlVoxMain`] to a Goxel [`GoxlFile`], the inverse of
-/// [`from_goxl_file`](crate::from_goxl_file). A loaded file writes back
+/// [`from_goxl_file`](crate::from_goxl_file()). A loaded file writes back
 /// exactly through its ext. A state
-/// [`to_goxl_vox_main`](crate::to_goxl_vox_main) gave its ext writes as a
-/// file synthesized from the scene. Each object emits one `16 x 16 x 16`
-/// block and the rest comes from the ext. A layer takes its node's name and
-/// stamps its entry's placements. A live voxel is written solid. Goxel reads
-/// alpha 0 as an empty cell, so a fully transparent color is forced opaque
-/// and any other alpha is kept. An empty cell is the transparent zero voxel.
+/// [`to_goxl_vox_main`](crate::to_goxl_vox_main()) gave its ext writes as a
+/// file synthesized from the scene. Each object emits one `16 x 16 x 16` block
+/// and the rest comes from the ext. A layer takes its node's name and stamps
+/// its entry's placements. A live voxel is written solid. Goxel reads alpha 0
+/// as an empty cell, so a fully transparent color is forced opaque and any
+/// other alpha is kept. An empty cell is the transparent zero voxel.
 ///
 /// Errors if:
 ///
@@ -252,7 +252,7 @@ fn shape_from_token(token: &str) -> Option<GoxlShape> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{GoxlExtPlacement, GoxlVoxMain, from_goxl_file, synthesized_layer, to_goxl_file};
+    use crate::{GoxlVoxMain, from_goxl_file, placement, synthesized_layer, to_goxl_file};
     use branded_id::U32Id;
     use goxl::{
         GoxlBlock, GoxlCamera, GoxlDict, GoxlFile, GoxlImage, GoxlLayer, GoxlLayerBlock, GoxlLight,
@@ -414,19 +414,12 @@ mod tests {
         }
     }
 
-    fn node(index: u32) -> U32Id<BVoxHierarchyNode> {
+    fn node_id(index: u32) -> U32Id<BVoxHierarchyNode> {
         U32Id::from_u32(index)
     }
 
-    fn object(index: u32) -> U32Id<BVoxObject> {
+    fn object_id(index: u32) -> U32Id<BVoxObject> {
         U32Id::from_u32(index)
-    }
-
-    fn placement(object_index: u32, position: [i32; 3]) -> GoxlExtPlacement {
-        GoxlExtPlacement {
-            object_id: object(object_index),
-            position,
-        }
     }
 
     #[test]
@@ -522,14 +515,18 @@ mod tests {
     }
 
     fn set_child_objects(main: &mut GoxlVoxMain, index: u32, child_object_ids: Vec<u32>) {
-        let node_id = node(index);
+        let parent_node_id = node_id(index);
 
-        let child_node_ids = main.hierarchy_node(node_id).unwrap().child_node_ids.clone();
+        let child_node_ids = main
+            .hierarchy_node(parent_node_id)
+            .unwrap()
+            .child_node_ids
+            .clone();
 
         main.set_hierarchy_node_children(
-            node_id,
+            parent_node_id,
             child_node_ids,
-            child_object_ids.into_iter().map(object).collect(),
+            child_object_ids.into_iter().map(object_id).collect(),
         )
         .unwrap();
     }
@@ -546,31 +543,31 @@ mod tests {
 
         let original = main.ext().clone();
 
-        main.set_root_hierarchy_node_ids(vec![node(0), node(2)])
+        main.set_root_hierarchy_node_ids(vec![node_id(0), node_id(2)])
             .unwrap();
 
         set_child_objects(&mut main, 0, vec![0]);
 
         set_child_objects(&mut main, 1, Vec::new());
 
-        main.release_hierarchy_node(node(1)).unwrap();
+        main.release_hierarchy_node(node_id(1)).unwrap();
 
-        main.release_object(object(1)).unwrap();
+        main.release_object(object_id(1)).unwrap();
 
         main.gc().unwrap();
 
         // After the gc, node 2 is node 1 and object 2 is object 1.
         let mut expected = original;
 
-        expected.layers.remove(&node(1));
+        expected.layers.remove(&node_id(1));
 
-        let mut tail = expected.layers.remove(&node(2)).unwrap();
+        let mut tail = expected.layers.remove(&node_id(2)).unwrap();
 
         tail.placements = vec![placement(1, [0, 0, 16]), placement(1, [0, 0, 32])];
 
-        expected.layers.insert(node(1), tail);
+        expected.layers.insert(node_id(1), tail);
 
-        expected.layers.get_mut(&node(0)).unwrap().placements =
+        expected.layers.get_mut(&node_id(0)).unwrap().placements =
             vec![placement(0, [0, 0, 0]), placement(0, [32, 0, 0])];
 
         assert_eq!(main.ext(), &expected);
@@ -601,20 +598,22 @@ mod tests {
         let mut remapped = from_goxl_file(&placed_blocks_file()).unwrap();
 
         remapped
-            .remap_object_voxels(object(1), TyVector3U32::new(16, 16, 18), |p| p.as_ivec3())
+            .remap_object_voxels(object_id(1), TyVector3U32::new(16, 16, 18), |p| {
+                p.as_ivec3()
+            })
             .unwrap();
 
         let mut resampled = from_goxl_file(&placed_blocks_file()).unwrap();
 
         resampled
-            .resample_object_voxels(object(1), TyVector3U32::new(16, 16, 18), |p| {
+            .resample_object_voxels(object_id(1), TyVector3U32::new(16, 16, 18), |p| {
                 (p.z < 16).then_some(p)
             })
             .unwrap();
 
         assert_eq!(resampled.ext(), remapped.ext());
         assert_eq!(
-            resampled.ext().layers[&node(1)].placements,
+            resampled.ext().layers[&node_id(1)].placements,
             [placement(1, [0, 14, 0])]
         );
     }
@@ -628,20 +627,22 @@ mod tests {
 
         // Y-up `(1, 2, 3)` is Z-up `[1, -3, 2]`.
         main.set_hierarchy_node_transform(
-            node(0),
+            node_id(0),
             TyTransformF64::from_translation(TyVector3F64::new(1.0, 2.0, 3.0)),
         )
         .unwrap();
 
-        main.set_object_origin(object(2), TyVector3I32::new(0, 1, -16))
+        main.set_object_origin(object_id(2), TyVector3I32::new(0, 1, -16))
             .unwrap();
 
         // Two more cells of depth lower the stamp two on Goxel's `y`.
-        main.remap_object_voxels(object(1), TyVector3U32::new(16, 16, 18), |p| p.as_ivec3())
-            .unwrap();
+        main.remap_object_voxels(object_id(1), TyVector3U32::new(16, 16, 18), |p| {
+            p.as_ivec3()
+        })
+        .unwrap();
 
         let placements =
-            |main: &GoxlVoxMain, index: u32| main.ext().layers[&node(index)].placements.clone();
+            |main: &GoxlVoxMain, index: u32| main.ext().layers[&node_id(index)].placements.clone();
 
         assert_eq!(
             placements(&main, 0),
@@ -690,7 +691,7 @@ mod tests {
         let node_id = main
             .retain_hierarchy_node(VoxHierarchyNode {
                 name: "added".to_owned(),
-                child_object_ids: vec![object(2)],
+                child_object_ids: vec![object_id(2)],
                 transform: TyTransformF64 {
                     position: TyVector3F64::new(3.4, -2.6, 16.0),
                     ..Default::default()
@@ -726,7 +727,7 @@ mod tests {
 
         let mut main = from_goxl_file(&file).unwrap();
 
-        main.move_object(object(2), 0).unwrap();
+        main.move_object(object_id(2), 0).unwrap();
 
         let rebuilt = to_goxl_file(&main).unwrap();
 
@@ -756,20 +757,20 @@ mod tests {
 
         let mut main = from_goxl_file(&file).unwrap();
 
-        main.set_root_hierarchy_node_ids(vec![node(2)]).unwrap();
+        main.set_root_hierarchy_node_ids(vec![node_id(2)]).unwrap();
 
         assert!(matches!(
-            main.release_hierarchy_node(node(0)),
+            main.release_hierarchy_node(node_id(0)),
             Err(VoxError::Ext { .. })
         ));
 
-        assert!(main.hierarchy_node(node(0)).is_some());
+        assert!(main.hierarchy_node(node_id(0)).is_some());
 
         assert_eq!(main.ext().layers.len(), 3);
 
-        main.release_hierarchy_node(node(1)).unwrap();
+        main.release_hierarchy_node(node_id(1)).unwrap();
 
-        main.release_hierarchy_node(node(0)).unwrap();
+        main.release_hierarchy_node(node_id(0)).unwrap();
 
         assert_eq!(main.ext().layers.len(), 1);
 
@@ -788,7 +789,7 @@ mod tests {
 
         let mut main = from_goxl_file(&file).unwrap();
 
-        main.ext_mut().layers.remove(&node(2));
+        main.ext_mut().layers.remove(&node_id(2));
 
         assert!(to_goxl_file(&main).is_err());
 
@@ -796,7 +797,7 @@ mod tests {
 
         main.ext_mut()
             .layers
-            .get_mut(&node(1))
+            .get_mut(&node_id(1))
             .unwrap()
             .placements
             .push(placement(2, [0, 0, 0]));
@@ -805,7 +806,7 @@ mod tests {
 
         let mut main = from_goxl_file(&file).unwrap();
 
-        main.ext_mut().layers.get_mut(&node(1)).unwrap().base_id = 9;
+        main.ext_mut().layers.get_mut(&node_id(1)).unwrap().base_id = 9;
 
         assert!(to_goxl_file(&main).is_err());
     }

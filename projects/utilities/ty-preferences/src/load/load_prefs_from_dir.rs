@@ -1,4 +1,4 @@
-use crate::{Dependencies, DeserializePrefs};
+use crate::{Dependencies, DeserializePrefs, read_section};
 use std::{io::Result as IOResult, path::Path};
 
 /// Loads the `key` prefs from `file_name` in `dir`.
@@ -11,11 +11,5 @@ pub fn load_prefs_from_dir<T>(
     file_name: &str,
     key: &str,
 ) -> IOResult<Option<T>> {
-    let path = dir.join(file_name);
-
-    let Some(bytes) = dependencies.read_file(&path)? else {
-        return Ok(None);
-    };
-
-    codec.deserialize_prefs(&bytes, key)
+    read_section(dependencies, codec, &dir.join(file_name), key)
 }

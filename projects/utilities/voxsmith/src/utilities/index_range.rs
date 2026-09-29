@@ -5,6 +5,7 @@ use crate::{Error, Result};
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct IndexRange {
     start: usize,
+
     end: usize,
 }
 

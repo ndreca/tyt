@@ -6,6 +6,7 @@ impl_ty_bounds!(TyBoundsF64, DVec3, f64);
 #[cfg(test)]
 mod tests {
     use crate::{TyBoundsF64, TyVector3F64};
+    use std::iter;
 
     #[test]
     fn from_points_bounds_the_cloud_and_size_is_the_full_extent() {
@@ -35,7 +36,7 @@ mod tests {
     #[test]
     fn from_points_of_an_empty_cloud_is_none() {
         assert_eq!(
-            TyBoundsF64::from_points(core::iter::empty::<TyVector3F64>()),
+            TyBoundsF64::from_points(iter::empty::<TyVector3F64>()),
             None
         );
     }
@@ -51,7 +52,8 @@ mod tests {
     fn encapsulate_covers_both_boxes() {
         let a = TyBoundsF64::new(TyVector3F64::ZERO, TyVector3F64::ONE);
         let b = TyBoundsF64::new(TyVector3F64::new(4.0, 0.0, 0.0), TyVector3F64::ONE);
-        // a spans x in [-1, 1], b spans x in [3, 5], so the union spans [-1, 5].
+        // a spans x in [-1, 1] and b spans x in [3, 5], so the union spans
+        // [-1, 5].
         let union = a.encapsulate(&b);
         assert_eq!(union.min(), TyVector3F64::new(-1.0, -1.0, -1.0));
         assert_eq!(union.max(), TyVector3F64::new(5.0, 1.0, 1.0));

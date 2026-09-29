@@ -8,15 +8,23 @@ use tyt_common::ExecFailed;
 /// An error from a material operation.
 #[derive(Debug)]
 pub enum Error {
+    /// A texture lookup or input check failed.
     Glob(String),
-    Magick(ExecFailed),
+
+    /// An I/O operation failed.
     IO(IOError),
+
+    /// `magick` failed.
+    Magick(ExecFailed),
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
             Error::Glob(msg) => write!(f, "{msg}"),
+
+            Error::IO(e) => e.fmt(f),
+
             Error::Magick(ExecFailed {
                 exit_code,
                 stdout,
@@ -34,7 +42,6 @@ impl Display for Error {
                 }
                 Ok(())
             }
-            Error::IO(e) => e.fmt(f),
         }
     }
 }

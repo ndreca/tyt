@@ -4,8 +4,8 @@ use vmax_codec::{
     from_vmax_package as read_vmax_package,
 };
 
-/// Loads a `.vmax` package through `dependencies` into a [`VMaxVoxMain`],
-/// the package form of [`from_vmax_file`].
+/// Loads a `.vmax` package through `dependencies` into a [`VMaxVoxMain`], the
+/// package form of [`from_vmax_file()`].
 ///
 /// # Arguments
 /// * `list` - returns the package-relative path of every file, so `QuickLook/`

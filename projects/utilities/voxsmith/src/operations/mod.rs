@@ -1,5 +1,7 @@
 //! One module per vxl command group, each behind a feature of the same name.
 
+// Optional API
+
 #[cfg(feature = "mesh_doc")]
 pub mod mesh_doc;
 

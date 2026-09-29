@@ -20,6 +20,7 @@ pub struct VoxDocToQbcl {
 }
 
 impl VoxDocToQbcl {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let from = self.input.resolve_format()?;
 

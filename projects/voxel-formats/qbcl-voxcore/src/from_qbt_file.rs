@@ -1,20 +1,20 @@
-use crate::{Error, QbtExtNode, QbtVoxMain, Result, qbt_ext_from_file};
+use crate::{Error, QbtExtNode, QbtVoxMain, Result, color_floats, qbt_ext_from_file, translation};
 use branded_id::U32Id;
 use qbcl::qbt::{QbtFile, QbtMatrix, QbtNode};
 use std::collections::{BTreeMap, HashMap, HashSet};
-use ty_math::{TySrgbaU8, TyTransformF64, TyVector3I32, TyVector3U32};
+use ty_math::{TyTransformF64, TyVector3U32};
 use voxcore::{
     BVoxHierarchyNode, BVoxMaterial, BVoxPalette, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette,
-    VoxValuePool, color::lin_srgba_f64_from_srgba_u8, material::BASE_COLOR,
+    VoxValuePool, material::BASE_COLOR,
 };
 
-/// Loads a decoded Qubicle Binary Tree [`QbtFile`] into a [`QbtVoxMain`],
-/// the inverse of [`to_qbt_file`](crate::to_qbt_file). Matrix and compound
-/// grids become objects sharing one `baseColor` palette, and the scene tree
-/// becomes the hierarchy nodes, each named for its scene node at its
-/// position. The rest of the Qubicle state goes to the ext, the per-node
-/// part keyed by node id. The per-voxel visibility masks are not kept: the
-/// writer derives them from the grid.
+/// Loads a decoded Qubicle Binary Tree [`QbtFile`] into a [`QbtVoxMain`], the
+/// inverse of [`to_qbt_file`](crate::to_qbt_file()). Matrix and compound grids
+/// become objects sharing one `baseColor` palette, and the scene tree becomes
+/// the hierarchy nodes, each named for its scene node at its position. The rest
+/// of the Qubicle state goes to the ext, the per-node part keyed by node id.
+/// The per-voxel visibility masks are not kept: the writer derives them from
+/// the grid.
 ///
 /// Errors on a matrix grid that exceeds the dense limit, or on a
 /// cross-reference the checked insertions reject.
@@ -230,18 +230,6 @@ fn build_object(
     }
 
     Ok(object)
-}
-
-/// A translation-only transform from a scene position.
-fn translation(position: [i32; 3]) -> TyTransformF64 {
-    TyTransformF64::from_translation(TyVector3I32::from_array(position).as_dvec3())
-}
-
-/// The linear-light components of an `[r, g, b]` byte color.
-fn color_floats(color: [u8; 3]) -> [f64; 3] {
-    let [red, green, blue] = color;
-    let linear = lin_srgba_f64_from_srgba_u8(TySrgbaU8::new(red, green, blue, 255));
-    [linear.red, linear.green, linear.blue]
 }
 
 #[cfg(test)]

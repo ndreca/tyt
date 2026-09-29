@@ -6,7 +6,7 @@ use ty_math::{TyBoundsF64, TyTransformF64, TyVector3F64};
 
 /// One placement of a mesh object by a hierarchy node, the unit that becomes
 /// one voxel object.
-pub(crate) struct PlacedObject {
+pub struct PlacedObject {
     /// The mesh object placed.
     pub mesh_object_id: U32Id<BMeshObject>,
 

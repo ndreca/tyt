@@ -20,6 +20,7 @@ pub struct VoxDocToGoxl {
 }
 
 impl VoxDocToGoxl {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let from = self.input.resolve_format()?;
 

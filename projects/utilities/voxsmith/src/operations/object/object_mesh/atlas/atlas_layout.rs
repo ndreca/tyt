@@ -12,9 +12,11 @@ const CORNER_TEXELS: [[u32; 2]; 4] = [[0, 0], [1, 0], [1, 1], [0, 1]];
 /// is one texel, or a 2x2 block on the corner atlas, and the canvas's unused
 /// cells stay empty.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) struct AtlasLayout {
+pub struct AtlasLayout {
     domain: ArrayDomain,
+
     columns: u32,
+
     rows: u32,
 }
 
@@ -111,7 +113,10 @@ impl AtlasLayout {
 
 #[cfg(test)]
 mod tests {
-    use crate::operations::object::{ArrayDomain, AtlasLayout, MeshElement, TextureShape};
+    use crate::{
+        Error,
+        operations::object::{ArrayDomain, AtlasLayout, MeshElement, TextureShape},
+    };
     use ty_math::TyVector2F64;
 
     fn canvas(count: usize, shape: TextureShape) -> (u32, u32) {
@@ -150,7 +155,7 @@ mod tests {
         assert!(
             matches!(
                 &error,
-                crate::Error::MeshRecord {
+                Error::MeshRecord {
                     element: MeshElement::TextureShape,
                     ..
                 }

@@ -2,9 +2,8 @@ use crate::{QbtVoxMain, Result, to_qbt_file};
 use qbcl_codec::{CompressZlib, qbt::to_qbt_file_bytes};
 
 /// Writes a [`QbtVoxMain`] and its ext to the bytes of a Qubicle Binary Tree
-/// `.qbt` file through `dependencies`, the bytes form of
-/// [`to_qbt_file`] and the inverse of
-/// [`from_qbt_bytes`](crate::codec::from_qbt_bytes).
+/// `.qbt` file through `dependencies`, the bytes form of [`to_qbt_file()`] and
+/// the inverse of [`from_qbt_bytes`](crate::codec::from_qbt_bytes()).
 pub fn to_qbt_bytes<D: CompressZlib>(dependencies: &D, main: &QbtVoxMain) -> Result<Vec<u8>> {
     let file = to_qbt_file(main)?;
 

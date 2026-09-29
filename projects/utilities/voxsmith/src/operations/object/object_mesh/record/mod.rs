@@ -1,3 +1,5 @@
+// Public API
+
 mod array_domain;
 mod attribute_write;
 mod computation;

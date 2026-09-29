@@ -1,3 +1,5 @@
+// Public API
+
 #[allow(clippy::module_inception)]
 mod object_set;
 mod object_set_command;

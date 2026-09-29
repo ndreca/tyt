@@ -11,7 +11,7 @@ use voxcore::{
 /// raster order, one per palette-atlas texel. A voxel's flattened material
 /// is the tuple of the materials it samples over the layers the effective
 /// palette reads through.
-pub(crate) struct Swatches<'a> {
+pub struct Swatches<'a> {
     effective: VoxEffectivePalette<'a>,
 
     /// The layers supplying at least one property, in the effective
@@ -140,7 +140,8 @@ mod tests {
     use branded_id::{U32Id, UsizeId};
     use ty_math::TyVector3U32;
     use voxcore::{
-        BVoxValuePoolValue, VoxMain, VoxObject, VoxPalette, VoxValuePool, VoxValuePoolValueRef,
+        BVoxPalette, BVoxValuePoolValue, VoxMain, VoxObject, VoxPalette, VoxValuePool,
+        VoxValuePoolValueRef,
         material::{BASE_COLOR, METALLIC},
     };
 
@@ -151,7 +152,7 @@ mod tests {
     /// A main holding two palettes: `base` carries `baseColor` and
     /// `metallic`, and `over` carries `metallic` alone, each with two
     /// materials.
-    fn main() -> (VoxMain, [U32Id<voxcore::BVoxPalette>; 2]) {
+    fn main() -> (VoxMain, [U32Id<BVoxPalette>; 2]) {
         let mut main: VoxMain = VoxMain::default();
 
         let colors = main.retain_value_pool(
@@ -184,7 +185,7 @@ mod tests {
 
     /// A 3x1x1 bar over `palette_ids`, its voxels sampling `materials`, one
     /// `[material per layer]` per voxel in raster order.
-    fn bar(palette_ids: &[U32Id<voxcore::BVoxPalette>], materials: &[&[u32]]) -> VoxObject {
+    fn bar(palette_ids: &[U32Id<BVoxPalette>], materials: &[&[u32]]) -> VoxObject {
         let mut object = VoxObject::new("bar".to_owned(), TyVector3U32::new(3, 1, 1)).unwrap();
 
         for &palette_id in palette_ids {

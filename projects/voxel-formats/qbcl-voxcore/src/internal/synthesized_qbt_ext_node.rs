@@ -6,7 +6,7 @@ use voxcore::VoxHierarchyNode;
 /// placing one object and nothing else, a compound entry for a node placing
 /// an object beside children or further objects, and a model entry for any
 /// other node. A grid entry pivots at the grid origin at unit local scale.
-pub(crate) fn synthesized_qbt_ext_node(node: &VoxHierarchyNode) -> QbtExtNode {
+pub fn synthesized_qbt_ext_node(node: &VoxHierarchyNode) -> QbtExtNode {
     let [_, extras @ ..] = node.child_object_ids.as_slice() else {
         return QbtExtNode::Model;
     };

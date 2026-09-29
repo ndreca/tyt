@@ -6,7 +6,9 @@ pub enum ParseFailure {
     /// A function took the wrong number of arguments.
     Arity {
         function: &'static str,
+
         expected: String,
+
         found: usize,
     },
 
@@ -31,6 +33,7 @@ pub enum ParseFailure {
     /// A token stood where the grammar expected another.
     Unexpected {
         found: String,
+
         expected: &'static str,
     },
 

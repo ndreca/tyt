@@ -1,30 +1,62 @@
 use crate::{
-    PalettePlan, Result, VMaxVoxMain, VMaxWriteOptions, apply_scene_camera, colorless_plan,
-    contents_editor_state, ext_entry, ext_placements, group_from_node, new_palette_plan,
-    node_rotation, object_file_suffix, object_from_node, object_layer, place_object,
-    reconstruct_voxels, secondary_object_ext, subtree_box_local, write_palette_files,
+    ABSORPTION, Error, ObjectPlacement, PALETTE_COLORS, Result, SHADOWS, SYNTH_CAMERA,
+    SceneCameraSource, VMaxColorFormat, VMaxExtMaterial, VMaxExtNode, VMaxExtObjectState,
+    VMaxExtPalette, VMaxVoxMain, VMaxWriteOptions, decode_axis_angle, encode_axis_angle,
+    pbr_factor_to_vm_coefficient, place_object, tighten,
 };
 use branded_id::U32Id;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use ty_math::{TyBoundsF64, TyQuaternionF64, TyTransformF64, TyVector3F64};
 use vmax::{
-    VMaxContentsVmaxbFile, VMaxFile, VMaxGroup, VMaxObject, VMaxPalettePngFile,
-    VMaxPaletteSettingsVmaxpsbFile, snapshots::encode_vmax_snapshots,
+    VMaxContentsVmaxbFile, VMaxFile, VMaxGroup, VMaxMaterial, VMaxMaterialDispersion, VMaxObject,
+    VMaxPalettePngFile, VMaxPaletteSettingsVmaxpsbFile, VMaxSceneJsonFile,
+    snapshots::{VMaxVoxel, encode_vmax_snapshots},
 };
-use voxcore::{BVoxObject, BVoxPalette};
+use voxcore::{
+    BVoxHierarchyNode, BVoxLayer, BVoxMaterial, BVoxObject, BVoxPalette, BVoxProperty,
+    BVoxValuePoolValue, VoxExt, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette, VoxValuePool,
+    VoxValuePoolValueRef,
+    color::{value_pool_color, value_pool_lin_srgba_f64_color},
+    material::{
+        BASE_COLOR, EMISSIVE_COLOR, EMISSIVE_STRENGTH, IOR, METALLIC, ROUGHNESS, TRANSMISSION,
+        default_scalar,
+    },
+};
+
+/// The neutral default material Voxel Max fills unused slots with: matte, not
+/// metallic, shadow-casting.
+const DEFAULT_METALLIC: f64 = 0.1;
+
+const DEFAULT_ROUGHNESS: f64 = 0.9;
+
+/// The `pal` an object with no color palette borrows. An empty reference makes
+/// Voxel Max read the package directory as a file and abort, so a colorless
+/// object shares the first color palette's name and writes no file of its own.
+const FALLBACK_PALETTE: &str = "palette1.png";
+
+/// The material slots every Voxel Max palette carries. A color cell's material
+/// is a bit in the settings `lc` byte, so at most 8 (0..=7) fit; the sidecar
+/// always lists exactly this many, real materials in the low slots and the rest
+/// padded with the neutral default.
+const MATERIAL_SLOTS: usize = 8;
+
+/// How far a node's rotation may drift from its preserved axis-angle before
+/// the writer encodes the live rotation instead.
+const ROTATION_TOLERANCE: f64 = 1e-9;
 
 /// Writes a [`VMaxVoxMain`] to a Voxel Max document, the inverse of
-/// [`from_vmax_file`](crate::from_vmax_file). A loaded document writes back
+/// [`from_vmax_file`](crate::from_vmax_file()). A loaded document writes back
 /// exactly through its ext. A state
-/// [`to_vmax_vox_main`](crate::to_vmax_vox_main) gave its ext writes as a
+/// [`to_vmax_vox_main`](crate::to_vmax_vox_main()) gave its ext writes as a
 /// document synthesized from the scene. The ext supplies each node's,
 /// palette's, and object's provenance and the scene-level state. The scene
 /// supplies the rest: names, transforms, parents, and content boxes. Nodes
 /// write in listing order, children before parents when the listing has them
-/// so, as Voxel Max's documents do. Every object and node transform turns
-/// back onto Voxel Max's Z-up axes. Each object's one palette is read
-/// unconverted in Voxel Max's layout, the one the loader builds. Errors when
-/// an entity has no ext entry, when an object has other than one layer, or
-/// when a palette departs from the layout.
+/// so, as Voxel Max's documents do. Every object and node transform turns back
+/// onto Voxel Max's Z-up axes. Each object's one palette is read unconverted in
+/// Voxel Max's layout, the one the loader builds. Errors when an entity has no
+/// ext entry, when an object has other than one layer, or when a palette
+/// departs from the layout.
 pub fn to_vmax_file(main: &VMaxVoxMain, options: &VMaxWriteOptions) -> Result<VMaxFile> {
     let placements = ext_placements(main)?;
 
@@ -174,6 +206,1085 @@ pub fn to_vmax_file(main: &VMaxVoxMain, options: &VMaxWriteOptions) -> Result<VM
         contents_vmax_pngs: BTreeMap::new(),
         group_pngs: BTreeMap::new(),
     })
+}
+
+/// One scene node to emit and the Voxel Max provenance that places it: the
+/// voxcore node supplies the local transform, the ext supplies the id and
+/// anchors, and the scene supplies the parent.
+struct Placement<'a> {
+    node_id: U32Id<BVoxHierarchyNode>,
+
+    node: &'a VoxHierarchyNode,
+
+    ext: &'a VMaxExtNode,
+
+    parent_id: Option<String>,
+}
+
+/// Pairs each voxcore node, in listing order, with its ext entry by id and
+/// its parent's id from the scene. Voxel Max holds a tree. Errors when:
+///
+/// 1. a node has no entry, which means the ext is out of step
+/// 2. a node has more than one parent
+/// 3. a root is also a child, because a written node with a parent is no
+///    longer a root
+fn ext_placements(main: &VMaxVoxMain) -> Result<Vec<Placement<'_>>> {
+    let ext = main.ext();
+
+    let mut parent_ids: BTreeMap<U32Id<BVoxHierarchyNode>, U32Id<BVoxHierarchyNode>> =
+        BTreeMap::new();
+    for (parent_id, node) in main.iter_hierarchy_nodes() {
+        for &child_id in &node.child_node_ids {
+            if let Some(&other_id) = parent_ids.get(&child_id) {
+                return Err(Error::invalid(format!(
+                    "node {} has parents {} and {}, but a Voxel Max node has one parent",
+                    child_id.to_u32(),
+                    other_id.to_u32(),
+                    parent_id.to_u32()
+                )));
+            }
+            parent_ids.insert(child_id, parent_id);
+        }
+    }
+
+    for &root_id in main.root_hierarchy_node_ids() {
+        if let Some(parent_id) = parent_ids.get(&root_id) {
+            return Err(Error::invalid(format!(
+                "node {} is a root and a child of node {}, but a Voxel Max node with a parent \
+                 is not a root",
+                root_id.to_u32(),
+                parent_id.to_u32()
+            )));
+        }
+    }
+
+    main.iter_hierarchy_nodes()
+        .map(|(node_id, node)| {
+            let entry = |id: U32Id<BVoxHierarchyNode>| {
+                ext.hierarchy_nodes.get(&id).ok_or_else(|| {
+                    Error::invalid(format!("vmax ext holds no entry for node {}", id.to_u32()))
+                })
+            };
+            let parent_id = match parent_ids.get(&node_id) {
+                Some(&parent_id) => Some(entry(parent_id)?.id.clone()),
+                None => None,
+            };
+            Ok(Placement {
+                node_id,
+                node,
+                ext: entry(node_id)?,
+                parent_id,
+            })
+        })
+        .collect()
+}
+
+/// The axis-angle a node writes: the preserved spelling while it still
+/// decodes to the node's rotation, which keeps a loaded document byte for
+/// byte, or the live rotation encoded afresh once the node was rotated after
+/// the load. `transform` places the node on Voxel Max's Z-up axes.
+fn node_rotation(ext_node: &VMaxExtNode, transform: &TyTransformF64) -> [f64; 4] {
+    let stored = decode_axis_angle(ext_node.rotation);
+    let live = transform.rotation;
+    if stored.abs_diff_eq(live, ROTATION_TOLERANCE) || stored.abs_diff_eq(-live, ROTATION_TOLERANCE)
+    {
+        return ext_node.rotation;
+    }
+    encode_axis_angle(live)
+}
+
+/// The bounding box `(center, half)` of all geometry under `node_id`, in that
+/// node's local frame on Voxel Max's Z-up axes: the union of each child
+/// object's content box and each child node's box mapped through the child's
+/// transform on those axes. Voxel Max stores this per group as
+/// `e_c`/`e_mi`/`e_ma`; it is the union of the subtree, so it is derived here
+/// rather than kept in the ext. Memoized by node id so a subtree shared across
+/// parents is walked once. A node with no geometry collapses to a zero box.
+fn subtree_box_local<T: VoxExt>(
+    main: &VoxMain<T>,
+    node_id: U32Id<BVoxHierarchyNode>,
+    memo: &mut HashMap<u32, ([f64; 3], [f64; 3])>,
+) -> ([f64; 3], [f64; 3]) {
+    if let Some(&box_local) = memo.get(&node_id.to_u32()) {
+        return box_local;
+    }
+    let node = main
+        .hierarchy_node(node_id)
+        .expect("a valid hierarchy node");
+    let mut bounds: Option<([f64; 3], [f64; 3])> = None;
+    for &object_id in &node.child_object_ids {
+        let (center, half) = object_box_local(main, object_id);
+        extend_bounds(&mut bounds, center, half);
+    }
+    for &child_id in &node.child_node_ids {
+        let (child_center, child_half) = subtree_box_local(main, child_id, memo);
+        let transform = main
+            .hierarchy_node(child_id)
+            .expect("a valid child node")
+            .transform
+            .yup_to_zup();
+        let center = transform
+            .transform_point(TyVector3F64::from_array(child_center))
+            .to_array();
+        let half = transform_half(&transform, child_half);
+        extend_bounds(&mut bounds, center, half);
+    }
+    let (min, max) = bounds.unwrap_or(([0.0; 3], [0.0; 3]));
+    let box_local = (
+        [
+            (min[0] + max[0]) / 2.0,
+            (min[1] + max[1]) / 2.0,
+            (min[2] + max[2]) / 2.0,
+        ],
+        [
+            (max[0] - min[0]) / 2.0,
+            (max[1] - min[1]) / 2.0,
+            (max[2] - min[2]) / 2.0,
+        ],
+    );
+    memo.insert(node_id.to_u32(), box_local);
+    box_local
+}
+
+/// An object's content box `(center, half)` in its placing node's local voxel
+/// frame on Voxel Max's Z-up axes: the tight runtime grid `[origin, origin +
+/// bounds]`. An empty object has no runtime extent, so it frames its build
+/// volume instead, matching the content box the write path gives it.
+fn object_box_local<T: VoxExt>(
+    main: &VoxMain<T>,
+    object_id: U32Id<BVoxObject>,
+) -> ([f64; 3], [f64; 3]) {
+    let object = main.object(object_id).expect("a valid child object");
+    let (tight, (edit_bounds, edit_origin)) = tighten(&object.yup_to_zup());
+    let bounds = tight.bounds();
+    let box_local = if bounds.x == 0 && bounds.y == 0 && bounds.z == 0 {
+        TyBoundsF64::from_min_size(edit_origin.as_dvec3(), edit_bounds.as_dvec3())
+    } else {
+        TyBoundsF64::from_min_size(tight.origin().as_dvec3(), bounds.as_dvec3())
+    };
+    (box_local.center.to_array(), box_local.extents.to_array())
+}
+
+/// Grows the running `(min, max)` AABB to include the box centered at `center`
+/// with half-extents `half`.
+fn extend_bounds(bounds: &mut Option<([f64; 3], [f64; 3])>, center: [f64; 3], half: [f64; 3]) {
+    let center = TyVector3F64::from_array(center);
+    let half = TyVector3F64::from_array(half);
+    let lo = center - half;
+    let hi = center + half;
+    match bounds {
+        Some((min, max)) => {
+            *min = TyVector3F64::from_array(*min).min(lo).to_array();
+            *max = TyVector3F64::from_array(*max).max(hi).to_array();
+        }
+        None => *bounds = Some((lo.to_array(), hi.to_array())),
+    }
+}
+
+/// The half-extent of the AABB of a box rotated and scaled by a node transform.
+/// A box centered on its pivot stays centered under the transform, so only the
+/// half-extent picks up the rotation: `sum_j abs(col_j) * half[j]` over the
+/// rotated, scaled basis columns.
+fn transform_half(transform: &TyTransformF64, half: [f64; 3]) -> [f64; 3] {
+    let col_x = transform.rotation * TyVector3F64::new(transform.scale.x, 0.0, 0.0);
+    let col_y = transform.rotation * TyVector3F64::new(0.0, transform.scale.y, 0.0);
+    let col_z = transform.rotation * TyVector3F64::new(0.0, 0.0, transform.scale.z);
+    [
+        col_x.x.abs() * half[0] + col_y.x.abs() * half[1] + col_z.x.abs() * half[2],
+        col_x.y.abs() * half[0] + col_y.y.abs() * half[1] + col_z.y.abs() * half[2],
+        col_x.z.abs() * half[0] + col_y.z.abs() * half[1] + col_z.z.abs() * half[2],
+    ]
+}
+
+/// The content box `(center, half)` is the group's derived subtree box,
+/// written as the symmetric `e_c`, `e_mi`, and `e_ma` Voxel Max stores.
+/// `transform` places the node on Voxel Max's Z-up axes.
+fn group_from_node(
+    placement: &Placement<'_>,
+    transform: &TyTransformF64,
+    rotation: [f64; 4],
+    center: [f64; 3],
+    half: [f64; 3],
+) -> VMaxGroup {
+    let node = placement.node;
+    let ext_node = placement.ext;
+    VMaxGroup {
+        name: node.name.clone(),
+        id: ext_node.id.clone(),
+        parent_id: placement.parent_id.clone(),
+        hidden: None,
+        position: transform.position.to_array(),
+        rotation,
+        scale: transform.scale.to_array(),
+        ind: ext_node.index,
+        s: ext_node.selected,
+        t_al: ext_node.alignment.clone(),
+        t_pa: ext_node.pivot_align.clone(),
+        t_pf: ext_node.pivot_face.clone(),
+        t_po: None,
+        center,
+        bounds_min: Some([-half[0], -half[1], -half[2]]),
+        bounds_max: Some(half),
+    }
+}
+
+/// The one layer `object` samples and the palette it draws, or `None` for an
+/// object with no layer, which writes colorless. A Voxel Max object reads one
+/// palette and this writer converts nothing, so a second layer errors.
+fn object_layer(object: &VoxObject) -> Result<Option<(U32Id<BVoxLayer>, U32Id<BVoxPalette>)>> {
+    let mut layers = object.iter_layers();
+    match (layers.next(), layers.next()) {
+        (layer, None) => Ok(layer),
+        _ => Err(Error::invalid(format!(
+            "object \"{}\" has {} layers but a Voxel Max object reads one palette",
+            object.name(),
+            object.layer_count()
+        ))),
+    }
+}
+
+/// The Voxel Max palette one voxcore palette writes, shared by every object
+/// layering it.
+struct PalettePlan {
+    /// The `pal` filename the objects reference.
+    pal: String,
+
+    /// The display name for the settings sidecar.
+    name: String,
+
+    /// The color table, the `baseColor` value pool whole. `None` for a
+    /// colorless palette, which borrows a name and writes no file.
+    color_table: Option<Vec<[u8; 4]>>,
+
+    /// The indices each material writes.
+    indices: BTreeMap<U32Id<BVoxMaterial>, VoxelIndices>,
+
+    /// The materials in slot order. Empty when the palette binds no material
+    /// axis, which leaves Voxel Max its own defaults.
+    materials: Vec<VMaxMaterial>,
+}
+
+/// Plans the Voxel Max palette for `palette_id`. Voxel Max numbers palette
+/// files 1-based (`palette1`, `palette2`, ...), by `colored_count`, since an
+/// un-numbered `palette.png` breaks the plist color lookup when no image is
+/// written. Errors when the palette has no ext entry or departs from the
+/// [`PaletteLayout`]. A palette with materials but no `baseColor` errors
+/// because Voxel Max keeps a material list only in a color palette's sidecar.
+/// An `emissiveColor` with no material axis errors because its default
+/// strength glows where Voxel Max's default materials do not.
+fn new_palette_plan(
+    main: &VMaxVoxMain,
+    palette_id: U32Id<BVoxPalette>,
+    colored_count: usize,
+) -> Result<PalettePlan> {
+    let provenance = ext_entry(
+        main.ext().palettes.get(&palette_id),
+        "palette",
+        palette_id.to_u32(),
+    )?;
+    let layout = PaletteLayout::resolve(main, palette_id)?;
+
+    let color_table = match &layout.color {
+        Some(color) => Some(color_palette_colors(color.value_pool)?),
+        None => None,
+    };
+    if color_table.is_none() && !layout.material.is_empty() {
+        return Err(Error::invalid(format!(
+            "palette {} binds materials but no `{BASE_COLOR}`, and Voxel Max keeps a material \
+             list only in a color palette's sidecar",
+            palette_id.to_u32()
+        )));
+    }
+    if layout.material.is_empty() && layout.emissive_color.is_some() {
+        return Err(Error::invalid(format!(
+            "palette {} binds `{EMISSIVE_COLOR}` but no material property to carry its \
+             strength, which Voxel Max's default materials would not glow at",
+            palette_id.to_u32()
+        )));
+    }
+    // An empty reference is one Voxel Max cannot resolve, so a colorless
+    // palette borrows the default name and writes no file.
+    let pal = match color_table {
+        Some(_) => format!("palette{}.png", colored_count + 1),
+        None => FALLBACK_PALETTE.to_owned(),
+    };
+
+    let materials = slot_materials(&layout, provenance)?;
+    let mut indices = BTreeMap::new();
+    for material_id in layout.palette.iter_materials() {
+        let entry = voxel_indices(&layout, material_id)?;
+        if let Some(material) = materials.get(usize::from(entry.material_idx)) {
+            check_emissive(&layout, material_id, material.sic)?;
+        }
+        indices.insert(material_id, entry);
+    }
+
+    Ok(PalettePlan {
+        pal,
+        name: provenance.name.clone(),
+        color_table,
+        indices,
+        materials,
+    })
+}
+
+/// A palette read in Voxel Max's layout, the one
+/// [`from_vmax_file`](crate::from_vmax_file()) builds. The color axis is
+/// `baseColor` and `emissiveColor`, one value per color cell. The material axis
+/// is every other property, one value per material slot. A material is one cell
+/// with one slot, so its color-axis properties share a value id and its
+/// material-axis properties share another. The writer converts nothing: a
+/// palette off the layout errors where it departs.
+struct PaletteLayout<'a> {
+    palette: &'a VoxPalette,
+
+    /// `baseColor`.
+    color: Option<LayoutProperty<'a>>,
+
+    /// `emissiveColor`.
+    emissive_color: Option<LayoutProperty<'a>>,
+
+    /// The material axis, in property order.
+    material: Vec<LayoutProperty<'a>>,
+}
+
+impl<'a> PaletteLayout<'a> {
+    /// Reads palette `palette_id` of `main`. Errors when the state does not
+    /// hold it.
+    fn resolve<T: VoxExt>(main: &'a VoxMain<T>, palette_id: U32Id<BVoxPalette>) -> Result<Self> {
+        let palette = main.palette(palette_id).ok_or_else(|| {
+            Error::invalid(format!(
+                "an object layers palette {}, which the state does not hold",
+                palette_id.to_u32()
+            ))
+        })?;
+        let mut color = None;
+        let mut emissive_color = None;
+        let mut material = Vec::new();
+        for (id, property) in palette.iter_properties() {
+            let value_pool = main
+                .value_pool(property.value_pool_id)
+                .expect("a property draws from a live value pool");
+            let entry = LayoutProperty {
+                id,
+                name: &property.name,
+                value_pool,
+            };
+            match property.name.as_str() {
+                BASE_COLOR => color = Some(entry),
+                EMISSIVE_COLOR => emissive_color = Some(entry),
+                _ => material.push(entry),
+            }
+        }
+        Ok(PaletteLayout {
+            palette,
+            color,
+            emissive_color,
+            material,
+        })
+    }
+
+    /// The material-axis property named `name`, or `None` when the palette
+    /// does not bind it.
+    fn material_property(&self, name: &str) -> Option<&LayoutProperty<'a>> {
+        self.material.iter().find(|property| property.name == name)
+    }
+}
+
+/// A palette property with the value pool it draws from.
+struct LayoutProperty<'a> {
+    id: U32Id<BVoxProperty>,
+
+    name: &'a str,
+
+    value_pool: &'a VoxValuePool,
+}
+
+/// `value_pool` decoded to exactly [`PALETTE_COLORS`] 0-based RGBA entries,
+/// padded with transparent entries to that count.
+///
+/// Errors when the value pool holds more colors than the budget, because the
+/// table is the pool whole. Errors when it holds no color, because a
+/// transparent stand-in would write a model Voxel Max renders as empty.
+fn color_palette_colors(value_pool: &VoxValuePool) -> Result<Vec<[u8; 4]>> {
+    if value_pool.len() > PALETTE_COLORS {
+        return Err(Error::invalid(format!(
+            "`{BASE_COLOR}` draws from a value pool of {} colors, but a Voxel Max palette holds \
+             only {PALETTE_COLORS}",
+            value_pool.len()
+        )));
+    }
+    let mut cells: Vec<[u8; 4]> = Vec::new();
+    for (value_id, _) in value_pool.iter_values() {
+        let color = value_pool_color(value_pool, value_id).ok_or_else(|| {
+            Error::invalid(format!(
+                "`{BASE_COLOR}` draws from a value pool holding no color"
+            ))
+        })?;
+        cells.push(color);
+    }
+    cells.resize(PALETTE_COLORS, [0, 0, 0, 0]);
+    Ok(cells)
+}
+
+/// The material list a palette writes, in slot order: an exact list in
+/// `provenance` as it is, else one material per slot read from the
+/// material-axis pools. Empty when the palette binds no material axis,
+/// leaving Voxel Max its own defaults.
+///
+/// Every material-axis pool holds one value per slot, so the pools must be
+/// the same length, densely numbered from zero, and no longer than
+/// [`MATERIAL_SLOTS`]. An exact list must be that length too. Anything else
+/// errors, including a pruned pool not yet compacted.
+fn slot_materials(
+    layout: &PaletteLayout,
+    provenance: &VMaxExtPalette,
+) -> Result<Vec<VMaxMaterial>> {
+    let Some(first) = layout.material.first() else {
+        if !provenance.materials.is_empty() {
+            return Err(Error::invalid(format!(
+                "vmax ext lists {} exact materials, but the palette binds no material property \
+                 to index them",
+                provenance.materials.len()
+            )));
+        }
+        return Ok(Vec::new());
+    };
+    let slot_count = first.value_pool.len();
+    for property in &layout.material {
+        let dense = property.value_pool.len() == slot_count
+            && (0..slot_count).all(|slot| {
+                property
+                    .value_pool
+                    .contains_value(U32Id::from_u32(slot as u32))
+            });
+        if !dense {
+            return Err(Error::invalid(format!(
+                "`{}` holds {} values where `{}` holds {slot_count}, but a Voxel Max material \
+                 pool holds one value per slot, numbered from zero",
+                property.name,
+                property.value_pool.len(),
+                first.name
+            )));
+        }
+    }
+    if slot_count > MATERIAL_SLOTS {
+        return Err(Error::invalid(format!(
+            "the material pools hold {slot_count} values, but a Voxel Max palette holds only \
+             {MATERIAL_SLOTS} material slots"
+        )));
+    }
+    if !provenance.materials.is_empty() {
+        if provenance.materials.len() != slot_count {
+            return Err(Error::invalid(format!(
+                "vmax ext lists {} exact materials, but the material pools hold {slot_count} \
+                 values",
+                provenance.materials.len()
+            )));
+        }
+        return Ok(provenance
+            .materials
+            .iter()
+            .enumerate()
+            .map(|(slot, material)| vmax_material(slot, material))
+            .collect());
+    }
+    (0..slot_count)
+        .map(|slot| pool_material(layout, slot as u8))
+        .collect()
+}
+
+/// Rebuilds a Voxel Max material from its exact ext copy. The `mi` token is
+/// derived from the 1-based slot and the transparency color `tc` is dropped,
+/// matching the writer's behavior.
+fn vmax_material(slot: usize, material: &VMaxExtMaterial) -> VMaxMaterial {
+    VMaxMaterial {
+        mi: (slot + 1).to_string(),
+        mc: material.metallic,
+        rc: material.roughness,
+        sic: material.emissive,
+        sh: material.shadows,
+        tc: material.transmission_color,
+        md: material
+            .dispersion
+            .as_ref()
+            .map(|dispersion| VMaxMaterialDispersion {
+                absorption: dispersion.absorption,
+                ior: dispersion.ior,
+                transmission: dispersion.transmission,
+            }),
+    }
+}
+
+/// The Voxel Max material in slot `slot`, read from each material-axis pool at
+/// the slot's value id. Metalness and roughness map from the 0 to 1 factor to
+/// Voxel Max's 0.1 to 0.9 slider coefficient; see
+/// [`pbr_factor_to_vm_coefficient`]. A property the palette does not bind
+/// writes its vocabulary default, so it writes what it renders as. Errors when
+/// a bound scalar's pool holds no scalar at the slot.
+fn pool_material(layout: &PaletteLayout, slot: u8) -> Result<VMaxMaterial> {
+    let value_id = U32Id::from_u32(u32::from(slot));
+    let scalar = |name: &str| -> Result<Option<f64>> {
+        let Some(property) = layout.material_property(name) else {
+            return Ok(None);
+        };
+        scalar_value(property.value_pool, value_id)
+            .map(Some)
+            .ok_or_else(|| {
+                Error::invalid(format!(
+                    "`{name}` draws from a value pool holding no scalar at value {slot}"
+                ))
+            })
+    };
+    let flag = |name: &str| -> Option<bool> {
+        flag_value(layout.material_property(name)?.value_pool, value_id)
+    };
+    let carries = |name: &str| -> bool { layout.material_property(name).is_some() };
+    let dispersed = carries(IOR) || carries(TRANSMISSION) || carries(ABSORPTION);
+    Ok(VMaxMaterial {
+        mi: (usize::from(slot) + 1).to_string(),
+        mc: pbr_factor_to_vm_coefficient(unbound_scalar(scalar(METALLIC)?, METALLIC), METALLIC)?,
+        rc: pbr_factor_to_vm_coefficient(unbound_scalar(scalar(ROUGHNESS)?, ROUGHNESS), ROUGHNESS)?,
+        // An unbound strength glows nowhere: the loader binds one whenever a
+        // material glows.
+        sic: scalar(EMISSIVE_STRENGTH)?.unwrap_or(0.0),
+        // Voxel Max casts shadows by default.
+        sh: flag(SHADOWS).unwrap_or(true),
+        tc: None,
+        md: match dispersed {
+            true => Some(VMaxMaterialDispersion {
+                absorption: scalar(ABSORPTION)?.unwrap_or(0.0),
+                ior: unbound_scalar(scalar(IOR)?, IOR),
+                transmission: unbound_scalar(scalar(TRANSMISSION)?, TRANSMISSION),
+            }),
+            false => None,
+        },
+    })
+}
+
+/// The `f64` at `value_id` in a `float` value pool, or `None`.
+fn scalar_value(value_pool: &VoxValuePool, value_id: U32Id<BVoxValuePoolValue>) -> Option<f64> {
+    match value_pool.value(value_id) {
+        Some(VoxValuePoolValueRef::Float(number)) => Some(number),
+        _ => None,
+    }
+}
+
+/// The `bool` at `value_id` in a `bool` value pool, or `None`.
+fn flag_value(value_pool: &VoxValuePool, value_id: U32Id<BVoxValuePoolValue>) -> Option<bool> {
+    match value_pool.value(value_id) {
+        Some(VoxValuePoolValueRef::Bool(flag)) => Some(flag),
+        _ => None,
+    }
+}
+
+/// `value` when the property is bound, else the glTF vocabulary default the
+/// format gives `key`, so an unbound property writes what it renders as.
+fn unbound_scalar(value: Option<f64>, key: &str) -> f64 {
+    value.unwrap_or_else(|| {
+        default_scalar(key).expect("a vocabulary scalar the vmax writer emits has a spec default")
+    })
+}
+
+/// The Voxel Max indices a voxel writes.
+#[derive(Clone, Copy)]
+struct VoxelIndices {
+    /// The 1-based color cell.
+    color_idx: u8,
+
+    /// The 0-based material slot.
+    material_idx: u8,
+}
+
+/// The indices a voxel drawing material `material_id` writes.
+fn voxel_indices(layout: &PaletteLayout, material_id: U32Id<BVoxMaterial>) -> Result<VoxelIndices> {
+    Ok(VoxelIndices {
+        color_idx: color_cell(layout, material_id)?,
+        material_idx: material_slot(layout, material_id)?,
+    })
+}
+
+/// The 1-based color cell material `material_id` draws: its `baseColor` value
+/// id plus one, since the color table is that value pool whole and cell 0 is
+/// the empty cell. One when the palette binds no color. Errors when the cell
+/// reaches [`PALETTE_COLORS`].
+fn color_cell(layout: &PaletteLayout, material_id: U32Id<BVoxMaterial>) -> Result<u8> {
+    let Some(color) = &layout.color else {
+        return Ok(1);
+    };
+    let cell = layout
+        .palette
+        .value_id(material_id, color.id)
+        .expect("a live material has a value id for every property")
+        .to_u32();
+    if cell >= PALETTE_COLORS as u32 {
+        return Err(Error::invalid(format!(
+            "material {} draws color cell {cell}, but a Voxel Max palette holds only \
+             {PALETTE_COLORS} colors",
+            material_id.to_u32()
+        )));
+    }
+    Ok(cell as u8 + 1)
+}
+
+/// The Voxel Max material slot material `material_id` draws: the one value id
+/// its material-axis properties share, the material byte the loader set. Zero
+/// when the palette binds no material axis. Errors when the properties
+/// disagree, because the material is then no single slot, and when the slot
+/// reaches [`MATERIAL_SLOTS`].
+fn material_slot(layout: &PaletteLayout, material_id: U32Id<BVoxMaterial>) -> Result<u8> {
+    let mut slot: Option<(u32, &str)> = None;
+    for property in &layout.material {
+        let value_id = layout
+            .palette
+            .value_id(material_id, property.id)
+            .expect("a live material has a value id for every property")
+            .to_u32();
+        match slot {
+            None => slot = Some((value_id, property.name)),
+            Some((slot, _)) if slot == value_id => {}
+            Some((slot, first)) => {
+                return Err(Error::invalid(format!(
+                    "material {} draws `{}` value {value_id} but `{first}` value {slot}, so it \
+                     is no single Voxel Max material slot",
+                    material_id.to_u32(),
+                    property.name
+                )));
+            }
+        }
+    }
+    let Some((slot, _)) = slot else {
+        return Ok(0);
+    };
+    if slot as usize >= MATERIAL_SLOTS {
+        return Err(Error::invalid(format!(
+            "material {} draws slot {slot}, but a Voxel Max palette holds only {MATERIAL_SLOTS} \
+             material slots",
+            material_id.to_u32()
+        )));
+    }
+    Ok(slot as u8)
+}
+
+/// Checks that material `material_id` looks the same on a slot glowing at
+/// `sic`. Voxel Max glows in the voxel's base color at `sic`, while a voxcore
+/// material glows in `emissiveColor` at `emissiveStrength`, so the two agree
+/// only when the material's emissive color is its base color. A slot at zero
+/// glows nowhere, whatever the colors. Errors when a glowing slot's material
+/// has no emissive color, no base color, or an emissive that differs from its
+/// base: Voxel Max would glow in a color the source never showed.
+fn check_emissive(
+    layout: &PaletteLayout,
+    material_id: U32Id<BVoxMaterial>,
+    sic: f64,
+) -> Result<()> {
+    if sic == 0.0 {
+        return Ok(());
+    }
+    let color = |property: Option<&LayoutProperty>, name: &str| -> Result<[f64; 3]> {
+        let Some(property) = property else {
+            return Err(Error::invalid(format!(
+                "material {} sits in a slot glowing at {sic}, but the palette binds no `{name}` \
+                 for Voxel Max to glow in",
+                material_id.to_u32()
+            )));
+        };
+        let value_id = layout
+            .palette
+            .value_id(material_id, property.id)
+            .expect("a live material has a value id for every property");
+        pool_color(property.value_pool, value_id).ok_or_else(|| {
+            Error::invalid(format!("`{name}` draws from a value pool holding no color"))
+        })
+    };
+    let emissive = color(layout.emissive_color.as_ref(), EMISSIVE_COLOR)?;
+    let base = color(layout.color.as_ref(), BASE_COLOR)?;
+    if emissive != base {
+        return Err(Error::invalid(format!(
+            "material {} glows in linear {emissive:?} over a base color of linear {base:?}, but \
+             Voxel Max glows only in the base color, so writing it would change how the model \
+             looks",
+            material_id.to_u32()
+        )));
+    }
+    Ok(())
+}
+
+/// The linear rgb at `value_id` in a color value pool, or `None` when the pool
+/// holds no float vectors.
+fn pool_color(value_pool: &VoxValuePool, value_id: U32Id<BVoxValuePoolValue>) -> Option<[f64; 3]> {
+    let color = value_pool_lin_srgba_f64_color(value_pool, value_id)?;
+    Some([color.red, color.green, color.blue])
+}
+
+/// The entry for an entity, or the error for an ext out of step with the
+/// scene.
+fn ext_entry<'a, T>(entry: Option<&'a T>, what: &str, id: u32) -> Result<&'a T> {
+    entry.ok_or_else(|| Error::invalid(format!("vmax ext holds no entry for {what} {id}")))
+}
+
+/// The plan every object with no layer shares. It borrows the default palette
+/// name because Voxel Max cannot resolve an empty `pal`, and writes no file.
+fn colorless_plan() -> PalettePlan {
+    PalettePlan {
+        pal: FALLBACK_PALETTE.to_owned(),
+        name: String::new(),
+        color_table: None,
+        indices: BTreeMap::new(),
+        materials: Vec::new(),
+    }
+}
+
+/// The filename suffix for an object: empty for object 0, then its numeric id.
+fn object_file_suffix(object_id: U32Id<BVoxObject>) -> String {
+    let index = object_id.to_u32();
+    if index == 0 {
+        String::new()
+    } else {
+        index.to_string()
+    }
+}
+
+/// The per-object ext for an extra object on a node placing several, such as a
+/// Goxel layer's blocks. It takes a distinct id and a distinct index triplet
+/// and inherits the node's rotation and alignment to stay a sibling of the
+/// node's first object. Its content box is derived from its own bounds on
+/// write.
+fn secondary_object_ext(
+    node_ext: &VMaxExtNode,
+    slot: usize,
+    used_indices: &mut HashSet<[i64; 3]>,
+) -> VMaxExtNode {
+    let index = (0..)
+        .map(|counter| [0, 0, counter])
+        .find(|index| !used_indices.contains(index))
+        .expect("a fresh counter exists");
+    used_indices.insert(index);
+    VMaxExtNode {
+        id: secondary_uuid(&node_ext.id, slot),
+        index,
+        ..node_ext.clone()
+    }
+}
+
+/// A distinct, valid UUID for an extra object on a node placing several,
+/// stamping the object's slot into the node id's fourth group. A node id keeps
+/// that group zero, so this never collides with a node or another slot.
+fn secondary_uuid(node_id: &str, slot: usize) -> String {
+    match node_id.split('-').collect::<Vec<_>>().as_slice() {
+        [a, b, c, _, e] => format!("{a}-{b}-{c}-{slot:04X}-{e}"),
+        _ => node_id.to_owned(),
+    }
+}
+
+/// Re-bases the tight object's voxels to absolute model space, each with the
+/// indices its material takes in `plan`. A voxel of an object with no layer
+/// takes cell 1, since 0 is the empty cell, and slot 0. Errors when the object
+/// has a second layer.
+fn reconstruct_voxels(
+    object: &VoxObject,
+    plan: &PalettePlan,
+    box_min: [i32; 3],
+) -> Result<Vec<VMaxVoxel>> {
+    let layer = object_layer(object)?;
+    Ok(object
+        .iter_live()
+        .map(|voxel_id| {
+            let position = object
+                .voxel_position(voxel_id)
+                .expect("a live voxel is within the grid");
+            let indices = match layer {
+                Some((layer_id, _)) => {
+                    let material_id = object
+                        .voxel_material(voxel_id, layer_id)
+                        .expect("a live voxel samples its layer");
+                    plan.indices[&material_id]
+                }
+                None => VoxelIndices {
+                    color_idx: 1,
+                    material_idx: 0,
+                },
+            };
+            VMaxVoxel {
+                position: [
+                    position.x as i32 + box_min[0],
+                    position.y as i32 + box_min[1],
+                    position.z as i32 + box_min[2],
+                ],
+                material_idx: indices.material_idx,
+                color_idx: indices.color_idx,
+            }
+        })
+        .collect())
+}
+
+/// The editor state a contents file carries, without its snapshots: the
+/// entry's session as it is, with the canvas `vp` re-scoped to the derived
+/// build volume.
+fn contents_editor_state(
+    object_state: &VMaxExtObjectState,
+    placement: &ObjectPlacement,
+) -> VMaxContentsVmaxbFile {
+    let mut tools = object_state.tools.clone();
+    if let Some(tools) = tools.as_mut() {
+        tools.vp = Some(placement.view_box.clone());
+    }
+    VMaxContentsVmaxbFile {
+        snapshots: Vec::new(),
+        uuid: object_state.uuid.clone(),
+        v: object_state.v,
+        tools,
+        brush: object_state.brush.clone(),
+        cam: object_state.cam.clone(),
+        pal: None,
+    }
+}
+
+/// The scene object for a node called `name`, which `transform` places on
+/// Voxel Max's Z-up axes.
+#[allow(clippy::too_many_arguments)]
+fn object_from_node(
+    name: &str,
+    transform: &TyTransformF64,
+    ext_node: &VMaxExtNode,
+    parent_id: Option<String>,
+    rotation: [f64; 4],
+    placement: &ObjectPlacement,
+    data: String,
+    pal: String,
+    suffix: &str,
+) -> VMaxObject {
+    VMaxObject {
+        name: name.to_owned(),
+        data,
+        palette: pal,
+        history: format!("history{suffix}.vmaxhb"),
+        id: ext_node.id.clone(),
+        parent_id,
+        hidden: None,
+        position: unbake_position(transform, decode_axis_angle(rotation), placement),
+        rotation,
+        scale: transform.scale.to_array(),
+        ind: ext_node.index,
+        s: ext_node.selected,
+        t_al: ext_node.alignment.clone(),
+        t_pa: ext_node.pivot_align.clone(),
+        t_pf: ext_node.pivot_face.clone(),
+        t_po: None,
+        center: placement.center,
+        bounds_min: Some(placement.bounds_min),
+        bounds_max: Some(placement.bounds_max),
+    }
+}
+
+/// Recovers an object's `t_p`, the inverse of the read path's
+/// `object_transform`. It backs out the `t_p` Voxel Max renders with from the
+/// node's transform, the content center it pivots about, and the grid `origin`:
+/// `t_p = position - center - R*S* (box_min - center - origin)`. Uses the
+/// axis-angle the object writes, so the two stay exact inverses.
+fn unbake_position(
+    transform: &TyTransformF64,
+    rotation: TyQuaternionF64,
+    placement: &ObjectPlacement,
+) -> [f64; 3] {
+    let center = placement.center;
+    let box_min = placement.box_min;
+    let origin = placement.origin;
+    let scale = transform.scale;
+    let offset = TyVector3F64::new(
+        (box_min[0] as f64 - center[0] - origin[0] as f64) * scale.x,
+        (box_min[1] as f64 - center[1] - origin[1] as f64) * scale.y,
+        (box_min[2] as f64 - center[2] - origin[2] as f64) * scale.z,
+    );
+    let rotated = rotation * offset;
+    [
+        transform.position.x - center[0] - rotated.x,
+        transform.position.y - center[1] - rotated.y,
+        transform.position.z - center[2] - rotated.z,
+    ]
+}
+
+/// Writes each colored plan's color image and material sidecar.
+fn write_palette_files(
+    plans: &[PalettePlan],
+    palette_settings_files: &mut BTreeMap<String, VMaxPaletteSettingsVmaxpsbFile>,
+    palette_png_files: &mut BTreeMap<String, VMaxPalettePngFile>,
+    vmax_color_format: VMaxColorFormat,
+) -> Result<()> {
+    for plan in plans {
+        let Some(colors) = &plan.color_table else {
+            continue;
+        };
+        let stem = plan
+            .pal
+            .strip_suffix(".png")
+            .expect("a colored plan names a png");
+        if matches!(
+            vmax_color_format,
+            VMaxColorFormat::Png | VMaxColorFormat::All
+        ) {
+            // 256 entries: 255 0-based colors then a transparent terminator.
+            let mut cells = colors.clone();
+            cells.push([0, 0, 0, 0]);
+            palette_png_files.insert(plan.pal.clone(), VMaxPalettePngFile(cells));
+        }
+        // The settings sidecar carries the materials, and the colors when no
+        // image does. Plist mode writes no image, so even a color-only object
+        // writes its colors here rather than dropping them.
+        let write_sidecar =
+            !plan.materials.is_empty() || matches!(vmax_color_format, VMaxColorFormat::Plist);
+        if write_sidecar {
+            let sidecar = format!("{stem}.settings.vmaxpsb");
+            // The plist `colors` table is the 255 colors with no terminator.
+            let sidecar_colors = match vmax_color_format {
+                VMaxColorFormat::Png => Vec::new(),
+                VMaxColorFormat::Plist | VMaxColorFormat::All => colors.clone(),
+            };
+            // The per-color material map Voxel Max renders from: each used
+            // color cell carries a bit for the material it draws.
+            let (lc, indices, current) = color_material_map(plan);
+            palette_settings_files.insert(
+                sidecar,
+                material_settings(
+                    material_name(&plan.name),
+                    plan.materials.clone(),
+                    sidecar_colors,
+                    lc,
+                    indices,
+                    current,
+                ),
+            );
+        }
+    }
+    Ok(())
+}
+
+/// The per-color material map for a palette's settings sidecar. For each color
+/// cell a material draws, sets its slot's bit in `lc` (`1 << material_idx`),
+/// lists the used cells in `indices`, and takes the first as `current`. Empty
+/// for a palette with no materials, which Voxel Max renders with its own
+/// defaults. Voxel Max reads a voxel's material from this map, not the
+/// per-voxel byte.
+fn color_material_map(plan: &PalettePlan) -> (Vec<u8>, Vec<i64>, i64) {
+    let mut lc = vec![0u8; 256];
+    if plan.materials.is_empty() {
+        return (lc, Vec::new(), 0);
+    }
+    let mut cells: BTreeSet<u32> = BTreeSet::new();
+    for indices in plan.indices.values() {
+        let cell = u32::from(indices.color_idx) - 1;
+        lc[cell as usize] |= 1 << indices.material_idx;
+        cells.insert(cell);
+    }
+    let indices: Vec<i64> = cells.iter().map(|&cell| i64::from(cell)).collect();
+    let current = indices.first().copied().unwrap_or(0);
+    (lc, indices, current)
+}
+
+/// The palette display name Voxel Max shows: the preserved name, or its default
+/// when a synthesized palette has none.
+fn material_name(name: &str) -> String {
+    if name.is_empty() {
+        "Palette #1".to_owned()
+    } else {
+        name.to_owned()
+    }
+}
+
+/// Builds a settings sidecar carrying `colors`, `materials`, and the per-color
+/// material map (`lc`/`indices`/`current`). The materials are padded to the
+/// fixed slot count and every coefficient f32-rounded, since Voxel Max drops a
+/// palette whose material coefficients are not f32-representable. The remaining
+/// editor-state keys are filled with the defaults Voxel Max expects.
+fn material_settings(
+    name: String,
+    materials: Vec<VMaxMaterial>,
+    colors: Vec<[u8; 4]>,
+    lc: Vec<u8>,
+    indices: Vec<i64>,
+    current: i64,
+) -> VMaxPaletteSettingsVmaxpsbFile {
+    VMaxPaletteSettingsVmaxpsbFile {
+        name,
+        materials: pad_materials(materials),
+        colors: colors.iter().flatten().copied().collect(),
+        indices,
+        lc,
+        palette_type: 0,
+        transparency: 1.0,
+        r: 0,
+        rt: "n".to_owned(),
+        cmt: "ng".to_owned(),
+        current,
+        ali: "1".to_owned(),
+        voxmats: Vec::new(),
+        ls: Vec::new(),
+    }
+}
+
+/// F32-rounds every material's coefficients and, for a palette that carries
+/// materials, pads the list to [`MATERIAL_SLOTS`] with the neutral default. A
+/// color-only palette keeps an empty list, since Voxel Max then uses its own
+/// default materials.
+fn pad_materials(materials: Vec<VMaxMaterial>) -> Vec<VMaxMaterial> {
+    if materials.is_empty() {
+        return materials;
+    }
+    let mut out: Vec<VMaxMaterial> = materials.iter().map(f32_material).collect();
+    while out.len() < MATERIAL_SLOTS {
+        out.push(default_material(out.len()));
+    }
+    out
+}
+
+/// A copy of `material` with every coefficient f32-rounded by [`to_f32`].
+fn f32_material(material: &VMaxMaterial) -> VMaxMaterial {
+    VMaxMaterial {
+        mi: material.mi.clone(),
+        mc: to_f32(material.mc),
+        rc: to_f32(material.rc),
+        sic: to_f32(material.sic),
+        sh: material.sh,
+        tc: material.tc.map(to_f32),
+        md: material
+            .md
+            .as_ref()
+            .map(|dispersion| VMaxMaterialDispersion {
+                absorption: to_f32(dispersion.absorption),
+                ior: to_f32(dispersion.ior),
+                transmission: to_f32(dispersion.transmission),
+            }),
+    }
+}
+
+/// The neutral default material Voxel Max fills the slot at `slot` with.
+fn default_material(slot: usize) -> VMaxMaterial {
+    VMaxMaterial {
+        mi: (slot + 1).to_string(),
+        mc: to_f32(DEFAULT_METALLIC),
+        rc: to_f32(DEFAULT_ROUGHNESS),
+        sic: 0.0,
+        sh: true,
+        tc: None,
+        md: None,
+    }
+}
+
+/// A coefficient snapped to an f32-exact value. Voxel Max decodes material
+/// coefficients as 32-bit floats and drops a whole palette whose coefficients
+/// are not f32-representable, so every one passes through here.
+fn to_f32(value: f64) -> f64 {
+    f64::from(value as f32)
+}
+
+/// Applies the scene camera choice to the rebuilt scene. `Ext` leaves the
+/// camera the ext supplied.
+fn apply_scene_camera(scene: &mut VMaxSceneJsonFile, scene_camera: SceneCameraSource) {
+    match scene_camera {
+        SceneCameraSource::Ext => {}
+        SceneCameraSource::Empty => scene.cam = Some(SYNTH_CAMERA),
+        SceneCameraSource::Camera(camera) => scene.cam = Some(camera),
+    }
 }
 
 #[cfg(test)]

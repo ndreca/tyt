@@ -8,7 +8,7 @@ use ty_preferences::Dependencies as PreferencesDependencies;
 /// The profiles `object mesh` can apply: the built-ins under the `.vxlconfig`
 /// layers' `object.mesh.profiles`, the user's first and the working
 /// directory's last.
-pub(crate) fn load_mesh_profile_set(
+pub fn load_mesh_profile_set(
     dependencies: &(impl PreferencesDependencies + ResolvePrefsPaths),
 ) -> Result<ProfileSet<MeshProfile>> {
     load_profile_set(
@@ -22,54 +22,9 @@ pub(crate) fn load_mesh_profile_set(
 #[cfg(test)]
 mod tests {
     use crate::{
-        ProfileSet, ResolvePrefsPaths,
+        Cascade, ProfileSet,
         commands::{MeshProfile, load_mesh_profile_set},
     };
-    use std::{
-        collections::BTreeMap,
-        io::Result as IOResult,
-        path::{Path, PathBuf},
-    };
-    use ty_preferences::{Dependencies as PreferencesDependencies, PrefsPaths};
-
-    /// A cascade over in-memory files, the working directory `/repo/sub` under
-    /// the git root `/repo` and the user's home `/home`.
-    struct Cascade {
-        in_repository: bool,
-        files: BTreeMap<PathBuf, &'static str>,
-    }
-
-    impl Cascade {
-        fn new(in_repository: bool, files: &[(&str, &'static str)]) -> Self {
-            Cascade {
-                in_repository,
-                files: files
-                    .iter()
-                    .map(|&(path, text)| (PathBuf::from(path), text))
-                    .collect(),
-            }
-        }
-    }
-
-    impl PreferencesDependencies for Cascade {
-        fn read_file(&self, path: &Path) -> IOResult<Option<Vec<u8>>> {
-            Ok(self.files.get(path).map(|text| text.as_bytes().to_vec()))
-        }
-
-        fn write_file(&self, _: &Path, _: &[u8]) -> IOResult<()> {
-            unreachable!("loading never writes")
-        }
-    }
-
-    impl ResolvePrefsPaths for Cascade {
-        fn resolve_prefs_paths(&self) -> IOResult<PrefsPaths> {
-            Ok(PrefsPaths {
-                cwd: PathBuf::from("/repo/sub"),
-                git_root: self.in_repository.then(|| PathBuf::from("/repo")),
-                user: Some(PathBuf::from("/home")),
-            })
-        }
-    }
 
     /// The values of the profile `name`.
     fn values(profiles: &ProfileSet<MeshProfile>, name: &str) -> Vec<String> {

@@ -1,5 +1,7 @@
 //! Reads and writes `.gox` file bytes, gated behind the `codec` feature.
 
+// Public API
+
 mod from_goxl_bytes;
 mod to_goxl_bytes;
 

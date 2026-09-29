@@ -10,13 +10,16 @@ use clap::Subcommand;
 pub enum ObjectSetCommand {
     #[command(name = "edit-bounds")]
     ObjectSetEditBounds(ObjectSetEditBounds),
+
     #[command(name = "name")]
     ObjectSetName(ObjectSetName),
+
     #[command(name = "origin")]
     ObjectSetOrigin(ObjectSetOrigin),
 }
 
 impl ObjectSetCommand {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             ObjectSetCommand::ObjectSetEditBounds(edit_bounds) => edit_bounds.execute(dependencies),

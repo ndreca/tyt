@@ -1,5 +1,5 @@
 use crate::ExecError;
-use std::{ffi::OsStr, process, result::Result as StdResult};
+use std::{ffi::OsStr, process::Command, result::Result as StdResult};
 use tyt_common::ExecFailed;
 
 /// Executes an external command and returns its stdout on success, ignoring
@@ -9,7 +9,7 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    let output = process::Command::new(program)
+    let output = Command::new(program)
         .args(args)
         .output()
         .map_err(ExecError::IO)?;

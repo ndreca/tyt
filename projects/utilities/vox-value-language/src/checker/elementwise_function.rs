@@ -1,32 +1,56 @@
-use crate::function::Function;
+use crate::Function;
 
 /// A function computed entry by entry over its arguments.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub(crate) enum ElementwiseFunction {
+pub enum ElementwiseFunction {
     Abs,
+
     Ceil,
+
     Clamp,
+
     Cross,
+
     Distance,
+
     Dot,
+
     Floor,
+
     Length,
+
     Lerp,
+
     Max,
+
     Min,
+
     Mod,
+
     Normalize,
+
     OklabFromRgb,
+
     OklchFromRgb,
+
     Pow,
+
     R,
+
     Rg,
+
     Rgb,
+
     Rgba,
+
     RgbFromOklab,
+
     RgbFromOklch,
+
     Round,
+
     Smoothstep,
+
     Step,
 }
 
@@ -97,7 +121,7 @@ impl ElementwiseFunction {
 
 #[cfg(test)]
 mod tests {
-    use crate::{checker::ElementwiseFunction, function::Function};
+    use crate::{ElementwiseFunction, Function};
 
     #[test]
     fn every_elementwise_function_round_trips_through_its_function() {

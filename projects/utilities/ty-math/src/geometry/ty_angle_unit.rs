@@ -1,7 +1,10 @@
 /// The unit of an angle.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum TyAngleUnit {
+    /// Measures a full turn as `360`.
     Degrees,
+
+    /// Measures a full turn as `2π`.
     Radians,
 }
 

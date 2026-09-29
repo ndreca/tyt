@@ -47,6 +47,7 @@ pub struct ToVoxj {
 }
 
 impl ToVoxj {
+    /// Writes the `.vmax` package to stdout as a Voxel Json document.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let encoding = match self.optimize {
             Some(VoxjOptimize::Size) => VoxjEncoding::Smallest,

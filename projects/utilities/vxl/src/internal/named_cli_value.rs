@@ -3,7 +3,7 @@ use serde::{Deserialize, Deserializer, de::Error as DeError};
 
 /// A [`CliValue`] a profile writes by the name the command line takes.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) struct NamedCliValue<T>(pub(crate) T);
+pub struct NamedCliValue<T>(pub(crate) T);
 
 impl<'de, T: CliValue> Deserialize<'de> for NamedCliValue<T> {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {

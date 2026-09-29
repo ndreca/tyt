@@ -1,5 +1,6 @@
 use crate::{
-    Dependencies, Error, HierarchyBounds, HierarchyEntry, HierarchyTransform, Result, utilities,
+    Dependencies, Error, FBX_HIERARCHY_JSON_PY, HierarchyBounds, HierarchyEntry,
+    HierarchyTransform, Result, extract_json, match_hierarchy_paths,
 };
 use branded_id::U32Id;
 use clap::Parser;
@@ -14,8 +15,8 @@ use treegrid::{
 };
 use treeselect::TreeSelection;
 
-/// A node id in the [`TreeGrid`] being populated, distinct from the
-/// entries' `usize` indices.
+/// A node id in the [`TreeGrid`] being populated, distinct from the entries'
+/// `usize` indices.
 type GridNodeId = U32Id<BTreeGridNode>;
 
 /// Prints the FBX object hierarchy as a tree with box-drawing glyphs,
@@ -88,6 +89,7 @@ pub struct Hierarchy {
 }
 
 impl Hierarchy {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let Hierarchy {
             input_fbx,
@@ -118,9 +120,8 @@ impl Hierarchy {
             ext_world,
             ext_scale,
         ];
-        let stdout =
-            dependencies.exec_temp_blender_script(&utilities::FBX_HIERARCHY_JSON_PY, args)?;
-        let json = utilities::extract_json(&stdout, b'[', b']')?;
+        let stdout = dependencies.exec_temp_blender_script(&FBX_HIERARCHY_JSON_PY, args)?;
+        let json = extract_json(&stdout, b'[', b']')?;
         let entries = dependencies.parse_hierarchy_payloads_json(json)?;
 
         let output = render_tree(
@@ -180,7 +181,7 @@ fn resolve_selection(
     parents: &[Option<usize>],
 ) -> Result<TreeSelection> {
     let candidate_paths: Vec<&str> = entries.iter().map(|entry| entry.path.as_str()).collect();
-    let matched = utilities::match_hierarchy_paths(dependencies, select, &candidate_paths)?;
+    let matched = match_hierarchy_paths(dependencies, select, &candidate_paths)?;
 
     if !matched.contains(&true) {
         return Err(Error::IO(IOError::new(
@@ -192,8 +193,8 @@ fn resolve_selection(
     Ok(TreeSelection::from_matches(matched, parents))
 }
 
-/// Per-entry parent indices, resolved from the `/`-joined paths. Entries
-/// arrive in pre-order, so a parent always precedes its children.
+/// Per-entry parent indices, resolved from the `/`-joined paths. Entries arrive
+/// in pre-order, so a parent always precedes its children.
 fn parent_indices(entries: &[HierarchyEntry]) -> Vec<Option<usize>> {
     let mut index_of: HashMap<&str, usize> = HashMap::new();
     let mut parents = Vec::with_capacity(entries.len());
@@ -225,14 +226,18 @@ fn child_indices(parents: &[Option<usize>]) -> (Vec<usize>, Vec<Vec<usize>>) {
     (roots, children)
 }
 
-/// Populates the filtered hierarchy tree into a [`TreeGrid`]. A matched
-/// object shows its whole subtree, so the walk threads an in-match flag
-/// down and consults visibility only outside match subtrees.
+/// Populates the filtered hierarchy tree into a [`TreeGrid`]. A matched object
+/// shows its whole subtree, so the walk threads an in-match flag down and
+/// consults visibility only outside match subtrees.
 struct Builder<'a> {
     entries: &'a [HierarchyEntry],
+
     children: &'a [Vec<usize>],
+
     selection: Option<&'a TreeSelection>,
+
     collapse_descendants: bool,
+
     grid: TreeGrid,
 }
 
@@ -344,8 +349,8 @@ impl Builder<'_> {
         }
     }
 
-    /// Retains a vector line under `parent`: the component text as the
-    /// label, `tag` as the annotation.
+    /// Retains a vector line under `parent`: the component text as the label,
+    /// `tag` as the annotation.
     fn retain_vector(&mut self, parent: GridNodeId, components: &[String; 3], tag: &str) {
         let [x, y, z] = components;
         let line = self.grid.retain_child(
@@ -455,8 +460,7 @@ mod tests {
         Dependencies, DependenciesImpl, HierarchyEntry, Result, commands::hierarchy::render_tree,
     };
 
-    /// A structure-only payload: a rig with a nested arm beside a second
-    /// root.
+    /// A structure-only payload: a rig with a nested arm beside a second root.
     const STRUCTURE_JSON: &str = r#"[
         {"name": "Rig", "path": "Rig", "type": "EMPTY"},
         {"name": "Arm", "path": "Rig/Arm", "type": "EMPTY"},
@@ -465,8 +469,8 @@ mod tests {
         {"name": "Stage", "path": "Stage", "type": "MESH"}
     ]"#;
 
-    /// A payload form: transform, bounds, and extents on a root and its
-    /// mesh child, and a geometry-less sibling with only a transform.
+    /// A payload form: transform, bounds, and extents on a root and its mesh
+    /// child, and a geometry-less sibling with only a transform.
     const PAYLOAD_JSON: &str = r#"[
         {
             "name": "Rig", "path": "Rig", "type": "EMPTY",

@@ -1,3 +1,5 @@
+// Public API
+
 mod add_profile;
 mod copy_profile_settings;
 mod list_profiles;

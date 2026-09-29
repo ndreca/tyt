@@ -7,7 +7,7 @@
 /// coordinates are read. An interior cell a solid flood fill invents is filled
 /// with no triangle (`None`), left for the caller to paint from a fill color or
 /// the nearest surface.
-pub(crate) struct VoxelGrid {
+pub struct VoxelGrid {
     /// One flag per cell: whether it is filled.
     pub filled: Vec<bool>,
 

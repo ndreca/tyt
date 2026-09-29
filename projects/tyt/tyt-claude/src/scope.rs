@@ -1,14 +1,19 @@
 use crate::{Dependencies, Error, Result};
 use clap::ValueEnum;
-use std::path::PathBuf;
+use std::{
+    fmt::{Display, Formatter, Result as FmtResult},
+    path::PathBuf,
+};
 
 /// Which config file `add-profile` / `set-profile` should write to.
 #[derive(Clone, Copy, Debug, ValueEnum)]
 pub enum Scope {
     /// `~/.tytconfig`
     User,
+
     /// `<git-root>/.tytconfig` (checked into the repo)
     Repo,
+
     /// `<git-root>/.tytusrconfig` (user-local, not checked in)
     RepoUser,
 }
@@ -21,10 +26,12 @@ impl Scope {
                 let home = dependencies.user_home_dir()?.ok_or(Error::NoUserHome)?;
                 Ok(home.join(".tytconfig"))
             }
+
             Scope::Repo => {
                 let root = dependencies.git_root_dir()?.ok_or(Error::NoGitRoot)?;
                 Ok(root.join(".tytconfig"))
             }
+
             Scope::RepoUser => {
                 let root = dependencies.git_root_dir()?.ok_or(Error::NoGitRoot)?;
                 Ok(root.join(".tytusrconfig"))
@@ -33,8 +40,8 @@ impl Scope {
     }
 }
 
-impl std::fmt::Display for Scope {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for Scope {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
             Scope::User => f.write_str("user"),
             Scope::Repo => f.write_str("repo"),

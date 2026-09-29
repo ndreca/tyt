@@ -1,8 +1,8 @@
 use crate::qbcl::{QbclCompound, QbclMatrix, QbclModel};
 
 /// The body of a [`QbclNode`](crate::qbcl::QbclNode), one variant per node type
-/// id. The node's name and editor flags are common to every type and live on the
-/// [`QbclNode`](crate::qbcl::QbclNode) itself.
+/// id. The node's name and editor flags are common to every type and live on
+/// the [`QbclNode`](crate::qbcl::QbclNode) itself.
 #[derive(Clone, Debug, PartialEq)]
 pub enum QbclNodeBody {
     /// A matrix node (type id `0`): a single voxel grid.

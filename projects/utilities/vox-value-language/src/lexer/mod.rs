@@ -1,3 +1,5 @@
+// Internal API
+
 mod lex;
 mod number_literal;
 mod number_suffix;

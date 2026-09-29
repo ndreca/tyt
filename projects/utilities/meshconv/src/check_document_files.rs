@@ -28,6 +28,7 @@ pub fn check_document_files<D: Dependencies>(
 /// The spec checks of one format.
 struct Check<'a, D> {
     dependencies: &'a D,
+
     files: &'a [MeshDocumentFile],
 }
 

@@ -1,7 +1,7 @@
 use crate::qbcl::QbclNodeBody;
 
-/// One node of a `.qbcl` scene tree: a name, the editor flags every node carries,
-/// and a type-specific [`body`](Self::body).
+/// One node of a `.qbcl` scene tree: a name, the editor flags every node
+/// carries, and a type-specific [`body`](Self::body).
 #[derive(Clone, Debug, PartialEq)]
 pub struct QbclNode {
     /// Node name.

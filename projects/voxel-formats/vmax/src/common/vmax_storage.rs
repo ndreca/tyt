@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct VMaxStorage {
+    /// Snapshot identifier.
     pub id: VMaxSnapshotId,
 
     /// Dense voxel bytes: two per slot (material, color), indexed by Morton
@@ -14,6 +15,7 @@ pub struct VMaxStorage {
     #[cfg_attr(feature = "serde", serde(with = "serde_bytes"))]
     pub ds: Vec<u8>,
 
+    /// Occupied and selection statistics.
     #[cfg_attr(feature = "serde", serde(default))]
     pub st: VMaxStats,
 

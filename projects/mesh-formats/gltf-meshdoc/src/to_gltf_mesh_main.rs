@@ -2,11 +2,11 @@ use crate::{GltfExt, GltfExtMesh, GltfExtPrimitive, GltfExtSampler, GltfExtScene
 use meshdoc::MeshMain;
 
 /// Gives a bare main a synthesized [`GltfExt`], the main
-/// [`to_gltf_file`](crate::to_gltf_file) writes as a file synthesized from
-/// the document. Each entity's entry is the one a retain after the load
-/// also gets. An image over its own bytes embeds, and one over a file
-/// references it. The document is not reshaped, because glTF holds
-/// everything the document does.
+/// [`to_gltf_file`](crate::to_gltf_file()) writes as a file synthesized from
+/// the document. Each entity's entry is the one a retain after the load also
+/// gets. An image over its own bytes embeds, and one over a file references it.
+/// The document is not reshaped, because glTF holds everything the document
+/// does.
 pub fn to_gltf_mesh_main(main: MeshMain<()>) -> GltfMeshMain {
     let mut ext = GltfExt {
         scenes: vec![GltfExtScene {

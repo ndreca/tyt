@@ -1,5 +1,7 @@
-use crate::VoxjPalette;
-use crate::objects::{Error, Result};
+use crate::{
+    VoxjPalette,
+    objects::{Error, Result},
+};
 
 /// The material count M of each referenced palette, in `layers` order. This is
 /// the `material_counts` argument that
@@ -31,20 +33,7 @@ pub fn voxj_palette_material_counts(
 
 #[cfg(test)]
 mod tests {
-    use crate::objects::voxj_palette_material_counts;
-    use crate::{VoxjPalette, VoxjProperty};
-
-    /// A palette of `m` materials: one property over value pool 0, its rows
-    /// the value-indices `0..m`.
-    fn palette(m: usize) -> VoxjPalette {
-        VoxjPalette {
-            properties: vec![VoxjProperty {
-                name: "baseColor".to_owned(),
-                value_pool: 0,
-            }],
-            materials: (0..m).map(|i| vec![i]).collect(),
-        }
-    }
+    use crate::{VoxjPalette, objects::voxj_palette_material_counts, test::palette};
 
     #[test]
     fn maps_layers_to_referenced_material_counts() {

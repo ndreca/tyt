@@ -25,7 +25,7 @@ const BACK: u8 = 64;
 /// The Qubicle visibility mask of the live voxel `voxel_id` in `object`: a
 /// face's bit is set when the neighbor cell in that direction is outside the
 /// grid or empty. The bits follow the `.qb` spec.
-pub(crate) fn face_mask(object: &VoxObject, voxel_id: U32Id<BVoxVoxel>) -> u8 {
+pub fn face_mask(object: &VoxObject, voxel_id: U32Id<BVoxVoxel>) -> u8 {
     let position = object
         .voxel_position(voxel_id)
         .expect("a live voxel is within the grid");

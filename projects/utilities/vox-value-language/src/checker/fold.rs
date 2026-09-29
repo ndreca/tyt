@@ -1,9 +1,10 @@
-use crate::function::Function;
+use crate::Function;
 
 /// How `any` and `all` fold a bool's components into one.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub(crate) enum Fold {
+pub enum Fold {
     All,
+
     Any,
 }
 

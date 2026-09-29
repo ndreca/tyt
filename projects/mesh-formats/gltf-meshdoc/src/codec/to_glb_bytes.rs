@@ -5,8 +5,8 @@ use crate::{
 };
 
 /// Writes a [`GltfMeshMain`] to the bytes of a `.glb` file through
-/// `dependencies`, the binary container form of [`to_gltf_file`] and the
-/// inverse of [`from_gltf_bytes`](crate::codec::from_gltf_bytes). The
+/// `dependencies`, the binary container form of [`to_gltf_file()`] and the
+/// inverse of [`from_gltf_bytes`](crate::codec::from_gltf_bytes()). The
 /// geometry buffer is the `BIN` chunk. The images go where `options` says.
 pub fn to_glb_bytes<D: EncodeBase64>(
     dependencies: &D,

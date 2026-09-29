@@ -22,7 +22,7 @@ mod result;
 pub use error::*;
 pub use result::*;
 
-// Internal API
+// Test support
 
 #[cfg(test)]
 mod test_utilities;

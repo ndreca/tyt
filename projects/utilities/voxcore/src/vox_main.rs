@@ -2,7 +2,7 @@ use crate::{
     BVoxHierarchyNode, BVoxLayer, BVoxMaterial, BVoxObject, BVoxPalette, BVoxProperty,
     BVoxValuePool, BVoxValuePoolValue, BVoxVoxel, Error, Result, TakenExt, VoxEffectivePalette,
     VoxExt, VoxGcRemap, VoxHierarchyNode, VoxObject, VoxPalette, VoxState, VoxValuePool,
-    vox_state::{check_node_transform, first_cycle_node_index},
+    check_node_transform, first_cycle_node_index,
 };
 use branded_id::{IdVec, U32Id, soa::IdRemap};
 use std::{
@@ -1439,7 +1439,7 @@ mod tests {
     }
 
     /// Retains an `int` value pool holding `values` and returns its id.
-    fn int_value_pool(main: &mut VoxMain, values: Vec<i64>) -> U32Id<BVoxValuePool> {
+    fn int_value_pool_id(main: &mut VoxMain, values: Vec<i64>) -> U32Id<BVoxValuePool> {
         main.retain_value_pool(VoxValuePool::int(values).unwrap())
     }
 
@@ -1528,7 +1528,7 @@ mod tests {
     #[test]
     fn prune_value_pools_keeps_entries_any_palette_still_uses() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![10, 20, 30]);
+        let ints_id = int_value_pool_id(&mut main, vec![10, 20, 30]);
 
         // Palette a draws id 0, palette b draws id 2, and id 1 is unused.
         let mut a = VoxPalette::default();
@@ -1650,7 +1650,7 @@ mod tests {
     #[test]
     fn reorder_value_pool_rejects_a_non_permutation_without_changing_state() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![10, 20, 30]);
+        let ints_id = int_value_pool_id(&mut main, vec![10, 20, 30]);
 
         // A repeated id, a wrong length, an id not the value pool's, and an
         // unknown value pool all reject.
@@ -1688,7 +1688,7 @@ mod tests {
     #[test]
     fn prune_value_pools_empties_an_unreferenced_value_pool() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![10, 20]);
+        let ints_id = int_value_pool_id(&mut main, vec![10, 20]);
 
         main.prune_value_pools();
 
@@ -1830,7 +1830,7 @@ mod tests {
     #[test]
     fn retain_object_rejects_a_bad_sample_material() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![7]);
+        let ints_id = int_value_pool_id(&mut main, vec![7]);
         let live_palette_id = main
             .retain_palette(one_material_palette(ints_id, 0))
             .unwrap();
@@ -2065,7 +2065,7 @@ mod tests {
     #[test]
     fn object_setters_set_name_origin_and_voxels() {
         let mut main: VoxMain = VoxMain::default();
-        let value_pool_id = int_value_pool(&mut main, vec![0, 1]);
+        let value_pool_id = int_value_pool_id(&mut main, vec![0, 1]);
         let palette_id = main
             .retain_palette(two_material_palette(value_pool_id))
             .unwrap();
@@ -2151,8 +2151,8 @@ mod tests {
     #[test]
     fn release_object_and_palette_then_gc_renumbers_and_resolves() {
         let mut main = VoxMain::default();
-        let value_pool_a_id = int_value_pool(&mut main, vec![10]);
-        let value_pool_b_id = int_value_pool(&mut main, vec![20]);
+        let value_pool_a_id = int_value_pool_id(&mut main, vec![10]);
+        let value_pool_b_id = int_value_pool_id(&mut main, vec![20]);
         let palette_a_id = main
             .retain_palette(one_material_palette(value_pool_a_id, 0))
             .unwrap();
@@ -2321,7 +2321,7 @@ mod tests {
     #[test]
     fn release_material_requires_unsampled_and_repaint_clears_the_way() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![0, 1]);
+        let ints_id = int_value_pool_id(&mut main, vec![0, 1]);
         let mut palette = VoxPalette::default();
         palette
             .retain_property("v".to_owned(), ints_id, value_id(0))
@@ -2385,7 +2385,7 @@ mod tests {
     #[test]
     fn repaint_materials_substitutes_once_and_release_materials_batches() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![0, 1, 2, 3]);
+        let ints_id = int_value_pool_id(&mut main, vec![0, 1, 2, 3]);
         let mut palette = VoxPalette::default();
         palette
             .retain_property("v".to_owned(), ints_id, value_id(0))
@@ -2480,7 +2480,7 @@ mod tests {
     #[test]
     fn validate_and_gc_handle_a_high_id_sample_after_a_material_hole() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![0, 1, 2]);
+        let ints_id = int_value_pool_id(&mut main, vec![0, 1, 2]);
         let mut palette = VoxPalette::default();
         palette
             .retain_property("v".to_owned(), ints_id, value_id(0))
@@ -2693,7 +2693,7 @@ mod tests {
     #[test]
     fn retain_palette_rejects_a_material_value_id_not_in_the_value_pool() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![0, 1]);
+        let ints_id = int_value_pool_id(&mut main, vec![0, 1]);
         let mut palette = VoxPalette::default();
         let property_id = palette
             .retain_property("v".to_owned(), ints_id, value_id(0))
@@ -2715,7 +2715,7 @@ mod tests {
     #[test]
     fn validate_reports_a_stale_value_id_after_a_missed_rewrite() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![10, 20]);
+        let ints_id = int_value_pool_id(&mut main, vec![10, 20]);
         let mut palette = VoxPalette::default();
         let property_id = palette
             .retain_property("v".to_owned(), ints_id, value_id(0))
@@ -2784,7 +2784,7 @@ mod tests {
     #[test]
     fn release_palette_requires_detached_layers() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![10, 20]);
+        let ints_id = int_value_pool_id(&mut main, vec![10, 20]);
         let a_id = main.retain_palette(two_material_palette(ints_id)).unwrap();
         let b_id = main.retain_palette(two_material_palette(ints_id)).unwrap();
         let c_id = main.retain_palette(two_material_palette(ints_id)).unwrap();
@@ -2969,8 +2969,8 @@ mod tests {
     #[test]
     fn move_value_pool_reorders_the_listing_and_validates() {
         let mut main = VoxMain::default();
-        let a_id = int_value_pool(&mut main, vec![1]);
-        let b_id = int_value_pool(&mut main, vec![2]);
+        let a_id = int_value_pool_id(&mut main, vec![1]);
+        let b_id = int_value_pool_id(&mut main, vec![2]);
 
         assert_eq!(main.move_value_pool(b_id, 0), Ok(()));
 
@@ -2998,7 +2998,7 @@ mod tests {
     #[test]
     fn release_value_pool_value_requires_undrawn_and_repoint_clears_the_way() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![10, 20, 30]);
+        let ints_id = int_value_pool_id(&mut main, vec![10, 20, 30]);
 
         // Two palettes draw the doomed value, so both must be repointed.
         let a = one_material_palette(ints_id, 0);
@@ -3109,7 +3109,7 @@ mod tests {
     #[test]
     fn gc_after_moves_renumbers_to_listing_order() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![1, 2]);
+        let ints_id = int_value_pool_id(&mut main, vec![1, 2]);
         let mut palette = VoxPalette::default();
         let property_id = palette
             .retain_property("v".to_owned(), ints_id, value_id(0))
@@ -3187,8 +3187,8 @@ mod tests {
     #[test]
     fn gc_after_a_value_pool_move_relabels_value_pools_and_each_value_pool_s_values() {
         let mut main = VoxMain::default();
-        let first_value_pool_id = int_value_pool(&mut main, vec![10, 20]);
-        let second_value_pool_id = int_value_pool(&mut main, vec![30, 40, 50]);
+        let first_value_pool_id = int_value_pool_id(&mut main, vec![10, 20]);
+        let second_value_pool_id = int_value_pool_id(&mut main, vec![30, 40, 50]);
 
         let mut palette = VoxPalette::default();
         // Both properties come before the material, so neither is back-filled.
@@ -3295,7 +3295,7 @@ mod tests {
     #[test]
     fn object_methods_edit_an_inserted_object() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![1, 2]);
+        let ints_id = int_value_pool_id(&mut main, vec![1, 2]);
         let palette_id = main.retain_palette(two_material_palette(ints_id)).unwrap();
         let object_id = main.retain_object(unit_object("o")).unwrap();
 
@@ -3366,7 +3366,7 @@ mod tests {
     #[test]
     fn object_methods_reject_bad_ids() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![1, 2]);
+        let ints_id = int_value_pool_id(&mut main, vec![1, 2]);
         let live_palette_id = main.retain_palette(two_material_palette(ints_id)).unwrap();
         let object_id = main.retain_object(unit_object("o")).unwrap();
 
@@ -3421,7 +3421,7 @@ mod tests {
     #[test]
     fn palette_methods_edit_an_inserted_palette() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![10, 20]);
+        let ints_id = int_value_pool_id(&mut main, vec![10, 20]);
         let palette_id = main
             .retain_palette(one_material_palette(ints_id, 0))
             .unwrap();
@@ -3464,7 +3464,7 @@ mod tests {
     #[test]
     fn palette_methods_reject_bad_ids() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![10, 20]);
+        let ints_id = int_value_pool_id(&mut main, vec![10, 20]);
         let palette_id = main
             .retain_palette(one_material_palette(ints_id, 0))
             .unwrap();
@@ -3542,7 +3542,7 @@ mod tests {
     #[test]
     fn release_material_can_empty_a_palette() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![10]);
+        let ints_id = int_value_pool_id(&mut main, vec![10]);
         let palette_id = main
             .retain_palette(one_material_palette(ints_id, 0))
             .unwrap();
@@ -3635,7 +3635,7 @@ mod tests {
     #[test]
     fn rejected_mutations_change_nothing() {
         let mut main = VoxMain::default();
-        let ints_id = int_value_pool(&mut main, vec![10, 20]);
+        let ints_id = int_value_pool_id(&mut main, vec![10, 20]);
         let live_palette_id = main.retain_palette(two_material_palette(ints_id)).unwrap();
         let object_id = main.retain_object(unit_object("o")).unwrap();
         let layer_id = main

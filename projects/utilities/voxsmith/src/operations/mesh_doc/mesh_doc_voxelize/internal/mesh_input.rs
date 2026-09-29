@@ -14,7 +14,7 @@ use ty_math::TyBoundsF64;
 /// the grid's, so a mesh `+y` is a voxel `+y`. Materials and textures are
 /// read from the document. Only the images the sampled slots draw are
 /// decoded.
-pub(crate) struct MeshInput<'a> {
+pub struct MeshInput<'a> {
     /// The placed objects, in hierarchy walk order.
     pub objects: Vec<PlacedObject>,
 

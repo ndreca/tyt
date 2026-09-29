@@ -8,15 +8,15 @@ use vmax::VMaxSceneJsonFile;
 use voxcore::{BVoxHierarchyNode, VoxMain};
 
 /// Gives a bare state a synthesized [`VMaxExt`], the state
-/// [`to_vmax_file`](crate::to_vmax_file) writes as a document synthesized
-/// from the scene. Voxel Max models a tree, so the hierarchy becomes one
-/// first. A node reached along several paths is cloned per extra path, the
-/// way voxcore composes a node's placement along every path to it, and a
-/// node reached from no root is released because voxcore never places it.
-/// Each node, palette, and object then takes the entry the retain hooks would
-/// build for it: fresh ids, the node's rotation, the default anchor tokens,
-/// no exact material list, and the default editor session. The scene takes
-/// the fallback version and the neutral camera.
+/// [`to_vmax_file`](crate::to_vmax_file()) writes as a document synthesized
+/// from the scene. Voxel Max models a tree, so the hierarchy becomes one first.
+/// A node reached along several paths is cloned per extra path, the way voxcore
+/// composes a node's placement along every path to it, and a node reached from
+/// no root is released because voxcore never places it. Each node, palette, and
+/// object then takes the entry the retain hooks would build for it: fresh ids,
+/// the node's rotation, the default anchor tokens, no exact material list, and
+/// the default editor session. The scene takes the fallback version and the
+/// neutral camera.
 ///
 /// Lossy only on the material palette name, which stays empty.
 pub fn to_vmax_vox_main(mut main: VoxMain<()>) -> Result<VMaxVoxMain> {

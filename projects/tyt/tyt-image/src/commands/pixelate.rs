@@ -16,13 +16,15 @@ pub struct Pixelate {
     #[arg(value_name = "size", short, long, default_value_t = 256)]
     size: u32,
 
-    /// Final output height in pixels. When set, the image is point-resized up to this
-    /// height after pixelation, preserving hard edges at a larger resolution.
+    /// Final output height in pixels. When set, the image is point-resized up
+    /// to this height after pixelation, preserving hard edges at a larger
+    /// resolution.
     #[arg(value_name = "output-size", long)]
     output_size: Option<u32>,
 }
 
 impl Pixelate {
+    /// Pixelates the image with `magick` and reports the written path.
     pub fn execute(self, deps: impl Dependencies) -> Result<()> {
         let out_base = self.out_base.unwrap_or_else(|| format!("{}-px", self.base));
         let in_path = format!("{}.png", self.base);

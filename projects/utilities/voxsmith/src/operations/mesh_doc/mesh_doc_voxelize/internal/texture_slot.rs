@@ -4,7 +4,7 @@ use meshdoc::{BMeshVertex, MeshTextureRef, MeshWrap};
 use ty_math::TyVector2F64;
 
 /// One texture slot of a placed primitive's material, resolved for sampling.
-pub(crate) struct TextureSlot<'a> {
+pub struct TextureSlot<'a> {
     /// The decoded image the slot's texture samples.
     pub image: &'a DecodedImage,
 

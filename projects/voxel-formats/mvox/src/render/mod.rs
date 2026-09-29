@@ -1,3 +1,5 @@
+// Public API
+
 mod mvox_camera;
 mod mvox_layer;
 mod mvox_material;

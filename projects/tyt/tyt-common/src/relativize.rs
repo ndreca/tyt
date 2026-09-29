@@ -1,12 +1,7 @@
 use std::path::{Component, Path, PathBuf};
 
-/// Re-expresses `target` as a path relative to `base`.
-///
-/// Both paths are first normalized lexically (without touching the filesystem):
-/// `.` components are dropped and `..` components are resolved against earlier
-/// components. The relative path is then computed from the components the two
-/// paths do not share. If the paths do not share a common root (and so cannot
-/// be relativized), the normalized `target` is returned unchanged.
+/// Re-expresses `target` relative to `base` after normalizing both lexically. A
+/// `target` sharing no root with `base` comes back only normalized.
 pub fn relativize(base: &Path, target: &Path) -> PathBuf {
     let base = normalize(base);
     let target = normalize(target);
@@ -46,9 +41,8 @@ pub fn relativize(base: &Path, target: &Path) -> PathBuf {
     result
 }
 
-/// Resolves `.` and `..` components lexically without consulting the
-/// filesystem. `..` pops a preceding normal component, is dropped at a root,
-/// and is otherwise retained (for relative paths that escape their start).
+/// Resolves `.` and `..` components without consulting the filesystem. A `..`
+/// that climbs above a relative path's start stays in the result.
 fn normalize(path: &Path) -> PathBuf {
     let mut result = PathBuf::new();
     for component in path.components() {

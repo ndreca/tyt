@@ -101,6 +101,7 @@ pub struct MeshDocVoxelize {
 }
 
 impl MeshDocVoxelize {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let profile = match &self.profile {
             Some(name) => load_mesh_doc_voxelize_profile_set(&dependencies)?
@@ -233,7 +234,10 @@ fn validate_reference(options: &VoxelizeOptions) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use crate::commands::{MeshDocVoxelize, MeshDocVoxelizeProfile};
+    use crate::{
+        Result,
+        commands::{MeshDocVoxelize, MeshDocVoxelizeProfile},
+    };
     use clap::Parser;
     use voxsmith::operations::mesh_doc::{
         FillMode, GridResolution, ResolutionReference, VoxelFrame, VoxelScale, VoxelizeOptions,
@@ -241,10 +245,7 @@ mod tests {
 
     /// The options a `mesh-doc voxelize` invocation of `args` resolves to over
     /// `profile`.
-    fn resolve_over(
-        args: &[&str],
-        profile: &MeshDocVoxelizeProfile,
-    ) -> crate::Result<VoxelizeOptions> {
+    fn resolve_over(args: &[&str], profile: &MeshDocVoxelizeProfile) -> Result<VoxelizeOptions> {
         let mut argv = vec!["voxelize", "model.glb"];
         argv.extend_from_slice(args);
         MeshDocVoxelize::try_parse_from(argv)
@@ -254,7 +255,7 @@ mod tests {
 
     /// The options `args` resolve to with a valid resolution already set and
     /// no profile, so a test only supplies the flags it exercises.
-    fn resolve(args: &[&str]) -> crate::Result<VoxelizeOptions> {
+    fn resolve(args: &[&str]) -> Result<VoxelizeOptions> {
         let mut argv = vec!["--resolution", "longest-world", "32"];
         argv.extend_from_slice(args);
         resolve_over(&argv, &MeshDocVoxelizeProfile::default())

@@ -10,6 +10,7 @@ pub struct PngImage {
     /// Height in texels.
     pub height: u32,
 
+    /// The samples each texel holds.
     pub channels: PngChannels,
 
     /// The transfer the color chunks declare.

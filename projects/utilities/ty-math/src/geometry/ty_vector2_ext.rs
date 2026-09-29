@@ -1,7 +1,8 @@
 use glam::{DVec2, DVec3, Vec2, Vec3};
 
-/// The tyt-specific 2D vector operations glam does not name directly, carried on
-/// the glam vector aliases so callers keep `v.foo()` with `use ty_math::TyVector2Ext`.
+/// The tyt-specific 2D vector operations glam does not name directly, carried
+/// on the glam vector aliases so callers keep `v.foo()` with
+/// `use ty_math::TyVector2Ext`.
 pub trait TyVector2Ext {
     /// The matching 3D vector type.
     type Vector3;
@@ -23,6 +24,7 @@ macro_rules! impl_ty_vector2_ext {
 }
 
 impl_ty_vector2_ext!(DVec2, DVec3);
+
 impl_ty_vector2_ext!(Vec2, Vec3);
 
 #[cfg(test)]

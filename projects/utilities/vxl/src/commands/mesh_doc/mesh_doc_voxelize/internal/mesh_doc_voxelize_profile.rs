@@ -7,7 +7,7 @@ use voxsmith::operations::mesh_doc::{
 /// A `mesh-doc voxelize` profile, each element mirroring a flag.
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields, rename_all = "camelCase")]
-pub(crate) struct MeshDocVoxelizeProfile {
+pub struct MeshDocVoxelizeProfile {
     /// Mirrors `--resolution`.
     pub(crate) resolution: Option<ResolutionEntry>,
 

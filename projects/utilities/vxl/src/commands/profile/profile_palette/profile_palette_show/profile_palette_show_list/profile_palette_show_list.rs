@@ -21,6 +21,7 @@ pub struct ProfilePaletteShowList {
 }
 
 impl ProfilePaletteShowList {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let profiles = load_palette_show_profile_set(&dependencies)?;
 

@@ -4,7 +4,7 @@ use ty_math::TyVector3Ext;
 
 /// Partitions `points` into at most `target` clusters by octree quantization
 /// over the first three axes, merging the rarest points first.
-pub(crate) fn octree(points: Vec<QuantizePoint>, target: usize) -> Vec<Vec<QuantizePoint>> {
+pub fn octree(points: Vec<QuantizePoint>, target: usize) -> Vec<Vec<QuantizePoint>> {
     const DEPTH: u32 = 8;
     const BUCKETS: u32 = 1 << DEPTH;
 
@@ -17,7 +17,9 @@ pub(crate) fn octree(points: Vec<QuantizePoint>, target: usize) -> Vec<Vec<Quant
     // A flat node arena; node 0 is the root. Only leaves hold point indices.
     struct Node {
         children: [i32; 8],
+
         points: Vec<usize>,
+
         count: usize,
     }
 

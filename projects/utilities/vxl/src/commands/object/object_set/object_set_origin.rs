@@ -31,6 +31,7 @@ pub struct ObjectSetOrigin {
 }
 
 impl ObjectSetOrigin {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let origin = vector3_i32(&self.origin);
 

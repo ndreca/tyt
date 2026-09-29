@@ -31,8 +31,8 @@ pub fn tighten(object: &VoxObject) -> (VoxObject, (TyVector3U32, TyVector3I32)) 
 }
 
 /// Mirrors `from`'s layers onto `to`, back-filling every voxel with material
-/// `0`. The filler is overwritten when a voxel is re-lived and is never read for
-/// an empty voxel, so a uniform filler suffices.
+/// `0`. The filler is overwritten when a voxel is re-lived and is never read
+/// for an empty voxel, so a uniform filler suffices.
 fn copy_layers(from: &VoxObject, to: &mut VoxObject) {
     for (_, palette_id) in from.iter_layers() {
         to.retain_layer(palette_id, U32Id::<BVoxMaterial>::from_u32(0));

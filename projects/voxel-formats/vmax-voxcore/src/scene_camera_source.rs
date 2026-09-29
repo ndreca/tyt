@@ -9,8 +9,10 @@ pub enum SceneCameraSource {
     /// The ext's scene camera, the neutral default for a synthesized ext.
     #[default]
     Ext,
+
     /// The neutral default scene camera, replacing any the ext carries.
     Empty,
+
     /// The given scene camera, replacing any the ext carries.
     Camera(VMaxSceneCamera),
 }

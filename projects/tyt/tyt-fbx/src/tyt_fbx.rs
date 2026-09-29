@@ -1,5 +1,7 @@
-use crate::commands;
-use crate::commands::CreatePointCloud;
+use crate::{
+    Dependencies, Result,
+    commands::{CreatePointCloud, Extract, Hierarchy, Modify, Reduce, Rename, Render, Transform},
+};
 use clap::Subcommand;
 
 /// Operations on FBX files.
@@ -8,24 +10,32 @@ use clap::Subcommand;
 pub enum TytFbx {
     #[command(name = "create-point-cloud")]
     CreatePointCloud(CreatePointCloud),
+
     #[command(name = "extract")]
-    Extract(commands::Extract),
+    Extract(Extract),
+
     #[command(name = "hierarchy")]
-    Hierarchy(commands::Hierarchy),
+    Hierarchy(Hierarchy),
+
     #[command(name = "modify")]
-    Modify(commands::Modify),
+    Modify(Modify),
+
     #[command(name = "reduce")]
-    Reduce(commands::Reduce),
+    Reduce(Reduce),
+
     #[command(name = "rename")]
-    Rename(commands::Rename),
+    Rename(Rename),
+
     #[command(name = "render")]
-    Render(commands::Render),
+    Render(Render),
+
     #[command(name = "transform")]
-    Transform(commands::Transform),
+    Transform(Transform),
 }
 
 impl TytFbx {
-    pub fn execute(self, dependencies: impl crate::Dependencies) -> crate::Result<()> {
+    /// Runs the command.
+    pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             TytFbx::CreatePointCloud(create_point_cloud) => {
                 create_point_cloud.execute(dependencies)

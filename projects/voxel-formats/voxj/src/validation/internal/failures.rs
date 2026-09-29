@@ -6,6 +6,7 @@ use crate::validation::Check;
 /// prior failure has already made moot.
 pub struct Failures {
     fail_fast: bool,
+
     items: Vec<(Check, String)>,
 }
 

@@ -1,11 +1,9 @@
-use crate::{
-    Dimension, Domain, Scalar,
-    checker::{CheckResult, CheckedNode, Pending},
-};
+use crate::{CheckResult, CheckedNode, Dimension, Domain, Pending, Scalar};
 
 /// A checked subtree: typed, or pending the type its context fixes.
-pub(crate) enum Checked {
+pub enum Checked {
     Pending(Pending),
+
     Typed(CheckedNode),
 }
 

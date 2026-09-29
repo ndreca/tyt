@@ -8,7 +8,7 @@ use vox_value_language::{Components, Dimension, Domain, Scalar, eval_expression}
 
 /// The faces each primitive draws. The selects route every face to exactly
 /// one primitive.
-pub(crate) struct FacePartition {
+pub struct FacePartition {
     faces: IdVec<BMeshPrimitive, Vec<usize>>,
 }
 

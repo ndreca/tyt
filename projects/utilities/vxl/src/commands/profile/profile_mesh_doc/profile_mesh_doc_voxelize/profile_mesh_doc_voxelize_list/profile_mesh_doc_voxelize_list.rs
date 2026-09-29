@@ -21,6 +21,7 @@ pub struct ProfileMeshDocVoxelizeList {
 }
 
 impl ProfileMeshDocVoxelizeList {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let profiles = load_mesh_doc_voxelize_profile_set(&dependencies)?;
         Ok(dependencies.write_stdout(list_profiles(&profiles, self.layout).as_bytes())?)

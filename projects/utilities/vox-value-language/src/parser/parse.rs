@@ -1,12 +1,37 @@
-use crate::{Program, Result, lexer, parser};
+use crate::{Parser, Program, Result, SyntaxBinding, Token, TokenKind, lex};
 
 /// Parses program text, a sequence of `name = expr;` statements with the
 /// empty statement legal.
 pub fn parse(text: &str) -> Result<Program> {
-    let tokens = lexer::lex(text)?;
-    let bindings = parser::parse_tokens(&tokens, text.len())?;
+    let tokens = lex(text)?;
+    let bindings = parse_tokens(&tokens, text.len())?;
 
     Ok(Program { bindings })
+}
+
+/// Parses a token stream as a program of `;`-terminated bindings.
+///
+/// # Arguments
+/// - `tokens`: the lexed text.
+/// - `end`: the text's byte length, where an unexpected end reports.
+fn parse_tokens(tokens: &[Token], end: usize) -> Result<Vec<SyntaxBinding>> {
+    let mut parser = Parser {
+        tokens,
+        position: 0,
+        end,
+    };
+    let mut bindings = Vec::new();
+
+    while let Some(token) = parser.peek() {
+        if token.kind == TokenKind::Semicolon {
+            parser.position += 1;
+            continue;
+        }
+
+        bindings.push(parser.binding()?);
+    }
+
+    Ok(bindings)
 }
 
 #[cfg(test)]

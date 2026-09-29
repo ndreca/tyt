@@ -1,3 +1,5 @@
+// Internal API
+
 mod bit_length;
 mod decode_hilbert;
 mod decode_varint;

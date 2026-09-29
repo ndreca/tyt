@@ -1,7 +1,7 @@
 use crate::qbcl::QbclNode;
 
-/// A `.qbcl` model node: an inner scene-tree node grouping child nodes. The file
-/// root is conventionally a model.
+/// A `.qbcl` model node: an inner scene-tree node grouping child nodes. The
+/// file root is conventionally a model.
 #[derive(Clone, Debug, PartialEq)]
 pub struct QbclModel {
     /// A 36-byte chunk Qubicle writes after every model node's header. Its
@@ -16,7 +16,8 @@ pub struct QbclModel {
 
 impl QbclModel {
     /// The 36-byte [`transform`](Self::transform) chunk the reference exporter
-    /// writes: little-endian `1` at the first three `u32` slots, zero elsewhere.
+    /// writes: little-endian `1` at the first three `u32` slots, zero
+    /// elsewhere.
     pub const DEFAULT_TRANSFORM: [u8; 36] = {
         let mut bytes = [0u8; 36];
         bytes[0] = 1;

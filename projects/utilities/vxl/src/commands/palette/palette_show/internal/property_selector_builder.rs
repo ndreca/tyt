@@ -5,9 +5,11 @@ use voxsmith::operations::palette::PropertySelector;
 /// Gathers the `palette show` selectors from the flags and the landed profiles
 /// in arrival order. A profile lands once, at its first arrival, with its
 /// `propertiesFrom` imports depth-first ahead of it.
-pub(crate) struct PropertySelectorBuilder<'a> {
+pub struct PropertySelectorBuilder<'a> {
     profiles: Option<&'a ProfileSet<PaletteShowProfile>>,
+
     selectors: Vec<PropertySelector>,
+
     landed: HashSet<String>,
 }
 
@@ -89,21 +91,10 @@ impl<'a> PropertySelectorBuilder<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        ProfileSet,
-        commands::{PaletteShowProfile, PropertySelectorBuilder, parse_property_selector},
+        commands::{PropertySelectorBuilder, parse_property_selector},
+        profile_set_from_json,
     };
-    use std::collections::BTreeMap;
     use voxsmith::operations::palette::PropertySelector;
-
-    /// A set holding the profiles `entries` defines as json.
-    fn profiles(entries: &[(&str, &str)]) -> ProfileSet<PaletteShowProfile> {
-        let profiles: BTreeMap<String, PaletteShowProfile> = entries
-            .iter()
-            .map(|(name, json)| ((*name).to_owned(), serde_json::from_str(json).unwrap()))
-            .collect();
-
-        ProfileSet::from_profiles(profiles)
-    }
 
     /// The selector for `property` with the other fields defaulted.
     fn selector(property: &str) -> PropertySelector {
@@ -112,7 +103,7 @@ mod tests {
 
     #[test]
     fn imports_land_depth_first_and_each_profile_once() {
-        let profiles = profiles(&[
+        let profiles = profile_set_from_json(&[
             ("base", r#"{ "properties": [{ "property": "baseColor" }] }"#),
             (
                 "orm",
@@ -142,7 +133,7 @@ mod tests {
 
     #[test]
     fn no_selector_finishes_as_the_default() {
-        let profiles = profiles(&[("table", r#"{ "layout": "md-tables" }"#)]);
+        let profiles = profile_set_from_json(&[("table", r#"{ "layout": "md-tables" }"#)]);
         let mut builder = PropertySelectorBuilder::new(Some(&profiles));
 
         builder.land_profile("--profile", "table").unwrap();
@@ -152,7 +143,7 @@ mod tests {
 
     #[test]
     fn a_cycle_errors_naming_the_chain() {
-        let profiles = profiles(&[
+        let profiles = profile_set_from_json(&[
             ("a", r#"{ "propertiesFrom": ["b"] }"#),
             ("b", r#"{ "propertiesFrom": ["a"] }"#),
         ]);
@@ -170,7 +161,7 @@ mod tests {
 
     #[test]
     fn an_undefined_import_errors_naming_the_importer() {
-        let profiles = profiles(&[("a", r#"{ "propertiesFrom": ["metal"] }"#)]);
+        let profiles = profile_set_from_json(&[("a", r#"{ "propertiesFrom": ["metal"] }"#)]);
         let mut builder = PropertySelectorBuilder::new(Some(&profiles));
 
         let error = builder

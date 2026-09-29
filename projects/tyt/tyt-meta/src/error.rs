@@ -7,7 +7,10 @@ use std::{
 /// An error from a meta operation.
 #[derive(Debug)]
 pub enum Error {
+    /// An I/O operation failed.
     IO(IOError),
+
+    /// A scaffolding step could not proceed.
     Meta(String),
 }
 

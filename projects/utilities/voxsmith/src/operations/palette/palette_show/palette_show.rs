@@ -44,12 +44,16 @@ pub fn palette_show<T: VoxExt>(
 struct ValueCollection {
     /// The resolved palette index, even when the selector used `*`.
     palette_index: usize,
+
     /// The property key, without any component.
     key: String,
+
     /// The vector component read from the property, when one was given.
     component: Option<VectorComponent>,
+
     /// What renders for each value.
     presentation: PaletteShowPresentation,
+
     /// One sample per palette material in material order.
     samples: Vec<TreeGridJsonValue>,
 }
@@ -58,8 +62,11 @@ struct ValueCollection {
 #[derive(Clone, Copy)]
 enum Reading {
     LinearFloat,
+
     Plain,
+
     SrgbFloat,
+
     SrgbHex,
 }
 
@@ -710,7 +717,7 @@ mod tests {
 
     /// A `vec-4-float` value pool of the given 8-bit sRGB colors, each decoded
     /// to linear light, the way the importers store colors.
-    fn lin_srgba_f64_value_pool(main: &mut VoxMain, colors: &[[u8; 4]]) -> U32Id<BVoxValuePool> {
+    fn lin_srgba_f64_value_pool_id(main: &mut VoxMain, colors: &[[u8; 4]]) -> U32Id<BVoxValuePool> {
         let values = colors
             .iter()
             .map(|&[red, green, blue, alpha]| {
@@ -730,10 +737,10 @@ mod tests {
         let mut main: VoxMain = VoxMain::default();
 
         let colors_zero_value_pool_id =
-            lin_srgba_f64_value_pool(&mut main, &[[255, 0, 0, 255], [0, 255, 0, 128]]);
+            lin_srgba_f64_value_pool_id(&mut main, &[[255, 0, 0, 255], [0, 255, 0, 128]]);
         let metallic_value_pool_id =
             main.retain_value_pool(VoxValuePool::float(vec![1.0, 0.2]).unwrap());
-        let colors_one_value_pool_id = lin_srgba_f64_value_pool(&mut main, &[[0, 0, 255, 255]]);
+        let colors_one_value_pool_id = lin_srgba_f64_value_pool_id(&mut main, &[[0, 0, 255, 255]]);
 
         let mut first = VoxPalette::default();
         first

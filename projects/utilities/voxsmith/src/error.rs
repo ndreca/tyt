@@ -53,15 +53,6 @@ impl Error {
     pub(crate) fn invalid(message: impl Display) -> Self {
         Error::Invalid(message.to_string())
     }
-
-    /// Builds an [`Error::MeshRecord`] from the element and its reason.
-    #[cfg(feature = "object")]
-    pub(crate) fn mesh_record(element: MeshElement, reason: impl Display) -> Self {
-        Error::MeshRecord {
-            element,
-            reason: reason.to_string(),
-        }
-    }
 }
 
 impl Display for Error {

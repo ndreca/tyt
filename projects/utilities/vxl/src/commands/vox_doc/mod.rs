@@ -1,3 +1,5 @@
+// Public API
+
 #[allow(clippy::module_inception)]
 mod vox_doc;
 mod vox_doc_command;

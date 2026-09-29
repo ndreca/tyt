@@ -10,7 +10,7 @@ use voxcore::{BVoxLayer, BVoxMaterial, BVoxObject, VoxExt, VoxMain};
 /// Snaps every live sample of `layers` onto its representative in `plan`. A
 /// dithered snap instead picks the nearest representative in the material's
 /// partition.
-pub(crate) fn apply_quantize_plan<T: VoxExt>(
+pub fn apply_quantize_plan<T: VoxExt>(
     main: &mut VoxMain<T>,
     plan: &QuantizePlan,
     layers: &[(U32Id<BVoxObject>, U32Id<BVoxLayer>)],

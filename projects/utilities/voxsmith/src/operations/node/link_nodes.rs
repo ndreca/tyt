@@ -1,4 +1,4 @@
-use crate::{Error, Result};
+use crate::{Error, Result, operations::node::node_name};
 use branded_id::U32Id;
 use voxcore::{BVoxHierarchyNode, Error as VoxError, VoxExt, VoxMain};
 
@@ -65,13 +65,6 @@ pub fn link_nodes<T: VoxExt>(
         ))),
         result => Ok(result?),
     }
-}
-
-fn node_name<T: VoxExt>(main: &VoxMain<T>, node_id: NodeId) -> &str {
-    &main
-        .hierarchy_node(node_id)
-        .expect("node_ids are checked above")
-        .name
 }
 
 #[cfg(test)]

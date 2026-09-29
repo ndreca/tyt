@@ -2,7 +2,7 @@ use voxsmith::operations::object::TextureShape;
 
 /// Parses a `--texture-shape` value: the keyword `fit`, `line`, `pot`, or
 /// `square`, else a positive side in cells.
-pub(crate) fn parse_texture_shape(text: &str) -> Result<TextureShape, String> {
+pub fn parse_texture_shape(text: &str) -> Result<TextureShape, String> {
     match text {
         "fit" => Ok(TextureShape::Fit),
         "line" => Ok(TextureShape::Line),

@@ -47,8 +47,11 @@ pub enum Error {
     /// objects with a property pointing at it, each in listing order.
     FileInUse {
         file_id: U32Id<BMeshFile>,
+
         image_ids: Vec<U32Id<BMeshImage>>,
+
         material_ids: Vec<U32Id<BMeshMaterial>>,
+
         object_ids: Vec<U32Id<BMeshObject>>,
     },
 
@@ -56,6 +59,7 @@ pub enum Error {
     /// lists the sampling textures in listing order.
     ImageInUse {
         image_id: U32Id<BMeshImage>,
+
         texture_ids: Vec<U32Id<BMeshTexture>>,
     },
 
@@ -64,7 +68,9 @@ pub enum Error {
     /// referencing it, each in listing order.
     TextureInUse {
         texture_id: U32Id<BMeshTexture>,
+
         material_ids: Vec<U32Id<BMeshMaterial>>,
+
         object_ids: Vec<U32Id<BMeshObject>>,
     },
 
@@ -72,6 +78,7 @@ pub enum Error {
     /// `object_ids` lists the objects of those primitives in listing order.
     MaterialInUse {
         material_id: U32Id<BMeshMaterial>,
+
         object_ids: Vec<U32Id<BMeshObject>>,
     },
 
@@ -79,6 +86,7 @@ pub enum Error {
     /// lists the placing nodes in listing order.
     ObjectInUse {
         object_id: U32Id<BMeshObject>,
+
         node_ids: Vec<U32Id<BMeshHierarchyNode>>,
     },
 
@@ -87,7 +95,9 @@ pub enum Error {
     /// list it.
     HierarchyNodeInUse {
         node_id: U32Id<BMeshHierarchyNode>,
+
         parent_ids: Vec<U32Id<BMeshHierarchyNode>>,
+
         root: bool,
     },
 
@@ -99,7 +109,9 @@ pub enum Error {
     /// its width per vertex.
     AttributeArity {
         name: String,
+
         components: usize,
+
         expected: usize,
     },
 
@@ -109,6 +121,7 @@ pub enum Error {
     /// A triangle corner references a vertex past the primitive's vertices.
     CornerVertex {
         triangle_id: U32Id<BMeshTriangle>,
+
         vertex_id: U32Id<BMeshVertex>,
     },
 
@@ -121,6 +134,7 @@ pub enum Error {
     /// An inserted or replaced file has a name file `file_id` already uses.
     FileNameTaken {
         name: String,
+
         file_id: U32Id<BMeshFile>,
     },
 
@@ -146,6 +160,7 @@ pub enum Error {
     /// of the state's.
     PropertyTextureRef {
         name: String,
+
         texture_id: U32Id<BMeshTexture>,
     },
 
@@ -153,6 +168,7 @@ pub enum Error {
     /// the state's.
     PropertyFileRef {
         name: String,
+
         file_id: U32Id<BMeshFile>,
     },
 
@@ -168,6 +184,7 @@ pub enum Error {
     /// state's.
     PrimitiveMaterialRef {
         primitive_id: U32Id<BMeshPrimitive>,
+
         material_id: U32Id<BMeshMaterial>,
     },
 
@@ -175,7 +192,9 @@ pub enum Error {
     /// the primitive does not carry.
     PrimitiveUvStreamRef {
         primitive_id: U32Id<BMeshPrimitive>,
+
         material_id: U32Id<BMeshMaterial>,
+
         uv_stream_id: U32Id<BMeshUvStream>,
     },
 
@@ -183,6 +202,7 @@ pub enum Error {
     /// batch, lists the same child node more than once.
     InsertedDuplicateChildNode {
         index: usize,
+
         child_id: U32Id<BMeshHierarchyNode>,
     },
 
@@ -190,6 +210,7 @@ pub enum Error {
     /// batch, places the same object more than once.
     InsertedDuplicateChildObject {
         index: usize,
+
         object_id: U32Id<BMeshObject>,
     },
 
@@ -215,12 +236,14 @@ pub enum Error {
     /// Two files share a name.
     DuplicateFileName {
         file_id: U32Id<BMeshFile>,
+
         other_file_id: U32Id<BMeshFile>,
     },
 
     /// An image reads a file that does not exist.
     ImageFile {
         image_id: U32Id<BMeshImage>,
+
         file_id: U32Id<BMeshFile>,
     },
 
@@ -230,25 +253,30 @@ pub enum Error {
     /// A texture samples an image that does not exist.
     TextureImage {
         texture_id: U32Id<BMeshTexture>,
+
         image_id: U32Id<BMeshImage>,
     },
 
     /// A material has this factor outside the range its name fixes.
     MaterialFactorRange {
         material_id: U32Id<BMeshMaterial>,
+
         name: String,
     },
 
     /// A material draws a texture that does not exist.
     MaterialTexture {
         material_id: U32Id<BMeshMaterial>,
+
         texture_id: U32Id<BMeshTexture>,
     },
 
     /// A primitive draws with a material that does not exist.
     PrimitiveMaterial {
         object_id: U32Id<BMeshObject>,
+
         primitive_id: U32Id<BMeshPrimitive>,
+
         material_id: U32Id<BMeshMaterial>,
     },
 
@@ -256,20 +284,25 @@ pub enum Error {
     /// the primitive does not carry.
     PrimitiveUvStream {
         object_id: U32Id<BMeshObject>,
+
         primitive_id: U32Id<BMeshPrimitive>,
+
         material_id: U32Id<BMeshMaterial>,
+
         uv_stream_id: U32Id<BMeshUvStream>,
     },
 
     /// A node lists a child node that does not exist.
     ChildNode {
         node_id: U32Id<BMeshHierarchyNode>,
+
         child_id: U32Id<BMeshHierarchyNode>,
     },
 
     /// A node places an object that does not exist.
     ChildObject {
         node_id: U32Id<BMeshHierarchyNode>,
+
         object_id: U32Id<BMeshObject>,
     },
 
@@ -282,12 +315,14 @@ pub enum Error {
     /// A node lists the same child node more than once.
     DuplicateChildNode {
         node_id: U32Id<BMeshHierarchyNode>,
+
         child_id: U32Id<BMeshHierarchyNode>,
     },
 
     /// A node places the same object more than once.
     DuplicateChildObject {
         node_id: U32Id<BMeshHierarchyNode>,
+
         object_id: U32Id<BMeshObject>,
     },
 

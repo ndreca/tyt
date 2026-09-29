@@ -32,6 +32,7 @@ pub struct NodeSetPosition {
 }
 
 impl NodeSetPosition {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let position = vector3_f64(&self.position);
 
@@ -46,9 +47,9 @@ impl NodeSetPosition {
 #[cfg(test)]
 mod tests {
     use crate::commands::NodeSetPosition;
-    use clap::Parser;
+    use clap::{Error as ClapError, Parser};
 
-    fn parse(position: [&str; 3]) -> Result<NodeSetPosition, clap::Error> {
+    fn parse(position: [&str; 3]) -> Result<NodeSetPosition, ClapError> {
         let mut args = vec!["position", "scene.voxj", "--select", "door", "--position"];
         args.extend(position);
 

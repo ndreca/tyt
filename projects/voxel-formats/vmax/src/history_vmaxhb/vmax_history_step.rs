@@ -7,16 +7,16 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct VMaxHistoryStep {
-    /// Edit command ([`VMaxEditCommand`](crate::VMaxEditCommand)).
+    /// Edit command ([`VMaxEditCommand`]).
     pub ec: VMaxEditCommand,
 
-    /// View camera ([`VMaxViewCamera`](crate::VMaxViewCamera)).
+    /// View camera ([`VMaxViewCamera`]).
     pub vc: VMaxViewCamera,
 
     /// Focused/framed view camera.
     pub fvc: VMaxViewCamera,
 
-    /// Tool state ([`VMaxTools`](crate::VMaxTools)); same shape as a
-    /// `contents*.vmaxb` object's `tools`.
+    /// Tool state ([`VMaxTools`]); same shape as a `contents*.vmaxb` object's
+    /// `tools`.
     pub tc: VMaxTools,
 }

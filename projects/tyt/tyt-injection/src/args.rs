@@ -10,15 +10,18 @@ pub struct Args {
 }
 
 impl Args {
+    /// An empty argument list.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Appends one argument.
     pub fn arg(mut self, arg: impl AsRef<OsStr>) -> Self {
         self.inner.push(arg.as_ref().to_os_string());
         self
     }
 
+    /// Appends every argument `args` yields.
     pub fn args<I, S>(mut self, args: I) -> Self
     where
         I: IntoIterator<Item = S>,
@@ -32,6 +35,7 @@ impl Args {
 
 impl IntoIterator for Args {
     type Item = OsString;
+
     type IntoIter = IntoIter<OsString>;
 
     fn into_iter(self) -> Self::IntoIter {

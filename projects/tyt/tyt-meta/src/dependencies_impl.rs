@@ -1,9 +1,10 @@
-use crate::{Dependencies, Result};
+use crate::{Dependencies, Error, Result};
 use std::{
     env, fs,
     path::{Path, PathBuf},
 };
 
+/// Dependencies backed by the real filesystem and stdout.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct DependenciesImpl;
 
@@ -43,7 +44,7 @@ impl Dependencies for DependenciesImpl {
                 }
             }
             if !dir.pop() {
-                return Err(crate::Error::Meta(
+                return Err(Error::Meta(
                     "could not find workspace root (no Cargo.toml with [workspace])".into(),
                 ));
             }

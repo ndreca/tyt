@@ -6,7 +6,7 @@ use ty_math::{TyLinSrgbF64, TyLinSrgbaF64};
 /// applied where a slot resolves. Each distinct material becomes one palette
 /// material.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct VoxelMaterial {
+pub struct VoxelMaterial {
     /// Straight-RGBA base color in linear light. glTF `baseColorFactor`.
     pub base_color: TyLinSrgbaF64,
 

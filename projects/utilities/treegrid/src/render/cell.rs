@@ -4,7 +4,7 @@ use crate::{TreeGridCellFormat, TreeGridCells, render};
 /// alignment lays out by a visual's declared width instead of re-measuring its
 /// bytes.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct Cell {
+pub struct Cell {
     /// The bytes to emit.
     pub(crate) rendered: String,
 

@@ -10,11 +10,13 @@ use clap::Subcommand;
 pub enum ProfileObjectCommand {
     #[command(name = "mesh")]
     ProfileObjectMesh(ProfileObjectMesh),
+
     #[command(name = "voxels")]
     ProfileObjectVoxels(ProfileObjectVoxels),
 }
 
 impl ProfileObjectCommand {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             ProfileObjectCommand::ProfileObjectMesh(mesh) => mesh.execute(dependencies),

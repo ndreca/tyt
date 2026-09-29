@@ -4,20 +4,19 @@
 //!
 //! Each Qubicle format has a [`VoxMain`](voxcore::VoxMain) carrying the
 //! format's state with no native voxcore home as its ext: [`QbVoxMain`] for
-//! Qubicle Binary, [`QbtVoxMain`] for Qubicle Binary Tree, and
-//! [`QbclVoxMain`] for Qubicle Construction Library. [`from_qb_file`] loads
-//! a decoded file into one and [`to_qb_file`] writes one back, exactly for a
-//! loaded file. The `qbt` and `qbcl` pairs work the same way.
-//! [`to_qb_vox_main`], [`to_qbt_vox_main`], and [`to_qbcl_vox_main`] give a
-//! bare `VoxMain<()>` a synthesized ext, and `take_ext` takes the ext back
-//! off. An ext stores only what the scene cannot derive, keyed by entity
-//! id, and follows the state through the [`VoxExt`](voxcore::VoxExt) hooks.
-//! A state mutated after the load still writes back with its surviving
-//! provenance. The `codec` module, behind the default `codec` feature, goes
-//! straight to and from file bytes.
+//! Qubicle Binary, [`QbtVoxMain`] for Qubicle Binary Tree, and [`QbclVoxMain`]
+//! for Qubicle Construction Library. [`from_qb_file()`] loads a decoded file
+//! into one and [`to_qb_file()`] writes one back, exactly for a loaded file.
+//! The `qbt` and `qbcl` pairs work the same way. [`to_qb_vox_main()`],
+//! [`to_qbt_vox_main()`], and [`to_qbcl_vox_main()`] give a bare `VoxMain<()>`
+//! a synthesized ext, and `take_ext` takes the ext back off. An ext stores only
+//! what the scene cannot derive, keyed by entity id, and follows the state
+//! through the [`VoxExt`](voxcore::VoxExt) hooks. A state mutated after the
+//! load still writes back with its surviving provenance. The `codec` module,
+//! behind the default `codec` feature, goes straight to and from file bytes.
 //! Its `.qbt` and `.qbcl` conversions take the codec's dependencies, which
-//! `qbcl_codec::DependenciesImpl` supplies. The `serde` feature, on by
-//! default, derives serde for the ext types.
+//! `qbcl_codec::DependenciesImpl` supplies. The `serde` feature, on by default,
+//! derives serde for the ext types.
 
 // Public API
 

@@ -1,3 +1,5 @@
+// Public API
+
 mod ty_cielab_color;
 mod ty_cielab_color_f32;
 mod ty_cielab_color_f64;

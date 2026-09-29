@@ -2,8 +2,8 @@ use crate::{Dependencies, Result, WriteFile, WriteFormat, write, write_document_
 use std::path::Path;
 use voxcore::VoxMain;
 
-/// Writes a bare state as the document at `output`: [`write`](crate::write)
-/// then [`write_document_files`](crate::write_document_files).
+/// Writes a bare state as the document at `output`: [`write()`] then
+/// [`write_document_files()`].
 pub fn save<D: Dependencies + WriteFile>(
     dependencies: &D,
     format: &WriteFormat,

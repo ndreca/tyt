@@ -1,3 +1,5 @@
+// Public API
+
 mod vmax_edit_command;
 mod vmax_history_session;
 mod vmax_history_step;

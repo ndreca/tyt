@@ -1,7 +1,21 @@
+// Public API
+
+mod geometry;
+
+pub use geometry::*;
+
+// Optional API
+
 #[cfg(feature = "color")]
 mod color;
-mod geometry;
 
 #[cfg(feature = "color")]
 pub use color::*;
-pub use geometry::*;
+
+// Test support
+
+#[cfg(test)]
+mod test;
+
+#[cfg(test)]
+pub(crate) use test::*;

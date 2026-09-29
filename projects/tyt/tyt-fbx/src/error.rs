@@ -8,7 +8,10 @@ use tyt_common::ExecFailed;
 /// An error from an FBX operation.
 #[derive(Debug)]
 pub enum Error {
+    /// `blender` failed.
     Blender(ExecFailed),
+
+    /// An I/O or data error.
     IO(IOError),
 }
 

@@ -22,6 +22,7 @@ pub struct NodeAdd {
 }
 
 impl NodeAdd {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         edit_document(&dependencies, &self.input, self.output, |main| {
             let parent_id = self.parent.resolve(main)?;

@@ -1,4 +1,4 @@
-use crate::{Dependencies, Error, Result, utilities::RelativeTo};
+use crate::{Dependencies, Error, RelativeTo, Result};
 use clap::Parser;
 use std::path::PathBuf;
 use tyt_common::relativize;
@@ -34,6 +34,7 @@ pub struct Rel {
 }
 
 impl Rel {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let config = dependencies.rel_config()?.ok_or(Error::ConfigNotFound)?;
 

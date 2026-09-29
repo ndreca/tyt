@@ -7,6 +7,7 @@ pub enum CheckFailure {
     /// The operands' dimensions do not pair under the operation's rule.
     DimensionMismatch {
         operation: String,
+
         found: Vec<Dimension>,
     },
 
@@ -22,6 +23,7 @@ pub enum CheckFailure {
     /// The numeric operands took more than one type.
     MixedScalars {
         operation: String,
+
         found: Vec<Scalar>,
     },
 
@@ -40,7 +42,9 @@ pub enum CheckFailure {
     /// The operand's dimension is not the one the operation takes.
     RequiresDimension {
         operation: String,
+
         expected: Dimension,
+
         found: Dimension,
     },
 
@@ -62,7 +66,9 @@ pub enum CheckFailure {
     /// A swizzle named a component its source lacks.
     SwizzleComponent {
         member: String,
+
         character: char,
+
         found: Dimension,
     },
 

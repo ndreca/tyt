@@ -1,6 +1,6 @@
 use crate::{
-    Error, MVoxExt, MVoxExtNode, MVoxVoxMain, Result, SceneNodeKind, frame_translation,
-    insert_synthesized_scene_node,
+    Error, MVoxExt, MVoxExtNode, MVoxVoxMain, PALETTE_COLORS, Result, SceneNodeKind,
+    frame_translation, insert_synthesized_scene_node,
 };
 use branded_id::U32Id;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -18,9 +18,6 @@ use voxcore::{
 /// The format version a synthesized file carries.
 const VERSION: u32 = 150;
 
-/// Colors a MagicaVoxel palette holds. Slot 0 is the reserved empty color.
-const PALETTE_COLORS: usize = 256;
-
 /// Voxels per axis a model can hold, since a voxel coordinate is a byte.
 const MODEL_AXIS_LIMIT: u32 = 256;
 
@@ -28,9 +25,9 @@ const MODEL_AXIS_LIMIT: u32 = 256;
 type ObjectSlots = (U32Id<BVoxObject>, Vec<(U32Id<BVoxVoxel>, u32)>);
 
 /// Gives a bare state a synthesized [`MVoxExt`], the state
-/// [`to_mvox_file`](crate::to_mvox_file) writes as a file synthesized from the
-/// scene. The state takes MagicaVoxel's shape first. Every palette merges into
-/// one 256-color table, each object sampling the slot of its color on one
+/// [`to_mvox_file`](crate::to_mvox_file()) writes as a file synthesized from
+/// the scene. The state takes MagicaVoxel's shape first. Every palette merges
+/// into one 256-color table, each object sampling the slot of its color on one
 /// layer. The hierarchy rebuilds with one node per scene node: every node
 /// becomes a transform node carrying its translation over a group of its child
 /// nodes and one transform-over-shape placement per object, all under one
@@ -85,6 +82,7 @@ fn check_grids(main: &VoxMain<()>) -> Result<()> {
 /// keeps its id. The old palettes release. Their value pools stay for the
 /// caller's prune.
 fn merge_palettes(main: &mut VoxMain<()>) -> Result<()> {
+    // Slot 0 is the reserved empty color.
     let mut colors: Vec<[u8; 4]> = vec![[0, 0, 0, 0]];
     let mut index_of: HashMap<[u8; 4], u32> = HashMap::new();
     for (_, object) in main.iter_objects() {
@@ -242,8 +240,11 @@ fn rebuild_hierarchy(
 /// ids, and is linked to them once they exist.
 struct Builder<'a> {
     main: &'a mut VoxMain<()>,
+
     old: &'a HashMap<U32Id<BVoxHierarchyNode>, VoxHierarchyNode>,
+
     entries: BTreeMap<U32Id<BVoxHierarchyNode>, MVoxExtNode>,
+
     placed: HashSet<U32Id<BVoxObject>>,
 }
 

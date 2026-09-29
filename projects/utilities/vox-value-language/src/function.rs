@@ -1,65 +1,124 @@
 /// A reserved function name.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub(crate) enum Function {
+pub enum Function {
     Abs,
+
     All,
+
     Any,
+
     Avg,
+
     Ceil,
+
     CeilU8,
+
     CeilU16,
+
     CeilU32,
+
     Clamp,
+
     Corner,
+
     Cross,
+
     Default,
+
     Distance,
+
     Dot,
+
     F32,
+
     Face,
+
     FaceAvg,
+
     FaceMax,
+
     FaceMin,
+
     FaceSum,
+
     Floor,
+
     FloorU8,
+
     FloorU16,
+
     FloorU32,
+
     Length,
+
     Lerp,
+
     Max,
+
     Min,
+
     Mix,
+
     Mod,
+
     Normalize,
+
     OklabFromRgb,
+
     OklchFromRgb,
+
     Pow,
+
     R,
+
     Rg,
+
     Rgb,
+
     Rgba,
+
     RgbFromOklab,
+
     RgbFromOklch,
+
     Round,
+
     RoundU8,
+
     RoundU16,
+
     RoundU32,
+
     Smoothstep,
+
     Step,
+
     Sum,
+
     Swatch,
+
     SwatchAvg,
+
     SwatchMax,
+
     SwatchMin,
+
     SwatchSum,
+
     U8,
+
     U16,
+
     U32,
+
     Voxel,
+
     VoxelAvg,
+
     VoxelMax,
+
     VoxelMin,
+
     VoxelSum,
 }
 
@@ -243,7 +302,7 @@ impl Function {
 
 #[cfg(test)]
 mod tests {
-    use crate::function::Function;
+    use crate::Function;
 
     #[test]
     fn every_name_round_trips() {

@@ -941,7 +941,9 @@ enum ObjectRow {
     /// A `label: [x, y, z]` line, or `label: null` when `value` is `None`.
     Value {
         label: &'static str,
+
         value: Option<TyVector3F64>,
+
         precision: usize,
     },
 
@@ -949,7 +951,9 @@ enum ObjectRow {
     /// `corners` is `None`.
     Bounds {
         label: &'static str,
+
         corners: Option<(TyVector3F64, TyVector3F64)>,
+
         precision: usize,
     },
 

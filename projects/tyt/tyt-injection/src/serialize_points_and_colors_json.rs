@@ -6,6 +6,7 @@ use ty_math_serde::{TySrgbaF32Serde, TyVector3F64Serde};
 #[derive(Serialize)]
 struct PointsAndColors {
     points: Vec<TyVector3F64Serde>,
+
     colors: Vec<Vec<TySrgbaF32Serde>>,
 }
 
@@ -35,7 +36,7 @@ pub fn serialize_points_and_colors_json(
 
 #[cfg(test)]
 mod tests {
-    use super::serialize_points_and_colors_json;
+    use crate::serialize_points_and_colors_json;
     use ty_math::{TySrgbaF32, TyVector3F64};
 
     #[test]

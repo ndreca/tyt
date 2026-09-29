@@ -1,6 +1,9 @@
-use crate::{Dependencies, Result, utilities};
+use crate::{COMMON_PY, Dependencies, Result, Script, embed_blender_script};
 use clap::Parser;
 use std::{ffi::OsStr, path::PathBuf};
+
+/// The Blender script that joins every mesh into one.
+const FBX_REDUCE_TO_SINGLE_MESH_PY: Script = embed_blender_script!("fbx_reduce_to_single_mesh.py");
 
 /// Collapses all mesh objects in the input FBX into a single joined mesh.
 /// Clears parenting while keeping world transforms, deletes now-unused empties,
@@ -22,6 +25,7 @@ pub struct Reduce {
 }
 
 impl Reduce {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let Reduce {
             input_fbx,
@@ -38,8 +42,8 @@ impl Reduce {
         ];
 
         dependencies.exec_temp_blender_scripts_with_stdout(
-            &utilities::FBX_REDUCE_TO_SINGLE_MESH_PY,
-            [&utilities::COMMON_PY],
+            &FBX_REDUCE_TO_SINGLE_MESH_PY,
+            [&COMMON_PY],
             args,
         )?;
 

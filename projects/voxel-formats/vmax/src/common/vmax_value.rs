@@ -6,7 +6,7 @@ use serde::{
 };
 use std::collections::BTreeMap;
 #[cfg(feature = "serde")]
-use std::fmt;
+use std::fmt::{Formatter, Result as FmtResult};
 
 /// Schemaless plist value: dictionary, array, string, integer, real, boolean,
 /// or data blob. Holds undocumented per-command undo/redo payloads (`ec.comt`,
@@ -54,6 +54,7 @@ impl Serialize for VMaxValue {
                 }
                 map.end()
             }
+
             VMaxValue::Array(items) => {
                 let mut seq = serializer.serialize_seq(Some(items.len()))?;
                 for item in items {
@@ -61,10 +62,15 @@ impl Serialize for VMaxValue {
                 }
                 seq.end()
             }
+
             VMaxValue::String(value) => serializer.serialize_str(value),
+
             VMaxValue::Integer(value) => serializer.serialize_i64(*value),
+
             VMaxValue::Real(value) => serializer.serialize_f64(*value),
+
             VMaxValue::Boolean(value) => serializer.serialize_bool(*value),
+
             VMaxValue::Data(value) => serializer.serialize_bytes(value),
         }
     }
@@ -80,7 +86,7 @@ impl<'de> Deserialize<'de> for VMaxValue {
         impl<'de> Visitor<'de> for ValueVisitor {
             type Value = VMaxValue;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut Formatter) -> FmtResult {
                 formatter.write_str("a plist value")
             }
 

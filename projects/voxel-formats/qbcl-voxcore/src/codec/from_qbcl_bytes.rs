@@ -3,7 +3,7 @@ use qbcl_codec::{DecompressZlib, qbcl::from_qbcl_file_bytes};
 
 /// Loads the bytes of a Qubicle Construction Library `.qbcl` file through
 /// `dependencies` into a [`QbclVoxMain`] carrying its ext, the bytes form of
-/// [`from_qbcl_file`].
+/// [`from_qbcl_file()`].
 pub fn from_qbcl_bytes<D: DecompressZlib>(dependencies: &D, bytes: &[u8]) -> Result<QbclVoxMain> {
     let file = from_qbcl_file_bytes(dependencies, bytes)?;
 

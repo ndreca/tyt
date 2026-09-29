@@ -1,8 +1,10 @@
-use crate::objects::{
-    Error, PositionEncoding, Result, SampleEncoding, VoxjDecodedObject, encode_hilbert,
-    encode_varint, hilbert_bits, pack_bits, packed_width,
+use crate::{
+    EncodeBase64, VoxjObject, VoxjPositionBlock, VoxjSampleBlock,
+    objects::{
+        Error, PositionEncoding, Result, SampleEncoding, VoxjDecodedObject, encode_hilbert,
+        encode_varint, hilbert_bits, pack_bits, packed_width,
+    },
 };
-use crate::{EncodeBase64, VoxjObject, VoxjPositionBlock, VoxjSampleBlock};
 
 /// Encodes one [`VoxjDecodedObject`] into a [`VoxjObject`] with the given fixed
 /// position and sample encodings. `material_counts` comes from
@@ -239,8 +241,10 @@ fn samples_packed<D: EncodeBase64>(
 
 #[cfg(all(test, feature = "impl"))]
 mod tests {
-    use crate::objects::{PositionEncoding, SampleEncoding, VoxjDecodedObject, encode_voxj_object};
-    use crate::{DependenciesImpl, VoxjObject, VoxjPositionBlock, VoxjSampleBlock};
+    use crate::{
+        DependenciesImpl, VoxjObject, VoxjPositionBlock, VoxjSampleBlock,
+        objects::{PositionEncoding, SampleEncoding, VoxjDecodedObject, encode_voxj_object},
+    };
 
     /// The object's sample block carries zero channels under every encoding:
     /// there are no layers to carry, and the voxel count lives in the

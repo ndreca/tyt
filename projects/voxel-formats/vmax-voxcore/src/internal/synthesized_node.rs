@@ -1,6 +1,5 @@
-use crate::{IDENTITY_AXIS_ANGLE, VMaxExt, VMaxExtNode, synth_uuid};
+use crate::{VMaxExt, VMaxExtNode, encode_axis_angle};
 use std::collections::HashSet;
-use ty_math::TyQuaternionF64;
 use voxcore::VoxHierarchyNode;
 
 /// Default transform-anchor tokens for a synthesized node. Voxel Max decodes
@@ -49,16 +48,11 @@ pub fn synthesized_node(ext: &VMaxExt, node: &VoxHierarchyNode) -> VMaxExtNode {
     }
 }
 
-/// The `[x, y, z, angle]` axis-angle that reproduces a quaternion rotation,
-/// the inverse of [`decode_axis_angle`](crate::decode_axis_angle). Feeding the
-/// result back through the decode, and Voxel Max's, recovers the same
-/// rotation.
-pub fn encode_axis_angle(rotation: TyQuaternionF64) -> [f64; 4] {
-    let (axis, angle) = rotation.to_axis_angle();
-    if angle == 0.0 {
-        // No rotation: match Voxel Max's `[0, 0, 0, 0]` rather than emit a bare
-        // axis.
-        return IDENTITY_AXIS_ANGLE;
-    }
-    [axis.x, axis.y, axis.z, angle]
+/// A syntactically valid, deterministic UUID for a synthesized scene node.
+/// Voxel Max decodes a node's `id` and `pid` as a UUID and rejects a non-UUID
+/// token. The index is offset by one so the first node avoids the all-zero nil
+/// UUID. The fourth group stays zero, where an extra object under a node
+/// stamps its slot.
+fn synth_uuid(index: usize) -> String {
+    format!("00000000-0000-0000-0000-{:012X}", index + 1)
 }

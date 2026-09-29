@@ -1,4 +1,4 @@
-use crate::{Dependencies, Result, utilities};
+use crate::{Dependencies, Result, c3x2_to_cube_net, square};
 use clap::Parser;
 use std::path::Path;
 
@@ -37,6 +37,7 @@ pub struct EquirectToNet {
 }
 
 impl EquirectToNet {
+    /// Assembles the net in a temp directory and reports the written path.
     pub fn execute(self, deps: impl Dependencies) -> Result<()> {
         let out_base = self
             .out_base
@@ -90,13 +91,12 @@ fn build_cube_net(
     };
     deps.exec_ffmpeg(["-y", "-i", &format!("{base}.png"), "-vf", &vf, &c3x2_str])?;
 
-    let cube_net_path =
-        utilities::c3x2_to_cube_net(deps, &c3x2_str, size, tmp_dir, point, output_size)?;
+    let cube_net_path = c3x2_to_cube_net(deps, &c3x2_str, size, tmp_dir, point, output_size)?;
     let cube_net_str = cube_net_path.to_string_lossy().into_owned();
 
     let out_path = format!("{out_base}.png");
     if do_square {
-        utilities::square(deps, &cube_net_str, &out_path)?;
+        square(deps, &cube_net_str, &out_path)?;
     } else {
         deps.rename_file(&cube_net_path, &out_path)?;
     }

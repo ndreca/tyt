@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 /// A profile's material, its list position the flags' material index.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq)]
 #[serde(default, deny_unknown_fields)]
-pub(crate) struct MaterialEntry {
+pub struct MaterialEntry {
     /// Mirrors `--material-name`.
     pub(crate) name: Option<String>,
 

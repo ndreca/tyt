@@ -10,6 +10,7 @@ pub enum ProfileObjectVoxelsCommand {
 }
 
 impl ProfileObjectVoxelsCommand {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             ProfileObjectVoxelsCommand::ProfileObjectVoxelsQuantize(quantize) => {

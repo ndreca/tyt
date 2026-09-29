@@ -5,7 +5,7 @@ use serde::Deserialize;
 /// command that reads configuration.
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields)]
-pub(crate) struct MeshDocConfig {
+pub struct MeshDocConfig {
     pub(crate) voxelize: MeshDocVoxelizeConfig,
 }
 

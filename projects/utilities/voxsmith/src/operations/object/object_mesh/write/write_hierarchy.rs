@@ -10,7 +10,7 @@ use voxcore::{BVoxObject, VoxExt, VoxMain};
 /// node positions scaled by `voxel_size` onto meters. An object no node places
 /// gets a root node of its name after the mirrored roots. `document` holds no
 /// node yet.
-pub(crate) fn write_hierarchy<T: VoxExt>(
+pub fn write_hierarchy<T: VoxExt>(
     document: &mut MeshMain<()>,
     main: &VoxMain<T>,
     objects: &[(U32Id<BVoxObject>, U32Id<BMeshObject>)],

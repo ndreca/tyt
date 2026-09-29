@@ -2,10 +2,13 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 
 /// An arithmetic operator.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub(crate) enum BinaryOperator {
+pub enum BinaryOperator {
     Add,
+
     Divide,
+
     Multiply,
+
     Subtract,
 }
 

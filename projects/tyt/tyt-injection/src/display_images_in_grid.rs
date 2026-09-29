@@ -7,9 +7,9 @@ use std::{
 };
 use viuer::{Config, print};
 
-/// Composes the images into a `columns`-wide grid — filled left to right, top to
-/// bottom, with a transparent gutter between cells — and prints it inline as a
-/// single image, scaled so its width spans `side_percent` percent of the
+/// Composes the images into a `columns`-wide grid, filled left to right and top
+/// to bottom with a transparent gutter between cells, and prints it inline as a
+/// single image scaled so its width spans `side_percent` percent of the
 /// terminal's shorter visual side. This keeps a full set of thumbnails on one
 /// screen rather than stacking them down the scrollback. Renders nothing when
 /// `paths` is empty.
@@ -42,8 +42,8 @@ pub fn display_images_in_grid(paths: &[&Path], columns: u32, side_percent: u32) 
     with_capability_probe_guard(|| print(&grid, &cfg).map(|_| ()).map_err(IOError::other))
 }
 
-/// Lays the images out in a `columns`-wide grid of uniform cells — each sized to
-/// the largest source image and separated by a transparent gutter — returning
+/// Lays the images out in a `columns`-wide grid of uniform cells, each sized to
+/// the largest source image and separated by a transparent gutter, returning
 /// the composited image, or `None` when there are no images.
 fn compose_grid(images: &[RgbaImage], columns: u32) -> Option<DynamicImage> {
     let cell_w = images.iter().map(RgbaImage::width).max()?;

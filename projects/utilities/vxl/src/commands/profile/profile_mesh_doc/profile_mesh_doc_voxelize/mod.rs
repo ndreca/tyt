@@ -1,3 +1,5 @@
+// Public API
+
 #[allow(clippy::module_inception)]
 mod profile_mesh_doc_voxelize;
 mod profile_mesh_doc_voxelize_command;

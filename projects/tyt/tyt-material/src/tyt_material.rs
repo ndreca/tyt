@@ -1,4 +1,4 @@
-use crate::commands;
+use crate::{Dependencies, Result, commands};
 use clap::Subcommand;
 
 /// Operations on material textures.
@@ -10,7 +10,8 @@ pub enum TytMaterial {
 }
 
 impl TytMaterial {
-    pub fn execute(self, dependencies: impl crate::Dependencies) -> crate::Result<()> {
+    /// Runs the command.
+    pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             TytMaterial::CreateMse(create_mse) => create_mse.execute(dependencies),
         }

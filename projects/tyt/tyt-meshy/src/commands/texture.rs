@@ -1,10 +1,7 @@
 use crate::{
     Dependencies, Error, MeshOutput, Model, OutputMode, Result, TargetFormat, TextureInput,
-    TextureQuality, TextureRequest, TextureTaskFile,
-    commands::{
-        WaitArgs,
-        shared::{absolute, finish_task, parent_dir, relative, wait_for_task, with_suffix},
-    },
+    TextureQuality, TextureRequest, TextureTaskFile, WaitArgs, absolute, finish_task, parent_dir,
+    relative, wait_for_task, with_suffix,
 };
 use clap::{ArgAction, Parser};
 use std::path::{Path, PathBuf};
@@ -95,6 +92,7 @@ pub struct Texture {
 }
 
 impl Texture {
+    /// Creates the retexture task and writes its task file.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let Texture {
             meshy_mesh_json_path,

@@ -1,5 +1,5 @@
 /// `text` safe for one box table cell: newlines flattened to spaces.
-pub(crate) fn box_cell(text: &str) -> String {
+pub fn box_cell(text: &str) -> String {
     text.replace(['\n', '\r'], " ")
 }
 

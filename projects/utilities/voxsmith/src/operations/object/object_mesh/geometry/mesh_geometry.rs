@@ -11,7 +11,7 @@ use voxcore::BVoxVoxel;
 /// never share vertices and shading stays flat. Triangles wind
 /// counter-clockwise seen from outside, glTF's front face.
 #[derive(Clone, Debug, Default)]
-pub(crate) struct MeshGeometry {
+pub struct MeshGeometry {
     /// One position per vertex, in voxel-grid units.
     pub positions: Vec<TyVector3F32>,
 

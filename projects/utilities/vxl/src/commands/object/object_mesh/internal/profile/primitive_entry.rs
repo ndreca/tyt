@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 /// A profile's primitive, its list position the flags' primitive index.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq)]
 #[serde(default, deny_unknown_fields)]
-pub(crate) struct PrimitiveEntry {
+pub struct PrimitiveEntry {
     /// Mirrors `--primitive-name`.
     pub(crate) name: Option<String>,
 

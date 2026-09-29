@@ -7,22 +7,33 @@ use tyt_image::Error as ImageError;
 use tyt_material::Error as MaterialError;
 use tyt_meshy::Error as MeshyError;
 use tyt_meta::Error as MetaError;
-
 use tyt_oai::Error as OAIError;
 use tyt_vmax::Error as VMaxError;
 use vxl::Error as VxlError;
+
+/// An error from any `tyt` sub-crate command.
 #[derive(Debug)]
 pub enum Error {
     Claude(ClaudeError),
+
     Cubemap(CubemapError),
+
     FS(FSError),
+
     Fbx(FbxError),
+
     Image(ImageError),
+
     Material(MaterialError),
+
     Meshy(MeshyError),
+
     Meta(MetaError),
+
     OAI(OAIError),
+
     VMax(VMaxError),
+
     Vxl(VxlError),
 }
 

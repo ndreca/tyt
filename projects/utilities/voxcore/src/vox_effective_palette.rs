@@ -83,7 +83,7 @@ mod tests {
     }
 
     /// Retains an `int` value pool holding `values` and returns its id.
-    fn int_value_pool(state: &mut VoxMain, values: Vec<i64>) -> U32Id<BVoxValuePool> {
+    fn int_value_pool_id(state: &mut VoxMain, values: Vec<i64>) -> U32Id<BVoxValuePool> {
         state.retain_value_pool(VoxValuePool::int(values).unwrap())
     }
 
@@ -126,7 +126,7 @@ mod tests {
     #[test]
     fn the_last_supplying_layer_wins() {
         let mut state = VoxMain::default();
-        let value_pool_id = int_value_pool(&mut state, vec![10, 20]);
+        let value_pool_id = int_value_pool_id(&mut state, vec![10, 20]);
         let first_id = palette_over(&mut state, value_pool_id, &[("v", 0)]);
         let second_id = palette_over(&mut state, value_pool_id, &[("v", 1)]);
         let object = object_over(&[first_id, second_id]);
@@ -150,7 +150,7 @@ mod tests {
     #[test]
     fn a_dead_voxel_reads_no_value() {
         let mut state = VoxMain::default();
-        let value_pool_id = int_value_pool(&mut state, vec![10]);
+        let value_pool_id = int_value_pool_id(&mut state, vec![10]);
         let palette_id = palette_over(&mut state, value_pool_id, &[("v", 0)]);
         let mut object = object_over(&[palette_id]);
         let voxel_id = object.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap();
@@ -164,7 +164,7 @@ mod tests {
     #[test]
     fn a_layer_whose_palette_lacks_the_name_is_passed_over() {
         let mut state = VoxMain::default();
-        let value_pool_id = int_value_pool(&mut state, vec![10, 20]);
+        let value_pool_id = int_value_pool_id(&mut state, vec![10, 20]);
         let supplying_id = palette_over(&mut state, value_pool_id, &[("v", 0)]);
         let plain_id = palette_over(&mut state, value_pool_id, &[("w", 1)]);
         let object = object_over(&[supplying_id, plain_id]);
@@ -187,7 +187,7 @@ mod tests {
     #[test]
     fn an_override_keeps_the_first_seen_id() {
         let mut state = VoxMain::default();
-        let value_pool_id = int_value_pool(&mut state, vec![10, 20, 30]);
+        let value_pool_id = int_value_pool_id(&mut state, vec![10, 20, 30]);
         let first_id = palette_over(&mut state, value_pool_id, &[("a", 0), ("b", 1)]);
         let second_id = palette_over(&mut state, value_pool_id, &[("a", 2)]);
         let object = object_over(&[first_id, second_id]);
@@ -204,7 +204,7 @@ mod tests {
     #[test]
     fn a_sparse_material_id_reads_correctly_before_gc() {
         let mut state = VoxMain::default();
-        let value_pool_id = int_value_pool(&mut state, vec![10, 20, 30]);
+        let value_pool_id = int_value_pool_id(&mut state, vec![10, 20, 30]);
         let mut palette = VoxPalette::default();
         palette
             .retain_property("v".to_owned(), value_pool_id, value_id(0))

@@ -31,35 +31,35 @@ pub struct VMaxTools {
     )]
     pub src: Option<i64>,
 
-    /// Selection-tool [`VMaxFlag`](crate::VMaxFlag).
+    /// Selection-tool [`VMaxFlag`].
     #[cfg_attr(
         feature = "serde",
         serde(default, skip_serializing_if = "Option::is_none")
     )]
     pub stf: Option<VMaxFlag>,
 
-    /// Mirror [`VMaxFlag`](crate::VMaxFlag).
+    /// Mirror [`VMaxFlag`].
     #[cfg_attr(
         feature = "serde",
         serde(default, skip_serializing_if = "Option::is_none")
     )]
     pub mr: Option<VMaxFlag>,
 
-    /// Symmetry [`VMaxFlag`](crate::VMaxFlag).
+    /// Symmetry [`VMaxFlag`].
     #[cfg_attr(
         feature = "serde",
         serde(default, skip_serializing_if = "Option::is_none")
     )]
     pub st: Option<VMaxFlag>,
 
-    /// View/edit partition box ([`VMaxViewBox`](crate::VMaxViewBox)).
+    /// View/edit partition box ([`VMaxViewBox`]).
     #[cfg_attr(
         feature = "serde",
         serde(default, skip_serializing_if = "Option::is_none")
     )]
     pub vp: Option<VMaxViewBox>,
 
-    /// [`VMaxBrushState`](crate::VMaxBrushState).
+    /// [`VMaxBrushState`].
     #[cfg_attr(
         feature = "serde",
         serde(default, skip_serializing_if = "Option::is_none")

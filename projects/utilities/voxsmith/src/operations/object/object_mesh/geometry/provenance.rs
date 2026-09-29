@@ -6,7 +6,7 @@ use vox_value_language::{CheckedProgram, Domain, Reads};
 /// corner of one face, settled over the environment and the program's
 /// bindings in order. A value read off a culled pre-pass survives merging
 /// only where it depends on neither.
-pub(crate) struct Provenance {
+pub struct Provenance {
     /// The names whose entries change with the faces the mesher emits.
     dependent: BTreeSet<String>,
 

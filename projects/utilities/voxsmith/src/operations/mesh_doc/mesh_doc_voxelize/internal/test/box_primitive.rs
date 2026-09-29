@@ -4,7 +4,7 @@ use ty_math::TyVector3F64;
 
 /// An axis-aligned box spanning `[0, sx]`, `[0, sy]`, `[0, sz]`, indexed
 /// triangles winding outward.
-pub(crate) fn box_primitive(sx: f64, sy: f64, sz: f64) -> MeshPrimitive {
+pub fn box_primitive(sx: f64, sy: f64, sz: f64) -> MeshPrimitive {
     let positions = vec![
         TyVector3F64::new(0.0, 0.0, 0.0),
         TyVector3F64::new(sx, 0.0, 0.0),

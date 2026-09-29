@@ -5,6 +5,7 @@ use crate::{Error, Result};
 /// than panicking, so truncated input is rejected instead of masked.
 pub struct ByteReader<'a> {
     bytes: &'a [u8],
+
     pos: usize,
 }
 

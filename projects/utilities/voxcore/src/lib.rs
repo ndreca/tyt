@@ -2,9 +2,9 @@
 
 //! Core types for working with voxels.
 
+// Public API
+
 pub mod check;
-#[cfg(feature = "color")]
-pub mod color;
 pub mod material;
 
 mod b_vox_effective_property;
@@ -68,3 +68,14 @@ pub use vox_value::*;
 pub use vox_value_pool::*;
 pub use vox_value_pool_kind::*;
 pub use vox_value_pool_value_ref::*;
+
+// Optional API
+
+#[cfg(feature = "color")]
+pub mod color;
+
+// Internal API
+
+mod internal;
+
+pub(crate) use internal::*;

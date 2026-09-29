@@ -368,7 +368,7 @@ mod tests {
     use voxcore::{BVoxObject, VoxMain, VoxObject, VoxPalette, VoxValuePool};
 
     /// Every object of `main`, in listing order.
-    fn all_objects(main: &VoxMain) -> Vec<U32Id<BVoxObject>> {
+    fn all_object_ids(main: &VoxMain) -> Vec<U32Id<BVoxObject>> {
         main.iter_objects()
             .map(|(object_id, _)| object_id)
             .collect()
@@ -380,7 +380,7 @@ mod tests {
         document: &VoxDocShowDocument<'_>,
         layout: VoxDocShowLayout,
     ) -> String {
-        vox_doc_show(main, &all_objects(main), document, layout)
+        vox_doc_show(main, &all_object_ids(main), document, layout)
     }
 
     /// One `baseColor` palette and one tight 1x1x1 object sampling its one

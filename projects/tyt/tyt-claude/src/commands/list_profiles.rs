@@ -9,6 +9,7 @@ use clap::Parser;
 pub struct ListProfiles {}
 
 impl ListProfiles {
+    /// Writes the profile list to stdout.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let resolved = dependencies.claude_prefs()?;
         let mut output = String::new();

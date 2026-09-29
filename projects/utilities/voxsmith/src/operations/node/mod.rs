@@ -1,3 +1,7 @@
+//! Node operations.
+
+// Public API
+
 mod add_node;
 mod link_nodes;
 mod node_list;
@@ -15,3 +19,9 @@ pub use set_node_positions::*;
 pub use set_node_rotations::*;
 pub use set_node_scales::*;
 pub use unlink_nodes::*;
+
+// Internal API
+
+mod node_name;
+
+pub(crate) use node_name::*;

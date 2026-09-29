@@ -2,12 +2,17 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 
 /// A comparison operator.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub(crate) enum ComparisonOperator {
+pub enum ComparisonOperator {
     Equal,
+
     Greater,
+
     GreaterEqual,
+
     Less,
+
     LessEqual,
+
     NotEqual,
 }
 

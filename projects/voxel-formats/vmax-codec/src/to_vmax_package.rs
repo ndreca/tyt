@@ -7,9 +7,9 @@ use crate::{
 };
 use vmax::VMaxFile;
 
-/// Writes a [`VMaxFile`] back to a `.vmax` package, encoding each file
-/// through `dependencies`, the inverse of
-/// [`from_vmax_package`](crate::from_vmax_package).
+/// Writes a [`VMaxFile`] back to a `.vmax` package, encoding each file through
+/// `dependencies`, the inverse of
+/// [`from_vmax_package`](crate::from_vmax_package()).
 ///
 /// # Arguments
 /// * `write` - receives each file's package-relative name and bytes and

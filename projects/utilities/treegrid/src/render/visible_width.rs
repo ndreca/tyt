@@ -1,6 +1,6 @@
 /// The visible width of `value`, counting characters outside of ANSI CSI escape
 /// sequences so a visual's color codes carry no width.
-pub(crate) fn visible_width(value: &str) -> usize {
+pub fn visible_width(value: &str) -> usize {
     let mut width = 0;
     let mut chars = value.chars();
     while let Some(character) = chars.next() {

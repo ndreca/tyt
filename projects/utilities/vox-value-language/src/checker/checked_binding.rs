@@ -1,8 +1,8 @@
-use crate::checker::CheckedNode;
+use crate::CheckedNode;
 
 /// A binding with its expression checked.
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) struct CheckedBinding {
+pub struct CheckedBinding {
     /// The bound name.
     pub(crate) name: String,
 

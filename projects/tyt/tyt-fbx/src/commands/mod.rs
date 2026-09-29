@@ -1,3 +1,5 @@
+// Public API
+
 mod create_point_cloud;
 mod extract;
 mod hierarchy;

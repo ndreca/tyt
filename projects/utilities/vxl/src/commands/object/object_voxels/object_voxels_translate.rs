@@ -31,6 +31,7 @@ pub struct ObjectVoxelsTranslate {
 }
 
 impl ObjectVoxelsTranslate {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let offset = vector3_i32(&self.offset);
 

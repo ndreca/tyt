@@ -8,8 +8,8 @@ pub struct TreeSelection {
     /// True where the node matched or leads to a match.
     visible: Vec<bool>,
 
-    /// Matched nodes whose parent is unmatched, in index order: the entry
-    /// point of each selected subtree.
+    /// Matched nodes whose parent is unmatched, in index order: the entry point
+    /// of each selected subtree.
     match_roots: Vec<usize>,
 }
 
@@ -26,8 +26,8 @@ impl TreeSelection {
             "matched and parents must line up"
         );
 
-        // Each walk stops at the first already-visible ancestor, whose chain
-        // is complete or pending its own walk, so marking stays linear.
+        // Each walk stops at the first already-visible ancestor, whose chain is
+        // complete or pending its own walk, so marking stays linear.
         let mut visible = matched.clone();
         for index in 0..matched.len() {
             if !matched[index] {

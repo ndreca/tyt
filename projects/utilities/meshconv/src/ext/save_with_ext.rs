@@ -5,9 +5,8 @@ use crate::{
 };
 use std::path::Path;
 
-/// Writes a state as the document at `output`:
-/// [`write_with_ext`](crate::ext::write_with_ext) then
-/// [`write_document_files`](crate::write_document_files).
+/// Writes a state as the document at `output`: [`write_with_ext()`] then
+/// [`write_document_files()`].
 pub fn save_with_ext<D: Dependencies + WriteFile>(
     dependencies: &D,
     format: &WriteFormat,

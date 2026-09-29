@@ -1165,15 +1165,15 @@ mod tests {
         U32Id::from_u32(index)
     }
 
-    fn object_at(index: u32) -> U32Id<BMeshObject> {
+    fn object_id_at(index: u32) -> U32Id<BMeshObject> {
         U32Id::from_u32(index)
     }
 
-    fn material_at(index: u32) -> U32Id<BMeshMaterial> {
+    fn material_id_at(index: u32) -> U32Id<BMeshMaterial> {
         U32Id::from_u32(index)
     }
 
-    fn texture_at(index: u32) -> U32Id<BMeshTexture> {
+    fn texture_id_at(index: u32) -> U32Id<BMeshTexture> {
         U32Id::from_u32(index)
     }
 
@@ -1269,7 +1269,7 @@ mod tests {
 
         let material = MeshMaterial {
             normal_texture: Some(MeshTextureRef {
-                texture_id: texture_at(4),
+                texture_id: texture_id_at(4),
                 uv_stream_id: U32Id::from_u32(0),
             }),
             ..Default::default()
@@ -1277,7 +1277,7 @@ mod tests {
         assert_eq!(
             main.retain_material(material),
             Err(Error::MaterialTextureRef {
-                texture_id: texture_at(4)
+                texture_id: texture_id_at(4)
             })
         );
 
@@ -1318,10 +1318,10 @@ mod tests {
         let mut main: MeshMain = MeshMain::default();
 
         assert_eq!(
-            main.retain_object(drawing_object(Some(material_at(0)))),
+            main.retain_object(drawing_object(Some(material_id_at(0)))),
             Err(Error::PrimitiveMaterialRef {
                 primitive_id: U32Id::from_u32(0),
-                material_id: material_at(0),
+                material_id: material_id_at(0),
             })
         );
 
@@ -1390,9 +1390,9 @@ mod tests {
         let primitive_id = U32Id::from_u32(0);
 
         assert_eq!(
-            main.set_primitive_material_id(object_id, primitive_id, Some(material_at(7))),
+            main.set_primitive_material_id(object_id, primitive_id, Some(material_id_at(7))),
             Err(Error::UnknownMaterial {
-                material_id: material_at(7)
+                material_id: material_id_at(7)
             })
         );
 
@@ -1541,14 +1541,14 @@ mod tests {
         assert_eq!(remap.hierarchy_nodes.new_id(node_ids[2]), Some(node_id(1)));
 
         // Every cross-reference resolves through the compacted ids.
-        assert_eq!(main.texture(texture_at(0)).unwrap().image_id.to_u32(), 0);
-        let material = main.material(material_at(0)).unwrap();
+        assert_eq!(main.texture(texture_id_at(0)).unwrap().image_id.to_u32(), 0);
+        let material = main.material(material_id_at(0)).unwrap();
         assert_eq!(material.emissive_texture.unwrap().texture_id.to_u32(), 0);
-        let object = main.object(object_at(0)).unwrap();
+        let object = main.object(object_id_at(0)).unwrap();
         assert_eq!(object.primitive_count(), 1);
         assert_eq!(
             object.primitive(U32Id::from_u32(0)).unwrap().material_id(),
-            Some(material_at(0))
+            Some(material_id_at(0))
         );
         assert_eq!(main.root_hierarchy_node_ids(), [node_id(0)]);
         assert_eq!(
@@ -1557,7 +1557,7 @@ mod tests {
         );
         assert_eq!(
             main.hierarchy_node(node_id(1)).unwrap().child_object_ids,
-            [object_at(0)]
+            [object_id_at(0)]
         );
     }
 
@@ -1622,9 +1622,9 @@ mod tests {
             })
         );
         assert_eq!(
-            main.retain_hierarchy_node(node_with_objects(vec![object_at(0)])),
+            main.retain_hierarchy_node(node_with_objects(vec![object_id_at(0)])),
             Err(Error::UnknownObject {
-                object_id: object_at(0)
+                object_id: object_id_at(0)
             })
         );
 

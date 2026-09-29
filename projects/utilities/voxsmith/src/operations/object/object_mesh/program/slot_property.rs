@@ -3,24 +3,41 @@ use crate::operations::object::Transfer;
 /// A modeled material field a slot write fills, under the property names of
 /// the document's material model.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum SlotProperty {
+pub enum SlotProperty {
     AlphaCutoff,
+
     AlphaMode,
+
     BaseColorFactor,
+
     BaseColorTexture,
+
     DoubleSided,
+
     EmissiveFactor,
+
     EmissiveStrength,
+
     EmissiveTexture,
+
     Ior,
+
     MetallicFactor,
+
     MetallicRoughnessTexture,
+
     NormalScale,
+
     NormalTexture,
+
     OcclusionStrength,
+
     OcclusionTexture,
+
     RoughnessFactor,
+
     TransmissionFactor,
+
     TransmissionTexture,
 }
 

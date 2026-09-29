@@ -10,6 +10,7 @@ pub struct Palette {
 }
 
 impl Palette {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         self.command.execute(dependencies)
     }

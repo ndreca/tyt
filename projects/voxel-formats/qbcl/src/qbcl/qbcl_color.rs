@@ -1,5 +1,5 @@
-/// One pixel of a [`QbclThumbnail`](crate::qbcl::QbclThumbnail): an `RGBA` color,
-/// one byte per channel.
+/// One pixel of a [`QbclThumbnail`](crate::qbcl::QbclThumbnail): an `RGBA`
+/// color, one byte per channel.
 ///
 /// The thumbnail is stored on disk as uncompressed `BGRA` pixels; channels are
 /// normalized to `RGBA` in memory, so the on-disk order is undone on read and

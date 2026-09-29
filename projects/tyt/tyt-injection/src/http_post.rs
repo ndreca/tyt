@@ -6,8 +6,8 @@ const RESPONSE_LIMIT: u64 = 64 * 1024 * 1024;
 /// Sends an HTTP POST request with the given headers and body, returning the
 /// response status code and body bytes.
 ///
-/// Non-2xx responses are returned as `Ok` rather than an error so the caller can
-/// inspect the body.
+/// Non-2xx responses are returned as `Ok` rather than an error so the caller
+/// can inspect the body.
 pub fn http_post(url: &str, headers: &[(&str, &str)], body: &[u8]) -> Result<(u16, Vec<u8>)> {
     let mut request = ureq::post(url).config().http_status_as_error(false).build();
     for (name, value) in headers {

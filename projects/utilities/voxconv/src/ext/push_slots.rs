@@ -23,6 +23,7 @@ pub fn push_slots(ext: &dyn VoxconvExt, slots: &mut Vec<VoxMapEntry>) -> Result<
 /// One format's attempt to encode an ext.
 struct EncodeSlots<'a> {
     ext: &'a dyn VoxconvExt,
+
     slots: &'a mut Vec<VoxMapEntry>,
 }
 

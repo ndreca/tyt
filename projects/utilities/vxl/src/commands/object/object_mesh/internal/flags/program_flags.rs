@@ -5,7 +5,7 @@ use clap::{Arg, ArgAction, ArgMatches, Args, Command, Error as ClapError, FromAr
 /// together because each `--values-from` appends its profile's bindings at
 /// the flag's position among the `--value` fragments.
 #[derive(Clone, Debug, Default)]
-pub(crate) struct ProgramFlags {
+pub struct ProgramFlags {
     pub(crate) entries: Vec<ProgramFlag>,
 }
 
@@ -86,8 +86,7 @@ impl FromArgMatches for ProgramFlags {
 
 #[cfg(test)]
 mod tests {
-    use super::ProgramFlags;
-    use crate::commands::ProgramFlag;
+    use crate::commands::{ProgramFlag, ProgramFlags};
     use clap::Parser;
 
     #[derive(Parser)]

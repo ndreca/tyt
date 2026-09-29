@@ -4,17 +4,16 @@
 //!
 //! The state is a [`GoxlVoxMain`], a [`VoxMain`](voxcore::VoxMain) carrying a
 //! [`GoxlExt`] with the Goxel state that has no native voxcore home.
-//! [`from_goxl_file`] loads a [`GoxlFile`](goxl::GoxlFile) into one and
-//! [`to_goxl_file`] writes one back, exactly for a loaded file.
-//! [`to_goxl_vox_main`] gives a bare `VoxMain<()>` a synthesized ext, and
+//! [`from_goxl_file()`] loads a [`GoxlFile`](goxl::GoxlFile) into one and
+//! [`to_goxl_file()`] writes one back, exactly for a loaded file.
+//! [`to_goxl_vox_main()`] gives a bare `VoxMain<()>` a synthesized ext, and
 //! `take_ext` takes the ext back off. The ext keys its layer entries by
 //! hierarchy node id and follows the state through the
-//! [`VoxExt`](voxcore::VoxExt) hooks, so a state mutated after the load
-//! still writes back with a complete ext. The `codec` module,
-//! behind the default `codec` feature, goes straight to and from `.gox`
-//! bytes. It takes the codec's dependencies, which
-//! `goxl_codec::DependenciesImpl` supplies. The `serde` feature, on by
-//! default, derives serde for the ext types.
+//! [`VoxExt`](voxcore::VoxExt) hooks, so a state mutated after the load still
+//! writes back with a complete ext. The `codec` module, behind the default
+//! `codec` feature, goes straight to and from `.gox` bytes. It takes the
+//! codec's dependencies, which `goxl_codec::DependenciesImpl` supplies. The
+//! `serde` feature, on by default, derives serde for the ext types.
 
 // Public API
 
@@ -43,3 +42,11 @@ pub mod codec;
 
 mod internal;
 pub(crate) use internal::*;
+
+// Test support
+
+#[cfg(test)]
+mod test;
+
+#[cfg(test)]
+pub(crate) use test::*;

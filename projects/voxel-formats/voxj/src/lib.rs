@@ -40,3 +40,8 @@ pub use voxj_sample_block::*;
 pub use voxj_transform::*;
 pub use voxj_value::*;
 pub use voxj_value_pool::*;
+
+// Test support
+
+#[cfg(test)]
+mod test;

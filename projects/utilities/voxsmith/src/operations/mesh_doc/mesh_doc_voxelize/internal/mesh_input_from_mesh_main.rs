@@ -53,9 +53,13 @@ pub fn mesh_input_from_mesh_main<'a, D: DecodeImage, T: MeshExt>(
 /// The state of one flattening walk.
 struct Walk<'a, 'd, D> {
     dependencies: &'d D,
+
     state: &'a MeshState,
+
     frame: VoxelFrame,
+
     scale: VoxelScale,
+
     input: MeshInput<'a>,
 }
 
@@ -218,8 +222,8 @@ mod tests {
     };
     use branded_id::U32Id;
     use meshdoc::{
-        MeshHierarchyNode, MeshImage, MeshImageMediaType, MeshImageSource, MeshMain, MeshMaterial,
-        MeshObject, MeshTexture, MeshTextureRef,
+        BMeshMaterial, MeshHierarchyNode, MeshImage, MeshImageMediaType, MeshImageSource, MeshMain,
+        MeshMaterial, MeshObject, MeshTexture, MeshTextureRef,
     };
     use ty_math::{TyTransformF64, TyVector2F64, TyVector3F64};
 
@@ -381,10 +385,7 @@ mod tests {
     }
 
     /// A unit box drawing `material_id` over a UV stream of zeros.
-    fn textured_box(
-        main: MeshMain<()>,
-        material_id: U32Id<meshdoc::BMeshMaterial>,
-    ) -> MeshMain<()> {
+    fn textured_box(main: MeshMain<()>, material_id: U32Id<BMeshMaterial>) -> MeshMain<()> {
         let mut primitive = box_primitive(1.0, 1.0, 1.0);
         primitive
             .push_uv_stream(vec![TyVector2F64::ZERO; 8])

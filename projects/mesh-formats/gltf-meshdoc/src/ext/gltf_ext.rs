@@ -16,10 +16,9 @@ use std::collections::BTreeMap;
 /// glTF state with no native meshdoc home, kept so a document loaded from a
 /// glTF file can be written back exactly.
 ///
-/// The meshes, materials, textures, images, and nodes become native
-/// entities. This holds the rest, with one entry per entity keyed by the
-/// entity's id. The entries follow the state through the
-/// [`MeshExt`](meshdoc::MeshExt) hooks:
+/// The meshes, materials, textures, images, and nodes become native entities.
+/// This holds the rest, with one entry per entity keyed by the entity's id. The
+/// entries follow the state through the [`MeshExt`] hooks:
 ///
 /// 1. an entity retained after the load gets the entry the synthesizer
 ///    would build

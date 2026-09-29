@@ -6,7 +6,7 @@ use voxsmith::operations::mesh_doc::{GridResolution, ResolutionReference};
 /// A profile's `--resolution`.
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct ResolutionEntry {
+pub struct ResolutionEntry {
     pub(crate) reference: NamedCliValue<ResolutionReference>,
 
     pub(crate) count: NonZeroU32,

@@ -1,4 +1,7 @@
-use crate::{Dependencies, Error, Result, utilities};
+use crate::{
+    COMMON_PY, CameraArgs, Dependencies, Error, FBX_HIERARCHY_JSON_PY, Lighting, Projection,
+    Renderer, Result, Script, embed_blender_script, extract_json, match_hierarchy_paths,
+};
 use clap::Parser;
 use std::{
     env,
@@ -6,6 +9,9 @@ use std::{
     io::{Error as IOError, ErrorKind},
     path::PathBuf,
 };
+
+/// The Blender script that renders an FBX file to an image.
+const FBX_RENDER_PY: Script = embed_blender_script!("fbx_render.py");
 
 /// Renders the meshes in an FBX file from a specified camera position. The
 /// result is written to an image file, displayed inline in the terminal (Kitty
@@ -59,9 +65,9 @@ pub struct Render {
         value_name = "projection",
         long,
         value_enum,
-        default_value_t = utilities::Projection::Perspective,
+        default_value_t = Projection::Perspective,
     )]
-    projection: utilities::Projection,
+    projection: Projection,
 
     /// Orthographic scale (world-units visible across the frame). Only valid
     /// with `--projection orthographic`. Defaults to the scene-bounds diagonal
@@ -78,8 +84,8 @@ pub struct Render {
     far: f64,
 
     /// Render engine.
-    #[arg(value_name = "renderer", long, value_enum, default_value_t = utilities::Renderer::Eevee)]
-    renderer: utilities::Renderer,
+    #[arg(value_name = "renderer", long, value_enum, default_value_t = Renderer::Eevee)]
+    renderer: Renderer,
 
     /// Render samples (AA / path-tracing samples depending on renderer).
     #[arg(value_name = "samples", long, default_value_t = 64)]
@@ -93,15 +99,16 @@ pub struct Render {
         value_name = "lighting",
         long,
         value_enum,
-        default_value_t = utilities::Lighting::Environment,
+        default_value_t = Lighting::Environment,
     )]
-    lighting: utilities::Lighting,
+    lighting: Lighting,
 
     #[command(flatten)]
-    camera: utilities::CameraArgs,
+    camera: CameraArgs,
 }
 
 impl Render {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let Render {
             input_fbx,
@@ -143,7 +150,7 @@ impl Render {
         };
 
         match projection {
-            utilities::Projection::Perspective => {
+            Projection::Perspective => {
                 if ortho_scale.is_some() {
                     return Err(Error::IO(IOError::new(
                         ErrorKind::InvalidInput,
@@ -151,7 +158,7 @@ impl Render {
                     )));
                 }
             }
-            utilities::Projection::Orthographic => {
+            Projection::Orthographic => {
                 if focal_length.is_some() {
                     return Err(Error::IO(IOError::new(
                         ErrorKind::InvalidInput,
@@ -198,11 +205,8 @@ impl Render {
             ];
             args.extend(camera.to_python_args(&subject_names));
 
-            let stdout = dependencies.exec_temp_blender_scripts(
-                &utilities::FBX_RENDER_PY,
-                [&utilities::COMMON_PY],
-                &args,
-            )?;
+            let stdout =
+                dependencies.exec_temp_blender_scripts(&FBX_RENDER_PY, [&COMMON_PY], &args)?;
 
             if display_in_terminal {
                 dependencies.display_image_in_terminal(&render_path)?;
@@ -227,12 +231,12 @@ fn resolve_subject_names(
     select: &[String],
 ) -> Result<Vec<String>> {
     let args: [&OsStr; 1] = [input_fbx.as_ref()];
-    let stdout = dependencies.exec_temp_blender_script(&utilities::FBX_HIERARCHY_JSON_PY, args)?;
-    let json = utilities::extract_json(&stdout, b'[', b']')?;
+    let stdout = dependencies.exec_temp_blender_script(&FBX_HIERARCHY_JSON_PY, args)?;
+    let json = extract_json(&stdout, b'[', b']')?;
     let entries = dependencies.parse_hierarchy_json(json)?;
 
     let candidate_paths: Vec<&str> = entries.iter().map(|(_, path, _)| path.as_str()).collect();
-    let matched = utilities::match_hierarchy_paths(dependencies, select, &candidate_paths)?;
+    let matched = match_hierarchy_paths(dependencies, select, &candidate_paths)?;
 
     let matched_names: Vec<String> = entries
         .iter()

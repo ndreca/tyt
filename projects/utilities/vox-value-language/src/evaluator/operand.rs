@@ -1,8 +1,9 @@
 /// One operand's components beside its width, read per entry with a vec1
 /// broadcasting its one component across the entry.
 #[derive(Clone, Copy)]
-pub(crate) struct Operand<'a, T> {
+pub struct Operand<'a, T> {
     pub(crate) components: &'a [T],
+
     pub(crate) width: usize,
 }
 

@@ -5,20 +5,38 @@
 //! broken bytes. Decoding does not run these checks. Run one when you need
 //! the guarantee.
 
+// Public API
+
 mod error;
 mod result;
-#[cfg(feature = "qb")]
-mod validate_qb_file;
-#[cfg(feature = "qbcl")]
-mod validate_qbcl_file;
-#[cfg(feature = "qbt")]
-mod validate_qbt_file;
 
 pub use error::*;
 pub use result::*;
+
+// Optional API
+
+#[cfg(feature = "qb")]
+mod validate_qb_file;
+
 #[cfg(feature = "qb")]
 pub use validate_qb_file::*;
+
+#[cfg(feature = "qbcl")]
+mod validate_qbcl_file;
+
 #[cfg(feature = "qbcl")]
 pub use validate_qbcl_file::*;
+
+#[cfg(feature = "qbt")]
+mod validate_qbt_file;
+
 #[cfg(feature = "qbt")]
 pub use validate_qbt_file::*;
+
+// Internal API
+
+#[cfg(any(feature = "qb", feature = "qbcl", feature = "qbt"))]
+mod grid_cell_count;
+
+#[cfg(any(feature = "qb", feature = "qbcl", feature = "qbt"))]
+pub(crate) use grid_cell_count::*;

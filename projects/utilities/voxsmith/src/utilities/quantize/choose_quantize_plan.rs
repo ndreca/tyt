@@ -3,7 +3,6 @@ use crate::{
     utilities::{
         AlphaMode, ColorSpace, PartitionProperties, PropertyInterpretation, QuantizeOptions,
         QuantizePlan, QuantizePoint, ReductionMethod, kmeans, median_cut, octree,
-        representative_point,
     },
 };
 use branded_id::U32Id;
@@ -21,7 +20,7 @@ use voxcore::{
 /// Chooses representatives for the materials of `palette_id` that `layers`
 /// sample, each weighted by its voxel count, or `None` when they sample at most
 /// `options.max_materials`.
-pub(crate) fn choose_quantize_plan<T: VoxExt>(
+pub fn choose_quantize_plan<T: VoxExt>(
     main: &VoxMain<T>,
     palette_id: U32Id<BVoxPalette>,
     layers: &[(U32Id<BVoxObject>, U32Id<BVoxLayer>)],
@@ -149,7 +148,9 @@ enum Reading {
     /// color has four components.
     Color {
         encoding: ColorEncoding,
+
         space: ColorSpace,
+
         alpha: Option<AlphaMode>,
     },
 
@@ -161,6 +162,7 @@ enum Reading {
 #[derive(Clone, Copy)]
 enum ColorEncoding {
     Linear,
+
     Srgb,
 }
 
@@ -362,6 +364,7 @@ fn alpha_scale(space: ColorSpace) -> f64 {
 #[derive(PartialEq)]
 struct PartitionKey<'a> {
     alpha: Option<f64>,
+
     values: Vec<VoxValuePoolValueRef<'a>>,
 }
 
@@ -533,10 +536,23 @@ fn kind_name(kind: &VoxValuePoolKind) -> &'static str {
     }
 }
 
+/// A cluster's representative: its most-sampled point, ties to the lowest
+/// material id.
+fn representative_point(cluster: &[QuantizePoint]) -> QuantizePoint {
+    cluster
+        .iter()
+        .copied()
+        .max_by(|a, b| {
+            a.population
+                .cmp(&b.population)
+                .then_with(|| b.material_id.to_u32().cmp(&a.material_id.to_u32()))
+        })
+        .expect("a cluster holds at least one point")
+}
+
 #[cfg(test)]
 mod tests {
-    use super::allocate_slots;
-    use crate::utilities::QuantizePoint;
+    use crate::utilities::{QuantizePoint, quantize::choose_quantize_plan::allocate_slots};
     use branded_id::U32Id;
     use ty_math::TyVector4F64;
 

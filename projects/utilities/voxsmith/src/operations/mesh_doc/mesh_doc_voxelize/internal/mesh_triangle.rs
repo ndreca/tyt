@@ -8,7 +8,7 @@ use ty_math::TyVector3F64;
 ///
 /// [`MeshInput`]: crate::operations::mesh_doc::MeshInput
 #[derive(Clone, Copy, Debug)]
-pub(crate) struct MeshTriangle {
+pub struct MeshTriangle {
     /// The triangle's three vertices.
     pub points: [TyVector3F64; 3],
 

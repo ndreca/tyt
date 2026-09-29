@@ -27,6 +27,7 @@ pub struct SetProfile {
 }
 
 impl SetProfile {
+    /// Marks the profile active in the scope's config file.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let scope = self
             .scope_arg

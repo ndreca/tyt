@@ -1,3 +1,5 @@
+// Public API
+
 mod vmax_group;
 mod vmax_object;
 mod vmax_scene_camera;

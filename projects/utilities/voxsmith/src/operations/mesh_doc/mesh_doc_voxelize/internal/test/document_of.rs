@@ -3,7 +3,7 @@ use ty_math::TyTransformF64;
 
 /// `main` with one object of `primitive` under one root node named
 /// `node_name` and placed at `transform`, validated.
-pub(crate) fn document_of(
+pub fn document_of(
     mut main: MeshMain<()>,
     primitive: MeshPrimitive,
     node_name: Option<&str>,

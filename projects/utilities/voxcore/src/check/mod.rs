@@ -2,6 +2,8 @@
 //! only. A format's crate runs its checks over its encoding and reports them
 //! in this form, so a renderer can lay any format's checks out the same way.
 
+// Public API
+
 mod failed_check_count;
 mod vox_check;
 mod vox_check_status;

@@ -21,6 +21,7 @@ pub struct ProfileObjectMeshList {
 }
 
 impl ProfileObjectMeshList {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let profiles = load_mesh_profile_set(&dependencies)?;
 
@@ -30,7 +31,7 @@ impl ProfileObjectMeshList {
 
 #[cfg(test)]
 mod tests {
-    use super::ProfileObjectMeshList;
+    use crate::commands::ProfileObjectMeshList;
     use clap::Parser;
     use voxsmith::operations::profile::ProfileListLayout;
 

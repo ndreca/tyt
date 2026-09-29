@@ -5,7 +5,7 @@ use crate::render::Cell;
 /// edge, every column padded to its widest cell. A row shorter than the
 /// headers leaves its trailing columns blank. Width is each cell's
 /// declared visible width, so visual cells line up too.
-pub(crate) fn box_table(headers: &[Cell], rows: &[Vec<Cell>]) -> String {
+pub fn box_table(headers: &[Cell], rows: &[Vec<Cell>]) -> String {
     let mut widths: Vec<usize> = headers.iter().map(|header| header.width).collect();
     for row in rows {
         for (column, cell) in row.iter().enumerate().take(widths.len()) {

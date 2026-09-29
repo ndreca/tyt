@@ -1,12 +1,8 @@
-use crate::{
-    Error, ParseFailure, Result,
-    function::Function,
-    lexer::{NumberLiteral, NumberSuffix, Token, TokenKind},
-};
+use crate::{Error, Function, NumberLiteral, NumberSuffix, ParseFailure, Result, Token, TokenKind};
 use std::ops::Range;
 
 /// Splits program text into tokens.
-pub(crate) fn lex(text: &str) -> Result<Vec<Token>> {
+pub fn lex(text: &str) -> Result<Vec<Token>> {
     let mut lexer = Lexer {
         text,
         bytes: text.as_bytes(),
@@ -21,8 +17,11 @@ pub(crate) fn lex(text: &str) -> Result<Vec<Token>> {
 
 struct Lexer<'a> {
     text: &'a str,
+
     bytes: &'a [u8],
+
     position: usize,
+
     tokens: Vec<Token>,
 }
 
@@ -283,11 +282,7 @@ fn is_whitespace(byte: u8) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        Error, ParseFailure,
-        function::Function,
-        lexer::{NumberLiteral, NumberSuffix, TokenKind, lex},
-    };
+    use crate::{Error, Function, NumberLiteral, NumberSuffix, ParseFailure, TokenKind, lex};
     use std::ops::Range;
 
     fn kinds(text: &str) -> Vec<TokenKind> {

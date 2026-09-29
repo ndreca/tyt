@@ -24,6 +24,7 @@ pub struct FromVoxj {
 }
 
 impl FromVoxj {
+    /// Rebuilds the `.vmax` package from the Voxel Json document.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let voxj_bytes = dependencies.read_file(&self.input_voxj)?;
         dependencies.write_vmax_package(&voxj_bytes, &self.output_vmax, self.color_format)?;

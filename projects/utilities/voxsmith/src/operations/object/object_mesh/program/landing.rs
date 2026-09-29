@@ -1,6 +1,6 @@
 /// Where a destination's expression lands.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum Landing {
+pub enum Landing {
     /// A vertex attribute, read at the corners.
     Attribute,
 

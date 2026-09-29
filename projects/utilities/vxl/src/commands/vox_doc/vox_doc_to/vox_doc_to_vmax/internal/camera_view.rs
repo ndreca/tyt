@@ -10,9 +10,11 @@ pub enum CameraView {
     /// Keep the camera from the input's `vmax` ext; errors without one.
     #[value(name = "ext")]
     Ext,
+
     /// Use the empty default camera.
     #[value(name = "empty")]
     Empty,
+
     /// Use the top-corner camera.
     #[value(name = "corner")]
     Corner,

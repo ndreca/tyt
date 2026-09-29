@@ -52,14 +52,13 @@ pub struct VMaxPaletteSettingsVmaxpsbFile {
     pub ali: String,
 
     /// Per-voxel material assignments some palettes carry; element shape
-    /// varies, so each is kept as untyped [`VMaxValue`](crate::VMaxValue)
-    /// (round-trips unchanged).
+    /// varies, so each is kept as untyped [`VMaxValue`] (round-trips
+    /// unchanged).
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Vec::is_empty"))]
     pub voxmats: Vec<VMaxValue>,
 
     /// Layer-settings list some palettes carry; element shape varies, so each
-    /// is kept as untyped [`VMaxValue`](crate::VMaxValue) (round-trips
-    /// unchanged).
+    /// is kept as untyped [`VMaxValue`] (round-trips unchanged).
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Vec::is_empty"))]
     pub ls: Vec<VMaxValue>,
 }

@@ -35,6 +35,7 @@ pub struct PaletteQuantize {
 }
 
 impl PaletteQuantize {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let profile = match &self.profile {
             Some(name) => load_palette_quantize_profile_set(&dependencies)?

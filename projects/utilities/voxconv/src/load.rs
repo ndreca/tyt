@@ -2,9 +2,8 @@ use crate::{Dependencies, ListDir, ReadFile, ReadFormat, Result, read, read_docu
 use std::path::Path;
 use voxcore::VoxMain;
 
-/// Reads the document at `input` into a bare state:
-/// [`read_document_files`](crate::read_document_files) then
-/// [`read`](crate::read).
+/// Reads the document at `input` into a bare state: [`read_document_files()`]
+/// then [`read()`].
 pub fn load<D: Dependencies + ReadFile + ListDir>(
     dependencies: &D,
     format: ReadFormat,

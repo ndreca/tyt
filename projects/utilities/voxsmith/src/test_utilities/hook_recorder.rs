@@ -8,9 +8,10 @@ use voxcore::{
 /// Records the node, object, and palette-retain hooks a main fires, one line
 /// apiece.
 #[derive(Debug, Default)]
-pub(crate) struct HookRecorder(Vec<String>);
+pub struct HookRecorder(Vec<String>);
 
 impl HookRecorder {
+    /// The hook lines recorded on `main`, in firing order.
     pub(crate) fn events(main: &VoxMain<HookRecorder>) -> Vec<&str> {
         main.ext().0.iter().map(String::as_str).collect()
     }

@@ -5,7 +5,7 @@ use std::{
 
 /// Where a profile of the set comes from: the binary or a `.vxlconfig`.
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) enum ProfileOrigin {
+pub enum ProfileOrigin {
     /// Embedded in the binary.
     BuiltIn,
 

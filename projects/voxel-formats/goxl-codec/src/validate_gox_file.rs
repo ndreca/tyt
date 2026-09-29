@@ -22,12 +22,12 @@ const BLOCK_VOXELS: usize = (GoxlBlock::SIZE * GoxlBlock::SIZE * GoxlBlock::SIZE
 ///    the same chunk, which the encoder would emit twice and a re-decode would
 ///    silently fold back onto the typed field.
 ///
-/// Decoding rejects malformed bytes and never places a modeled key in an `extra`
-/// dictionary. A hand-built or edited [`GoxlFile`] can still hold mis-sized
-/// arrays, dangling references, or colliding `extra` keys that
-/// [`to_gox_file_bytes`](crate::to_gox_file_bytes) would write as a structurally
-/// valid but broken file. Decoding does not call this. Run it when you need the
-/// guarantee.
+/// Decoding rejects malformed bytes and never places a modeled key in an
+/// `extra` dictionary. A hand-built or edited [`GoxlFile`] can still hold
+/// mis-sized arrays, dangling references, or colliding `extra` keys that
+/// [`to_gox_file_bytes`](crate::to_gox_file_bytes()) would write as a
+/// structurally valid but broken file. Decoding does not call this. Run it when
+/// you need the guarantee.
 pub fn validate_gox_file(file: &GoxlFile) -> Result<()> {
     validate_blocks(file)?;
     validate_preview(file)?;
@@ -174,7 +174,7 @@ fn check_extra(owner: &str, extra: &GoxlDict, modeled: &[&str]) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use crate::validate_gox_file;
+    use crate::{validate_gox_file, validate_gox_file::BLOCK_VOXELS};
     use goxl::{
         GoxlBlock, GoxlDict, GoxlFile, GoxlLayer, GoxlLayerBlock, GoxlMaterial, GoxlPreview,
         GoxlShape, GoxlVoxel,
@@ -183,7 +183,7 @@ mod tests {
     /// A full block of empty voxels.
     fn block() -> GoxlBlock {
         GoxlBlock {
-            voxels: vec![GoxlVoxel::default(); super::BLOCK_VOXELS],
+            voxels: vec![GoxlVoxel::default(); BLOCK_VOXELS],
         }
     }
 

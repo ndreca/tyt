@@ -4,11 +4,14 @@ use std::{
     io::Error as IOError,
 };
 #[cfg(feature = "impl")]
+use vmax_codec::Error as VMaxCodecError;
+#[cfg(feature = "impl")]
 use voxconv::Error as VoxconvError;
 
 /// An error from this crate.
 #[derive(Debug)]
 pub enum Error {
+    /// An I/O, codec, or input failure.
     IO(IOError),
 }
 
@@ -35,8 +38,8 @@ impl From<IOError> for Error {
 }
 
 #[cfg(feature = "impl")]
-impl From<vmax_codec::Error> for Error {
-    fn from(e: vmax_codec::Error) -> Self {
+impl From<VMaxCodecError> for Error {
+    fn from(e: VMaxCodecError) -> Self {
         Error::IO(IOError::other(e))
     }
 }

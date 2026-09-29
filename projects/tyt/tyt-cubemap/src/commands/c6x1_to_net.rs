@@ -1,4 +1,4 @@
-use crate::{Dependencies, Result, utilities};
+use crate::{Dependencies, Result, c6x1_to_cube_net, identify_u32, square};
 use clap::Parser;
 use std::path::Path;
 
@@ -17,7 +17,8 @@ pub struct C6x1ToNet {
     #[arg(value_name = "square", long)]
     square: bool,
 
-    /// Use point (nearest-neighbor) interpolation when resizing to `--output-size`.
+    /// Use point (nearest-neighbor) interpolation when resizing to
+    /// `--output-size`.
     #[arg(value_name = "point", long)]
     point: bool,
 
@@ -29,6 +30,7 @@ pub struct C6x1ToNet {
 }
 
 impl C6x1ToNet {
+    /// Assembles the net in a temp directory and reports the written path.
     pub fn execute(self, deps: impl Dependencies) -> Result<()> {
         let out_base = self
             .out_base
@@ -60,15 +62,14 @@ fn build_cube_net(
     tmp_dir: &Path,
 ) -> Result<()> {
     let strip_path = format!("{base}.png");
-    let size = utilities::identify_u32(deps, &strip_path, "%h")?;
+    let size = identify_u32(deps, &strip_path, "%h")?;
 
-    let cube_net_path =
-        utilities::c6x1_to_cube_net(deps, &strip_path, size, tmp_dir, point, output_size)?;
+    let cube_net_path = c6x1_to_cube_net(deps, &strip_path, size, tmp_dir, point, output_size)?;
     let cube_net_str = cube_net_path.to_string_lossy().into_owned();
 
     let out_path = format!("{out_base}.png");
     if do_square {
-        utilities::square(deps, &cube_net_str, &out_path)?;
+        square(deps, &cube_net_str, &out_path)?;
     } else {
         deps.rename_file(&cube_net_path, &out_path)?;
     }

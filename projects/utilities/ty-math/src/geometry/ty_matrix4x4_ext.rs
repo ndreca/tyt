@@ -1,7 +1,8 @@
 use crate::TyMatrix4x4F64;
 
 /// The tyt-specific matrix operations glam does not name directly, carried on
-/// [`TyMatrix4x4F64`] so callers keep `m.foo()` with `use ty_math::TyMatrix4x4Ext`.
+/// [`TyMatrix4x4F64`] so callers keep `m.foo()` with
+/// `use ty_math::TyMatrix4x4Ext`.
 pub trait TyMatrix4x4Ext {
     /// The element at `row` and `col`.
     ///

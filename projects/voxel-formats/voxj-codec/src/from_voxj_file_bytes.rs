@@ -9,7 +9,7 @@ pub fn from_voxj_file_bytes<D: DecodeVoxjJson>(dependencies: &D, bytes: &[u8]) -
 #[cfg(all(test, feature = "impl"))]
 mod tests {
     use crate::{
-        DependenciesImpl, from_voxj_file_bytes, from_voxj_or_voxjz_file_bytes,
+        DependenciesImpl, Error, from_voxj_file_bytes, from_voxj_or_voxjz_file_bytes,
         from_voxjz_file_bytes, to_voxj_file_bytes, to_voxjz_file_bytes,
     };
     use serde_json::{Value, json};
@@ -121,7 +121,7 @@ mod tests {
     #[test]
     fn undecodable_json_reports_the_parse_failure() {
         let error = from_voxj_file_bytes(&DependenciesImpl, b"not a document").unwrap_err();
-        assert!(matches!(error, crate::Error::Json(_)));
+        assert!(matches!(error, Error::Json(_)));
         assert!(!error.to_string().is_empty());
     }
 }

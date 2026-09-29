@@ -1,5 +1,5 @@
 use crate::Error;
 use std::result::Result as StdResult;
 
-/// A [`Result`](StdResult) whose error is this crate's [`Error`].
+/// A `Result` whose error is a vox-value-language [`Error`].
 pub type Result<T> = StdResult<T, Error>;

@@ -8,13 +8,18 @@ use tyt_common::ExecFailed;
 /// An error from an image operation.
 #[derive(Debug)]
 pub enum Error {
-    Magick(ExecFailed),
+    /// An I/O operation failed.
     IO(IOError),
+
+    /// `magick` failed.
+    Magick(ExecFailed),
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
+            Error::IO(e) => e.fmt(f),
+
             Error::Magick(ExecFailed {
                 exit_code,
                 stdout,
@@ -32,7 +37,6 @@ impl Display for Error {
                 }
                 Ok(())
             }
-            Error::IO(e) => e.fmt(f),
         }
     }
 }
@@ -40,8 +44,8 @@ impl Display for Error {
 impl StdError for Error {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match self {
-            Error::Magick(_) => None,
             Error::IO(e) => Some(e),
+            Error::Magick(_) => None,
         }
     }
 }

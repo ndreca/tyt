@@ -21,6 +21,7 @@ pub struct CopyProfileSettings {
 const SETTINGS_FILES: &[&str] = &["settings.json", "settings.local.json"];
 
 impl CopyProfileSettings {
+    /// Copies the settings and the files they reference.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let resolved = dependencies.claude_prefs()?;
         let from_dir = PathBuf::from(resolved.profiles.get(&self.from).ok_or_else(|| {

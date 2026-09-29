@@ -1,11 +1,14 @@
-use crate::{CheckFailure, Scalar, checker::CheckResult};
+use crate::{CheckFailure, CheckResult, Scalar};
 
 /// A literal settled to its type.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) enum NumberValue {
+pub enum NumberValue {
     F32(f32),
+
     U8(u8),
+
     U16(u16),
+
     U32(u32),
 }
 

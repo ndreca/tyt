@@ -1,9 +1,9 @@
-use crate::lexer::TokenKind;
+use crate::TokenKind;
 use std::ops::Range;
 
 /// A token and the byte range it came from.
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) struct Token {
+pub struct Token {
     /// What the token is.
     pub(crate) kind: TokenKind,
 

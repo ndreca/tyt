@@ -3,7 +3,7 @@ use crate::operations::mesh_doc::{MeshInput, TextureSlot};
 /// The sampled texture slots of one placed primitive. An unresolved slot
 /// leaves its attribute at the material's flat factor.
 #[derive(Default)]
-pub(crate) struct TextureSlots<'a> {
+pub struct TextureSlots<'a> {
     /// The base-color texture, an sRGB image sampled into the base color.
     pub base_color: Option<TextureSlot<'a>>,
 

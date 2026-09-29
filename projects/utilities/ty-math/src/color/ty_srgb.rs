@@ -11,7 +11,6 @@ mod tests {
 
     #[test]
     fn color_field_drops_alpha() {
-        // `.color` is palette's drop-alpha, replacing tyt's `to_srgb`.
         assert_eq!(TySrgbaU8::new(1, 2, 3, 4).color, TySrgbU8::new(1, 2, 3));
     }
 }

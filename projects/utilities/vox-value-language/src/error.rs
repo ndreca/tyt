@@ -12,13 +12,16 @@ pub enum Error {
     /// own.
     Check {
         binding: Option<String>,
+
         failure: CheckFailure,
     },
 
     /// A value's component count disagrees with its domain and dimension.
     ComponentCount {
         domain: Domain,
+
         dimension: Dimension,
+
         components: usize,
     },
 
@@ -26,13 +29,16 @@ pub enum Error {
     /// length.
     EntryCount {
         name: String,
+
         expected: usize,
+
         found: usize,
     },
 
     /// A value could not be computed, inside the binding or on its own.
     Eval {
         binding: Option<String>,
+
         failure: EvalFailure,
     },
 
@@ -48,6 +54,7 @@ pub enum Error {
     /// The text broke a token or grammar rule over the named byte range.
     Parse {
         range: Range<usize>,
+
         failure: ParseFailure,
     },
 
@@ -64,7 +71,9 @@ pub enum Error {
     /// against.
     ValueType {
         name: String,
+
         expected: Type,
+
         found: Type,
     },
 }

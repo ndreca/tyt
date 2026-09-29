@@ -3,12 +3,13 @@ use serde::Deserialize;
 /// The names a profile's compute key binds, written as one string or a list.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq)]
 #[serde(from = "BoundNamesRepr")]
-pub(crate) struct BoundNames(pub(crate) Vec<String>);
+pub struct BoundNames(pub(crate) Vec<String>);
 
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum BoundNamesRepr {
     List(Vec<String>),
+
     One(String),
 }
 
@@ -23,7 +24,7 @@ impl From<BoundNamesRepr> for BoundNames {
 
 #[cfg(test)]
 mod tests {
-    use super::BoundNames;
+    use crate::commands::BoundNames;
 
     #[test]
     fn a_string_or_a_list_binds_names() {

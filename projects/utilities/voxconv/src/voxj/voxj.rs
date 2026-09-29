@@ -1,8 +1,12 @@
 use crate::{
     Dependencies, Format, ReadFormat, Result, VoxDocumentFile, WriteFormat,
-    voxj::{VoxjSerialization, VoxjWriteFormat, check_from_voxj},
+    voxj::{VoxjSerialization, VoxjWriteFormat},
 };
-use voxcore::{VoxMain, check::VoxCheck};
+use voxcore::{
+    VoxMain,
+    check::{VoxCheck, VoxCheckStatus},
+};
+use voxj::validation::{VoxjCheck, VoxjCheckStatus};
 use voxj_voxcore::{
     codec::{
         check_voxj_bytes, from_voxj_bytes, to_voxj_bytes, to_voxj_pretty_bytes, to_voxjz_bytes,
@@ -74,5 +78,17 @@ impl Format for Voxj {
                 .map(check_from_voxj)
                 .collect(),
         )
+    }
+}
+
+/// A Voxel Json spec check in voxcore's form.
+fn check_from_voxj(check: VoxjCheck) -> VoxCheck {
+    VoxCheck {
+        name: check.name,
+        status: match check.status {
+            VoxjCheckStatus::Passed => VoxCheckStatus::Passed,
+            VoxjCheckStatus::Failed(messages) => VoxCheckStatus::Failed(messages),
+            VoxjCheckStatus::Unverifiable => VoxCheckStatus::Unverifiable,
+        },
     }
 }

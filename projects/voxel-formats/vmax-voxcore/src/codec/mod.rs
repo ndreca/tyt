@@ -1,6 +1,8 @@
 //! Reads and writes the files of a `.vmax` package, gated behind the `codec`
 //! feature.
 
+// Public API
+
 mod from_vmax_package;
 mod to_vmax_package;
 

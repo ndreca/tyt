@@ -2,8 +2,8 @@ use crate::{GoxlVoxMain, Result, to_goxl_file};
 use goxl_codec::{EncodePng, to_gox_file_bytes};
 
 /// Writes a [`GoxlVoxMain`] to the bytes of a Goxel `.gox` file through
-/// `dependencies`, the bytes form of [`to_goxl_file`] and the inverse of
-/// [`from_goxl_bytes`](crate::codec::from_goxl_bytes).
+/// `dependencies`, the bytes form of [`to_goxl_file()`] and the inverse of
+/// [`from_goxl_bytes`](crate::codec::from_goxl_bytes()).
 pub fn to_goxl_bytes<D: EncodePng>(dependencies: &D, main: &GoxlVoxMain) -> Result<Vec<u8>> {
     let file = to_goxl_file(main)?;
 

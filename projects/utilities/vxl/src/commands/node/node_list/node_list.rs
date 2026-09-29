@@ -118,6 +118,7 @@ pub struct NodeList {
 }
 
 impl NodeList {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let views = NodeListViews {
             transforms: parse(self.show_transforms.as_deref(), parse_transform_view)?,

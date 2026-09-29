@@ -3,13 +3,13 @@ use qbcl::qbcl::QbclFile;
 use voxcore::VoxMain;
 
 /// Gives a bare state a synthesized [`QbclExt`](crate::QbclExt), the state
-/// [`to_qbcl_file`](crate::to_qbcl_file) writes as a file synthesized from
-/// the scene. The hierarchy first takes the shape of a Qubicle scene tree:
-/// one synthetic root model named `root` over every root, a node cloned per
-/// extra path to it, each node at its world position, and an object no node
-/// places under a node of its own at the origin. Each node then takes the
-/// entry a retained node takes, with the editor defaults. The header takes
-/// the defaults.
+/// [`to_qbcl_file`](crate::to_qbcl_file()) writes as a file synthesized from
+/// the scene. The hierarchy first takes the shape of a Qubicle scene tree: one
+/// synthetic root model named `root` over every root, a node cloned per extra
+/// path to it, each node at its world position, and an object no node places
+/// under a node of its own at the origin. Each node then takes the entry a
+/// retained node takes, with the editor defaults. The header takes the
+/// defaults.
 ///
 /// Lossy where Qubicle cannot represent the source. A model's transform
 /// chunk carries no translation, so a group's placement folds into its

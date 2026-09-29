@@ -2,8 +2,7 @@
 //! The geometry checks decode each object's blocks through the caller's
 //! [`DecodeBase64`](crate::DecodeBase64).
 
-mod internal;
-pub(crate) use internal::*;
+// Public API
 
 mod check_voxj_file;
 mod error;
@@ -18,3 +17,9 @@ pub use result::*;
 pub use validate_voxj_file::*;
 pub use voxj_check::*;
 pub use voxj_check_status::*;
+
+// Internal API
+
+mod internal;
+
+pub(crate) use internal::*;

@@ -28,6 +28,7 @@ pub struct C6x1ToEquirect {
 }
 
 impl C6x1ToEquirect {
+    /// Reprojects the strip with `ffmpeg` and reports the written path.
     pub fn execute(self, deps: impl Dependencies) -> Result<()> {
         let out_base = self
             .out_base

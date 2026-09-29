@@ -1,3 +1,5 @@
+// Public API
+
 mod palette_ref;
 #[allow(clippy::module_inception)]
 mod palette_show;

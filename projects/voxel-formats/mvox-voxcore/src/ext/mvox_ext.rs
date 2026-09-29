@@ -1,27 +1,31 @@
 use crate::{
     MVoxExtCamera, MVoxExtFrame, MVoxExtLayer, MVoxExtMaterial, MVoxExtNode, MVoxExtNodeBody,
-    MVoxExtUnknownChunk, frame_rotation, frame_translation, insert_synthesized_scene_node,
-    scene_node_kind_of, synthesized_node_body, synthesized_shape_model,
+    MVoxExtUnknownChunk, SceneNodeKind, frame_translation, insert_synthesized_scene_node,
+    synthesized_node_body, synthesized_shape_model,
 };
 use branded_id::U32Id;
 use mvox::MVoxRotation;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, mem};
-use ty_math::TyTransformF64;
+use ty_math::{TyMatrix4x4F64, TyTransformF64};
 use voxcore::{
     BVoxHierarchyNode, BVoxMaterial, BVoxObject, BVoxPalette, Error, Result, VoxExt, VoxGcRemap,
-    VoxState,
+    VoxHierarchyNode, VoxState,
 };
 
-/// The `mvox` ext payload stashed on a [`VoxMain`](voxcore::VoxMain):
-/// the MagicaVoxel `.vox` state with no native voxcore home, kept so a file
-/// loaded from a MagicaVoxel package can be written back exactly.
+/// How far a turned axis may sit from a whole `-1`, `0`, or `1` and still
+/// read as one.
+const SIGNED_TOLERANCE: f64 = 1e-6;
+
+/// The `mvox` ext payload stashed on a [`VoxMain`](voxcore::VoxMain): the
+/// MagicaVoxel `.vox` state with no native voxcore home, kept so a file loaded
+/// from a MagicaVoxel package can be written back exactly.
 ///
 /// Geometry, colors, and the scene graph become native voxcore entities. This
 /// holds the rest. The scene nodes are keyed by hierarchy node and the
 /// materials by material of the state's one palette. Both follow the state
-/// through the [`VoxExt`](voxcore::VoxExt) hooks.
+/// through the [`VoxExt`] hooks.
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct MVoxExt {
@@ -346,27 +350,51 @@ fn stale(entity: &str, id: u32) -> Error {
     }
 }
 
+/// The packed rotation byte of a node's rotation and scale on MagicaVoxel's
+/// Z-up axes, or `None` when they are not a signed permutation.
+fn frame_rotation(transform: &TyTransformF64) -> Option<u8> {
+    let turned = transform.yup_to_zup();
+    let matrix = TyMatrix4x4F64::from_scale_rotation_translation(
+        turned.scale,
+        turned.rotation,
+        Default::default(),
+    );
+
+    let mut signed = [[0i8; 3]; 3];
+    for (row, entries) in signed.iter_mut().enumerate() {
+        for (column, entry) in entries.iter_mut().enumerate() {
+            let value = matrix.col(column)[row];
+            let rounded = value.round();
+            if (value - rounded).abs() > SIGNED_TOLERANCE || rounded.abs() > 1.0 {
+                return None;
+            }
+            *entry = rounded as i8;
+        }
+    }
+
+    MVoxRotation::from_matrix(signed).map(|rotation| rotation.0)
+}
+
+/// The kind a synthesized scene node takes from `node`'s children.
+fn scene_node_kind_of(node: &VoxHierarchyNode) -> SceneNodeKind {
+    if !node.child_object_ids.is_empty() {
+        SceneNodeKind::Shape
+    } else if node.child_node_ids.len() == 1 {
+        SceneNodeKind::Transform
+    } else {
+        SceneNodeKind::Group
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{MVoxExt, MVoxExtMaterial, MVoxExtNode, MVoxExtNodeBody, MVoxExtShapeModel};
+    use crate::{
+        MVoxExt, MVoxExtMaterial, MVoxExtNode, MVoxExtNodeBody, MVoxExtShapeModel, material_id,
+        node_id, object_id,
+    };
     use branded_id::U32Id;
     use ty_math::{TyTransformF64, TyVector3F64, TyVector3U32};
-    use voxcore::{
-        BVoxHierarchyNode, BVoxMaterial, BVoxObject, BVoxPalette, VoxHierarchyNode, VoxMain,
-        VoxObject, VoxPalette, VoxValuePool,
-    };
-
-    fn node(index: u32) -> U32Id<BVoxHierarchyNode> {
-        U32Id::from_u32(index)
-    }
-
-    fn object(index: u32) -> U32Id<BVoxObject> {
-        U32Id::from_u32(index)
-    }
-
-    fn material(index: u32) -> U32Id<BVoxMaterial> {
-        U32Id::from_u32(index)
-    }
+    use voxcore::{BVoxPalette, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette, VoxValuePool};
 
     /// A one-cell object.
     fn unit_object() -> VoxObject {
@@ -471,7 +499,7 @@ mod tests {
         let object_id = main.retain_object(unit_object()).unwrap();
 
         main.ext_mut().scene_nodes.insert(
-            node(7),
+            node_id(7),
             MVoxExtNode {
                 id: 3,
                 hidden: None,
@@ -515,7 +543,7 @@ mod tests {
         let palette_id = main.retain_palette(palette).unwrap();
 
         main.ext_mut().materials.insert(
-            material(1),
+            material_id(1),
             MVoxExtMaterial {
                 weight: Some(0.5),
                 ..Default::default()
@@ -533,7 +561,7 @@ mod tests {
     fn released_materials_and_palettes_drop_their_entries() {
         let (mut main, palette_id) = palette_main();
 
-        main.release_material(palette_id, material(1)).unwrap();
+        main.release_material(palette_id, material_id(1)).unwrap();
 
         assert!(main.ext().materials.is_empty());
 
@@ -552,14 +580,14 @@ mod tests {
 
         main.ext_mut()
             .materials
-            .insert(material(9), MVoxExtMaterial::default());
+            .insert(material_id(9), MVoxExtMaterial::default());
 
         assert!(main.gc().is_err());
 
         let mut main: VoxMain<MVoxExt> = VoxMain::default();
 
         main.ext_mut().scene_nodes.insert(
-            node(4),
+            node_id(4),
             MVoxExtNode {
                 id: 0,
                 hidden: None,
@@ -582,7 +610,7 @@ mod tests {
 
         main.ext_mut().scene_nodes.get_mut(&node_id).unwrap().body = MVoxExtNodeBody::Shape {
             models: vec![MVoxExtShapeModel {
-                object: object(2),
+                object: object_id(2),
                 frame_index: None,
                 extra: Vec::new(),
             }],
@@ -593,7 +621,7 @@ mod tests {
 
     #[cfg(feature = "serde")]
     mod serde {
-        use super::*;
+        use crate::{MVoxExt, ext::mvox_ext::tests::palette_main};
         use serde_json::{from_str, to_string};
 
         /// The maps serialize keyed by bare id and read back.

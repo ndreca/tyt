@@ -27,8 +27,7 @@ pub struct VMaxMaterial {
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub tc: Option<f64>,
 
-    /// Dispersion parameters
-    /// ([`VMaxMaterialDispersion`](crate::VMaxMaterialDispersion)).
+    /// Dispersion parameters ([`VMaxMaterialDispersion`]).
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub md: Option<VMaxMaterialDispersion>,
 }

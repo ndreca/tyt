@@ -3,7 +3,7 @@ use std::num::NonZeroU8;
 /// A markdown heading line at `level + depth`: a `#` run through
 /// level `6`, markdown's deepest; past that, a bold label line
 /// (`**text**`).
-pub(crate) fn heading(level: NonZeroU8, depth: usize, text: &str) -> String {
+pub fn heading(level: NonZeroU8, depth: usize, text: &str) -> String {
     let level = usize::from(level.get()) + depth;
     if level <= 6 {
         format!("{} {text}", "#".repeat(level))

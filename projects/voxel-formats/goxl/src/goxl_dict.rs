@@ -5,9 +5,9 @@
 /// The codec lifts a chunk's documented keys (a layer's name, a material's
 /// color, a camera's distance) into dedicated struct fields; a `GoxlDict` named
 /// `extra` on those types holds whatever keys remain, so a chunk round-trips
-/// even when it carries keys this crate does not model. The decoder never places
-/// a modeled key in an `extra` dictionary; the typed field is the source of
-/// truth on encode.
+/// even when it carries keys this crate does not model. The decoder never
+/// places a modeled key in an `extra` dictionary; the typed field is the source
+/// of truth on encode.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct GoxlDict(pub Vec<(String, Vec<u8>)>);
 

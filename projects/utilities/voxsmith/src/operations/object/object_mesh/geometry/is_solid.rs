@@ -3,7 +3,7 @@ use voxcore::VoxObject;
 
 /// Whether the grid cell at `position` holds a live voxel. A cell outside
 /// the build volume is empty.
-pub(crate) fn is_solid(object: &VoxObject, position: [i64; 3]) -> bool {
+pub fn is_solid(object: &VoxObject, position: [i64; 3]) -> bool {
     let bounds = object.bounds().to_array();
 
     if position

@@ -37,6 +37,7 @@ impl OutputMode {
             OutputMode::AllThumbnails | OutputMode::FrontThumbnail | OutputMode::Text => {
                 Some(format!("id: {id}\n"))
             }
+
             OutputMode::Id | OutputMode::Quiet | OutputMode::Status => None,
         }
     }
@@ -52,8 +53,11 @@ impl OutputMode {
             OutputMode::AllThumbnails | OutputMode::FrontThumbnail | OutputMode::Text => {
                 Some(format!("status: {status} ({progress}%)\n"))
             }
+
             OutputMode::Id => Some(format!("{id}\n")),
+
             OutputMode::Quiet => None,
+
             OutputMode::Status => Some(format!("{status} ({progress}%)\n")),
         }
     }
@@ -84,8 +88,11 @@ impl OutputMode {
     ) -> Option<String> {
         match self {
             OutputMode::Quiet => None,
+
             OutputMode::Id => Some(format!("{id}\n")),
+
             OutputMode::Status => Some(format!("{status} ({progress}%)\n")),
+
             OutputMode::AllThumbnails | OutputMode::FrontThumbnail | OutputMode::Text => {
                 let mut line = format!("status: {status} ({progress}%)\n");
                 if let Some(error) = error.filter(|error| !error.is_empty()) {

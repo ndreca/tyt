@@ -1,6 +1,7 @@
+// Public API
+
 mod ty_angle_unit;
 mod ty_axis3;
-mod ty_bounds;
 mod ty_bounds_f32;
 mod ty_bounds_f64;
 mod ty_float_ext;
@@ -28,7 +29,6 @@ mod zero_length_tolerance;
 
 pub use ty_angle_unit::*;
 pub use ty_axis3::*;
-pub(crate) use ty_bounds::*;
 pub use ty_bounds_f32::*;
 pub use ty_bounds_f64::*;
 pub use ty_float_ext::*;
@@ -53,3 +53,8 @@ pub use ty_vector4_f32::*;
 pub use ty_vector4_f64::*;
 pub use unit_rotation_tolerance::*;
 pub use zero_length_tolerance::*;
+
+// Internal API
+
+mod internal;
+pub(crate) use internal::*;

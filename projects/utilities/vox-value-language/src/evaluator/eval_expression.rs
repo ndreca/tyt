@@ -1,4 +1,4 @@
-use crate::{CheckedExpression, Error, EvaluatedProgram, Result, Value, evaluator::eval_node};
+use crate::{CheckedExpression, Error, EvaluatedProgram, Result, Value, eval_node};
 
 /// Evaluates a checked expression in the scope at an evaluated program's
 /// end.
@@ -21,9 +21,8 @@ pub fn eval_expression(
 #[cfg(test)]
 mod tests {
     use crate::{
-        Dimension, Domain, Error, EvalFailure, check_expression, eval_expression,
-        evaluator::{assert_close, bools, lamp, run},
-        parse_expression,
+        Dimension, Domain, Error, EvalFailure, assert_close, bools, check_expression,
+        eval_expression, lamp, parse_expression, run,
     };
 
     #[test]

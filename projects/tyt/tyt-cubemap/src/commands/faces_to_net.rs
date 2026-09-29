@@ -1,4 +1,4 @@
-use crate::{Dependencies, Result, utilities};
+use crate::{C6X1_FACES, Dependencies, Result, c6x1_to_cube_net, identify_u32, square};
 use clap::Parser;
 use std::path::Path;
 
@@ -17,7 +17,8 @@ pub struct FacesToNet {
     #[arg(value_name = "square", long)]
     square: bool,
 
-    /// Use point (nearest-neighbor) interpolation when resizing to `--output-size`.
+    /// Use point (nearest-neighbor) interpolation when resizing to
+    /// `--output-size`.
     #[arg(value_name = "point", long)]
     point: bool,
 
@@ -29,6 +30,7 @@ pub struct FacesToNet {
 }
 
 impl FacesToNet {
+    /// Assembles the net in a temp directory and reports the written path.
     pub fn execute(self, deps: impl Dependencies) -> Result<()> {
         let out_base = self
             .out_base
@@ -59,12 +61,12 @@ fn build_cube_net(
     output_size: Option<u32>,
     tmp_dir: &Path,
 ) -> Result<()> {
-    let size = utilities::identify_u32(deps, &format!("{base}-front.png"), "%w")?;
+    let size = identify_u32(deps, &format!("{base}-front.png"), "%w")?;
 
-    // Build c6x1 strip from face images (same order as faces_to_equirect).
+    // Build c6x1 strip from face images.
     let strip_path = tmp_dir.join("strip.png");
     let strip_str = strip_path.to_string_lossy().into_owned();
-    let mut magick_args: Vec<String> = utilities::C6X1_FACES
+    let mut magick_args: Vec<String> = C6X1_FACES
         .iter()
         .map(|face| format!("{base}-{face}.png"))
         .collect();
@@ -73,13 +75,12 @@ fn build_cube_net(
     deps.exec_magick(magick_args)?;
 
     // Assemble the cross-laid cube net from the c6x1 strip.
-    let cube_net_path =
-        utilities::c6x1_to_cube_net(deps, &strip_str, size, tmp_dir, point, output_size)?;
+    let cube_net_path = c6x1_to_cube_net(deps, &strip_str, size, tmp_dir, point, output_size)?;
     let cube_net_str = cube_net_path.to_string_lossy().into_owned();
 
     let out_path = format!("{out_base}.png");
     if do_square {
-        utilities::square(deps, &cube_net_str, &out_path)?;
+        square(deps, &cube_net_str, &out_path)?;
     } else {
         deps.rename_file(&cube_net_path, &out_path)?;
     }

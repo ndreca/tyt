@@ -4,7 +4,8 @@ use serde::Deserialize;
 /// `--write-material-slot-*` flag it mirrors.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
 #[serde(tag = "kind", rename_all = "lowercase", deny_unknown_fields)]
-pub(crate) enum SlotEntry {
+pub enum SlotEntry {
     File { file: String },
+
     Value { value: String },
 }

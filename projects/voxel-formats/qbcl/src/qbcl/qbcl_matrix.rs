@@ -5,9 +5,9 @@ use crate::qbcl::QbclVoxel;
 ///
 /// [`voxels`](Self::voxels) holds all `size[0] * size[1] * size[2]` cells in
 /// storage order (X outermost, then Z, then Y), so `(x, y, z)` is at index
-/// `y + size[1] * (z + size[2] * x)`. Empty cells are stored too (mask `0`); use
-/// [`voxel`](Self::voxel) to index by coordinate. The node's name and editor
-/// flags live on the enclosing [`QbclNode`](crate::qbcl::QbclNode), not here.
+/// `y + size[1] * (z + size[2] * x)`. Empty cells are stored too (mask `0`);
+/// use [`voxel`](Self::voxel) to index by coordinate. The node's name and
+/// editor flags live on the enclosing [`QbclNode`](crate::qbcl::QbclNode).
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct QbclMatrix {
     /// `[x, y, z]` grid size in voxels.
@@ -44,7 +44,7 @@ mod tests {
     fn voxel_indexes_in_x_z_y_order() {
         let size = [3u32, 2, 2];
         let [size_x, size_y, size_z] = size;
-        // Build the grid in storage order, each cell tagged with its coordinate.
+        // Fill the grid in storage order, each cell tagged with its coordinate.
         let mut voxels = Vec::new();
         for x in 0..size_x {
             for z in 0..size_z {

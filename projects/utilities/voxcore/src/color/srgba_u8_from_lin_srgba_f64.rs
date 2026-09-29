@@ -1,9 +1,9 @@
 use ty_math::{TyLinSrgbaF64, TySrgbaF64, TySrgbaU8};
 
 /// Encodes a linear-light color to 8-bit sRGB, the display- and export-side
-/// half of the one sRGB transfer at an 8-bit boundary. On every 8-bit code
-/// it is the exact inverse of
-/// [`lin_srgba_f64_from_srgba_u8`](crate::color::lin_srgba_f64_from_srgba_u8).
+/// half of the one sRGB transfer at an 8-bit boundary. On every 8-bit code it
+/// is the exact inverse of
+/// [`lin_srgba_f64_from_srgba_u8`](crate::color::lin_srgba_f64_from_srgba_u8()).
 /// Each color component encodes through the sRGB transfer and quantizes,
 /// clamped to `[0, 1]`. The alpha carries no gamma, so it only quantizes.
 pub fn srgba_u8_from_lin_srgba_f64(color: TyLinSrgbaF64) -> TySrgbaU8 {
@@ -12,8 +12,7 @@ pub fn srgba_u8_from_lin_srgba_f64(color: TyLinSrgbaF64) -> TySrgbaU8 {
 
 #[cfg(test)]
 mod tests {
-    use super::srgba_u8_from_lin_srgba_f64;
-    use crate::color::lin_srgba_f64_from_srgba_u8;
+    use crate::color::{lin_srgba_f64_from_srgba_u8, srgba_u8_from_lin_srgba_f64};
     use ty_math::TySrgbaU8;
 
     /// Every 8-bit code survives decode then encode: an imported 8-bit

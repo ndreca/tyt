@@ -1,3 +1,5 @@
+// Public API
+
 mod vmax_material;
 mod vmax_material_dispersion;
 mod vmax_palette_settings_vmaxpsb_file;

@@ -17,6 +17,7 @@ pub fn write<D: Dependencies>(
 /// The bare write of one format.
 struct Write<'a, D> {
     dependencies: &'a D,
+
     main: VoxMain<()>,
 }
 

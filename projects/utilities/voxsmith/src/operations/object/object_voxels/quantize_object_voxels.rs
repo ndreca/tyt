@@ -247,7 +247,9 @@ mod tests {
     }
 
     const RED: [f64; 3] = [1.0, 0.0, 0.0];
+
     const NEAR_RED: [f64; 3] = [0.98, 0.0, 0.0];
+
     const BLUE: [f64; 3] = [0.0, 0.0, 1.0];
 
     /// Two objects over one palette of red, near red, and blue. The first

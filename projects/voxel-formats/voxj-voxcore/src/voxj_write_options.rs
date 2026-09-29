@@ -2,9 +2,9 @@ use crate::EditStateMode;
 use voxj::objects::{PositionEncoding, SampleEncoding};
 
 /// Options for writing a Voxel Json document. The default searches each
-/// object's block encodings for the lowest cost, keeps the state's `ext`
-/// block, and records the edit state only when an object carries margin
-/// around its live voxels.
+/// object's block encodings for the lowest cost, keeps the state's `ext` block,
+/// and records the edit state only when an object carries margin around its
+/// live voxels.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct VoxjWriteOptions {
     /// The position-block encoding, or `None` to search for the lowest cost

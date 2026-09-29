@@ -9,5 +9,6 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct VMaxSnapshot {
+    /// Chunk storage.
     pub s: VMaxStorage,
 }

@@ -27,6 +27,7 @@ pub struct ObjectUpsample {
 }
 
 impl ObjectUpsample {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         edit_document(&dependencies, &self.input, self.output, |main| {
             let object_ids = self.selection.resolve_objects(main)?;
@@ -39,9 +40,9 @@ impl ObjectUpsample {
 #[cfg(test)]
 mod tests {
     use crate::commands::ObjectUpsample;
-    use clap::Parser;
+    use clap::{Error as ClapError, Parser};
 
-    fn parse(factor: &str) -> Result<ObjectUpsample, clap::Error> {
+    fn parse(factor: &str) -> Result<ObjectUpsample, ClapError> {
         ObjectUpsample::try_parse_from([
             "upsample",
             "scene.voxj",

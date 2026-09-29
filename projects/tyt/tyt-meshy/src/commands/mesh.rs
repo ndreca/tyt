@@ -1,12 +1,9 @@
 use crate::{
     Dependencies, Error, MeshInput, MeshOutput, MeshRequest, MeshTaskFile, Model, ModelType,
-    OutputMode, Result, TargetFormat, TextureQuality, Topology,
-    commands::{
-        WaitArgs,
-        shared::{absolute, finish_task, parent_dir, relative, wait_for_task, with_suffix},
-    },
+    OutputMode, Result, TargetFormat, TextureQuality, Topology, WaitArgs, absolute, finish_task,
+    parent_dir, relative, wait_for_task, with_suffix,
 };
-use clap::{ArgAction, Parser};
+use clap::{ArgAction, Parser, value_parser};
 use std::path::PathBuf;
 
 /// Generates a 3D mesh from an image using the Meshy [Image to 3D](https://docs.meshy.ai/en/api/image-to-3d) API.
@@ -97,12 +94,12 @@ pub struct Mesh {
 
     /// The target polygon count (100–300000). Requires `--remesh`; cannot be
     /// combined with `--decimation-mode`.
-    #[arg(value_name = "target-polycount", long = "target-polycount", value_parser = clap::value_parser!(u32).range(100..=300_000))]
+    #[arg(value_name = "target-polycount", long = "target-polycount", value_parser = value_parser!(u32).range(100..=300_000))]
     target_polycount: Option<u32>,
 
     /// Adaptive decimation level: 1 ultra, 2 high, 3 medium, 4 low. Requires
     /// `--remesh`; cannot be combined with `--target-polycount`.
-    #[arg(value_name = "decimation-mode", long = "decimation-mode", value_parser = clap::value_parser!(u8).range(1..=4))]
+    #[arg(value_name = "decimation-mode", long = "decimation-mode", value_parser = value_parser!(u8).range(1..=4))]
     decimation_mode: Option<u8>,
 
     /// Also save the GLB captured before the remesh phase. Requires `--remesh`.
@@ -166,6 +163,7 @@ pub struct Mesh {
 }
 
 impl Mesh {
+    /// Creates the image-to-3D task and writes its task file.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let Mesh {
             image,

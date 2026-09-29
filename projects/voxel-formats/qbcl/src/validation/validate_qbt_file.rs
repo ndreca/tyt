@@ -1,6 +1,6 @@
 use crate::{
     qbt::{QbtFile, QbtMatrix, QbtNode},
-    validation::{Error, Result},
+    validation::{Error, Result, grid_cell_count},
 };
 
 /// Checks a decoded [`QbtFile`]: every matrix and compound grid must hold
@@ -24,15 +24,12 @@ fn validate_node(node: &QbtNode) -> Result<()> {
 
 /// Checks one matrix grid's length against its size.
 fn validate_matrix(matrix: &QbtMatrix) -> Result<()> {
-    let expected = (matrix.size[0] as usize)
-        .checked_mul(matrix.size[1] as usize)
-        .and_then(|xy| xy.checked_mul(matrix.size[2] as usize))
-        .ok_or_else(|| {
-            Error::Invalid(format!(
-                "matrix {:?} size {:?} overflows the addressable range",
-                matrix.name, matrix.size
-            ))
-        })?;
+    let expected = grid_cell_count(matrix.size).ok_or_else(|| {
+        Error::Invalid(format!(
+            "matrix {:?} size {:?} overflows the addressable range",
+            matrix.name, matrix.size
+        ))
+    })?;
     if matrix.voxels.len() != expected {
         return Err(Error::Invalid(format!(
             "matrix {:?} holds {} voxels but its size {:?} needs {expected}",

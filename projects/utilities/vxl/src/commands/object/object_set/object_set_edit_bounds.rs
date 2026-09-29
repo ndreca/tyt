@@ -42,6 +42,7 @@ pub struct ObjectSetEditBounds {
 }
 
 impl ObjectSetEditBounds {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let min = vector3_i32(&self.min);
 

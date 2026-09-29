@@ -16,7 +16,7 @@ where
     S: AsRef<OsStr>,
 {
     exec_ignore_stderr(program, args).map_err(|e| match e {
-        ExecError::IO(e) => map_io(e),
         ExecError::Failed(f) => map_failed(f),
+        ExecError::IO(e) => map_io(e),
     })
 }

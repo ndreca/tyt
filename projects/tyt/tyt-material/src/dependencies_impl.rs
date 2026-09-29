@@ -5,6 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+/// The [`Dependencies`] that touch the real filesystem, processes and stdout.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct DependenciesImpl;
 

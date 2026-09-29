@@ -70,49 +70,66 @@ impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
             Error::IO(e) => e.fmt(f),
+
             Error::ApiKeyNotConfigured => f.write_str(
                 "no Meshy API key configured; add a \"meshy\" section with an \"apiKey\" \
                  to a .tytusrconfig file at your git root",
             ),
+
             Error::LowpolyConflict(flag) => {
                 write!(f, "{flag} cannot be combined with --model-type lowpoly")
             }
+
             Error::TextureOptionWithoutTexture(flag) => write!(f, "{flag} requires --texture"),
+
             Error::TexturePromptConflict => f.write_str(
                 "--texture-prompt, --texture-prompt-file, and --texture-image are mutually \
                  exclusive; pass at most one",
             ),
+
             Error::TextureStyleRequired => f.write_str(
                 "a texture style is required; pass one of --texture-prompt, \
                  --texture-prompt-file, or --texture-image",
             ),
+
             Error::InvalidTaskFile(reason) => write!(f, "invalid task file: {reason}"),
+
             Error::TexturePromptTooLong(len) => {
                 write!(
                     f,
                     "the texture prompt is {len} characters, but the maximum is 600"
                 )
             }
+
             Error::RemeshOptionWithoutRemesh(flag) => write!(f, "{flag} requires --remesh"),
+
             Error::PolycountDecimationConflict => {
                 f.write_str("--target-polycount cannot be combined with --decimation-mode")
             }
+
             Error::ImageEnhancementUnavailable => f.write_str(
                 "--image-enhancement is only supported when --model is meshy-6 or latest",
             ),
+
             Error::KeepLightingUnavailable => {
                 f.write_str("--keep-lighting is only supported when --model is meshy-6 or latest")
             }
+
             Error::HdTextureUnavailable => f.write_str(
                 "--texture-quality hd is only supported when --model is meshy-6 or latest",
             ),
+
             Error::UnsupportedImageFormat(ext) => write!(
                 f,
                 "unsupported image format \"{ext}\"; Meshy accepts png, jpg, and jpeg"
             ),
+
             Error::Http(e) => write!(f, "Meshy request failed: {e}"),
+
             Error::Api(e) => write!(f, "Meshy API error: {e}"),
+
             Error::InvalidResponse(e) => write!(f, "unexpected Meshy response: {e}"),
+
             Error::PollTimeout(seconds) => write!(
                 f,
                 "timed out after {seconds}s waiting for the Meshy task to complete; its output \

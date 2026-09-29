@@ -1,14 +1,15 @@
 use crate::{
     BVoxEffectiveProperty, BVoxHierarchyNode, BVoxMaterial, BVoxObject, BVoxPalette, BVoxProperty,
     BVoxValuePool, BVoxValuePoolValue, Error, Result, VoxEffectivePalette, VoxEffectiveProperty,
-    VoxHierarchyNode, VoxObject, VoxPalette, VoxValuePool,
+    VoxHierarchyNode, VoxObject, VoxPalette, VoxValuePool, check_node_transform,
+    first_cycle_node_index,
 };
 use branded_id::{
     IdVec, U32Id, UsizeId,
     soa::{IdField, IdStruct},
 };
 use std::collections::{HashMap, HashSet};
-use ty_math::{TyQuaternionExt, TyTransformF64, UNIT_ROTATION_TOLERANCE};
+use ty_math::{TyQuaternionExt, UNIT_ROTATION_TOLERANCE};
 
 /// The scene of a voxel model: the read side of [`VoxMain`](crate::VoxMain),
 /// which forwards to it.
@@ -498,89 +499,4 @@ impl VoxState {
     pub fn value_pool_count(&self) -> usize {
         self.value_pool_ids.len()
     }
-}
-
-/// Checks the transform of node `node_id`: finite and non-degenerate. The
-/// rotation needs no finiteness guard of its own: a non-finite component fails
-/// the unit-length check.
-pub(crate) fn check_node_transform(
-    node_id: U32Id<BVoxHierarchyNode>,
-    transform: &TyTransformF64,
-) -> Result<()> {
-    if !transform.position.is_finite() || !transform.scale.is_finite() {
-        return Err(Error::NonFiniteTransform { node_id });
-    }
-
-    let scale = transform.scale;
-    if scale.x == 0.0 || scale.y == 0.0 || scale.z == 0.0 {
-        return Err(Error::ZeroScale { node_id });
-    }
-
-    if !transform
-        .rotation
-        .is_normalized_within(UNIT_ROTATION_TOLERANCE)
-    {
-        return Err(Error::NonUnitRotation { node_id });
-    }
-
-    Ok(())
-}
-
-/// The `children` index of a node lying on a `child_node_ids` cycle, or `None`
-/// if the graph is acyclic.
-///
-/// `children` holds each node's child ids at that node's index, and `index_of`
-/// maps a child id back to its index. A child missing from `index_of` leads
-/// outside the checked set, where no edge can return, so it is skipped.
-///
-/// The walk is an iterative three-colour DFS, so a deep chain cannot overflow
-/// the stack. A back edge into an in-progress node is a cycle; revisiting a
-/// finished one is not.
-pub(crate) fn first_cycle_node_index(
-    children: &[&[U32Id<BVoxHierarchyNode>]],
-    index_of: &HashMap<U32Id<BVoxHierarchyNode>, usize>,
-) -> Option<usize> {
-    const WHITE: u8 = 0;
-    const GREY: u8 = 1;
-    const BLACK: u8 = 2;
-
-    let count = children.len();
-    let mut colour = vec![WHITE; count];
-
-    for start_index in 0..count {
-        if colour[start_index] != WHITE {
-            continue;
-        }
-
-        colour[start_index] = GREY;
-        // Each frame is a node index plus how many children we have walked.
-        let mut stack: Vec<(usize, usize)> = vec![(start_index, 0)];
-        while let Some(&(node_index, cursor)) = stack.last() {
-            let node_children = children[node_index];
-            match (cursor < node_children.len()).then(|| node_children[cursor]) {
-                Some(child_id) => {
-                    stack.last_mut().unwrap().1 += 1;
-
-                    let Some(&child_index) = index_of.get(&child_id) else {
-                        continue;
-                    };
-
-                    match colour[child_index] {
-                        WHITE => {
-                            colour[child_index] = GREY;
-                            stack.push((child_index, 0));
-                        }
-                        GREY => return Some(child_index),
-                        _ => {}
-                    }
-                }
-                None => {
-                    colour[node_index] = BLACK;
-                    stack.pop();
-                }
-            }
-        }
-    }
-
-    None
 }

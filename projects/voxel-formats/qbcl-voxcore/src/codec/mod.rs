@@ -1,6 +1,8 @@
 //! Reads and writes `.qb`, `.qbt`, and `.qbcl` file bytes, gated behind the
 //! `codec` feature.
 
+// Public API
+
 mod from_qb_bytes;
 mod from_qbcl_bytes;
 mod from_qbt_bytes;

@@ -11,10 +11,10 @@ use voxcore::{
 /// the Qubicle Binary Tree `.qbt` state with no native voxcore home, kept so a
 /// file loaded from a `.qbt` package can be written back exactly.
 ///
-/// Matrix and compound grids become native objects sharing one palette, and
-/// the scene tree becomes the hierarchy nodes. This holds the rest, one entry
-/// per hierarchy node keyed by its id. The entries follow the state through
-/// the [`VoxExt`](voxcore::VoxExt) hooks.
+/// Matrix and compound grids become native objects sharing one palette, and the
+/// scene tree becomes the hierarchy nodes. This holds the rest, one entry per
+/// hierarchy node keyed by its id. The entries follow the state through the
+/// [`VoxExt`] hooks.
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct QbtExt {

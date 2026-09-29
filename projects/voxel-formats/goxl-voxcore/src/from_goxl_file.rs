@@ -9,11 +9,11 @@ use voxcore::{
 };
 
 /// Loads a Goxel [`GoxlFile`] into a [`GoxlVoxMain`], the inverse of
-/// [`to_goxl_file`](crate::to_goxl_file). The shared `BL16` voxel blocks
-/// become objects sharing one `baseColor` palette, and the `LAYR` layers
-/// become root hierarchy nodes with no transform, each placing the blocks it
-/// stamps. Goxel is Z-up, so every block turns onto voxcore's Y-up axes. The
-/// rest of the file, the placements included, goes to the ext.
+/// [`to_goxl_file`](crate::to_goxl_file()). The shared `BL16` voxel blocks
+/// become objects sharing one `baseColor` palette, and the `LAYR` layers become
+/// root hierarchy nodes with no transform, each placing the blocks it stamps.
+/// Goxel is Z-up, so every block turns onto voxcore's Y-up axes. The rest of
+/// the file, the placements included, goes to the ext.
 ///
 /// Errors on a layer placement that references a block outside the block list,
 /// or on a cross-reference the checked insertions reject.

@@ -1,9 +1,8 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// A chunk the mvox crate does not model, preserved verbatim in the
-/// `mvox` ext so an unrecognized or future chunk survives the round
-/// trip.
+/// A chunk the mvox crate does not model, preserved verbatim in the `mvox` ext
+/// so an unrecognized or future chunk survives the round trip.
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct MVoxExtUnknownChunk {

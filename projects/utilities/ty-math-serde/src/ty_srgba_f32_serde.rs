@@ -4,9 +4,16 @@ use ty_math::TySrgbaF32;
 /// Serde-compatible parity type for [`TySrgbaF32`].
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct TySrgbaF32Serde {
+    /// The red channel.
     pub r: f32,
+
+    /// The green channel.
     pub g: f32,
+
+    /// The blue channel.
     pub b: f32,
+
+    /// The alpha channel.
     pub a: f32,
 }
 

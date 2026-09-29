@@ -1,9 +1,6 @@
 use crate::{
-    Dependencies, Error, OutputMode, Result,
-    commands::{
-        WaitArgs,
-        shared::{absolute, finish_task, is_terminal, parent_dir, wait_for_task},
-    },
+    Dependencies, Error, OutputMode, Result, WaitArgs, absolute, finish_task, is_terminal,
+    parent_dir, wait_for_task,
 };
 use clap::Parser;
 use std::path::{Path, PathBuf};
@@ -32,6 +29,7 @@ pub struct Poll {
 }
 
 impl Poll {
+    /// Checks the task and rewrites its task file once the task finishes.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let Poll {
             meshy_json_path,
@@ -69,6 +67,7 @@ impl Poll {
             Some((interval, timeout)) => {
                 wait_for_task(&dependencies, get, output, &head.task_id, interval, timeout)?
             }
+
             None => {
                 // Check once: report and stop when still in progress.
                 let task = get()?;

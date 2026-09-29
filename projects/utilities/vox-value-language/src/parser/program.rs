@@ -1,4 +1,4 @@
-use crate::parser::SyntaxBinding;
+use crate::SyntaxBinding;
 
 /// A parsed program, the input to `check`.
 #[derive(Clone, Debug, PartialEq)]

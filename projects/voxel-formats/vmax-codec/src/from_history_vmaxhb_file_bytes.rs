@@ -3,7 +3,7 @@ use vmax::VMaxHistoryVmaxhbFile;
 
 /// Decodes `*.vmaxhb` undo-history bytes (an LZFSE-framed binary plist) into a
 /// [`VMaxHistoryVmaxhbFile`] through `dependencies`. The inverse of
-/// [`to_history_vmaxhb_file_bytes`](crate::to_history_vmaxhb_file_bytes).
+/// [`to_history_vmaxhb_file_bytes`](crate::to_history_vmaxhb_file_bytes()).
 pub fn from_history_vmaxhb_file_bytes<D: DecompressLzfse + DecodeVMaxPlist>(
     dependencies: &D,
     bytes: &[u8],

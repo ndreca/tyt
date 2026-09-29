@@ -18,3 +18,16 @@ pub fn decompress_lzfse_or_raw<D: DecompressLzfse>(dependencies: &D, bytes: &[u8
         .decompress_lzfse(bytes)
         .unwrap_or_else(|_| bytes.to_vec())
 }
+
+#[cfg(all(test, feature = "impl"))]
+mod tests {
+    use crate::{CompressLzfse, DependenciesImpl, decompress_lzfse_or_raw};
+
+    #[test]
+    fn unframed_bytes_pass_through_untouched() {
+        let raw = b"bplist00 not an lzfse stream";
+        assert_eq!(decompress_lzfse_or_raw(&DependenciesImpl, raw), raw);
+        let stream = DependenciesImpl.compress_lzfse(raw);
+        assert_eq!(decompress_lzfse_or_raw(&DependenciesImpl, &stream), raw);
+    }
+}

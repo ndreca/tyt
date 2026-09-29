@@ -7,7 +7,7 @@ use ty_math::{TyLinSrgbF64, TySrgbF64};
 /// One entry's components under `transfer`, which curves each color
 /// component and leaves an alpha as it is. A `unit` destination and the curve
 /// take components in `[0, 1]`.
-pub(crate) fn encode_components(
+pub fn encode_components(
     element: &MeshElement,
     entry: &[f32],
     transfer: Transfer,

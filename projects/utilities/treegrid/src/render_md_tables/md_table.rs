@@ -5,7 +5,7 @@ use crate::render::Cell;
 /// separator stays valid markdown. A row shorter than the headers leaves its
 /// trailing columns blank. Width is each cell's declared visible width, so
 /// visual cells line up too.
-pub(crate) fn md_table(headers: &[Cell], rows: &[Vec<Cell>]) -> String {
+pub fn md_table(headers: &[Cell], rows: &[Vec<Cell>]) -> String {
     let mut widths: Vec<usize> = headers.iter().map(|header| header.width.max(3)).collect();
     for row in rows {
         for (column, cell) in row.iter().enumerate().take(widths.len()) {

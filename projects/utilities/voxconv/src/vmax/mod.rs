@@ -1,21 +1,29 @@
 //! Voxel Max: the [`VMax`] format, and the writer options and their values
 //! re-exported from `vmax-voxcore` so a caller can name them.
 
-mod from_vmax_error;
-mod package_file;
+// Public API
+
 #[allow(clippy::module_inception)]
 mod vmax;
 mod vmax_dependencies;
 
-pub(crate) use package_file::*;
 pub use vmax::*;
 pub use vmax_dependencies::*;
+
+pub use ::vmax::VMaxSceneCamera;
+pub use ::vmax_voxcore::{SceneCameraSource, VMaxColorFormat, VMaxWriteOptions};
+
+// Optional API
+
+#[cfg(feature = "ext")]
+mod vmax_format_ext;
 
 #[cfg(feature = "impl")]
 mod vmax_dependencies_impl;
 
-#[cfg(feature = "ext")]
-mod ext;
+// Internal API
 
-pub use ::vmax::VMaxSceneCamera;
-pub use ::vmax_voxcore::{SceneCameraSource, VMaxColorFormat, VMaxWriteOptions};
+mod from_vmax_error;
+mod package_file;
+
+pub(crate) use package_file::*;

@@ -23,6 +23,7 @@ pub struct Pack {
 }
 
 impl Pack {
+    /// Packs the `.vmax` directory, or a copy of it at the output path.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let target = if let Some(ref output) = self.output_vmax {
             dependencies.copy_dir(&self.input_vmax, output)?;
@@ -237,6 +238,7 @@ fn borrow_pairs(pairs: &[(String, String)]) -> Vec<(&str, &str)> {
 #[derive(Default)]
 struct Plan {
     renames: Vec<(u64, PathBuf, PathBuf)>,
+
     removals: Vec<PathBuf>,
 }
 

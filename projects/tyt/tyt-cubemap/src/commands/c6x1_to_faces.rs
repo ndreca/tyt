@@ -1,4 +1,4 @@
-use crate::{Dependencies, Result, utilities};
+use crate::{C6X1_FACES, Dependencies, Result, identify_u32};
 use clap::Parser;
 
 /// Extracts six cube face images from a c6x1 cube strip.
@@ -16,22 +16,24 @@ pub struct C6x1ToFaces {
     #[arg(value_name = "point", long)]
     point: bool,
 
-    /// Final side length for each output face. When set, faces are resized to this
-    /// dimension. Combine with `--point` for nearest-neighbor filtering that
-    /// preserves hard edges.
+    /// Final side length for each output face. When set, faces are resized to
+    /// this dimension. Combine with `--point` for nearest-neighbor filtering
+    /// that preserves hard edges.
     #[arg(value_name = "output-size", long)]
     output_size: Option<u32>,
 }
 
 impl C6x1ToFaces {
+    /// Crops each face out of the strip with `ffmpeg` and reports the written
+    /// paths.
     pub fn execute(self, deps: impl Dependencies) -> Result<()> {
         let out_base = self
             .out_base
             .unwrap_or_else(|| format!("{}-cube", self.base));
         let strip_path = format!("{}.png", self.base);
-        let size = utilities::identify_u32(&deps, &strip_path, "%h")?;
+        let size = identify_u32(&deps, &strip_path, "%h")?;
 
-        for (i, face) in utilities::C6X1_FACES.iter().enumerate() {
+        for (i, face) in C6X1_FACES.iter().enumerate() {
             let x = i as u32 * size;
             let vf = if let Some(out_size) = self.output_size {
                 if self.point {

@@ -21,6 +21,7 @@ pub struct NodeSetName {
 }
 
 impl NodeSetName {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         edit_document(&dependencies, &self.input, self.output, |main| {
             let node_id = self.selection.resolve_one_node(main)?;

@@ -1,4 +1,4 @@
-use crate::{Dependencies, Error, Result, utilities};
+use crate::{Dependencies, Error, Result, find_files};
 use clap::Parser;
 use std::path::PathBuf;
 
@@ -11,6 +11,7 @@ pub struct MoveToScratch {
 }
 
 impl MoveToScratch {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let scratch_dir = PathBuf::from(
             dependencies
@@ -20,7 +21,7 @@ impl MoveToScratch {
                 .ok_or(Error::ScratchDirNotConfigured)?,
         );
 
-        let stdout = utilities::find_files(&dependencies, &self.patterns)?;
+        let stdout = find_files(&dependencies, &self.patterns)?;
         if stdout.is_empty() {
             return Ok(());
         }

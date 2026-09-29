@@ -1,4 +1,7 @@
-use crate::commands::{AddProfile, CopyProfileSettings, ListProfiles, Run, SetProfile};
+use crate::{
+    Dependencies, Result,
+    commands::{AddProfile, CopyProfileSettings, ListProfiles, Run, SetProfile},
+};
 use clap::Subcommand;
 
 /// Operations for working with claude
@@ -7,18 +10,23 @@ use clap::Subcommand;
 pub enum TytClaude {
     #[command(name = "add-profile")]
     AddProfile(AddProfile),
+
     #[command(name = "copy-profile-settings")]
     CopyProfileSettings(CopyProfileSettings),
+
     #[command(name = "list-profiles")]
     ListProfiles(ListProfiles),
+
     #[command(name = "run")]
     Run(Run),
+
     #[command(name = "set-profile")]
     SetProfile(SetProfile),
 }
 
 impl TytClaude {
-    pub fn execute(self, _dependencies: impl crate::Dependencies) -> crate::Result<()> {
+    /// Runs the command.
+    pub fn execute(self, _dependencies: impl Dependencies) -> Result<()> {
         match self {
             TytClaude::AddProfile(add_profile) => add_profile.execute(_dependencies),
             TytClaude::CopyProfileSettings(copy_profile_settings) => {

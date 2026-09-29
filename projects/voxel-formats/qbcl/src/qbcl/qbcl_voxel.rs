@@ -1,9 +1,9 @@
-/// One cell of a [`QbclMatrix`](crate::qbcl::QbclMatrix) grid: an `RGB` color and
-/// a visibility mask. Stored on disk as four bytes (`r`, `g`, `b`, `mask`) inside
-/// the matrix's zlib + run-length-encoded voxel stream.
+/// One cell of a [`QbclMatrix`](crate::qbcl::QbclMatrix) grid: an `RGB` color
+/// and a visibility mask. Stored on disk as four bytes (`r`, `g`, `b`, `mask`)
+/// inside the matrix's zlib + run-length-encoded voxel stream.
 ///
-/// [`mask`](Self::mask)` == 0` is an empty cell; non-zero marks a solid voxel and
-/// is a per-face visible-sides bitmask.
+/// [`mask`](Self::mask)` == 0` is an empty cell; non-zero marks a solid voxel
+/// and is a per-face visible-sides bitmask.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct QbclVoxel {
     /// Red channel.

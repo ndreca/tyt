@@ -41,16 +41,17 @@ impl TyTransformF64 {
         }
     }
 
-    /// Transforms `point` by this transform: scale, then rotate, then translate,
-    /// matching the `Translation * Rotation * Scale` order.
+    /// Transforms `point` by this transform: scale, then rotate, then
+    /// translate, matching the `Translation * Rotation * Scale` order.
     pub fn transform_point(&self, point: DVec3) -> DVec3 {
         self.position + self.rotation * (self.scale * point)
     }
 
-    /// Composes `self`, a parent world transform, with `child`, a local transform,
-    /// returning the child's world transform. Rotation composes as the Hamilton
-    /// product `parent * child`; scale is the lossy component-wise product,
-    /// dropping the shear that a rotation between non-uniform scales introduces.
+    /// Composes `self`, a parent world transform, with `child`, a local
+    /// transform, returning the child's world transform. Rotation composes as
+    /// the Hamilton product `parent * child`; scale is the lossy component-wise
+    /// product, dropping the shear that a rotation between non-uniform scales
+    /// introduces.
     pub fn compose(&self, child: &Self) -> Self {
         Self {
             position: self.transform_point(child.position),
@@ -109,12 +110,8 @@ impl Default for TyTransformF64 {
 
 #[cfg(test)]
 mod tests {
-    use crate::{TyQuaternionF64, TyTransformF64, TyVector3Ext, TyVector3F64};
+    use crate::{TyQuaternionF64, TyTransformF64, TyVector3Ext, TyVector3F64, close};
     use std::f64::consts::PI;
-
-    fn close(a: f64, b: f64) -> bool {
-        (a - b).abs() < 1e-9
-    }
 
     /// A transform with a rotation about the up axis, per-axis scale, and an
     /// offset on every axis.
@@ -194,8 +191,9 @@ mod tests {
 
     #[test]
     fn compose_places_a_child_in_the_parent_frame() {
-        // The parent rotates a quarter turn about z and sits at +x. The child at
-        // local +x lands one unit along world +y from the parent, at (1, 1, 0).
+        // The parent rotates a quarter turn about z and sits at +x. The child
+        // at local +x lands one unit along world +y from the parent, at
+        // (1, 1, 0).
         let parent = TyTransformF64::new(
             TyVector3F64::new(1.0, 0.0, 0.0),
             TyQuaternionF64::from_axis_angle(TyVector3F64::new(0.0, 0.0, 1.0), PI / 2.0),

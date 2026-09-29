@@ -2,8 +2,8 @@ use palette::Srgba;
 
 /// An sRGB color with straight alpha, backed by [`palette::Srgba`]. The color
 /// space is the type identity; `T` is the storage axis: `u8` is the `#RRGGBBAA`
-/// byte form, `f32` / `f64` are normalized `[0, 1]`. Decode to linear light with
-/// `into_linear` before lighting math.
+/// byte form, `f32` / `f64` are normalized `[0, 1]`. Decode to linear light
+/// with `into_linear` before lighting math.
 pub type TySrgba<T> = Srgba<T>;
 
 #[cfg(test)]

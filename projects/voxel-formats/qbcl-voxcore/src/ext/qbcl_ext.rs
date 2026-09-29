@@ -1,6 +1,6 @@
 use crate::{
-    ext::{QbclExtMetadata, QbclExtNode, QbclExtThumbnail},
-    rekey_hierarchy_nodes, synthesized_qbcl_ext_node,
+    QbclExtMetadata, QbclExtNode, QbclExtThumbnail, rekey_hierarchy_nodes,
+    synthesized_qbcl_ext_node,
 };
 use branded_id::U32Id;
 #[cfg(feature = "serde")]
@@ -14,10 +14,10 @@ use voxcore::{
 /// the Qubicle Construction Library `.qbcl` state with no native voxcore home,
 /// kept so a file loaded from a `.qbcl` package can be written back exactly.
 ///
-/// Matrix and compound grids become native objects sharing one palette, and
-/// the scene tree becomes the hierarchy nodes. This holds the rest, one entry
-/// per hierarchy node keyed by its id. The entries follow the state through
-/// the [`VoxExt`](voxcore::VoxExt) hooks.
+/// Matrix and compound grids become native objects sharing one palette, and the
+/// scene tree becomes the hierarchy nodes. This holds the rest, one entry per
+/// hierarchy node keyed by its id. The entries follow the state through the
+/// [`VoxExt`] hooks.
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct QbclExt {

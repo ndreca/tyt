@@ -2,6 +2,8 @@
 //! unrelated commands, or is a cross-cutting primitive with no command of its
 //! own. Command-specific items live under their command's `internal`.
 
+// Internal API
+
 mod alpha_mode;
 mod cli_value;
 mod cli_value_parser;
@@ -29,7 +31,6 @@ mod quantize_config;
 mod quantize_profile;
 mod read_format;
 mod reduction_method;
-mod require_file_name;
 mod required_selection;
 mod rgba;
 mod ty_angle_unit;
@@ -64,7 +65,6 @@ pub(crate) use profile_set::*;
 pub(crate) use quantize_args::*;
 pub(crate) use quantize_config::*;
 pub(crate) use quantize_profile::*;
-pub(crate) use require_file_name::*;
 pub(crate) use required_selection::*;
 pub(crate) use rgba::*;
 pub(crate) use vector3_f64::*;

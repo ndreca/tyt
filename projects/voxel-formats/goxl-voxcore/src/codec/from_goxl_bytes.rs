@@ -2,7 +2,7 @@ use crate::{GoxlVoxMain, Result, from_goxl_file};
 use goxl_codec::{DecodePng, from_gox_file_bytes};
 
 /// Loads the bytes of a Goxel `.gox` file through `dependencies` into a
-/// [`GoxlVoxMain`], the bytes form of [`from_goxl_file`].
+/// [`GoxlVoxMain`], the bytes form of [`from_goxl_file()`].
 pub fn from_goxl_bytes<D: DecodePng>(dependencies: &D, bytes: &[u8]) -> Result<GoxlVoxMain> {
     let file = from_gox_file_bytes(dependencies, bytes)?;
 

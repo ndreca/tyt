@@ -7,21 +7,27 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct VMaxObject {
+    /// Display name (`n`).
     #[cfg_attr(feature = "serde", serde(rename = "n", default))]
     pub name: String,
 
+    /// Filename of the object's `contents*.vmaxb` payload.
     #[cfg_attr(feature = "serde", serde(default))]
     pub data: String,
 
+    /// Filename of the object's `palette*.png` color table (`pal`).
     #[cfg_attr(feature = "serde", serde(rename = "pal", default))]
     pub palette: String,
 
+    /// Filename of the object's `*.vmaxhb` undo history (`hist`).
     #[cfg_attr(feature = "serde", serde(rename = "hist", default))]
     pub history: String,
 
+    /// Node id.
     #[cfg_attr(feature = "serde", serde(default))]
     pub id: String,
 
+    /// Parent group id (`pid`), or `None` at the root.
     #[cfg_attr(
         feature = "serde",
         serde(rename = "pid", skip_serializing_if = "Option::is_none", default)
@@ -35,12 +41,15 @@ pub struct VMaxObject {
     )]
     pub hidden: Option<bool>,
 
+    /// Position (`t_p`).
     #[cfg_attr(feature = "serde", serde(rename = "t_p"))]
     pub position: [f64; 3],
 
+    /// Rotation as an `[x, y, z, angle]` axis-angle (`t_r`).
     #[cfg_attr(feature = "serde", serde(rename = "t_r"))]
     pub rotation: [f64; 4],
 
+    /// Scale (`t_s`).
     #[cfg_attr(feature = "serde", serde(rename = "t_s"))]
     pub scale: [f64; 3],
 
@@ -67,8 +76,8 @@ pub struct VMaxObject {
     #[cfg_attr(feature = "serde", serde(default))]
     pub t_pf: String,
 
-    /// Transform pivot-offset; shape varies, kept as untyped
-    /// [`VMaxValue`](crate::VMaxValue) (round-trips unchanged).
+    /// Transform pivot-offset; shape varies, kept as untyped [`VMaxValue`]
+    /// (round-trips unchanged).
     #[cfg_attr(
         feature = "serde",
         serde(skip_serializing_if = "Option::is_none", default)

@@ -1,5 +1,9 @@
 #![deny(rustdoc::broken_intra_doc_links)]
 
+//! Data types for a Voxel Max `.vmax` package, rooted at [`VMaxFile`].
+
+// Public API
+
 pub mod palette;
 pub mod snapshots;
 

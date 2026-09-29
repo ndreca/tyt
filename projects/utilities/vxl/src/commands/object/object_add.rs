@@ -41,6 +41,7 @@ pub struct ObjectAdd {
 }
 
 impl ObjectAdd {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let source_from = self.source_format()?;
 

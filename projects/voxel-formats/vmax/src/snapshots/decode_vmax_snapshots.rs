@@ -1,15 +1,11 @@
 use crate::{
     VMaxSnapshot,
-    snapshots::{Error, Result, VMaxVoxel, decode_morton_3d},
+    snapshots::{CHUNK_PITCH, Error, Result, VMaxVoxel, decode_morton_3d},
 };
 use std::collections::BTreeMap;
 
-/// Voxel pitch of a chunk along each axis; chunks tile an 8x8x8 grid into a
-/// 256^3 model.
-const CHUNK_PITCH: i32 = 32;
-
 /// Decodes voxel `snapshots` into model space, the inverse of
-/// [`encode_vmax_snapshots`](crate::snapshots::encode_vmax_snapshots).
+/// [`encode_vmax_snapshots`](crate::snapshots::encode_vmax_snapshots()).
 /// Replays snapshots so the last snapshot of each chunk wins, and returns
 /// voxels sorted by `(x, y, z)`.
 pub fn decode_vmax_snapshots(snapshots: &[VMaxSnapshot]) -> Result<Vec<VMaxVoxel>> {
@@ -32,6 +28,7 @@ pub fn decode_vmax_snapshots(snapshots: &[VMaxSnapshot]) -> Result<Vec<VMaxVoxel
         // placed.
         let morton_offset = match storage.st.min.get(3) {
             Some(&offset) if offset >= 0 => offset as u32,
+
             _ => {
                 return Err(Error::Invalid(format!(
                     "snapshot chunk {chunk_id} has invalid st.min {:?}; expected a 4-component Morton stat with a non-negative offset",

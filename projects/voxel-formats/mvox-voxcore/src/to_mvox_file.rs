@@ -1,6 +1,6 @@
 use crate::{
-    Error, MVoxExt, MVoxExtFrame, MVoxExtNode, MVoxExtNodeBody, MVoxVoxMain, Result,
-    transform_from_frames,
+    Error, MVoxExt, MVoxExtFrame, MVoxExtNode, MVoxExtNodeBody, MVoxVoxMain, PALETTE_COLORS,
+    Result, transform_from_frames,
 };
 use branded_id::U32Id;
 use mvox::{
@@ -15,21 +15,17 @@ use voxcore::{
     VoxState, color::value_pool_color, material::BASE_COLOR,
 };
 
-/// Colors a MagicaVoxel palette holds, so a material id past this has no
-/// color slot.
-const PALETTE_COLORS: u32 = 256;
-
 /// How far a frame's projected rotation or scale may drift from the node's
 /// before the two count as disagreeing.
 const TRANSFORM_TOLERANCE: f64 = 1e-6;
 
 /// Writes a [`MVoxVoxMain`] to a decoded MagicaVoxel [`MVoxFile`], the inverse
-/// of [`from_mvox_file`](crate::from_mvox_file). Each object emits one model,
+/// of [`from_mvox_file`](crate::from_mvox_file()). Each object emits one model,
 /// turned back to MagicaVoxel's Z-up axes. Each hierarchy node emits one scene
 /// node of the kind its ext entry says, with its name and child links from the
 /// node and the rest from the entry, so a loaded file rebuilds exactly and a
-/// state [`to_mvox_vox_main`](crate::to_mvox_vox_main) gave its ext writes as a
-/// file synthesized from the scene. A model lists its voxels in ascending
+/// state [`to_mvox_vox_main`](crate::to_mvox_vox_main()) gave its ext writes as
+/// a file synthesized from the scene. A model lists its voxels in ascending
 /// raster order, which need not match their original stored order. `MATL`
 /// chunks write in material order.
 ///
@@ -145,7 +141,7 @@ fn check_palette(state: &VoxState) -> Result<Option<U32Id<BVoxPalette>>> {
     };
     if let Some(material_id) = palette
         .iter_materials()
-        .find(|material_id| material_id.to_u32() >= PALETTE_COLORS)
+        .find(|material_id| material_id.to_u32() as usize >= PALETTE_COLORS)
     {
         return Err(Error::Invalid(format!(
             "material {} has no slot in the {PALETTE_COLORS} colors a MagicaVoxel palette holds",
@@ -477,7 +473,8 @@ fn frame_from_provenance(frame: &MVoxExtFrame) -> MVoxFrame {
 #[cfg(test)]
 mod tests {
     use crate::{
-        MVoxExtNode, MVoxExtNodeBody, MVoxExtShapeModel, MVoxVoxMain, from_mvox_file, to_mvox_file,
+        MVoxExtNode, MVoxExtNodeBody, MVoxExtShapeModel, MVoxVoxMain, from_mvox_file, material_id,
+        node_id, object_id, to_mvox_file,
     };
     use branded_id::U32Id;
     use mvox::{
@@ -493,7 +490,7 @@ mod tests {
     };
     use ty_math::{TyQuaternionF64, TyTransformF64, TyVector3F64};
     use voxcore::{
-        BVoxHierarchyNode, BVoxMaterial, BVoxObject, BVoxPalette, VoxHierarchyNode, VoxPalette,
+        BVoxHierarchyNode, BVoxObject, BVoxPalette, VoxHierarchyNode, VoxPalette,
         VoxValuePoolValueRef, material::IOR,
     };
 
@@ -650,18 +647,6 @@ mod tests {
             assert_eq!(got.size, want.size);
             assert_eq!(voxel_set(got), voxel_set(want));
         }
-    }
-
-    fn node(index: u32) -> U32Id<BVoxHierarchyNode> {
-        U32Id::from_u32(index)
-    }
-
-    fn object(index: u32) -> U32Id<BVoxObject> {
-        U32Id::from_u32(index)
-    }
-
-    fn material(index: u32) -> U32Id<BVoxMaterial> {
-        U32Id::from_u32(index)
     }
 
     #[test]
@@ -864,7 +849,7 @@ mod tests {
         child_node_ids: Vec<U32Id<BVoxHierarchyNode>>,
         child_object_ids: Vec<U32Id<BVoxObject>>,
     ) {
-        main.set_hierarchy_node_children(node(index), child_node_ids, child_object_ids)
+        main.set_hierarchy_node_children(node_id(index), child_node_ids, child_object_ids)
             .unwrap();
     }
 
@@ -883,39 +868,39 @@ mod tests {
 
         // The group, node 1, lists transforms 2, 4, and 6. Transform 4 places
         // shape 5, which draws model 1.
-        set_children(&mut main, 1, vec![node(2), node(6)], Vec::new());
+        set_children(&mut main, 1, vec![node_id(2), node_id(6)], Vec::new());
 
         set_children(&mut main, 4, Vec::new(), Vec::new());
 
         set_children(&mut main, 5, Vec::new(), Vec::new());
 
-        main.release_hierarchy_node(node(4)).unwrap();
+        main.release_hierarchy_node(node_id(4)).unwrap();
 
-        main.release_hierarchy_node(node(5)).unwrap();
+        main.release_hierarchy_node(node_id(5)).unwrap();
 
-        main.release_object(object(1)).unwrap();
+        main.release_object(object_id(1)).unwrap();
 
         main.gc().unwrap();
 
         let mut expected = original;
 
-        expected.scene_nodes.remove(&node(4));
+        expected.scene_nodes.remove(&node_id(4));
 
-        expected.scene_nodes.remove(&node(5));
+        expected.scene_nodes.remove(&node_id(5));
 
-        let mut last = expected.scene_nodes.remove(&node(7)).unwrap();
+        let mut last = expected.scene_nodes.remove(&node_id(7)).unwrap();
 
         let MVoxExtNodeBody::Shape { models } = &mut last.body else {
             panic!("node 7 is the last shape");
         };
 
-        models[0].object = object(1);
+        models[0].object = object_id(1);
 
-        expected.scene_nodes.insert(node(5), last);
+        expected.scene_nodes.insert(node_id(5), last);
 
-        let transform = expected.scene_nodes.remove(&node(6)).unwrap();
+        let transform = expected.scene_nodes.remove(&node_id(6)).unwrap();
 
-        expected.scene_nodes.insert(node(4), transform);
+        expected.scene_nodes.insert(node_id(4), transform);
 
         assert_eq!(main.ext(), &expected);
 
@@ -988,7 +973,7 @@ mod tests {
     fn a_moved_object_keeps_each_shapes_model() {
         let mut main = from_mvox_file(&placed_models_file()).unwrap();
 
-        main.move_object(object(2), 0).unwrap();
+        main.move_object(object_id(2), 0).unwrap();
 
         let rebuilt = to_mvox_file(&main).unwrap();
 
@@ -1039,7 +1024,7 @@ mod tests {
         let mut main = from_mvox_file(&materials_file()).unwrap();
 
         // No voxel samples material 4, so it releases without a repaint.
-        main.release_material(U32Id::<BVoxPalette>::from_u32(0), material(4))
+        main.release_material(U32Id::<BVoxPalette>::from_u32(0), material_id(4))
             .unwrap();
 
         main.gc().unwrap();
@@ -1069,7 +1054,7 @@ mod tests {
 
         let mut main = from_mvox_file(&file).unwrap();
 
-        main.release_material(U32Id::<BVoxPalette>::from_u32(0), material(4))
+        main.release_material(U32Id::<BVoxPalette>::from_u32(0), material_id(4))
             .unwrap();
 
         assert_eq!(to_mvox_file(&main).unwrap().index_map, file.index_map);
@@ -1100,20 +1085,24 @@ mod tests {
 
         let mut main = from_mvox_file(&file).unwrap();
 
-        main.ext_mut().scene_nodes.remove(&node(7));
+        main.ext_mut().scene_nodes.remove(&node_id(7));
 
         assert!(to_mvox_file(&main).is_err());
 
         let mut main = from_mvox_file(&file).unwrap();
 
-        let MVoxExtNodeBody::Shape { models } =
-            &mut main.ext_mut().scene_nodes.get_mut(&node(3)).unwrap().body
+        let MVoxExtNodeBody::Shape { models } = &mut main
+            .ext_mut()
+            .scene_nodes
+            .get_mut(&node_id(3))
+            .unwrap()
+            .body
         else {
             panic!("node 3 is a shape");
         };
 
         models.push(MVoxExtShapeModel {
-            object: object(1),
+            object: object_id(1),
             frame_index: Some(1),
             extra: Vec::new(),
         });
@@ -1122,7 +1111,7 @@ mod tests {
 
         let mut main = from_mvox_file(&file).unwrap();
 
-        main.ext_mut().scene_nodes.get_mut(&node(7)).unwrap().id = 0;
+        main.ext_mut().scene_nodes.get_mut(&node_id(7)).unwrap().id = 0;
 
         assert!(to_mvox_file(&main).is_err());
     }
@@ -1134,9 +1123,9 @@ mod tests {
     fn children_that_leave_the_kind_refresh_it() {
         let mut main = from_mvox_file(&placed_models_file()).unwrap();
 
-        set_children(&mut main, 0, vec![node(1), node(2)], Vec::new());
+        set_children(&mut main, 0, vec![node_id(1), node_id(2)], Vec::new());
 
-        set_children(&mut main, 3, Vec::new(), vec![object(0), object(1)]);
+        set_children(&mut main, 3, Vec::new(), vec![object_id(0), object_id(1)]);
 
         let rebuilt = to_mvox_file(&main).unwrap();
 
@@ -1170,15 +1159,15 @@ mod tests {
         set_children(
             &mut main,
             1,
-            vec![node(2), node(4), node(6)],
-            vec![object(0)],
+            vec![node_id(2), node_id(4), node_id(6)],
+            vec![object_id(0)],
         );
 
         assert!(to_mvox_file(&main).is_err());
 
         let mut main = from_mvox_file(&file).unwrap();
 
-        set_children(&mut main, 3, vec![node(7)], vec![object(0)]);
+        set_children(&mut main, 3, vec![node_id(7)], vec![object_id(0)]);
 
         assert!(to_mvox_file(&main).is_err());
     }
@@ -1196,7 +1185,7 @@ mod tests {
             TyVector3F64::ONE,
         );
 
-        main.set_hierarchy_node_transform(node(2), transform)
+        main.set_hierarchy_node_transform(node_id(2), transform)
             .unwrap();
 
         let rebuilt = to_mvox_file(&main).unwrap();
@@ -1209,14 +1198,14 @@ mod tests {
 
         let reloaded = from_mvox_file(&rebuilt).unwrap();
 
-        let reloaded_transform = reloaded.hierarchy_node(node(2)).unwrap().transform;
+        let reloaded_transform = reloaded.hierarchy_node(node_id(2)).unwrap().transform;
 
         assert_eq!(reloaded_transform.position, transform.position);
 
         assert!(reloaded_transform.rotation.dot(transform.rotation).abs() > 1.0 - 1e-9);
 
         main.set_hierarchy_node_transform(
-            node(2),
+            node_id(2),
             TyTransformF64::from_translation(TyVector3F64::new(0.5, 0.0, 0.0)),
         )
         .unwrap();
@@ -1241,7 +1230,7 @@ mod tests {
         let value_id = main
             .palette(palette_id)
             .unwrap()
-            .value_id(material(0), U32Id::from_u32(0))
+            .value_id(material_id(0), U32Id::from_u32(0))
             .unwrap();
 
         main.retain_material(palette_id, vec![value_id]).unwrap();
@@ -1257,7 +1246,7 @@ mod tests {
 
         let palette_id = U32Id::<BVoxPalette>::from_u32(0);
 
-        main.retain_layer(object(0), palette_id, material(0))
+        main.retain_layer(object_id(0), palette_id, material_id(0))
             .unwrap();
 
         let error = to_mvox_file(&main).unwrap_err();
@@ -1273,7 +1262,7 @@ mod tests {
 
         main.ext_mut()
             .materials
-            .insert(material(300), Default::default());
+            .insert(material_id(300), Default::default());
 
         assert!(to_mvox_file(&main).is_err());
 
@@ -1286,8 +1275,11 @@ mod tests {
 
     #[cfg(feature = "codec")]
     mod codec {
-        use super::*;
-        use crate::codec::{from_mvox_bytes, to_mvox_bytes};
+        use crate::{
+            codec::{from_mvox_bytes, to_mvox_bytes},
+            from_mvox_file, to_mvox_file,
+            to_mvox_file::tests::{assert_files_eq, sample_file},
+        };
 
         #[test]
         fn round_trips_through_mvox_bytes() {

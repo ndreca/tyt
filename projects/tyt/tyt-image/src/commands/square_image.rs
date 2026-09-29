@@ -14,6 +14,7 @@ pub struct SquareImage {
 }
 
 impl SquareImage {
+    /// Squares the image with `magick` and reports the written path.
     pub fn execute(self, deps: impl Dependencies) -> Result<()> {
         let out_base = self
             .out_base

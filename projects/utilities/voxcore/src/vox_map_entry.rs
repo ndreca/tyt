@@ -5,6 +5,7 @@ use crate::VoxValue;
 pub struct VoxMapEntry {
     /// The key.
     pub key: String,
+
     /// The value under the key.
     pub value: VoxValue,
 }

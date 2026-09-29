@@ -2,9 +2,11 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 
 /// A boolean operator.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub(crate) enum LogicalOperator {
+pub enum LogicalOperator {
     And,
+
     Or,
+
     Xor,
 }
 

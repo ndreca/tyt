@@ -1,15 +1,16 @@
 use crate::{
-    Domain, Scalar, Type,
-    checker::{CheckedNode, ElementwiseFunction, Fold, NumberValue, Reduction, Rounding},
-    parser::{BinaryOperator, ComparisonOperator, LogicalOperator, UnaryOperator},
+    BinaryOperator, CheckedNode, ComparisonOperator, Domain, ElementwiseFunction, Fold,
+    LogicalOperator, NumberValue, Reduction, Rounding, Scalar, Type, UnaryOperator,
 };
 
 /// What a checked node computes.
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) enum CheckedKind {
+pub enum CheckedKind {
     Binary {
         operator: BinaryOperator,
+
         left: Box<CheckedNode>,
+
         right: Box<CheckedNode>,
     },
 
@@ -17,23 +18,29 @@ pub(crate) enum CheckedKind {
 
     Call {
         function: ElementwiseFunction,
+
         arguments: Vec<CheckedNode>,
     },
 
     Climb {
         target: Domain,
+
         operand: Box<CheckedNode>,
     },
 
     Comparison {
         operator: ComparisonOperator,
+
         left: Box<CheckedNode>,
+
         right: Box<CheckedNode>,
     },
 
     Convert {
         target: Scalar,
+
         rounding: Option<Rounding>,
+
         operand: Box<CheckedNode>,
     },
 
@@ -48,32 +55,41 @@ pub(crate) enum CheckedKind {
 
     Fold {
         fold: Fold,
+
         operand: Box<CheckedNode>,
     },
 
     Index {
         source: Box<CheckedNode>,
+
         index: Box<CheckedNode>,
     },
 
     Logical {
         operator: LogicalOperator,
+
         left: Box<CheckedNode>,
+
         right: Box<CheckedNode>,
     },
 
     Mix {
         first: Box<CheckedNode>,
+
         second: Box<CheckedNode>,
+
         chooser: Box<CheckedNode>,
     },
 
     Name(String),
+
     Number(NumberValue),
 
     Reduce {
         reduction: Reduction,
+
         target: Domain,
+
         operand: Box<CheckedNode>,
     },
 
@@ -81,11 +97,13 @@ pub(crate) enum CheckedKind {
 
     Swizzle {
         source: Box<CheckedNode>,
+
         components: Vec<usize>,
     },
 
     Unary {
         operator: UnaryOperator,
+
         operand: Box<CheckedNode>,
     },
 }

@@ -6,7 +6,7 @@ use branded_id::U32Id;
 
 /// The table walk the table layouts share: the blocks a shape yields,
 /// each heading and table drawn by a frame.
-pub(crate) trait TreeGridRenderFramedTables {
+pub trait TreeGridRenderFramedTables {
     /// Renders the headings and tables of `shape` through `frame`, the
     /// nested headings spending the ancestor path per `label`. Blocks
     /// join with a blank line; an empty grid renders as an empty string.

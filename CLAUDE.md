@@ -20,8 +20,12 @@ cargo check
 - Import types/traits/enums as leaf items, with aliases to avoid collisions (e.g., `Error as IOError`, `Result as StdResult`, `Error as StdError`)
 - Import modules for free functions and keep the module prefix in calls (e.g., `use std::{env, fs, io, process};` then `fs::read()`, `env::temp_dir()`, `io::stdout()`, `process::exit(1)`)
 - Prefer `#[derive(Default)]` over manual `impl Default` when all field defaults match the type's inherent default
+- A blank line separates each top-level item in a file and each member of a struct, enum, trait, or `impl` (fields, variants, methods, associated types and consts); `use` lines and `mod` declarations stay grouped
 - One public item per file (struct, trait, enum, or function), file named to match the item in snake_case; capability methods on a type from another file ride an extension trait, one trait per file
+- A file holding only consts may hold several related ones (e.g., a material vocabulary's keys and defaults)
 - A helper that only one file calls on another file's type lives in that file as a private free function taking the type as a parameter
+  - When another file's tests also call the helper, it gets its own crate-internal file instead
+  - A `pub(crate)` method that needs the type's private fields stays on the type, whatever its callers
 - A type's inherent `impl`s go where their feature gate puts them:
   1. An `impl` under the type's gate lives in the type's file
   2. An `impl` under a narrower gate lives in `{type}_{module}_ext.rs`, named for the module holding the file, with the `cfg` on the `mod` line and never on a method
@@ -48,7 +52,7 @@ cargo check
   2. `// Optional API`: feature-gated modules, each gate's `mod` followed by its re-export
   3. `// Internal API`: crate-internal modules
   4. `// Test support`: `#[cfg(test)]` modules
-- Crate-internal items use `pub(crate) use module_name::*;`
+- Crate-internal items use `pub(crate) use module_name::*;`, and the items themselves are `pub`, since the private `mod` and the `pub(crate)` re-export already set their reach
 - Subdirectories that consumers navigate are declared `pub mod` (e.g., `pub mod commands;`)
 - Leaf files are always private modules whose public items the parent re-exports
 - Prefer `use crate` over `use super`

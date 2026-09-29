@@ -2,10 +2,13 @@ use crate::Domain;
 
 /// How a reduction combines the entries it gathers.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub(crate) enum Reduction {
+pub enum Reduction {
     Avg,
+
     Max,
+
     Min,
+
     Sum,
 }
 

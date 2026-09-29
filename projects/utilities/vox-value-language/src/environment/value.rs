@@ -5,7 +5,9 @@ use crate::{Components, Dimension, Domain, Error, Result, Scalar, Type};
 #[derive(Clone, Debug, PartialEq)]
 pub struct Value {
     domain: Domain,
+
     dimension: Dimension,
+
     components: Components,
 }
 

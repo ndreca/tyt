@@ -1,4 +1,4 @@
-use crate::{CheckedExpression, CheckedProgram, Error, Expression, Result, checker::check_root};
+use crate::{CheckedExpression, CheckedProgram, Error, Expression, Result, check_root};
 
 /// Checks an expression in the scope at a checked program's end, beside
 /// every name the environment supplies.

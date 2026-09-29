@@ -5,7 +5,7 @@ use voxcore::{VoxMain, VoxObject, VoxPalette, VoxValuePool};
 
 /// One object `a` of `bounds` at `origin` on a palette of two materials, live
 /// at each `cells` position with the material index beside it.
-pub(crate) fn two_material_scene(
+pub fn two_material_scene(
     bounds: TyVector3U32,
     origin: TyVector3I32,
     cells: &[(TyVector3U32, u32)],

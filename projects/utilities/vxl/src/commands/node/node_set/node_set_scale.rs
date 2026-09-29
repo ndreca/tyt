@@ -32,6 +32,7 @@ pub struct NodeSetScale {
 }
 
 impl NodeSetScale {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let scale = vector3_f64(&self.scale);
 

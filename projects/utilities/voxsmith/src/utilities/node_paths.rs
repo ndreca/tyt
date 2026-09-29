@@ -8,7 +8,7 @@ type NodeId = U32Id<BVoxHierarchyNode>;
 /// node reached through several parents gets one path per placement. A node
 /// that neither the roots nor any node lists starts its own chain, the way an
 /// unplaced object's path is its bare name.
-pub(crate) fn node_paths<T: VoxExt>(main: &VoxMain<T>) -> Vec<(NodeId, String)> {
+pub fn node_paths<T: VoxExt>(main: &VoxMain<T>) -> Vec<(NodeId, String)> {
     let mut paths = Vec::new();
 
     let mut stack = Vec::new();

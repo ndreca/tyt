@@ -1,5 +1,23 @@
-use crate::validation::{VoxjCheck, build_voxj_report, collect_voxj_failures};
-use crate::{DecodeBase64, VoxjFile};
+use crate::{
+    DecodeBase64, VoxjFile,
+    validation::{Check, VoxjCheck, VoxjCheckStatus, collect_voxj_failures},
+};
+
+/// Every check, in the order [`check_voxj_file`] reports them.
+const REPORT_ORDER: [Check; 12] = [
+    Check::Version,
+    Check::Palettes,
+    Check::Indices,
+    Check::Blocks,
+    Check::UniquePositions,
+    Check::Bounds,
+    Check::SampleMaterials,
+    Check::Acyclic,
+    Check::Scale,
+    Check::Rotation,
+    Check::EditState,
+    Check::SampleOrder,
+];
 
 /// Checks a [`VoxjFile`] against every one of the format's document rules and
 /// returns one [`VoxjCheck`] per check, in a fixed order, each marked passed,
@@ -44,87 +62,42 @@ pub fn check_voxj_file<D: DecodeBase64>(dependencies: &D, file: &VoxjFile) -> Ve
     build_voxj_report(collect_voxj_failures(dependencies, file, false))
 }
 
+/// Groups tagged failures into one [`VoxjCheck`] per check, in
+/// [`REPORT_ORDER`]. A check with no failures passed; [`Check::SampleOrder`] is
+/// always unverifiable.
+fn build_voxj_report(failures: Vec<(Check, String)>) -> Vec<VoxjCheck> {
+    REPORT_ORDER
+        .iter()
+        .map(|&check| {
+            let status = if check == Check::SampleOrder {
+                VoxjCheckStatus::Unverifiable
+            } else {
+                let messages: Vec<String> = failures
+                    .iter()
+                    .filter(|(c, _)| *c == check)
+                    .map(|(_, message)| message.clone())
+                    .collect();
+                if messages.is_empty() {
+                    VoxjCheckStatus::Passed
+                } else {
+                    VoxjCheckStatus::Failed(messages)
+                }
+            };
+            VoxjCheck {
+                name: check.name(),
+                status,
+            }
+        })
+        .collect()
+}
+
 #[cfg(all(test, feature = "impl"))]
 mod tests {
-    use crate::validation::{VoxjCheck, VoxjCheckStatus, check_voxj_file};
     use crate::{
-        DependenciesImpl, EncodeBase64, VoxjFile, VoxjHierarchyNode, VoxjMain, VoxjObject,
-        VoxjPalette, VoxjPositionBlock, VoxjProperty, VoxjRuntimeState, VoxjSampleBlock,
-        VoxjTransform, VoxjValuePool,
+        DependenciesImpl, VoxjPalette, VoxjPositionBlock, VoxjProperty, VoxjValuePool,
+        test::{standard_base64, valid_file},
+        validation::{VoxjCheck, VoxjCheckStatus, check_voxj_file},
     };
-
-    /// Standard base64 of `bytes`, for hand-built blocks.
-    fn base64(bytes: &[u8]) -> String {
-        DependenciesImpl.encode_base64(bytes)
-    }
-
-    /// A `vec-4-float` value pool of four colors backing the property's
-    /// value-indices, and an unreferenced one-value `float` value pool.
-    fn value_pools() -> Vec<VoxjValuePool> {
-        vec![
-            VoxjValuePool::Vec4Float(vec![[0.0, 0.0, 0.0, 1.0]; 4]),
-            VoxjValuePool::Float(vec![1.5]),
-        ]
-    }
-
-    /// A palette of `materials` materials: one property binding
-    /// `baseColor` to value pool 0, its rows the value-indices
-    /// `0..materials`.
-    fn palette(materials: usize) -> VoxjPalette {
-        VoxjPalette {
-            properties: vec![VoxjProperty {
-                name: "baseColor".to_owned(),
-                value_pool: 0,
-            }],
-            materials: (0..materials).map(|i| vec![i]).collect(),
-        }
-    }
-
-    /// The identity transform: zero translation, identity rotation, unit scale.
-    fn identity() -> VoxjTransform {
-        VoxjTransform {
-            position: [0.0, 0.0, 0.0],
-            rotation: [0.0, 0.0, 0.0, 1.0],
-            scale: [1.0, 1.0, 1.0],
-        }
-    }
-
-    /// A node with the given children and an identity transform.
-    fn node(child_nodes: Vec<usize>, child_objects: Vec<usize>) -> VoxjHierarchyNode {
-        VoxjHierarchyNode {
-            name: "n".to_owned(),
-            child_nodes,
-            child_objects,
-            transform: identity(),
-        }
-    }
-
-    /// The same small, complete, valid document the fail-fast tests use: one
-    /// four-material palette over a single color value pool, an object sampling
-    /// it across two voxels, and a two-node DAG with a root.
-    fn valid_file() -> VoxjFile {
-        VoxjFile {
-            version: 1,
-            main: VoxjMain {
-                runtime_state: VoxjRuntimeState {
-                    value_pools: value_pools(),
-                    palettes: vec![palette(4)],
-                    objects: vec![VoxjObject {
-                        name: "o".to_owned(),
-                        layers: vec![0],
-                        bounds: [2, 1, 1],
-                        origin: [0, 0, 0],
-                        voxel_positions: VoxjPositionBlock::RawJson(vec![[0, 0, 0], [1, 0, 0]]),
-                        voxel_samples: VoxjSampleBlock::RawJson(vec![vec![1, 3]]),
-                    }],
-                    nodes: vec![node(vec![1], vec![0]), node(vec![], vec![])],
-                    root_nodes: vec![0],
-                },
-                edit_state: None,
-                ext: None,
-            },
-        }
-    }
 
     /// The status of the check named `name`.
     fn status<'a>(checks: &'a [VoxjCheck], name: &str) -> &'a VoxjCheckStatus {
@@ -253,7 +226,7 @@ mod tests {
         // block-internal fault reports through `blocks`. The later geometry
         // checks are skipped for the object, so they still read as passed.
         file.main.runtime_state.objects[0].voxel_positions =
-            VoxjPositionBlock::BitmapBase64(base64(&[0xC1]));
+            VoxjPositionBlock::BitmapBase64(standard_base64(&[0xC1]));
         let checks = check_voxj_file(&DependenciesImpl, &file);
         assert!(matches!(
             status(&checks, "blocks"),

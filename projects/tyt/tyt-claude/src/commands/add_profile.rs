@@ -30,6 +30,7 @@ pub struct AddProfile {
 }
 
 impl AddProfile {
+    /// Adds the profile to the scope's config file.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let scope = self.scope_arg.or(self.scope_flag).unwrap_or(Scope::User);
         let target = scope.resolve_target_path(&dependencies)?;

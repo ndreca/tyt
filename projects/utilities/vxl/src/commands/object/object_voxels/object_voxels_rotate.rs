@@ -31,6 +31,7 @@ pub struct ObjectVoxelsRotate {
 }
 
 impl ObjectVoxelsRotate {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         edit_document(&dependencies, &self.input, self.output, |main| {
             let object_ids = self.selection.resolve_objects(main)?;
@@ -48,11 +49,11 @@ impl ObjectVoxelsRotate {
 #[cfg(test)]
 mod tests {
     use crate::commands::ObjectVoxelsRotate;
-    use clap::Parser;
+    use clap::{Error as ClapError, Parser};
     use ty_math::TyAxis3;
     use voxsmith::operations::object::QuarterTurns;
 
-    fn parse(turns: &str) -> Result<ObjectVoxelsRotate, clap::Error> {
+    fn parse(turns: &str) -> Result<ObjectVoxelsRotate, ClapError> {
         ObjectVoxelsRotate::try_parse_from([
             "rotate",
             "scene.voxj",

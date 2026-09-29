@@ -11,7 +11,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 /// Every primitive's stream list and the domain each texture bakes at.
 #[derive(Debug)]
-pub(crate) struct Streams {
+pub struct Streams {
     primitives: IdVec<BMeshPrimitive, Vec<ArrayDomain>>,
 
     /// Each texture element's bake domain; a written png and an image of the

@@ -1,4 +1,4 @@
-use crate::{Error, QbVoxMain, Result, SOLID_VISIBILITY, face_mask};
+use crate::{Error, QbVoxMain, Result, face_mask, rounded_translation};
 use branded_id::U32Id;
 use qbcl::qb::{QbColorFormat, QbFile, QbMatrix, QbVoxel, QbZAxisOrientation};
 use std::collections::HashSet;
@@ -7,15 +7,19 @@ use voxcore::{
     color::resolve_cell_color_or_transparent,
 };
 
+/// The visibility byte written for every synthesized solid `.qb` voxel, the
+/// plain solid flag a file without visibility masks holds.
+const SOLID_VISIBILITY: u8 = 255;
+
 /// Writes a [`QbVoxMain`] to a decoded Qubicle Binary [`QbFile`], the inverse
-/// of [`from_qb_file`](crate::from_qb_file). The scene holds the shape a
-/// `.qb` file holds: one root per matrix, each placing one object and no
-/// child node, in matrix order. Each root emits one matrix named for the
-/// root at the root's translation rounded to whole voxels, with its colors
-/// from the palette. Under visibility masks each solid voxel's byte says
-/// which faces its neighbors leave uncovered; otherwise every solid voxel
-/// takes the plain solid byte. The header comes from the ext. A state from
-/// [`to_qb_vox_main`](crate::to_qb_vox_main) has that shape.
+/// of [`from_qb_file`](crate::from_qb_file()). The scene holds the shape a
+/// `.qb` file holds: one root per matrix, each placing one object and no child
+/// node, in matrix order. Each root emits one matrix named for the root at the
+/// root's translation rounded to whole voxels, with its colors from the
+/// palette. Under visibility masks each solid voxel's byte says which faces its
+/// neighbors leave uncovered; otherwise every solid voxel takes the plain solid
+/// byte. The header comes from the ext. A state from
+/// [`to_qb_vox_main`](crate::to_qb_vox_main()) has that shape.
 ///
 /// Errors if:
 ///
@@ -143,7 +147,7 @@ fn matrix_from_object(
     Ok(QbMatrix {
         name: root.name.clone(),
         size: [size_x, size_y, size_z],
-        position: root.transform.position.round().as_ivec3().to_array(),
+        position: rounded_translation(root).to_array(),
         voxels,
     })
 }

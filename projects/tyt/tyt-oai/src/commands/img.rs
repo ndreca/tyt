@@ -1,6 +1,5 @@
 use crate::{
-    Conv, Dependencies, Error, InputMessage, OaiRequest, Quality, Result, Role, Turn,
-    utilities::ContinueKind,
+    ContinueKind, Conv, Dependencies, Error, InputMessage, OaiRequest, Quality, Result, Role, Turn,
 };
 use clap::{ArgAction, Parser};
 use std::path::{Path, PathBuf};
@@ -88,6 +87,8 @@ pub struct Img {
 }
 
 impl Img {
+    /// Sends the message and records the exchange in the OpenAI image
+    /// conversation file.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let Img {
             message,
@@ -236,6 +237,7 @@ impl Img {
 enum Append {
     /// Continue the most recent conversation in place.
     InPlace,
+
     /// Start a new conversation.
     NewConversation,
 }
@@ -245,8 +247,10 @@ enum Append {
 struct RequestConfig<'a> {
     /// The model to send the request to.
     model: &'a str,
+
     /// Whether to enable the image-generation tool.
     generate_image: bool,
+
     /// The rendering quality of the generated image.
     quality: Quality,
 }
@@ -255,12 +259,15 @@ struct RequestConfig<'a> {
 struct Plan {
     /// The request to send to OpenAI.
     request: OaiRequest,
+
     /// Where the new turns are appended.
     append: Append,
+
     /// Turns stored ahead of the new user turn when a new conversation is
     /// created: the effective system turns followed by the prior context the
     /// request replayed.
     prefix: Vec<Turn>,
+
     /// The prior image an image-only reconstruction feeds back alongside the new
     /// user message, recorded on the new user turn, if any.
     user_image: Option<String>,
@@ -316,13 +323,10 @@ fn load_system_prompts(dependencies: &impl Dependencies, names: &[String]) -> Re
     Ok(prompts)
 }
 
-/// Builds the API request, decides where its turns are appended, and records the
-/// turns to store ahead of the new user turn so a new conversation array mirrors
-/// exactly what the request replayed.
+/// Builds the API request and how `oai.img.json` records its turns.
 ///
-/// An explicit `--system-prompt` overrides; otherwise the prior conversation's
-/// stored system prompts are inherited so they persist across reconstructions —
-/// except `new-conversation`, which deliberately starts fresh.
+/// Stored system prompts carry over across reconstructions unless
+/// `--system-prompt` replaces them or the mode is `new-conversation`.
 fn build_request(
     conv: &Conv,
     conv_dir: &Path,
@@ -435,12 +439,11 @@ fn build_request(
 }
 
 /// Returns the prior-conversation turns a reconstruction `--continue-kind`
-/// re-sends, plus an image fed back on the new user turn (image-only mode).
+/// re-sends, plus an image fed back on the new user turn in image-only mode.
 ///
-/// A generated image carried forward as context becomes a "previous
-/// conversation" image blob — a `user` turn labelled [`IMAGE_LABEL`] that keeps
-/// the image — and existing blobs pass through unchanged, so repeated
-/// reconstructions neither duplicate nor relabel them.
+/// Each generated image carried forward gets an [`image_blob`] turn. Existing
+/// blobs pass through unchanged so repeated reconstructions neither duplicate
+/// nor relabel them.
 fn context_turns(
     continue_kind: ContinueKind,
     last: Option<&Vec<Turn>>,

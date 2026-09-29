@@ -10,6 +10,7 @@ pub enum ProfilePaletteShowCommand {
 }
 
 impl ProfilePaletteShowCommand {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             ProfilePaletteShowCommand::ProfilePaletteShowList(list) => list.execute(dependencies),

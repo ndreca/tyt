@@ -1,15 +1,14 @@
 use std::io::{Error, Result};
 
-/// The maximum response body size, in bytes, read from a request. Generated 3D
-/// assets (e.g. GLB and FBX models) can be sizable, so this is larger than the
-/// POST limit.
+/// The response body cap in bytes. The cap leaves room for generated 3D assets
+/// such as GLB and FBX models.
 const RESPONSE_LIMIT: u64 = 512 * 1024 * 1024;
 
 /// Sends an HTTP GET request with the given headers, returning the response
 /// status code and body bytes.
 ///
-/// Non-2xx responses are returned as `Ok` rather than an error so the caller can
-/// inspect the body.
+/// Non-2xx responses are returned as `Ok` rather than an error so the caller
+/// can inspect the body.
 pub fn http_get(url: &str, headers: &[(&str, &str)]) -> Result<(u16, Vec<u8>)> {
     let mut request = ureq::get(url).config().http_status_as_error(false).build();
     for (name, value) in headers {

@@ -1,7 +1,4 @@
-use crate::{
-    CheckedProgram, Error, Program, Result, TypeEnvironment,
-    checker::{CheckedBinding, check_root},
-};
+use crate::{CheckedBinding, CheckedProgram, Error, Program, Result, TypeEnvironment, check_root};
 
 /// Checks a program against the names the environment supplies, settling
 /// every binding's type in order.
@@ -38,16 +35,8 @@ pub fn check(program: Program, environment: &TypeEnvironment) -> Result<CheckedP
 mod tests {
     use crate::{
         CheckFailure, CheckedProgram, Dimension, Domain, Error, Scalar, Type, TypeEnvironment,
-        check, check_expression, parse, parse_expression,
+        check, check_expression, parse, parse_expression, ty,
     };
-
-    fn ty(domain: Domain, dimension: Dimension, scalar: Scalar) -> Type {
-        Type {
-            domain,
-            dimension,
-            scalar,
-        }
-    }
 
     fn environment(names: &[(&str, Domain, Dimension, Scalar)]) -> TypeEnvironment {
         TypeEnvironment {

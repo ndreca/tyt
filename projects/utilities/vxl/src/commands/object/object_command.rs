@@ -15,31 +15,43 @@ use clap::Subcommand;
 pub enum ObjectCommand {
     #[command(name = "add")]
     ObjectAdd(ObjectAdd),
+
     #[command(name = "downsample")]
     ObjectDownsample(ObjectDownsample),
+
     #[command(name = "duplicate")]
     ObjectDuplicate(ObjectDuplicate),
+
     #[command(name = "link")]
     ObjectLink(ObjectLink),
+
     #[command(name = "mesh")]
     ObjectMesh(ObjectMesh),
+
     #[command(name = "remove")]
     ObjectRemove(ObjectRemove),
+
     #[command(name = "reorder")]
     ObjectReorder(ObjectReorder),
+
     #[command(name = "set")]
     ObjectSet(ObjectSet),
+
     #[command(name = "trim")]
     ObjectTrim(ObjectTrim),
+
     #[command(name = "unlink")]
     ObjectUnlink(ObjectUnlink),
+
     #[command(name = "upsample")]
     ObjectUpsample(ObjectUpsample),
+
     #[command(name = "voxels")]
     ObjectVoxels(ObjectVoxels),
 }
 
 impl ObjectCommand {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             ObjectCommand::ObjectAdd(add) => add.execute(dependencies),

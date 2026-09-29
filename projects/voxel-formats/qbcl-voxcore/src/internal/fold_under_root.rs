@@ -1,4 +1,4 @@
-use crate::Result;
+use crate::{Result, rounded_translation};
 use branded_id::U32Id;
 use std::collections::HashSet;
 use ty_math::{TyTransformF64, TyVector3I32};
@@ -93,7 +93,7 @@ fn visit(
         .hierarchy_node(node_id)
         .expect("a root or child is a listed node")
         .clone();
-    let world = parent + node.transform.position.round().as_ivec3();
+    let world = parent + rounded_translation(&node);
     node.transform = TyTransformF64::from_translation(world.as_dvec3());
 
     let mut child_node_ids = Vec::with_capacity(node.child_node_ids.len());

@@ -5,8 +5,8 @@ use vmax_codec::{
 };
 
 /// Writes a [`VMaxVoxMain`] to a `.vmax` package through `dependencies`, the
-/// package form of [`to_vmax_file`] and the inverse of
-/// [`from_vmax_package`](crate::codec::from_vmax_package).
+/// package form of [`to_vmax_file()`] and the inverse of
+/// [`from_vmax_package`](crate::codec::from_vmax_package()).
 ///
 /// # Arguments
 /// * `write` - receives each file's package-relative name and bytes and

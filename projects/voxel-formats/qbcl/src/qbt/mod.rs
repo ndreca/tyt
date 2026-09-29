@@ -1,3 +1,7 @@
+//! Qubicle Binary Tree (`.qbt`) data types, gated behind the `qbt` feature.
+
+// Public API
+
 mod qbt_color;
 mod qbt_compound;
 mod qbt_file;

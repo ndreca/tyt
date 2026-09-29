@@ -5,10 +5,10 @@ use crate::{
 };
 use gltf::json::Root;
 
-/// The relative URIs the bytes of a `.gltf` or `.glb` file reference, the
-/// loose files a caller reads beside the primary before
-/// [`from_gltf_bytes`](crate::codec::from_gltf_bytes): every buffer and
-/// image URI that is not a data URI, and every file a material's or mesh's
+/// The relative URIs the bytes of a `.gltf` or `.glb` file reference, the loose
+/// files a caller reads beside the primary before
+/// [`from_gltf_bytes`](crate::codec::from_gltf_bytes()): every buffer and image
+/// URI that is not a data URI, and every file a material's or mesh's
 /// `extras.vxl.values` entry references, each once, in reference order.
 pub fn gltf_loose_uris(bytes: &[u8]) -> Result<Vec<String>> {
     let json = if is_glb(bytes) {

@@ -64,6 +64,7 @@ pub struct PaletteList {
 }
 
 impl PaletteList {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let fields = PaletteListFields {
             properties: self.show_properties,

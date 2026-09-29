@@ -1,3 +1,5 @@
+// Internal API
+
 mod bound_names;
 mod built_in_profiles;
 mod compute_index_entry;
@@ -9,7 +11,6 @@ mod mesh_config;
 mod mesh_profile;
 mod primitive_entry;
 mod slot_entry;
-mod stack_profiles;
 mod texture_shape_entry;
 mod value_entry;
 
@@ -24,6 +25,5 @@ pub(crate) use mesh_config::*;
 pub(crate) use mesh_profile::*;
 pub(crate) use primitive_entry::*;
 pub(crate) use slot_entry::*;
-pub(crate) use stack_profiles::*;
 pub(crate) use texture_shape_entry::*;
 pub(crate) use value_entry::*;

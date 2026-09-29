@@ -4,7 +4,7 @@ use serde::Deserialize;
 /// A `palette show` profile, each element mirroring a flag.
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields, rename_all = "camelCase")]
-pub(crate) struct PaletteShowProfile {
+pub struct PaletteShowProfile {
     /// Mirrors `--properties-from` per entry. The layout never travels.
     pub(crate) properties_from: Vec<String>,
 

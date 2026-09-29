@@ -1,11 +1,8 @@
-use crate::{
-    Dimension, Domain, Scalar,
-    checker::{CheckResult, CheckedNode},
-};
+use crate::{CheckResult, CheckedNode, Dimension, Domain, Scalar};
 
 /// A subtree of bare literals and the type-keeping operations over them,
 /// awaiting the numeric type its context fixes.
-pub(crate) struct Pending {
+pub struct Pending {
     /// What the subtree has one entry per.
     pub(crate) domain: Domain,
 

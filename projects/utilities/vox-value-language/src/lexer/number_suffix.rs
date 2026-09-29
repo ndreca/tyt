@@ -1,9 +1,12 @@
 /// The type a literal's suffix pins.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub(crate) enum NumberSuffix {
+pub enum NumberSuffix {
     F32,
+
     U8,
+
     U16,
+
     U32,
 }
 

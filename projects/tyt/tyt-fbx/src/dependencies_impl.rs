@@ -8,8 +8,10 @@ use std::{
     result::Result as StdResult,
 };
 use ty_math::{TySrgbaF32, TyVector3F64};
-use tyt_injection::serde_json::Value;
+use tyt_injection::{Args, serde_json::Value};
 
+/// The [`Dependencies`] that run Blender and touch the real filesystem and
+/// terminal.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct DependenciesImpl;
 
@@ -29,7 +31,7 @@ impl Dependencies for DependenciesImpl {
         script_py_path: P2,
         args: I,
     ) -> Result<Vec<u8>> {
-        let blender_args = tyt_injection::Args::new()
+        let blender_args = Args::new()
             .arg("--background")
             .arg("--python-expr")
             .arg(format!(

@@ -2,6 +2,8 @@
 //! operations module that has any. [`DependenciesImpl`], behind the `impl`
 //! feature, binds them over `png` and `zune-jpeg`.
 
+// Optional API
+
 #[cfg(feature = "mesh_doc")]
 pub mod mesh_doc;
 

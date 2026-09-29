@@ -1,3 +1,8 @@
+//! Qubicle Construction Library (`.qbcl`) data types, gated behind the `qbcl`
+//! feature.
+
+// Public API
+
 mod qbcl_color;
 mod qbcl_compound;
 mod qbcl_file;

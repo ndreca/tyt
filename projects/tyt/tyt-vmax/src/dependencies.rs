@@ -3,14 +3,18 @@ use std::path::{Path, PathBuf};
 
 /// Dependencies for this crate's operations.
 pub trait Dependencies {
+    /// Copies the directory `src` recursively to `dst`.
     fn copy_dir(&self, src: &Path, dst: &Path) -> Result<()>;
 
+    /// Lists the entries of the directory at `path`.
     fn list_dir(&self, path: &Path) -> Result<Vec<PathBuf>>;
 
+    /// Flags each `(path, is_dir)` candidate that the gitignore-style
+    /// `patterns` match.
     fn match_paths(&self, patterns: &[&str], candidates: &[(&str, bool)]) -> Result<Vec<bool>>;
 
-    /// Like [`match_paths`](Self::match_paths) but with real gitignore
-    /// directory semantics: a matched directory pulls in its whole subtree.
+    /// Flags each `(path, is_dir)` candidate that the gitignore-style
+    /// `patterns` match or that sits under a matched directory.
     fn match_subtrees(&self, patterns: &[&str], candidates: &[(&str, bool)]) -> Result<Vec<bool>>;
 
     /// Rewrites `data`/`pal` references according to the supplied `(old, new)`
@@ -24,8 +28,8 @@ pub trait Dependencies {
     ) -> Result<Vec<u8>>;
 
     /// Flattens a `scene.json`'s hierarchy into one [`VMaxSceneNode`] per
-    /// group and object (groups first), exposing only the identity and parentage
-    /// the `hierarchy` and `rename-node` commands need.
+    /// group and object (groups first), exposing only the identity and
+    /// parentage the `hierarchy` and `rename-node` commands need.
     fn scene_nodes(&self, scene_bytes: &[u8]) -> Result<Vec<VMaxSceneNode>>;
 
     /// Resolves each node's transform for the `hierarchy` command's
@@ -45,12 +49,17 @@ pub trait Dependencies {
     /// from raw JSON so objects missing optional fields still parse.
     fn scene_object_refs(&self, scene_bytes: &[u8]) -> Result<Vec<(String, String)>>;
 
+    /// Reads the file at `path`.
     fn read_file(&self, path: &Path) -> Result<Vec<u8>>;
 
+    /// Removes the file at `path`.
     fn remove_file(&self, path: &Path) -> Result<()>;
 
+    /// Renames the file `from` to `to`.
     fn rename_file(&self, from: &Path, to: &Path) -> Result<()>;
 
+    /// Returns `scene_bytes` with each group in `group_ids` and object in
+    /// `object_ids` renamed to `new_name`.
     fn rename_scene_nodes_json(
         &self,
         scene_bytes: &[u8],
@@ -59,6 +68,7 @@ pub trait Dependencies {
         new_name: &str,
     ) -> Result<Vec<u8>>;
 
+    /// Writes `contents` to the file at `path`.
     fn write_file(&self, path: &Path, contents: &[u8]) -> Result<()>;
 
     /// Converts the `.vmax` package directory at `input` into a Voxel Json
@@ -81,5 +91,6 @@ pub trait Dependencies {
         color_format: ColorFormat,
     ) -> Result<()>;
 
+    /// Writes `contents` to stdout.
     fn write_stdout(&self, contents: &[u8]) -> Result<()>;
 }

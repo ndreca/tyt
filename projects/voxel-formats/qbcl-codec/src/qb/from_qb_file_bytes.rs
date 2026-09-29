@@ -1,12 +1,10 @@
-use crate::{ByteReader, Result, invalid};
+use crate::{
+    ByteReader, Result, invalid,
+    qb::{CODE_FLAG, NEXT_SLICE_FLAG},
+    voxel_count,
+};
 use qbcl::qb::{QbColorFormat, QbFile, QbMatrix, QbVoxel, QbZAxisOrientation};
 use std::iter;
-
-/// The run marker in `.qb` RLE data: the next two `u32`s are a count and color.
-const CODE_FLAG: u32 = 2;
-
-/// The end-of-slice marker in `.qb` RLE data.
-const NEXT_SLICE_FLAG: u32 = 6;
 
 /// Parses a Qubicle Binary `.qb` file into a [`QbFile`].
 ///
@@ -91,18 +89,6 @@ fn read_matrix(
         position,
         voxels,
     })
-}
-
-/// The number of cells in a `size`, or an error if it overflows `usize`.
-fn voxel_count(size: [u32; 3]) -> Result<usize> {
-    (size[0] as usize)
-        .checked_mul(size[1] as usize)
-        .and_then(|xy| xy.checked_mul(size[2] as usize))
-        .ok_or_else(|| {
-            invalid(format!(
-                "matrix size {size:?} overflows the addressable range"
-            ))
-        })
 }
 
 /// Reads a raw (uncompressed) voxel grid: one four-byte color per cell, in

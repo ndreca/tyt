@@ -11,6 +11,9 @@ categories = ["data-structures", "game-development", "graphics"]
 [package.metadata.workspaces]
 independent = true
 
+[package.metadata.docs.rs]
+all-features = true
+
 [features]
 default = ["qb", "qbt", "qbcl"]
 qb = []

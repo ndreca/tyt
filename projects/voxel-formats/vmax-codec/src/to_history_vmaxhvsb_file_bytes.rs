@@ -4,7 +4,7 @@ use vmax::VMaxHistoryVmaxhvsbFile;
 /// Encodes a [`VMaxHistoryVmaxhvsbFile`] into `*.vmaxhvsb` bytes (a binary
 /// plist wrapped in an LZFSE block stream) through `dependencies`, the inverse
 /// of
-/// [`from_history_vmaxhvsb_file_bytes`](crate::from_history_vmaxhvsb_file_bytes).
+/// [`from_history_vmaxhvsb_file_bytes`](crate::from_history_vmaxhvsb_file_bytes()).
 pub fn to_history_vmaxhvsb_file_bytes<D: CompressLzfse + EncodeVMaxPlist>(
     dependencies: &D,
     file: &VMaxHistoryVmaxhvsbFile,

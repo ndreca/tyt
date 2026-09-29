@@ -10,11 +10,13 @@ use clap::Subcommand;
 pub enum ProfilePaletteCommand {
     #[command(name = "quantize")]
     ProfilePaletteQuantize(ProfilePaletteQuantize),
+
     #[command(name = "show")]
     ProfilePaletteShow(ProfilePaletteShow),
 }
 
 impl ProfilePaletteCommand {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             ProfilePaletteCommand::ProfilePaletteQuantize(quantize) => {

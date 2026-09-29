@@ -7,12 +7,15 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct VMaxGroup {
+    /// Display name.
     #[cfg_attr(feature = "serde", serde(default))]
     pub name: String,
 
+    /// Node id.
     #[cfg_attr(feature = "serde", serde(default))]
     pub id: String,
 
+    /// Parent group id (`pid`), or `None` at the root.
     #[cfg_attr(
         feature = "serde",
         serde(rename = "pid", skip_serializing_if = "Option::is_none", default)
@@ -26,12 +29,15 @@ pub struct VMaxGroup {
     )]
     pub hidden: Option<bool>,
 
+    /// Position (`t_p`).
     #[cfg_attr(feature = "serde", serde(rename = "t_p"))]
     pub position: [f64; 3],
 
+    /// Rotation as an `[x, y, z, angle]` axis-angle (`t_r`).
     #[cfg_attr(feature = "serde", serde(rename = "t_r"))]
     pub rotation: [f64; 4],
 
+    /// Scale (`t_s`).
     #[cfg_attr(feature = "serde", serde(rename = "t_s"))]
     pub scale: [f64; 3],
 
@@ -58,8 +64,8 @@ pub struct VMaxGroup {
     #[cfg_attr(feature = "serde", serde(default))]
     pub t_pf: String,
 
-    /// Transform pivot-offset; shape varies, kept as untyped
-    /// [`VMaxValue`](crate::VMaxValue) (round-trips unchanged).
+    /// Transform pivot-offset; shape varies, kept as untyped [`VMaxValue`]
+    /// (round-trips unchanged).
     #[cfg_attr(
         feature = "serde",
         serde(skip_serializing_if = "Option::is_none", default)

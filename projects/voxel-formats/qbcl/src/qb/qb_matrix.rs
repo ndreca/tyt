@@ -43,7 +43,7 @@ mod tests {
     fn voxel_indexes_in_z_y_x_order() {
         let size = [3u32, 2, 2];
         let [size_x, size_y, size_z] = size;
-        // Build the grid in storage order, each cell tagged with its coordinate.
+        // Fill the grid in storage order, each cell tagged with its coordinate.
         let mut voxels = Vec::new();
         for z in 0..size_z {
             for y in 0..size_y {

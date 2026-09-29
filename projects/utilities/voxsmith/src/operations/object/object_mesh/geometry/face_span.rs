@@ -4,13 +4,19 @@ use ty_math::TyVector3F32;
 /// spanning `u` in `[u0, u1)` and `v` in `[v0, v1)`, where `u` and `v` are
 /// the axes after `d`, cyclically.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) struct FaceSpan {
+pub struct FaceSpan {
     pub d: usize,
+
     pub sign: i32,
+
     pub s: u32,
+
     pub u0: usize,
+
     pub u1: usize,
+
     pub v0: usize,
+
     pub v1: usize,
 }
 

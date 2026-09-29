@@ -1,11 +1,11 @@
 use crate::{EncodePng, Error, Result};
 use vmax::VMaxImage;
 
-/// Encodes a [`VMaxImage`] into `QuickLook/*.png` bytes through
-/// `dependencies`: a `width x height` 8-bit RGBA PNG, one pixel per cell. The
-/// inverse of [`from_image_png_file_bytes`](crate::from_image_png_file_bytes).
-/// The round trip is pixel-lossless, not byte-identical, because the bytes
-/// are re-encoded.
+/// Encodes a [`VMaxImage`] into `QuickLook/*.png` bytes through `dependencies`:
+/// a `width x height` 8-bit RGBA PNG, one pixel per cell. The inverse of
+/// [`from_image_png_file_bytes`](crate::from_image_png_file_bytes()). The round
+/// trip is pixel-lossless, not byte-identical, because the bytes are
+/// re-encoded.
 pub fn to_image_png_file_bytes<D: EncodePng>(
     dependencies: &D,
     image: &VMaxImage,

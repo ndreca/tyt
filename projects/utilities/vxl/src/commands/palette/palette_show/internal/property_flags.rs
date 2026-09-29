@@ -5,7 +5,7 @@ use clap::{Arg, ArgAction, ArgMatches, Args, Command, Error as ClapError, FromAr
 /// together because each `--properties-from` appends its profile's selectors
 /// at the flag's position among the `--property` selectors.
 #[derive(Clone, Debug, Default)]
-pub(crate) struct PropertyFlags {
+pub struct PropertyFlags {
     pub(crate) entries: Vec<PropertyFlag>,
 }
 

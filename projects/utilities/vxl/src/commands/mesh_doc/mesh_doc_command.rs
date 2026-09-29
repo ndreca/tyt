@@ -10,6 +10,7 @@ pub enum MeshDocCommand {
 }
 
 impl MeshDocCommand {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             MeshDocCommand::MeshDocVoxelize(voxelize) => voxelize.execute(dependencies),

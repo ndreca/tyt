@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// The payload is a plist array of batch records whose shape is undocumented
 /// (empty in every observed sample), so each entry is kept as untyped
-/// [`VMaxValue`](crate::VMaxValue) (round-trips unchanged).
+/// [`VMaxValue`] (round-trips unchanged).
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize), serde(transparent))]
 pub struct VMaxHistoryVmaxhvscFile(pub Vec<VMaxValue>);

@@ -1,3 +1,5 @@
+// Public API
+
 mod mvox_color;
 mod mvox_palette;
 

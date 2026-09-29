@@ -10,17 +10,22 @@ use clap::Subcommand;
 pub enum VoxDocToCommand {
     #[command(name = "goxl")]
     VoxDocToGoxl(VoxDocToGoxl),
+
     #[command(name = "mvox")]
     VoxDocToMvox(VoxDocToMvox),
+
     #[command(name = "qbcl")]
     VoxDocToQbcl(VoxDocToQbcl),
+
     #[command(name = "vmax")]
     VoxDocToVmax(VoxDocToVmax),
+
     #[command(name = "voxj")]
     VoxDocToVoxj(VoxDocToVoxj),
 }
 
 impl VoxDocToCommand {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             VoxDocToCommand::VoxDocToGoxl(goxl) => goxl.execute(dependencies),

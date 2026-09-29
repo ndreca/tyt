@@ -152,8 +152,9 @@ fn shortest_positive(sides: impl IntoIterator<Item = f64>) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use super::reference_side;
-    use crate::operations::mesh_doc::ResolutionReference;
+    use crate::operations::mesh_doc::{
+        ResolutionReference, mesh_doc_voxelize::voxelize::reference_side,
+    };
     use ty_math::TyVector3F64;
 
     /// The extent `(x, y, z)`.
@@ -198,23 +199,219 @@ mod document_tests {
     use crate::{
         dependencies::DependenciesImpl,
         operations::mesh_doc::{
-            FillMode, GridResolution, MapSpec, MaterialMode, OutOfRangeProperty,
-            ResolutionReference, SurfaceMode, VoxelFrame, VoxelScale, VoxelizeOptions, box_main,
-            box_primitive, document_of, full_square, pbr_quad_main, png_rgba, textured_quad_main,
-            triangle_of, voxel_attribute, voxel_hex, voxel_number, voxelize,
+            FillMode, GridResolution, MaterialMode, OutOfRangeProperty, ResolutionReference,
+            SurfaceMode, VoxelFrame, VoxelScale, VoxelizeOptions, box_main, box_primitive,
+            document_of, png_rgba, triangle_of, voxelize,
         },
     };
-    use meshdoc::{MeshHierarchyNode, MeshMain, MeshMaterial, MeshObject, MeshPrimitive};
+    use branded_id::U32Id;
+    use meshdoc::{
+        MeshHierarchyNode, MeshImage, MeshImageMediaType, MeshImageSource, MeshMain, MeshMaterial,
+        MeshObject, MeshPrimitive, MeshTexture, MeshTextureRef,
+    };
     use ty_math::{
-        TyLinSrgbF64, TyLinSrgbaF64, TyTransformF64, TyVector3F64, TyVector3I32, TyVector3U32,
+        TyLinSrgbF64, TyLinSrgbaF64, TyTransformF64, TyVector2F64, TyVector3F64, TyVector3I32,
+        TyVector3U32,
     };
     use voxcore::{
-        VoxMain, VoxValuePoolValueRef,
+        BVoxValuePoolValue, VoxMain, VoxValuePool, VoxValuePoolValueRef,
+        color::srgba_u8_from_lin_srgba_f64,
         material::{
             BASE_COLOR, EMISSIVE_COLOR, EMISSIVE_STRENGTH, IOR, METALLIC, OCCLUSION_STRENGTH,
             ROUGHNESS, TRANSMISSION,
         },
     };
+
+    /// One PBR texture map to attach to a test quad.
+    enum MapSpec<'a> {
+        BaseColor {
+            png: &'a [u8],
+
+            stream: u32,
+
+            factor: [f64; 4],
+        },
+
+        MetallicRoughness {
+            png: &'a [u8],
+
+            stream: u32,
+
+            metallic: f64,
+
+            roughness: f64,
+        },
+
+        Emissive {
+            png: &'a [u8],
+
+            stream: u32,
+
+            factor: [f64; 3],
+        },
+
+        Occlusion {
+            png: &'a [u8],
+
+            stream: u32,
+
+            strength: f64,
+        },
+    }
+
+    impl MapSpec<'_> {
+        /// The map's PNG bytes.
+        fn png(&self) -> &[u8] {
+            match self {
+                MapSpec::BaseColor { png, .. }
+                | MapSpec::MetallicRoughness { png, .. }
+                | MapSpec::Emissive { png, .. }
+                | MapSpec::Occlusion { png, .. } => png,
+            }
+        }
+    }
+
+    /// A full square UV layout over a quad, mapping each corner to a texture
+    /// corner.
+    fn full_square() -> [[f64; 2]; 4] {
+        [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]]
+    }
+
+    /// A unit quad in the XZ plane at `y = 0` carrying two UV streams, `uv0`
+    /// and `uv1`, and the given PBR maps. Each map is its own image and
+    /// texture, so a map samples the stream it declares; a voxel spanning the
+    /// quad averages the texels under it.
+    fn pbr_quad_main(uv0: [[f64; 2]; 4], uv1: [[f64; 2]; 4], maps: &[MapSpec]) -> MeshMain<()> {
+        let mut main = MeshMain::default();
+
+        let mut material = MeshMaterial::default();
+
+        for map in maps {
+            let image_id = main
+                .retain_image(MeshImage {
+                    name: String::new(),
+                    media_type: MeshImageMediaType::Png,
+                    source: MeshImageSource::Bytes(map.png().to_vec()),
+                })
+                .unwrap();
+            let texture_id = main.retain_texture(MeshTexture::new(image_id)).unwrap();
+            let texture_ref = |stream: u32| MeshTextureRef {
+                texture_id,
+                uv_stream_id: U32Id::from_u32(stream),
+            };
+
+            match *map {
+                MapSpec::BaseColor { stream, factor, .. } => {
+                    material.base_color_factor = TyLinSrgbaF64::from(factor);
+                    material.base_color_texture = Some(texture_ref(stream));
+                }
+                MapSpec::MetallicRoughness {
+                    stream,
+                    metallic,
+                    roughness,
+                    ..
+                } => {
+                    material.metallic_factor = metallic;
+                    material.roughness_factor = roughness;
+                    material.metallic_roughness_texture = Some(texture_ref(stream));
+                }
+                MapSpec::Emissive { stream, factor, .. } => {
+                    material.emissive_factor = TyLinSrgbF64::from(factor);
+                    material.emissive_texture = Some(texture_ref(stream));
+                }
+                MapSpec::Occlusion {
+                    stream, strength, ..
+                } => {
+                    material.occlusion_strength = strength;
+                    material.occlusion_texture = Some(texture_ref(stream));
+                }
+            }
+        }
+
+        let material_id = main.retain_material(material).unwrap();
+
+        let mut primitive = MeshPrimitive::new(
+            vec![
+                TyVector3F64::new(0.0, 0.0, 0.0),
+                TyVector3F64::new(1.0, 0.0, 0.0),
+                TyVector3F64::new(1.0, 0.0, 1.0),
+                TyVector3F64::new(0.0, 0.0, 1.0),
+            ],
+            vec![triangle_of(0, 1, 2), triangle_of(0, 2, 3)],
+        )
+        .unwrap();
+
+        for uvs in [uv0, uv1] {
+            primitive
+                .push_uv_stream(uvs.iter().map(|uv| TyVector2F64::from_array(*uv)).collect())
+                .unwrap();
+        }
+
+        primitive.set_material_id(Some(material_id));
+
+        document_of(main, primitive, None, TyTransformF64::default())
+    }
+
+    /// The value pool and value id of `attribute` on the material the voxel at
+    /// `position` samples, in the first object's first layer.
+    fn voxel_attribute<'a>(
+        main: &'a VoxMain,
+        position: TyVector3U32,
+        attribute: &str,
+    ) -> (&'a VoxValuePool, U32Id<BVoxValuePoolValue>) {
+        let (_, object) = main.iter_objects().next().unwrap();
+        let voxel_id = object.voxel_id(position).unwrap();
+        let (layer_id, palette_id) = object.iter_layers().next().unwrap();
+        let material_id = object.voxel_material(voxel_id, layer_id).unwrap();
+        let palette = main.palette(palette_id).unwrap();
+        let property_id = palette.property_id_by_name(attribute).unwrap();
+        main.material_value(palette_id, material_id, property_id)
+            .unwrap()
+    }
+
+    /// A unit quad with a base-color texture of the given PNG over the full
+    /// square and the given linear `factor`.
+    fn textured_quad_main(png: &[u8], factor: [f64; 4]) -> MeshMain<()> {
+        pbr_quad_main(
+            full_square(),
+            full_square(),
+            &[MapSpec::BaseColor {
+                png,
+                stream: 0,
+                factor,
+            }],
+        )
+    }
+
+    /// The `#RRGGBBAA` hex of the `baseColor` the voxel at `position` samples,
+    /// encoded to sRGB from the stored linear color.
+    fn voxel_hex(main: &VoxMain, position: TyVector3U32) -> String {
+        let (value_pool, value_id) = voxel_attribute(main, position, BASE_COLOR);
+        let VoxValuePoolValueRef::Vec4Float(components) = value_pool.value(value_id).unwrap()
+        else {
+            panic!("baseColor is a four-float color");
+        };
+        let bytes = <[u8; 4]>::from(srgba_u8_from_lin_srgba_f64(TyLinSrgbaF64::new(
+            components[0],
+            components[1],
+            components[2],
+            components[3],
+        )));
+        format!(
+            "#{:02X}{:02X}{:02X}{:02X}",
+            bytes[0], bytes[1], bytes[2], bytes[3]
+        )
+    }
+
+    /// The numeric value of one float attribute the voxel at `position`
+    /// samples.
+    fn voxel_number(main: &VoxMain, position: TyVector3U32, attribute: &str) -> f64 {
+        let (value_pool, value_id) = voxel_attribute(main, position, attribute);
+        match value_pool.value(value_id).unwrap() {
+            VoxValuePoolValueRef::Float(number) => number,
+            other => panic!("{attribute} is a float, not {other:?}"),
+        }
+    }
 
     /// Options at `meters` per voxel under the given modes, everything else
     /// off.

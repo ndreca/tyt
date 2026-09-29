@@ -1,3 +1,5 @@
+// Internal API
+
 mod atlas_layout;
 mod atlases;
 mod streams;

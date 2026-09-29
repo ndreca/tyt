@@ -11,6 +11,9 @@ categories = ["data-structures", "game-development", "graphics"]
 [package.metadata.workspaces]
 independent = true
 
+[package.metadata.docs.rs]
+all-features = true
+
 [dependencies]
 base64 = { version = "0.22", optional = true }
 flate2 = { version = "1", optional = true }

@@ -18,8 +18,8 @@ use voxcore::{
 ///
 /// The shared `BL16` voxel blocks become native objects and the per-layer block
 /// placements that stamp them become the hierarchy nodes; this holds the rest,
-/// with one layer entry per hierarchy node, keyed by the node's id. The
-/// entries follow the state through the [`VoxExt`](voxcore::VoxExt) hooks.
+/// with one layer entry per hierarchy node, keyed by the node's id. The entries
+/// follow the state through the [`VoxExt`] hooks.
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct GoxlExt {

@@ -1,4 +1,8 @@
-mod from_qbcl_error;
+//! Qubicle: the [`Qb`], [`Qbt`], and [`Qbcl`] formats and the dependencies
+//! their codec takes.
+
+// Public API
+
 mod qb;
 #[allow(clippy::module_inception)]
 mod qbcl;
@@ -10,8 +14,14 @@ pub use qbcl::*;
 pub use qbcl_dependencies::*;
 pub use qbt::*;
 
-#[cfg(feature = "impl")]
-mod qbcl_dependencies_impl;
+// Optional API
 
 #[cfg(feature = "ext")]
 mod ext;
+
+#[cfg(feature = "impl")]
+mod qbcl_dependencies_impl;
+
+// Internal API
+
+mod from_qbcl_error;

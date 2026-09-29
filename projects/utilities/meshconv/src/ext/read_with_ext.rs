@@ -18,6 +18,7 @@ pub fn read_with_ext<D: Dependencies>(
 /// The typed read of one format.
 struct ReadWithExt<'a, D> {
     dependencies: &'a D,
+
     files: &'a [MeshDocumentFile],
 }
 

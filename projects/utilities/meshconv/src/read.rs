@@ -19,6 +19,7 @@ pub fn read<D: Dependencies>(
 /// The bare read of one format.
 struct Read<'a, D> {
     dependencies: &'a D,
+
     files: &'a [MeshDocumentFile],
 }
 

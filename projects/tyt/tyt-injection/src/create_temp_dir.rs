@@ -5,6 +5,7 @@ use std::{
     path::PathBuf,
 };
 
+/// Creates a uniquely named directory under the system temp directory.
 pub fn create_temp_dir() -> Result<PathBuf> {
     // Try a handful of times in the unlikely event of a name collision.
     for _ in 0..16 {

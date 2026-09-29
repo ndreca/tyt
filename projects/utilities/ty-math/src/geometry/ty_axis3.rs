@@ -1,10 +1,15 @@
-use std::fmt::{self, Display};
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 /// One axis of a 3D vector.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum TyAxis3 {
+    /// The x axis.
     X,
+
+    /// The y axis.
     Y,
+
+    /// The z axis.
     Z,
 }
 
@@ -20,7 +25,7 @@ impl TyAxis3 {
 }
 
 impl Display for TyAxis3 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
         let name = match self {
             TyAxis3::X => "x",
             TyAxis3::Y => "y",

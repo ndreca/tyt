@@ -1,3 +1,5 @@
+// Public API
+
 mod c6x1_to_equirect;
 mod c6x1_to_faces;
 mod c6x1_to_net;

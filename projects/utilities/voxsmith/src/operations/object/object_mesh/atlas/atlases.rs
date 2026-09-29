@@ -8,13 +8,16 @@ use vox_value_language::Domain;
 
 /// The atlases over one geometry, each laid out on demand, and each face's
 /// cell on them.
-pub(crate) struct Atlases<'a> {
+pub struct Atlases<'a> {
     shape: TextureShape,
+
     swatches: &'a Swatches<'a>,
+
     geometry: &'a MeshGeometry,
 }
 
 impl<'a> Atlases<'a> {
+    /// The atlases of `shape` over `geometry` whose faces draw from `swatches`.
     pub(crate) fn new(
         shape: TextureShape,
         swatches: &'a Swatches<'a>,

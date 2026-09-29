@@ -65,56 +65,21 @@ fn entry_name(path: &Path) -> Result<String> {
         .ok_or_else(|| Error::Files(format!("`{}` is not a UTF-8 file name", path.display())))
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "impl"))]
 mod tests {
-    use crate::{
-        DirectoryEntry, ListDir, ReadFile, ReadFormat, VoxDocumentFile, read_document_files,
-    };
+    use crate::{MemoryFiles, ReadFormat, VoxDocumentFile, read_document_files};
     use std::{
+        cell::RefCell,
         collections::BTreeMap,
-        io::{Error as IOError, ErrorKind, Result as IOResult},
         path::{Path, PathBuf},
     };
 
-    /// A filesystem of fixed files, listing a directory as its immediate
-    /// children.
-    struct Files(BTreeMap<PathBuf, Vec<u8>>);
-
-    impl ReadFile for Files {
-        fn read_file(&self, path: &Path) -> IOResult<Vec<u8>> {
-            self.0
-                .get(path)
-                .cloned()
-                .ok_or_else(|| IOError::from(ErrorKind::NotFound))
-        }
-    }
-
-    impl ListDir for Files {
-        fn list_dir(&self, path: &Path) -> IOResult<Vec<DirectoryEntry>> {
-            let mut entries: Vec<DirectoryEntry> = self
-                .0
-                .keys()
-                .filter_map(|file| {
-                    let relative = file.strip_prefix(path).ok()?;
-
-                    let first = relative.components().next()?;
-
-                    Some(DirectoryEntry {
-                        path: path.join(first),
-                        is_dir: relative.components().count() > 1,
-                    })
-                })
-                .collect();
-
-            entries.dedup();
-
-            Ok(entries)
-        }
-    }
-
     #[test]
     fn a_single_file_document_is_one_empty_path() {
-        let files = Files(BTreeMap::from([(PathBuf::from("m.vox"), b"VOX ".to_vec())]));
+        let files = MemoryFiles(RefCell::new(BTreeMap::from([(
+            PathBuf::from("m.vox"),
+            b"VOX ".to_vec(),
+        )])));
 
         assert_eq!(
             read_document_files(&files, ReadFormat::MVox, Path::new("m.vox")).unwrap(),
@@ -124,14 +89,14 @@ mod tests {
 
     #[test]
     fn a_package_lists_its_files_one_level_deep_in_path_order() {
-        let files = Files(BTreeMap::from([
+        let files = MemoryFiles(RefCell::new(BTreeMap::from([
             (PathBuf::from("p.vmax/scene.json"), b"{}".to_vec()),
             (
                 PathBuf::from("p.vmax/QuickLook/Thumbnail.png"),
                 b"png".to_vec(),
             ),
             (PathBuf::from("p.vmax/contents0.vmaxb"), b"bplist".to_vec()),
-        ]));
+        ])));
 
         assert_eq!(
             read_document_files(&files, ReadFormat::VMax, Path::new("p.vmax")).unwrap(),
@@ -145,10 +110,10 @@ mod tests {
 
     #[test]
     fn a_deeper_directory_errors() {
-        let files = Files(BTreeMap::from([(
+        let files = MemoryFiles(RefCell::new(BTreeMap::from([(
             PathBuf::from("p.vmax/QuickLook/deep/file.png"),
             b"png".to_vec(),
-        )]));
+        )])));
 
         assert!(read_document_files(&files, ReadFormat::VMax, Path::new("p.vmax")).is_err());
     }

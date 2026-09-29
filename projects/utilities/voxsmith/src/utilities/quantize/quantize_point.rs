@@ -5,7 +5,7 @@ use voxcore::BVoxMaterial;
 /// A candidate material as a clustering point. Coordinates past the reading's
 /// dimension stay zero.
 #[derive(Clone, Copy, Debug)]
-pub(crate) struct QuantizePoint {
+pub struct QuantizePoint {
     /// The material the point places.
     pub(crate) material_id: U32Id<BVoxMaterial>,
 

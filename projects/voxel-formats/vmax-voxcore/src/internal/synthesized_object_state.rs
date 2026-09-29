@@ -1,6 +1,4 @@
-use crate::{
-    FALLBACK_CONTENT_VERSION, VMaxExt, VMaxExtObjectState, place_object, synth_object_uuid,
-};
+use crate::{FALLBACK_CONTENT_VERSION, VMaxExt, VMaxExtObjectState, place_object};
 use std::collections::HashSet;
 use vmax::{
     VMaxBrush, VMaxBrushColor, VMaxBrushEntry, VMaxBrushState, VMaxCamera, VMaxFlag, VMaxFlagValue,
@@ -31,6 +29,13 @@ pub fn synthesized_object_state(ext: &VMaxExt, object: &VoxObject) -> VMaxExtObj
         brush: Some(default_brush()),
         cam: Some(default_camera(placement.center)),
     }
+}
+
+/// A syntactically valid, deterministic UUID for a synthesized object's
+/// contents file, in a lane of its own so it never collides with a synthesized
+/// node's UUID.
+fn synth_object_uuid(index: usize) -> String {
+    format!("00000000-0000-0001-0000-{:012X}", index + 1)
 }
 
 /// Default `tools` for a synthesized object. Voxel Max's object decoder rejects

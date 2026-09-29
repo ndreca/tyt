@@ -1,4 +1,7 @@
-use crate::commands::{Find, MoveToScratch, Rel};
+use crate::{
+    Dependencies, Result,
+    commands::{Find, MoveToScratch, Rel},
+};
 use clap::Subcommand;
 
 /// Operations on the filesystem
@@ -7,14 +10,17 @@ use clap::Subcommand;
 pub enum TytFS {
     #[command(name = "find")]
     Find(Find),
+
     #[command(name = "move-to-scratch")]
     MoveToScratch(MoveToScratch),
+
     #[command(name = "rel")]
     Rel(Rel),
 }
 
 impl TytFS {
-    pub fn execute(self, dependencies: impl crate::Dependencies) -> crate::Result<()> {
+    /// Runs the command.
+    pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             TytFS::Find(find) => find.execute(dependencies),
             TytFS::MoveToScratch(move_to_scratch) => move_to_scratch.execute(dependencies),

@@ -5,12 +5,13 @@ use voxsmith::operations::object::TextureShape;
 /// A profile's `textureShape`, a keyword or a side in cells.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
 #[serde(try_from = "TextureShapeRepr")]
-pub(crate) struct TextureShapeEntry(pub(crate) TextureShape);
+pub struct TextureShapeEntry(pub(crate) TextureShape);
 
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum TextureShapeRepr {
     Keyword(String),
+
     Side(u32),
 }
 
@@ -29,7 +30,7 @@ impl TryFrom<TextureShapeRepr> for TextureShapeEntry {
 
 #[cfg(test)]
 mod tests {
-    use super::TextureShapeEntry;
+    use crate::commands::TextureShapeEntry;
     use voxsmith::operations::object::TextureShape;
 
     #[test]

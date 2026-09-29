@@ -4,7 +4,7 @@ use ty_math::TyVector4F64;
 /// Partitions `points` into at most `target` clusters by k-means, seeded by
 /// farthest point so no randomness enters. Empty clusters drop, so the result
 /// may hold fewer than `target`.
-pub(crate) fn kmeans(points: Vec<QuantizePoint>, target: usize) -> Vec<Vec<QuantizePoint>> {
+pub fn kmeans(points: Vec<QuantizePoint>, target: usize) -> Vec<Vec<QuantizePoint>> {
     const MAX_STEPS: usize = 32;
 
     let k = target.min(points.len()).max(1);

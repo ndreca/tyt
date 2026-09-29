@@ -1,7 +1,10 @@
+//! Helpers the operations share.
+
+// Public API
+
 mod check_material_property_ranges;
 mod check_material_range;
 mod index_range;
-mod node_paths;
 mod order_palette_colors;
 mod placing_nodes;
 mod property_names;
@@ -20,5 +23,9 @@ pub use quantize::*;
 pub use select_nodes::*;
 pub use select_objects::*;
 pub use vector_component::*;
+
+// Internal API
+
+mod node_paths;
 
 pub(crate) use node_paths::*;

@@ -127,8 +127,7 @@ fn strip_contents_suffix(name: &str) -> Option<String> {
 
 #[cfg(all(test, feature = "impl"))]
 mod tests {
-    use super::from_vmax_package;
-    use crate::{DependenciesImpl, to_vmax_package};
+    use crate::{DependenciesImpl, from_vmax_package, to_vmax_package};
     use std::collections::{BTreeMap, HashMap};
     use vmax::{
         VMaxFile, VMaxHistorySession, VMaxHistoryVmaxhbFile, VMaxHistoryVmaxhvsbFile,
@@ -207,8 +206,8 @@ mod tests {
 
         // The optional file kinds the scene graph never references:
         // enumeration, not reference-following, must find and preserve each of
-        // them. History now round-trips as typed plist; selection stays
-        // verbatim bytes.
+        // them. History round-trips as typed plist; selection stays verbatim
+        // bytes.
         let mut history_vmaxhb_files = BTreeMap::new();
         history_vmaxhb_files.insert(
             "history.vmaxhb".to_owned(),

@@ -1,12 +1,13 @@
 use crate::{TyMatrix4x4F64, TyQuaternionF64, TyVector3F64};
 use glam::{DMat3, EulerRot};
 
-/// The tyt-specific quaternion operations glam does not provide directly, carried
-/// on [`TyQuaternionF64`] so callers keep `q.foo()` with `use ty_math::TyQuaternionExt`.
+/// The tyt-specific quaternion operations glam does not provide directly,
+/// carried on [`TyQuaternionF64`] so callers keep `q.foo()` with
+/// `use ty_math::TyQuaternionExt`.
 pub trait TyQuaternionExt {
     /// Tait-Bryan euler angles in radians as `(roll, pitch, yaw)` about the
-    /// `(x, y, z)` axes, the rotation `Rz(z) * Ry(y) * Rx(x)`. A rotation about a
-    /// single axis reads on that component alone.
+    /// `(x, y, z)` axes, the rotation `Rz(z) * Ry(y) * Rx(x)`. A rotation about
+    /// a single axis reads on that component alone.
     fn to_euler_radians(self) -> TyVector3F64;
 
     /// The rotation `Rz(z) * Ry(y) * Rx(x)` from euler angles in radians,
@@ -15,8 +16,8 @@ pub trait TyQuaternionExt {
     fn from_euler_radians(euler: TyVector3F64) -> TyQuaternionF64;
 
     /// A rotation from the upper-left 3x3 of `matrix`, taking its first three
-    /// columns as the right, up, and forward basis vectors and normalizing each to
-    /// strip embedded scale. `None` for a degenerate matrix with a near-zero
+    /// columns as the right, up, and forward basis vectors and normalizing each
+    /// to strip embedded scale. `None` for a degenerate matrix with a near-zero
     /// column that cannot form a basis.
     fn from_rotation_matrix(matrix: TyMatrix4x4F64) -> Option<TyQuaternionF64>;
 
@@ -27,14 +28,16 @@ pub trait TyQuaternionExt {
         forward: TyVector3F64,
     ) -> TyQuaternionF64;
 
-    /// A rotation from `right` and `forward`, deriving `up` in a left-handed frame.
+    /// A rotation from `right` and `forward`, deriving `up` in a left-handed
+    /// frame.
     fn from_right_forward(right: TyVector3F64, forward: TyVector3F64) -> TyQuaternionF64;
 
-    /// A rotation from `right` and `up`, deriving `forward` in a left-handed frame.
+    /// A rotation from `right` and `up`, deriving `forward` in a left-handed
+    /// frame.
     fn from_right_up(right: TyVector3F64, up: TyVector3F64) -> TyQuaternionF64;
 
-    /// This rotation with a rotation of `angle` radians about `axis` applied after
-    /// it. The axis is normalized first.
+    /// This rotation with a rotation of `angle` radians about `axis` applied
+    /// after it. The axis is normalized first.
     fn rotate_around_axis(self, axis: TyVector3F64, angle: f64) -> TyQuaternionF64;
 
     /// `extents` rotated by this quaternion using the absolute values of the
@@ -43,8 +46,8 @@ pub trait TyQuaternionExt {
     fn rotate_extents_abs(self, extents: TyVector3F64) -> TyVector3F64;
 
     /// True when `self` and `other` are approximately the same rotation, within
-    /// `tolerance` on the absolute dot product. Both are taken to be unit length;
-    /// the sign is ignored since `q` and `-q` are one rotation.
+    /// `tolerance` on the absolute dot product. Both are taken to be unit
+    /// length; the sign is ignored since `q` and `-q` are one rotation.
     // `self` by value matches glam's Copy convention; the trait cannot express
     // `Self: Copy` for the lint to see it.
     #[allow(clippy::wrong_self_convention)]
@@ -130,19 +133,11 @@ impl TyQuaternionExt for TyQuaternionF64 {
 
 #[cfg(test)]
 mod tests {
-    use crate::{TyMatrix4x4F64, TyQuaternionExt, TyQuaternionF64, TyVector3F64};
+    use crate::{TyMatrix4x4F64, TyQuaternionExt, TyQuaternionF64, TyVector3F64, close, close_vec};
     use std::f64::consts::PI;
 
-    fn close(a: f64, b: f64) -> bool {
-        (a - b).abs() < 1e-9
-    }
-
-    fn close_vec(a: TyVector3F64, b: TyVector3F64) -> bool {
-        close(a.x, b.x) && close(a.y, b.y) && close(a.z, b.z)
-    }
-
-    /// The hand-rolled Tait-Bryan formula this crate used before glam, kept as the
-    /// convention oracle so the wire that reads these angles stays stable.
+    /// A hand-rolled Tait-Bryan formula that pins the euler convention the wire
+    /// reads.
     fn euler_reference(q: TyQuaternionF64) -> TyVector3F64 {
         let (x, y, z, w) = (q.x, q.y, q.z, q.w);
         let roll = (2.0 * (w * x + y * z)).atan2(1.0 - 2.0 * (x * x + y * y));
@@ -168,8 +163,8 @@ mod tests {
 
     #[test]
     fn to_euler_radians_matches_the_tait_bryan_reference() {
-        // Arbitrary rotations well away from gimbal lock: glam's XYZEx must match
-        // the old formula so the vmax euler wire does not move.
+        // Arbitrary rotations well away from gimbal lock: glam's XYZEx has to
+        // match the reference formula so the euler wire does not move.
         for (axis, angle) in [
             (TyVector3F64::new(1.0, 2.0, 3.0), 0.9),
             (TyVector3F64::new(-2.0, 1.0, 0.5), 1.7),

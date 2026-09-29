@@ -1,4 +1,7 @@
-use crate::commands::{PaletteList, PaletteQuantize, PaletteShow};
+use crate::{
+    Dependencies, Result,
+    commands::{PaletteList, PaletteQuantize, PaletteShow},
+};
 use clap::Subcommand;
 
 /// The `palette` command group.
@@ -7,14 +10,17 @@ use clap::Subcommand;
 pub enum PaletteCommand {
     #[command(name = "list")]
     PaletteList(PaletteList),
+
     #[command(name = "quantize")]
     PaletteQuantize(PaletteQuantize),
+
     #[command(name = "show")]
     PaletteShow(PaletteShow),
 }
 
 impl PaletteCommand {
-    pub fn execute(self, dependencies: impl crate::Dependencies) -> crate::Result<()> {
+    /// Runs the command.
+    pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             PaletteCommand::PaletteList(list) => list.execute(dependencies),
             PaletteCommand::PaletteQuantize(quantize) => quantize.execute(dependencies),

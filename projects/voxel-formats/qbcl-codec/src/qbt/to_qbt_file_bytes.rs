@@ -1,18 +1,9 @@
-use crate::{ByteWriter, CompressZlib};
+use crate::{ByteWriter, CompressZlib, NODE_COMPOUND, NODE_MATRIX, NODE_MODEL};
 use qbcl::qbt::{QbtCompound, QbtFile, QbtMatrix, QbtModel, QbtNode};
-
-/// The matrix node type id.
-const NODE_MATRIX: u32 = 0;
-
-/// The model node type id.
-const NODE_MODEL: u32 = 1;
-
-/// The compound node type id.
-const NODE_COMPOUND: u32 = 2;
 
 /// Serializes a [`QbtFile`] to a Qubicle Binary Tree `.qbt` file through
 /// `dependencies`, the inverse of
-/// [`from_qbt_file_bytes`](crate::qbt::from_qbt_file_bytes).
+/// [`from_qbt_file_bytes`](crate::qbt::from_qbt_file_bytes()).
 ///
 /// Writes the header, `COLORMAP`, and `DATATREE` in turn, zlib-compressing each
 /// matrix's voxel grid. The compressed bytes may differ from another encoder's

@@ -1,4 +1,4 @@
-use crate::{ByteWriter, push_bool, push_f32, push_i32, push_str, push_vec3f, push_vec3i};
+use crate::ByteWriter;
 use mvox::{
     MVoxCamera, MVoxColor, MVoxFile, MVoxFrame, MVoxGroupNode, MVoxLayer, MVoxMaterial,
     MVoxMaterialType, MVoxModel, MVoxNodeAttributes, MVoxPalette, MVoxRotation, MVoxSceneNode,
@@ -6,12 +6,12 @@ use mvox::{
 };
 
 /// Serializes an [`MVoxFile`] to the bytes of a MagicaVoxel `.vox` file, the
-/// inverse of [`from_mvox_file_bytes`](crate::from_mvox_file_bytes).
+/// inverse of [`from_mvox_file_bytes`](crate::from_mvox_file_bytes()).
 ///
 /// Chunks are written in a fixed, MagicaVoxel-readable order. The dictionary
 /// chunks emit each modeled key only when it is set, followed by the type's
 /// `extra` keys, so a file decoded by
-/// [`from_mvox_file_bytes`](crate::from_mvox_file_bytes) re-encodes to an
+/// [`from_mvox_file_bytes`](crate::from_mvox_file_bytes()) re-encodes to an
 /// equivalent file. A few details are normalized rather than reproduced
 /// byte-for-byte, none of which change the decoded model: the legacy `PACK`
 /// chunk is not written (the model count is the number of SIZE/XYZI pairs), a
@@ -255,4 +255,45 @@ fn write_note(out: &mut ByteWriter, notes: &[String]) {
         content.write_string(name);
     }
     out.write_chunk(b"NOTE", &content.into_bytes(), &[]);
+}
+
+/// Pushes `key` with `value`'s shortest round-tripping decimal form, when set.
+fn push_f32(pairs: &mut Vec<(String, String)>, key: &str, value: Option<f32>) {
+    if let Some(value) = value {
+        pairs.push((key.to_owned(), value.to_string()));
+    }
+}
+
+/// Pushes `key` with `value`'s decimal form, when set.
+fn push_i32(pairs: &mut Vec<(String, String)>, key: &str, value: Option<i32>) {
+    if let Some(value) = value {
+        pairs.push((key.to_owned(), value.to_string()));
+    }
+}
+
+/// Pushes `key` with `value` as a space-separated triple, when set.
+fn push_vec3f(pairs: &mut Vec<(String, String)>, key: &str, value: Option<[f32; 3]>) {
+    if let Some([a, b, c]) = value {
+        pairs.push((key.to_owned(), format!("{a} {b} {c}")));
+    }
+}
+
+/// Pushes `key` with `value` as a space-separated triple.
+fn push_vec3i(pairs: &mut Vec<(String, String)>, key: &str, value: [i32; 3]) {
+    let [a, b, c] = value;
+    pairs.push((key.to_owned(), format!("{a} {b} {c}")));
+}
+
+/// Pushes `key` with a string value, when set.
+fn push_str(pairs: &mut Vec<(String, String)>, key: &str, value: Option<&str>) {
+    if let Some(value) = value {
+        pairs.push((key.to_owned(), value.to_owned()));
+    }
+}
+
+/// Pushes `key` with MagicaVoxel's `0` / `1` flag encoding, when set.
+fn push_bool(pairs: &mut Vec<(String, String)>, key: &str, value: Option<bool>) {
+    if let Some(value) = value {
+        pairs.push((key.to_owned(), if value { "1" } else { "0" }.to_owned()));
+    }
 }

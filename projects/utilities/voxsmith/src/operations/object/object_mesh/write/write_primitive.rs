@@ -9,7 +9,7 @@ use ty_math::{TyVector3F64, TyVector3I32};
 /// The primitive drawing `faces` of `geometry` shifted by the grid `origin`,
 /// at `voxel_size` meters per voxel, with its streams read off `atlases` and
 /// no material yet.
-pub(crate) fn write_primitive(
+pub fn write_primitive(
     geometry: &MeshGeometry,
     faces: &[usize],
     origin: TyVector3I32,

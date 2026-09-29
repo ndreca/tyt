@@ -1,4 +1,7 @@
-use crate::commands::{FromVoxj, Hierarchy, Pack, RenameNode, ToVoxj};
+use crate::{
+    Dependencies, Result,
+    commands::{FromVoxj, Hierarchy, Pack, RenameNode, ToVoxj},
+};
 use clap::Subcommand;
 
 /// Commands for working with Voxel Max.
@@ -7,18 +10,23 @@ use clap::Subcommand;
 pub enum TytVMax {
     #[command(name = "from-voxj")]
     FromVoxj(FromVoxj),
+
     #[command(name = "hierarchy")]
     Hierarchy(Hierarchy),
+
     #[command(name = "pack")]
     Pack(Pack),
+
     #[command(name = "rename-node")]
     RenameNode(RenameNode),
+
     #[command(name = "to-voxj")]
     ToVoxj(ToVoxj),
 }
 
 impl TytVMax {
-    pub fn execute(self, dependencies: impl crate::Dependencies) -> crate::Result<()> {
+    /// Runs the command.
+    pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             TytVMax::FromVoxj(from_voxj) => from_voxj.execute(dependencies),
             TytVMax::Hierarchy(hierarchy) => hierarchy.execute(dependencies),

@@ -10,6 +10,7 @@ pub enum ProfileObjectMeshCommand {
 }
 
 impl ProfileObjectMeshCommand {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             ProfileObjectMeshCommand::ProfileObjectMeshList(list) => list.execute(dependencies),

@@ -17,8 +17,8 @@ use treeselect::TreeSelection;
 /// `usize` node indices.
 type GridNodeId = U32Id<BTreeGridNode>;
 
-/// The largest `--show-*` precision accepted, keeping float formatting below the
-/// width the standard formatter can represent.
+/// The largest `--show-*` precision accepted, keeping float formatting below
+/// the width the standard formatter can represent.
 const MAX_PRECISION: usize = 255;
 
 /// Prints the Voxel Max hierarchy as a tree, optionally filtered to selected
@@ -73,6 +73,7 @@ pub struct Hierarchy {
 }
 
 impl Hierarchy {
+    /// Prints the scene hierarchy as a tree.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let Hierarchy {
             input_vmax,
@@ -243,8 +244,10 @@ fn select_nodes(
 struct TransformView {
     /// Render in world space rather than local.
     world: bool,
+
     /// Render rotation in degrees rather than radians.
     degrees: bool,
+
     /// Decimal places for each component.
     precision: usize,
 }
@@ -334,13 +337,21 @@ fn invalid_input(message: String) -> Error {
 /// holds node indices, so same-name siblings never conflate.
 struct Builder<'a> {
     nodes: &'a [VMaxSceneNode],
+
     children: HashMap<Option<&'a str>, Vec<usize>>,
+
     parent_of: Vec<Option<usize>>,
+
     selection: Option<TreeSelection>,
+
     collapse_descendants: bool,
+
     show_transforms: Option<TransformView>,
+
     transforms: Vec<ResolvedNodeTransform>,
+
     show_bounds: Option<usize>,
+
     grid: TreeGrid,
 }
 

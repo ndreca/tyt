@@ -1,3 +1,5 @@
+// Public API
+
 mod args;
 mod compress_lzfse;
 mod copy_dir;
@@ -34,15 +36,11 @@ mod rename_file;
 mod serialize_bplist;
 mod serialize_json_pretty;
 mod serialize_points_and_colors_json;
-mod temp_counter_next;
 mod unique_sibling_temp_path;
 mod unique_temp_path;
-mod viuer_support;
 mod write_file;
 mod write_file_atomic;
 mod write_stdout;
-
-pub use ::serde_json;
 
 pub use args::*;
 pub use compress_lzfse::*;
@@ -80,10 +78,16 @@ pub use rename_file::*;
 pub use serialize_bplist::*;
 pub use serialize_json_pretty::*;
 pub use serialize_points_and_colors_json::*;
-pub(crate) use temp_counter_next::*;
 pub use unique_sibling_temp_path::*;
 pub use unique_temp_path::*;
-pub(crate) use viuer_support::*;
 pub use write_file::*;
 pub use write_file_atomic::*;
 pub use write_stdout::*;
+
+pub use ::serde_json;
+
+// Internal API
+
+mod internal;
+
+pub(crate) use internal::*;

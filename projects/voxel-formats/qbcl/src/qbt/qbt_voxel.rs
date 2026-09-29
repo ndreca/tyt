@@ -1,5 +1,5 @@
-/// One cell of a [`QbtMatrix`](crate::qbt::QbtMatrix) grid: an `RGB` color and a
-/// visibility mask. Stored on disk as four bytes (`r`, `g`, `b`, `mask`).
+/// One cell of a [`QbtMatrix`](crate::qbt::QbtMatrix) grid: an `RGB` color and
+/// a visibility mask. Stored on disk as four bytes (`r`, `g`, `b`, `mask`).
 ///
 /// [`mask`](Self::mask)` == 0` is an empty cell; non-zero marks a solid voxel
 /// and is a per-face visible-sides bitmask.

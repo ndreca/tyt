@@ -75,6 +75,7 @@ pub struct CreateMse {
 }
 
 impl CreateMse {
+    /// Writes the MSE png, plus the albedo copy unless it is ignored.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let CreateMse {
             out_base,
@@ -100,6 +101,7 @@ impl CreateMse {
         } else {
             Some(match metal_rough {
                 Some(p) => coerce_png(p),
+
                 None => match &prefix {
                     Some(pfx) => dependencies.glob_single_match(&format!("{pfx}-metalness.png"))?,
                     None => dependencies.glob_single_match("*metalness.png")?,
@@ -112,6 +114,7 @@ impl CreateMse {
         } else {
             Some(match metal {
                 Some(p) => coerce_png(p),
+
                 None => match &prefix {
                     Some(pfx) => dependencies.glob_single_match(&format!("{pfx}-metalness.png"))?,
                     None => dependencies.glob_single_match("*metalness.png")?,
@@ -124,6 +127,7 @@ impl CreateMse {
         } else {
             Some(match rough {
                 Some(p) => coerce_png(p),
+
                 None => match &prefix {
                     Some(pfx) => dependencies.glob_single_match(&format!("{pfx}-roughness.png"))?,
                     None => dependencies.glob_single_match("*roughness.png")?,
@@ -136,6 +140,7 @@ impl CreateMse {
         } else {
             Some(match emissive {
                 Some(p) => coerce_png(p),
+
                 None => match &prefix {
                     Some(pfx) => dependencies.glob_single_match(&format!("{pfx}-emission.png"))?,
                     None => dependencies.glob_single_match("*emission.png")?,
@@ -148,6 +153,7 @@ impl CreateMse {
         } else {
             Some(match albedo {
                 Some(p) => coerce_png(p),
+
                 None => match &prefix {
                     Some(pfx) => dependencies.glob_single_match(&format!("{pfx}-albedo.png"))?,
                     None => dependencies.glob_single_match("*albedo.png")?,
@@ -185,7 +191,7 @@ impl CreateMse {
         // Create temp dir for intermediate channel PNGs
         // ----------------------------------------------------------------
         let tmpdir = dependencies.create_temp_dir()?;
-        let result = self::create_mse_inner(
+        let result = create_mse_inner(
             &dependencies,
             &metal_rough_path,
             &metal_path,
@@ -242,6 +248,7 @@ fn create_mse_inner(
                 &r_str,
             ])?;
         }
+
         (None, Some(m)) => {
             let metal_str = m.to_string_lossy().into_owned();
             dependencies.exec_magick([
@@ -257,6 +264,7 @@ fn create_mse_inner(
                 &r_str,
             ])?;
         }
+
         (None, None) => {
             dependencies.exec_magick(["-size", size, "xc:black", &r_str])?;
         }
@@ -296,6 +304,7 @@ fn create_mse_inner(
                 ])?;
             }
         }
+
         (None, Some(r)) => {
             let rough_str = r.to_string_lossy().into_owned();
             if output_rough {
@@ -328,6 +337,7 @@ fn create_mse_inner(
                 ])?;
             }
         }
+
         (None, None) => {
             dependencies.exec_magick(["-size", size, "xc:black", &g_str])?;
         }
@@ -338,6 +348,7 @@ fn create_mse_inner(
         None => {
             dependencies.exec_magick(["-size", size, "xc:black", &b_str])?;
         }
+
         Some(em) => {
             let em_str = em.to_string_lossy().into_owned();
             dependencies.exec_magick([

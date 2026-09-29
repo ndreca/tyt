@@ -1,20 +1,10 @@
-use crate::{ByteReader, DecompressZlib, Error, Result, invalid};
+use crate::{
+    ByteReader, DecompressZlib, Error, MAX_DEPTH, NODE_COMPOUND, NODE_MATRIX, NODE_MODEL, Result,
+    invalid, voxel_count,
+};
 use qbcl::qbt::{
     QbtColor, QbtCompound, QbtFile, QbtMatrix, QbtModel, QbtNode, QbtUnknownNode, QbtVoxel,
 };
-
-/// The matrix node type id.
-const NODE_MATRIX: u32 = 0;
-
-/// The model node type id.
-const NODE_MODEL: u32 = 1;
-
-/// The compound node type id.
-const NODE_COMPOUND: u32 = 2;
-
-/// The deepest the reader will descend, so a pathologically nested file is
-/// rejected rather than overflowing the stack.
-const MAX_DEPTH: usize = 4096;
 
 /// Parses a Qubicle Binary Tree `.qbt` file into a [`QbtFile`] through
 /// `dependencies`.
@@ -196,18 +186,6 @@ fn read_children<D: DecompressZlib>(
         children.push(read_node(dependencies, reader, depth + 1)?);
     }
     Ok(children)
-}
-
-/// The number of cells in a `size`, or an error if it overflows `usize`.
-fn voxel_count(size: [u32; 3]) -> Result<usize> {
-    (size[0] as usize)
-        .checked_mul(size[1] as usize)
-        .and_then(|xy| xy.checked_mul(size[2] as usize))
-        .ok_or_else(|| {
-            invalid(format!(
-                "matrix size {size:?} overflows the addressable range"
-            ))
-        })
 }
 
 #[cfg(all(test, feature = "impl"))]

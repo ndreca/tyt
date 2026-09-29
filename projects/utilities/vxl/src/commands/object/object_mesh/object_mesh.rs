@@ -1,13 +1,9 @@
 use crate::{
-    Dependencies, Error, NoneOr, ObjectSelection, PositiveF64, ProfileSet, Result, VoxelInput,
-    cli_value_parser,
+    CliValue, Dependencies, Error, NoneOr, ObjectSelection, PositiveF64, ProfileSet, Result,
+    VoxelInput, cli_value_parser,
     commands::{
-        MaterialTable, MeshProfile, MeshRun, PrimitiveTable, ProgramBuilder, ProgramFlag,
-        ProgramFlags, apply_profile_files, apply_profile_materials, apply_profile_mesh_extras,
-        apply_profile_primitives, check_expression, check_image_sources,
-        declare_profile_primitives, flag_occurrences, load_mesh_profile_set, parse_flag_index,
-        parse_flag_value, parse_texture_shape, push_file_write, push_unique, push_uv_stream,
-        resolve_gltf_container, select_mesh_objects, stack_profiles, written_file_name,
+        ExtraEntry, MaterialTable, MeshProfile, MeshRun, PrimitiveTable, ProgramBuilder,
+        ProgramFlag, ProgramFlags, SlotEntry, load_mesh_profile_set, parse_texture_shape,
     },
 };
 use branded_id::U32Id;
@@ -17,9 +13,14 @@ use meshconv::{
     gltf::{GltfContainer, GltfImageStorage, GltfWriteFormat, GltfWriteOptions},
     save,
 };
-use std::path::{Path, PathBuf};
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+    result::Result as StdResult,
+};
+use vox_value_language::parse_expression;
 use voxconv::load;
-use voxcore::VoxMain;
+use voxcore::{BVoxObject, VoxExt, VoxMain};
 use voxsmith::{
     dependencies::DependenciesImpl as VoxsmithDependenciesImpl,
     operations::object::{
@@ -353,6 +354,7 @@ pub struct ObjectMesh {
 }
 
 impl ObjectMesh {
+    /// Runs the command.
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let (container, output) = self.resolve_output();
 
@@ -1023,21 +1025,761 @@ fn push_attribute(
     )
 }
 
+/// Each occurrence of a repeatable flag taking `N` tokens, which clap's
+/// `num_args` guarantees `values` holds whole.
+fn flag_occurrences<const N: usize>(values: &[String]) -> impl Iterator<Item = &[String; N]> {
+    let (occurrences, remainder) = values.as_chunks::<N>();
+
+    assert!(
+        remainder.is_empty(),
+        "clap's num_args guarantees whole occurrences"
+    );
+
+    occurrences.iter()
+}
+
+/// Parses an index token of `flag`, a `u32` counted from `0`.
+fn parse_flag_index(flag: &str, text: &str) -> Result<u32> {
+    text.parse::<u32>().map_err(|_| {
+        Error::usage(format!(
+            "{flag} takes an index counted from 0, not `{text}`"
+        ))
+    })
+}
+
+/// Parses a named token of `flag`, listing the accepted names on failure.
+fn parse_flag_value<T: CliValue>(flag: &str, text: &str) -> Result<T> {
+    T::parse(text).map_err(|reason| Error::usage(format!("{flag}: {reason}")))
+}
+
+/// The profiles `names`, which `origin` lists, stacked into one profile to
+/// apply whole. Lists merge by position and the longest sets the stack's
+/// count. An element two members both set errors. The stack carries no
+/// program elements because each member lands its values, imports, and
+/// computed bindings by name.
+fn stack_profiles(
+    profiles: &ProfileSet<MeshProfile>,
+    origin: &str,
+    names: &[String],
+) -> Result<MeshProfile> {
+    let mut stack = MeshProfile::default();
+    let mut claims = BTreeMap::new();
+
+    for (position, name) in (0..).zip(names) {
+        if names[..position].contains(name) {
+            return Err(Error::usage(format!("{origin} lists `{name}` twice")));
+        }
+
+        let member = profiles.get(origin, name)?;
+
+        if let Some(size) = member.voxel_size {
+            claim(&mut claims, name, "voxelSize".to_owned())?;
+            stack.voxel_size = Some(size);
+        }
+
+        if let Some(method) = member.method {
+            claim(&mut claims, name, "method".to_owned())?;
+            stack.method = Some(method);
+        }
+
+        if let Some(shape) = member.texture_shape {
+            claim(&mut claims, name, "textureShape".to_owned())?;
+            stack.texture_shape = Some(shape);
+        }
+
+        for (template, entries) in &member.files.json {
+            let target = stack.files.json.entry(template.clone()).or_default();
+
+            for (key, entry) in entries {
+                claim(
+                    &mut claims,
+                    name,
+                    format!("files.json template `{template}`'s key `{key}`"),
+                )?;
+                target.insert(key.clone(), entry.clone());
+            }
+        }
+
+        for (template, entry) in &member.files.png {
+            claim(
+                &mut claims,
+                name,
+                format!("files.png template `{template}`"),
+            )?;
+            stack.files.png.insert(template.clone(), entry.clone());
+        }
+
+        if stack.materials.len() < member.materials.len() {
+            stack
+                .materials
+                .resize_with(member.materials.len(), Default::default);
+        }
+
+        for (index, entry) in (0..).zip(&member.materials) {
+            let target = &mut stack.materials[index];
+            let entry_origin = format!("materials entry {index}");
+
+            if let Some(material_name) = &entry.name {
+                claim(&mut claims, name, format!("{entry_origin}'s name"))?;
+                target.name = Some(material_name.clone());
+            }
+
+            if let Some(uvs) = &entry.uvs {
+                claim(&mut claims, name, format!("{entry_origin}'s uvs"))?;
+                target.uvs = Some(uvs.clone());
+            }
+
+            for (property, slot) in &entry.slots {
+                claim(
+                    &mut claims,
+                    name,
+                    format!("{entry_origin}'s slot `{property}`"),
+                )?;
+                target.slots.insert(property.clone(), slot.clone());
+            }
+
+            for (extra_name, extra) in &entry.extras {
+                claim(
+                    &mut claims,
+                    name,
+                    format!("{entry_origin}'s extra `{extra_name}`"),
+                )?;
+                target.extras.insert(extra_name.clone(), extra.clone());
+            }
+        }
+
+        if stack.primitives.len() < member.primitives.len() {
+            stack
+                .primitives
+                .resize_with(member.primitives.len(), Default::default);
+        }
+
+        for (index, entry) in (0..).zip(&member.primitives) {
+            let target = &mut stack.primitives[index];
+            let entry_origin = format!("primitives entry {index}");
+
+            if let Some(primitive_name) = &entry.name {
+                claim(&mut claims, name, format!("{entry_origin}'s name"))?;
+                target.name = Some(primitive_name.clone());
+            }
+
+            if let Some(select) = &entry.select {
+                claim(&mut claims, name, format!("{entry_origin}'s select"))?;
+                target.select = Some(select.clone());
+            }
+
+            if let Some(material) = entry.material {
+                claim(&mut claims, name, format!("{entry_origin}'s material"))?;
+                target.material = Some(material);
+            }
+
+            if let Some(normal) = entry.normal {
+                claim(&mut claims, name, format!("{entry_origin}'s normal"))?;
+                target.normal = Some(normal);
+            }
+
+            if let Some(uvs) = &entry.uvs {
+                claim(&mut claims, name, format!("{entry_origin}'s uvs"))?;
+                target.uvs = Some(uvs.clone());
+            }
+
+            for (attribute, expression) in &entry.builtins {
+                claim(
+                    &mut claims,
+                    name,
+                    format!("{entry_origin}'s builtins key `{attribute}`"),
+                )?;
+                target
+                    .builtins
+                    .insert(attribute.clone(), expression.clone());
+            }
+
+            for (custom_name, value) in &entry.customs {
+                claim(
+                    &mut claims,
+                    name,
+                    format!("{entry_origin}'s customs key `{custom_name}`"),
+                )?;
+                target.customs.insert(custom_name.clone(), value.clone());
+            }
+        }
+
+        for (extra_name, extra) in &member.mesh_extras {
+            claim(
+                &mut claims,
+                name,
+                format!("meshExtras entry `{extra_name}`"),
+            )?;
+            stack.mesh_extras.insert(extra_name.clone(), extra.clone());
+        }
+    }
+
+    Ok(stack)
+}
+
+/// Records that the profile `name` sets `element`, erroring when an earlier
+/// member of the stack set it.
+fn claim<'a>(claims: &mut BTreeMap<String, &'a str>, name: &'a str, element: String) -> Result<()> {
+    if let Some(earlier) = claims.get(&element) {
+        return Err(Error::usage(format!(
+            "the profile `{name}` sets {element}, which the profile `{earlier}` sets already"
+        )));
+    }
+
+    claims.insert(element, name);
+
+    Ok(())
+}
+
+/// The primitive declarations `profile`, which `origin` applies, holds in
+/// list order, each drawing with the material it mentions in `materials` or
+/// with none. The rest of each entry applies after the flags claim theirs.
+fn declare_profile_primitives(
+    materials: &mut MaterialTable,
+    profile: &MeshProfile,
+    origin: &str,
+) -> Result<Vec<PrimitiveRecord>> {
+    (0..)
+        .zip(&profile.primitives)
+        .map(|(index, entry)| {
+            let entry_origin = format!("{origin}'s primitives entry {index}");
+
+            let material_id = match entry.material {
+                Some(material) => {
+                    materials.material(&entry_origin, material)?;
+                    Some(U32Id::from_u32(material))
+                }
+
+                None => None,
+            };
+
+            let select = entry.select.clone().unwrap_or_else(|| "true".to_owned());
+
+            check_expression(&format!("{entry_origin}'s select"), &select)?;
+
+            Ok(PrimitiveRecord {
+                material_id,
+                select,
+                name: None,
+                normal: true,
+                uv_streams: None,
+                attributes: Vec::new(),
+            })
+        })
+        .collect()
+}
+
+/// Fills every per-primitive element of `profile`, which `origin` applies,
+/// whose destination no flag claimed. A flag's element stands at its
+/// destination, so the profile's yields to it.
+fn apply_profile_primitives(
+    primitives: &mut PrimitiveTable,
+    profile: &MeshProfile,
+    origin: &str,
+) -> Result<()> {
+    for (index, entry) in (0..).zip(&profile.primitives) {
+        let entry_origin = format!("{origin}'s primitives entry {index}");
+
+        if let Some(normal) = entry.normal
+            && !primitives.has_normal(index)
+        {
+            primitives.set_normal(&entry_origin, index, normal)?;
+        }
+
+        let primitive = primitives.primitive(&entry_origin, index)?;
+
+        if primitive.name.is_none() {
+            primitive.name = entry.name.clone();
+        }
+
+        if primitive.uv_streams.is_none()
+            && let Some(uvs) = &entry.uvs
+        {
+            primitive.uv_streams = Some(parse_uv_list(&entry_origin, uvs)?);
+        }
+
+        for (attribute, expression) in &entry.builtins {
+            if attribute.starts_with('_') {
+                return Err(Error::usage(format!(
+                    "{entry_origin}'s builtins key `{attribute}` is custom, so it goes under \
+                     customs"
+                )));
+            }
+
+            if primitive
+                .attributes
+                .iter()
+                .any(|write| write.name() == attribute)
+            {
+                continue;
+            }
+
+            check_expression(
+                &format!("{entry_origin}'s builtins key `{attribute}`"),
+                expression,
+            )?;
+
+            primitive.attributes.push(AttributeWrite::Builtin {
+                attribute: attribute.clone(),
+                expression: expression.clone(),
+            });
+        }
+
+        for (name, value) in &entry.customs {
+            if !name.starts_with('_') {
+                return Err(Error::usage(format!(
+                    "{entry_origin}'s customs key `{name}` lacks glTF's leading underscore, as \
+                     `_{name}`"
+                )));
+            }
+
+            if primitive
+                .attributes
+                .iter()
+                .any(|write| write.name() == name)
+            {
+                continue;
+            }
+
+            check_expression(
+                &format!("{entry_origin}'s customs key `{name}`"),
+                &value.value,
+            )?;
+
+            primitive.attributes.push(AttributeWrite::Custom {
+                name: name.clone(),
+                value: WrittenValue {
+                    expression: value.value.clone(),
+                    transfer: value.transfer.0,
+                },
+            });
+        }
+    }
+
+    Ok(())
+}
+
+/// Fills every material element of `profile`, which `origin` applies, whose
+/// destination no flag claimed. A flag's element stands at its destination,
+/// so the profile's yields to it.
+fn apply_profile_materials(
+    materials: &mut MaterialTable,
+    profile: &MeshProfile,
+    origin: &str,
+    file_stem: &str,
+) -> Result<()> {
+    for (index, entry) in (0..).zip(&profile.materials) {
+        let entry_origin = format!("{origin}'s materials entry {index}");
+        let material = materials.material(&entry_origin, index)?;
+
+        if material.name.is_none() {
+            material.name = entry.name.clone();
+        }
+
+        if material.uv_streams.is_none()
+            && let Some(uvs) = &entry.uvs
+        {
+            material.uv_streams = Some(parse_uv_list(&entry_origin, uvs)?);
+        }
+
+        for (property, slot) in &entry.slots {
+            if material
+                .slots
+                .iter()
+                .any(|existing| &existing.property == property)
+            {
+                continue;
+            }
+
+            let source = match slot {
+                SlotEntry::File { file } => SlotSource::File(fill_file_template(file, file_stem)),
+
+                SlotEntry::Value { value } => {
+                    check_expression(&format!("{entry_origin}'s slot `{property}`"), value)?;
+                    SlotSource::Value(value.clone())
+                }
+            };
+
+            material.slots.push(SlotWrite {
+                property: property.clone(),
+                source,
+            });
+        }
+
+        for (name, extra) in &entry.extras {
+            if material
+                .extras
+                .iter()
+                .any(|existing| &existing.name == name)
+            {
+                continue;
+            }
+
+            material.extras.push(extra_write(
+                &format!("{entry_origin}'s extra `{name}`"),
+                name,
+                extra,
+                file_stem,
+            )?);
+        }
+    }
+
+    Ok(())
+}
+
+/// Fills every file write of `profile`, which `origin` applies, whose
+/// destination no flag claimed, each template filled with `file_stem`. A
+/// flag's write stands at its destination, so the profile's yields to it.
+fn apply_profile_files(
+    files: &mut Vec<FileWrite>,
+    profile: &MeshProfile,
+    origin: &str,
+    file_stem: &str,
+) -> Result<()> {
+    let claimed: Vec<(String, FileForm)> = files
+        .iter()
+        .map(|write| (write.file.clone(), write.form.clone()))
+        .collect();
+
+    for (template, entries) in &profile.files.json {
+        let template_origin = format!("{origin}'s files.json template `{template}`");
+        let file = written_file_name(&template_origin, &fill_file_template(template, file_stem))?;
+
+        for (name, entry) in entries {
+            let form = FileForm::Json { name: name.clone() };
+
+            if claimed.contains(&(file.clone(), form.clone())) {
+                continue;
+            }
+
+            check_expression(&format!("{template_origin}'s key `{name}`"), &entry.value)?;
+
+            let write = FileWrite {
+                file: file.clone(),
+                value: WrittenValue {
+                    expression: entry.value.clone(),
+                    transfer: entry.transfer.0,
+                },
+                form,
+            };
+
+            push_file_write(files, write, origin)?;
+        }
+    }
+
+    for (template, entry) in &profile.files.png {
+        let template_origin = format!("{origin}'s files.png template `{template}`");
+        let file = written_file_name(&template_origin, &fill_file_template(template, file_stem))?;
+
+        if claimed.contains(&(file.clone(), FileForm::Png)) {
+            continue;
+        }
+
+        check_expression(&template_origin, &entry.value)?;
+
+        let write = FileWrite {
+            file,
+            value: WrittenValue {
+                expression: entry.value.clone(),
+                transfer: entry.transfer.0,
+            },
+            form: FileForm::Png,
+        };
+
+        push_file_write(files, write, origin)?;
+    }
+
+    Ok(())
+}
+
+/// Fills every mesh extra of `profile`, which `origin` applies, whose name no
+/// flag claimed. A flag's extra stands under its name, so the profile's
+/// yields to it.
+fn apply_profile_mesh_extras(
+    extras: &mut Vec<ExtraWrite>,
+    profile: &MeshProfile,
+    origin: &str,
+    file_stem: &str,
+) -> Result<()> {
+    for (name, entry) in &profile.mesh_extras {
+        if extras.iter().any(|existing| &existing.name == name) {
+            continue;
+        }
+
+        extras.push(extra_write(
+            &format!("{origin}'s meshExtras entry `{name}`"),
+            name,
+            entry,
+            file_stem,
+        )?);
+    }
+
+    Ok(())
+}
+
+/// The extras write `entry` describes under `name`, which `origin` holds, its
+/// file template filled with `file_stem`.
+fn extra_write(
+    origin: &str,
+    name: &str,
+    entry: &ExtraEntry,
+    file_stem: &str,
+) -> Result<ExtraWrite> {
+    let (form, source) = match entry {
+        ExtraEntry::ImageFile { file } => (
+            ExtraForm::Image,
+            ExtraSource::File(fill_file_template(file, file_stem)),
+        ),
+
+        ExtraEntry::ImageValue { transfer, value } => {
+            (ExtraForm::Image, value_source(origin, value, transfer.0)?)
+        }
+
+        ExtraEntry::JsonFile { file } => (
+            ExtraForm::Json,
+            ExtraSource::File(fill_file_template(file, file_stem)),
+        ),
+
+        ExtraEntry::JsonValue { transfer, value } => {
+            (ExtraForm::Json, value_source(origin, value, transfer.0)?)
+        }
+    };
+
+    Ok(ExtraWrite {
+        name: name.to_owned(),
+        form,
+        source,
+    })
+}
+
+/// A written value source holding `value`, checked to parse.
+fn value_source(origin: &str, value: &str, transfer: Transfer) -> Result<ExtraSource> {
+    check_expression(origin, value)?;
+
+    Ok(ExtraSource::Value(WrittenValue {
+        expression: value.to_owned(),
+        transfer,
+    }))
+}
+
+/// The stream list `uvs`, which `origin` declares, each domain a known name
+/// listed once.
+fn parse_uv_list(origin: &str, uvs: &[String]) -> Result<Vec<ArrayDomain>> {
+    let mut streams = Vec::new();
+
+    for domain in uvs {
+        let domain: ArrayDomain = parse_flag_value(&format!("{origin}'s uvs"), domain)?;
+
+        push_uv_stream(&mut streams, domain, || format!("{origin}'s uvs lists"))?;
+    }
+
+    Ok(streams)
+}
+
+/// Pushes `domain` onto a stream list. A domain listed twice errors with a
+/// message `lists` opens.
+fn push_uv_stream(
+    streams: &mut Vec<ArrayDomain>,
+    domain: ArrayDomain,
+    lists: impl FnOnce() -> String,
+) -> Result<()> {
+    push_unique(
+        streams,
+        domain,
+        |domain| *domain,
+        |domain| format!("{} `{}` twice", lists(), domain.name()),
+    )
+}
+
+/// Pushes `item` onto `items` unless one shares its `key`, which
+/// `duplicate` describes in the usage error.
+fn push_unique<T, K: PartialEq>(
+    items: &mut Vec<T>,
+    item: T,
+    key: impl Fn(&T) -> K,
+    duplicate: impl FnOnce(&T) -> String,
+) -> Result<()> {
+    if let Some(existing) = items.iter().find(|existing| key(existing) == key(&item)) {
+        return Err(Error::usage(duplicate(existing)));
+    }
+
+    items.push(item);
+
+    Ok(())
+}
+
+/// Pushes `write`, which `origin` holds, onto `files`. A PNG written twice
+/// errors, as does a JSON entry named twice in one file or a path holding
+/// both forms. JSON entries under different names merge into one file.
+fn push_file_write(files: &mut Vec<FileWrite>, write: FileWrite, origin: &str) -> Result<()> {
+    for existing in files.iter().filter(|existing| existing.file == write.file) {
+        match (&existing.form, &write.form) {
+            (FileForm::Json { name: existing }, FileForm::Json { name }) if existing == name => {
+                return Err(Error::usage(format!(
+                    "{origin} writes `{name}` into `{}` twice",
+                    write.file
+                )));
+            }
+
+            (FileForm::Json { .. }, FileForm::Json { .. }) => {}
+
+            (FileForm::Png, FileForm::Png) => {
+                return Err(Error::usage(format!(
+                    "{origin} writes `{}` twice",
+                    write.file
+                )));
+            }
+
+            (FileForm::Json { .. }, FileForm::Png) | (FileForm::Png, FileForm::Json { .. }) => {
+                return Err(Error::usage(format!(
+                    "`{}` is written as both a PNG and a JSON file",
+                    write.file
+                )));
+            }
+        }
+    }
+
+    files.push(write);
+
+    Ok(())
+}
+
+/// The bare file name `origin` writes beside the mesh. A path errors.
+fn written_file_name(origin: &str, file: &str) -> Result<String> {
+    require_file_name(file).map_err(|reason| Error::usage(format!("{origin}: {reason}")))
+}
+
+/// Validates that `value` is a bare file name written beside the output file:
+/// non-empty and free of any path separator. A path is a mistake rather than
+/// something to silently strip to its file name.
+fn require_file_name(value: &str) -> StdResult<String, String> {
+    if value.is_empty() {
+        return Err("a file name cannot be empty".to_string());
+    }
+
+    if value.contains('/') || value.contains('\\') {
+        return Err(format!(
+            "`{value}` is a file name written beside the output file, so it cannot contain \
+             a path separator"
+        ));
+    }
+
+    Ok(value.to_string())
+}
+
+/// The file name `template` spells with `{file-stem}` replaced by `file_stem`.
+fn fill_file_template(template: &str, file_stem: &str) -> String {
+    template.replace("{file-stem}", file_stem)
+}
+
+/// Errors unless `text`, which `origin` holds, parses as one expression.
+fn check_expression(origin: &str, text: &str) -> Result<()> {
+    parse_expression(text).map(drop).map_err(|error| {
+        Error::usage(format!(
+            "{origin} holds `{text}`, which does not parse as an expression: {error}"
+        ))
+    })
+}
+
+/// Errors unless every image reference in `record`, a slot or an image
+/// extra sourced from a file, points at a PNG the run writes.
+fn check_image_sources(record: &MeshRecord) -> Result<()> {
+    let written = |file: &str| {
+        record
+            .files
+            .iter()
+            .any(|write| write.form == FileForm::Png && write.file == file)
+    };
+
+    let check = |file: &str, reference: String| -> Result<()> {
+        if written(file) {
+            return Ok(());
+        }
+
+        Err(Error::usage(format!(
+            "{reference} references `{file}`, which nothing writes as a PNG"
+        )))
+    };
+
+    let check_extras = |extras: &[ExtraWrite], owner: &str| -> Result<()> {
+        extras
+            .iter()
+            .filter(|extra| extra.form == ExtraForm::Image)
+            .try_for_each(|extra| match &extra.source {
+                ExtraSource::File(file) => check(file, format!("{owner} extra `{}`", extra.name)),
+                ExtraSource::Value(_) => Ok(()),
+            })
+    };
+
+    for (index, material) in (0..).zip(record.materials.iter()) {
+        for slot in &material.slots {
+            if let SlotSource::File(file) = &slot.source {
+                check(file, format!("material {index}'s slot `{}`", slot.property))?;
+            }
+        }
+
+        check_extras(&material.extras, &format!("material {index}'s"))?;
+    }
+
+    check_extras(&record.mesh_extras, "the mesh")
+}
+
+/// The container a mesh writes: `to` when given, else the one `output`'s
+/// extension implies, else `.glb`.
+fn resolve_gltf_container(to: Option<GltfContainer>, output: Option<&Path>) -> GltfContainer {
+    to.or_else(|| {
+        let extension = output?.extension()?.to_str()?;
+        GltfContainer::from_extension(extension)
+    })
+    .unwrap_or(GltfContainer::Glb)
+}
+
+/// The objects `selection` resolves to in `main`, in document order. A
+/// document holding none is a usage error; `resolve` already rejects a
+/// selector matching nothing.
+fn select_mesh_objects<T: VoxExt>(
+    main: &VoxMain<T>,
+    selection: &ObjectSelection,
+) -> Result<Vec<U32Id<BVoxObject>>> {
+    let object_ids = selection.resolve(main)?;
+
+    if object_ids.is_empty() {
+        return Err(Error::usage("the document has no objects to mesh"));
+    }
+
+    Ok(object_ids)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::ObjectMesh;
     use crate::{
-        ProfileSet, Result,
-        commands::{MeshProfile, ObjectConfig, built_in_profiles},
+        NamedCliValue, ProfileSet, Result,
+        commands::{
+            ExtraEntry, MaterialTable, MeshProfile, ObjectConfig, ObjectMesh, PrimitiveTable,
+            SlotEntry, built_in_profiles,
+            object::object_mesh::object_mesh::{
+                apply_profile_files, apply_profile_materials, apply_profile_mesh_extras,
+                apply_profile_primitives, check_expression, declare_profile_primitives,
+                extra_write, fill_file_template, parse_flag_index, parse_uv_list, push_file_write,
+                push_unique, require_file_name, resolve_gltf_container, select_mesh_objects,
+                stack_profiles,
+            },
+        },
+        owned_names, profile_set_from_json, try_parse_object_selection,
     };
     use branded_id::U32Id;
     use clap::Parser;
     use meshconv::gltf::GltfContainer;
-    use std::{collections::BTreeMap, path::PathBuf};
+    use std::{
+        collections::BTreeMap,
+        path::{Path, PathBuf},
+    };
+    use ty_math::TyVector3U32;
     use ty_preferences::{DeserializePrefs, JsoncCodec};
+    use voxcore::{VoxMain, VoxObject};
     use voxsmith::operations::object::{
-        ArrayDomain, AttributeWrite, Computation, ExtraForm, ExtraSource, FileForm, MeshRecord,
-        Method, SlotSource, TextureShape, Transfer, WrittenValue,
+        ArrayDomain, AttributeWrite, Computation, ExtraForm, ExtraSource, ExtraWrite, FileForm,
+        FileWrite, MeshRecord, Method, SlotSource, SlotWrite, TextureShape, Transfer, WrittenValue,
     };
 
     /// The command parsed from `args` after the input.
@@ -1824,7 +2566,7 @@ mod tests {
     fn a_config_profile_lands_its_primitives_files_and_mesh_extras() {
         let layer = config_layer(
             r#"{
-  "object": {
+      "object": {
     "mesh": {
       "profiles": {
         "split": {
@@ -1865,8 +2607,8 @@ mod tests {
         },
       },
     },
-  },
-}"#,
+      },
+    }"#,
         );
 
         let record = try_record_over(vec![layer], &["--profile", "split", "turret.glb"]).unwrap();
@@ -1946,5 +2688,630 @@ mod tests {
         );
         assert_eq!(extras[1].0, "meta");
         assert_eq!(extras[1].1, ExtraForm::Json);
+    }
+
+    #[test]
+    fn parses_a_count_from_zero_and_rejects_the_rest() {
+        assert_eq!(parse_flag_index("--flag", "0").unwrap(), 0);
+        assert_eq!(parse_flag_index("--flag", "12").unwrap(), 12);
+        assert!(parse_flag_index("--flag", "-1").is_err());
+        assert!(parse_flag_index("--flag", "one").is_err());
+    }
+
+    #[test]
+    fn the_writers_merge_by_position_and_the_program_stays_behind() {
+        let profiles = profile_set_from_json(&[
+            (
+                "albedo",
+                r#"{
+                    "valuesFrom": ["defaults"],
+                    "computeOcclusion": "ao",
+                    "values": ["albedo = baseColor"],
+                    "voxelSize": 0.1,
+                    "materials": [
+                        {
+                            "name": "body",
+                            "slots": { "baseColorTexture": { "kind": "value", "value": "albedo" } }
+                        }
+                    ],
+                    "primitives": [{ "select": "solid", "material": 0 }],
+                    "files": { "json": { "{file-stem}.json": { "ior": { "transfer": "linear", "value": "ior" } } } },
+                    "meshExtras": { "accent": { "kind": "json-value", "transfer": "srgb", "value": "accent" } }
+                }"#,
+            ),
+            (
+                "orm",
+                r#"{
+                    "method": "culled",
+                    "materials": [
+                        { "slots": { "occlusionTexture": { "kind": "value", "value": "orm" } } },
+                        { "name": "glow" }
+                    ],
+                    "primitives": [{ "builtins": { "COLOR_0": "albedo" } }],
+                    "files": {
+                        "json": { "{file-stem}.json": { "tint": { "transfer": "srgb", "value": "tint" } } },
+                        "png": { "{file-stem}-orm.png": { "transfer": "linear", "value": "orm" } }
+                    },
+                    "meshExtras": { "heat": { "kind": "image-file", "file": "{file-stem}-heat.png" } }
+                }"#,
+            ),
+        ]);
+
+        let stack =
+            stack_profiles(&profiles, "--profile", &owned_names(&["albedo", "orm"])).unwrap();
+
+        assert!(stack.values_from.is_empty());
+        assert!(stack.values.is_empty());
+        assert!(stack.compute_occlusion.0.is_empty());
+        assert_eq!(stack.voxel_size, Some(0.1));
+        assert_eq!(stack.method, Some(NamedCliValue(Method::Culled)));
+
+        let [body, glow] = stack.materials.as_slice() else {
+            panic!("two materials");
+        };
+        assert_eq!(body.name.as_deref(), Some("body"));
+        assert_eq!(
+            body.slots.keys().collect::<Vec<_>>(),
+            ["baseColorTexture", "occlusionTexture"]
+        );
+        assert_eq!(
+            body.slots["occlusionTexture"],
+            SlotEntry::Value {
+                value: "orm".to_owned()
+            }
+        );
+        assert_eq!(glow.name.as_deref(), Some("glow"));
+
+        let [primitive] = stack.primitives.as_slice() else {
+            panic!("one primitive");
+        };
+        assert_eq!(primitive.select.as_deref(), Some("solid"));
+        assert_eq!(primitive.material, Some(0));
+        assert_eq!(primitive.builtins["COLOR_0"], "albedo");
+
+        assert_eq!(
+            stack.files.json["{file-stem}.json"]
+                .keys()
+                .collect::<Vec<_>>(),
+            ["ior", "tint"]
+        );
+        assert_eq!(stack.files.png.len(), 1);
+        assert_eq!(
+            stack.mesh_extras.keys().collect::<Vec<_>>(),
+            ["accent", "heat"]
+        );
+    }
+
+    #[test]
+    fn an_element_two_members_set_errors_naming_both() {
+        let profiles = profile_set_from_json(&[
+            (
+                "a",
+                r#"{ "materials": [{ "slots": { "baseColorTexture": { "kind": "value", "value": "a" } } }] }"#,
+            ),
+            (
+                "b",
+                r#"{ "materials": [{ "slots": { "baseColorTexture": { "kind": "value", "value": "b" } } }] }"#,
+            ),
+            ("greedy", r#"{ "method": "greedy" }"#),
+            ("culled", r#"{ "method": "culled" }"#),
+        ]);
+
+        let error = stack_profiles(&profiles, "--profile", &owned_names(&["a", "b"]))
+            .unwrap_err()
+            .to_string();
+        assert!(
+            error.contains(
+                "the profile `b` sets materials entry 0's slot `baseColorTexture`, which the \
+                 profile `a` sets already"
+            ),
+            "{error}"
+        );
+
+        let error = stack_profiles(&profiles, "--profile", &owned_names(&["greedy", "culled"]))
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("`culled` sets method"), "{error}");
+    }
+
+    #[test]
+    fn a_member_listed_twice_errors() {
+        let profiles = ProfileSet::layered(built_in_profiles(), []);
+
+        let error = stack_profiles(&profiles, "--profile", &owned_names(&["orm", "orm"]))
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("--profile lists `orm` twice"), "{error}");
+    }
+
+    #[test]
+    fn an_undefined_member_errors() {
+        let profiles = ProfileSet::layered(built_in_profiles(), []);
+
+        assert!(
+            stack_profiles(&profiles, "--profile", &owned_names(&["albedo", "metal"])).is_err()
+        );
+    }
+
+    #[test]
+    fn each_entry_declares_its_material_and_select() {
+        let profile: MeshProfile = serde_json::from_str(
+            r#"{
+                "materials": [{}, {}],
+                "primitives": [
+                    { "select": "solid", "material": 0 },
+                    { "select": "glowing", "material": 1 },
+                    {}
+                ]
+            }"#,
+        )
+        .unwrap();
+        let mut materials = MaterialTable::declared(2, "the profile `x`".to_owned());
+
+        let primitives =
+            declare_profile_primitives(&mut materials, &profile, "the profile `x`").unwrap();
+
+        assert_eq!(primitives.len(), 3);
+        assert_eq!(primitives[0].material_id, Some(U32Id::from_u32(0)));
+        assert_eq!(primitives[0].select, "solid");
+        assert_eq!(primitives[1].material_id, Some(U32Id::from_u32(1)));
+        assert_eq!(primitives[2].material_id, None);
+        assert_eq!(primitives[2].select, "true");
+    }
+
+    #[test]
+    fn a_material_outside_the_count_errors() {
+        let profile: MeshProfile =
+            serde_json::from_str(r#"{ "materials": [{}], "primitives": [{ "material": 1 }] }"#)
+                .unwrap();
+        let mut materials = MaterialTable::declared(1, "the profile `x`".to_owned());
+
+        let error = declare_profile_primitives(&mut materials, &profile, "the profile `x`")
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("primitives entry 0"), "{error}");
+    }
+
+    #[test]
+    fn the_flags_primitives_stand_and_the_rest_fill() {
+        let profile = profile(
+            r#"{
+                "primitives": [
+                    {
+                        "name": "body",
+                        "normal": false,
+                        "uvs": ["face"],
+                        "builtins": { "COLOR_0": "albedo" },
+                        "customs": { "_HEAT": { "value": "heat", "transfer": "linear" } }
+                    }
+                ]
+            }"#,
+        );
+        let mut primitives = PrimitiveTable::new(Vec::new(), 0);
+        primitives
+            .set_normal("--write-primitive-normal", 0, true)
+            .unwrap();
+        primitives
+            .primitive("--write-primitive-uv", 0)
+            .unwrap()
+            .uv_streams = Some(vec![ArrayDomain::Swatch]);
+        primitives
+            .primitive("--write-primitive-builtin-value", 0)
+            .unwrap()
+            .attributes
+            .push(AttributeWrite::Builtin {
+                attribute: "COLOR_0".to_owned(),
+                expression: "hand".to_owned(),
+            });
+
+        apply_profile_primitives(&mut primitives, &profile, "the profile `x`").unwrap();
+
+        let primitives = primitives.finish();
+        let [primitive] = primitives.as_slice() else {
+            panic!("one primitive");
+        };
+        assert_eq!(primitive.name.as_deref(), Some("body"));
+        assert!(primitive.normal);
+        assert_eq!(primitive.uv_streams, Some(vec![ArrayDomain::Swatch]));
+        assert_eq!(primitive.attributes.len(), 2);
+        assert_eq!(
+            primitive.attributes[0],
+            AttributeWrite::Builtin {
+                attribute: "COLOR_0".to_owned(),
+                expression: "hand".to_owned(),
+            }
+        );
+        assert_eq!(primitive.attributes[1].name(), "_HEAT");
+    }
+
+    #[test]
+    fn the_attribute_keys_enforce_the_underscore_rule() {
+        let mut primitives = PrimitiveTable::new(Vec::new(), 0);
+
+        assert!(
+            apply_profile_primitives(
+                &mut primitives,
+                &profile(r#"{ "primitives": [{ "builtins": { "_HEAT": "heat" } }] }"#),
+                "the profile `x`",
+            )
+            .is_err()
+        );
+        assert!(
+            apply_profile_primitives(
+                &mut primitives,
+                &profile(
+                    r#"{ "primitives": [{ "customs": { "HEAT": { "value": "heat", "transfer": "linear" } } }] }"#
+                ),
+                "the profile `x`",
+            )
+            .is_err()
+        );
+    }
+
+    fn materials_profile() -> MeshProfile {
+        serde_json::from_str(
+            r#"{
+                "materials": [
+                    {
+                        "name": "body",
+                        "uvs": ["swatch", "face"],
+                        "slots": {
+                            "baseColorTexture": { "kind": "value", "value": "albedo" },
+                            "occlusionTexture": { "kind": "file", "file": "{file-stem}-ao.png" }
+                        }
+                    },
+                    { "name": "glow" }
+                ]
+            }"#,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn the_flags_materials_stand_and_the_rest_fill() {
+        let mut materials = MaterialTable::declared(2, "the profile `x`".to_owned());
+        let hand = materials.material("--material-name", 0).unwrap();
+        hand.name = Some("hand".to_owned());
+        hand.uv_streams = Some(vec![ArrayDomain::Voxel]);
+        hand.slots.push(SlotWrite {
+            property: "baseColorTexture".to_owned(),
+            source: SlotSource::Value("hand".to_owned()),
+        });
+
+        apply_profile_materials(
+            &mut materials,
+            &materials_profile(),
+            "the profile `x`",
+            "lamp",
+        )
+        .unwrap();
+
+        let materials = materials.finish().unwrap();
+        let [body, glow] = materials.as_slice() else {
+            panic!("two materials");
+        };
+        assert_eq!(body.name.as_deref(), Some("hand"));
+        assert_eq!(body.uv_streams, Some(vec![ArrayDomain::Voxel]));
+        assert_eq!(
+            body.slots,
+            [
+                SlotWrite {
+                    property: "baseColorTexture".to_owned(),
+                    source: SlotSource::Value("hand".to_owned()),
+                },
+                SlotWrite {
+                    property: "occlusionTexture".to_owned(),
+                    source: SlotSource::File("lamp-ao.png".to_owned()),
+                },
+            ]
+        );
+        assert_eq!(glow.name.as_deref(), Some("glow"));
+    }
+
+    #[test]
+    fn a_material_past_the_flags_count_errors() {
+        let mut materials = MaterialTable::declared(1, "--material-count 1".to_owned());
+
+        let error = apply_profile_materials(
+            &mut materials,
+            &materials_profile(),
+            "the profile `x`",
+            "lamp",
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(error.contains("materials entry 1"), "{error}");
+        assert!(error.contains("--material-count 1"), "{error}");
+    }
+
+    fn profile(json: &str) -> MeshProfile {
+        serde_json::from_str(json).unwrap()
+    }
+
+    #[test]
+    fn templates_fill_and_the_flags_writes_stand() {
+        let profile = profile(
+            r#"{
+                "files": {
+                    "png": {
+                        "{file-stem}-orm.png": { "transfer": "linear", "value": "orm" },
+                        "{file-stem}-mse.png": { "transfer": "linear", "value": "mse" }
+                    },
+                    "json": {
+                        "{file-stem}.json": {
+                            "ior": { "transfer": "linear", "value": "ior" },
+                            "tint": { "transfer": "srgb", "value": "tint" }
+                        }
+                    }
+                }
+            }"#,
+        );
+        let hand = FileWrite {
+            file: "lamp-orm.png".to_owned(),
+            value: WrittenValue {
+                expression: "hand".to_owned(),
+                transfer: Transfer::Srgb,
+            },
+            form: FileForm::Png,
+        };
+        let mut files = vec![hand.clone()];
+
+        apply_profile_files(&mut files, &profile, "the profile `x`", "lamp").unwrap();
+
+        let names: Vec<_> = files
+            .iter()
+            .map(|write| (write.file.as_str(), write.value.expression.as_str()))
+            .collect();
+        assert_eq!(
+            names,
+            [
+                ("lamp-orm.png", "hand"),
+                ("lamp.json", "ior"),
+                ("lamp.json", "tint"),
+                ("lamp-mse.png", "mse"),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_template_filling_to_a_path_errors() {
+        let profile = profile(
+            r#"{ "files": { "png": { "maps/{file-stem}.png": { "transfer": "linear", "value": "v" } } } }"#,
+        );
+
+        let error = apply_profile_files(&mut Vec::new(), &profile, "the profile `x`", "lamp")
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("`maps/{file-stem}.png`"), "{error}");
+    }
+
+    #[test]
+    fn two_templates_filling_to_one_file_error() {
+        let profile = profile(
+            r#"{
+                "files": {
+                    "png": {
+                        "{file-stem}.png": { "transfer": "linear", "value": "a" },
+                        "lamp.png": { "transfer": "linear", "value": "b" }
+                    }
+                }
+            }"#,
+        );
+
+        assert!(apply_profile_files(&mut Vec::new(), &profile, "the profile `x`", "lamp").is_err());
+    }
+
+    #[test]
+    fn the_flags_extra_stands_and_the_rest_fills() {
+        let profile: MeshProfile = serde_json::from_str(
+            r#"{
+                "meshExtras": {
+                    "albedo": { "kind": "json-value", "value": "albedo", "transfer": "linear" },
+                    "heat": { "kind": "image-file", "file": "{file-stem}-heat.png" }
+                }
+            }"#,
+        )
+        .unwrap();
+        let hand = ExtraWrite {
+            name: "albedo".to_owned(),
+            form: ExtraForm::Json,
+            source: ExtraSource::File("albedo.json".to_owned()),
+        };
+        let mut extras = vec![hand.clone()];
+
+        apply_profile_mesh_extras(&mut extras, &profile, "the profile `x`", "lamp").unwrap();
+
+        assert_eq!(extras[0], hand);
+        assert_eq!(extras[1].name, "heat");
+        assert_eq!(
+            extras[1].source,
+            ExtraSource::File("lamp-heat.png".to_owned())
+        );
+    }
+
+    #[test]
+    fn each_kind_lowers_to_its_form_and_source() {
+        let write = extra_write(
+            "the profile `x`",
+            "heat",
+            &serde_json::from_str::<ExtraEntry>(
+                r#"{ "kind": "image-file", "file": "{file-stem}-heat.png" }"#,
+            )
+            .unwrap(),
+            "lamp",
+        )
+        .unwrap();
+        assert_eq!(write.form, ExtraForm::Image);
+        assert_eq!(write.source, ExtraSource::File("lamp-heat.png".to_owned()));
+
+        let write = extra_write(
+            "the profile `x`",
+            "accent",
+            &serde_json::from_str::<ExtraEntry>(
+                r#"{ "kind": "json-value", "value": "avg(baseColor.rgb)", "transfer": "srgb" }"#,
+            )
+            .unwrap(),
+            "lamp",
+        )
+        .unwrap();
+        assert_eq!(write.form, ExtraForm::Json);
+        let ExtraSource::Value(value) = write.source else {
+            panic!("a value source");
+        };
+        assert_eq!(value.transfer, Transfer::Srgb);
+
+        assert!(
+            extra_write(
+                "the profile `x`",
+                "accent",
+                &serde_json::from_str::<ExtraEntry>(
+                    r#"{ "kind": "json-value", "value": "1 +", "transfer": "srgb" }"#,
+                )
+                .unwrap(),
+                "lamp",
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn a_list_parses_in_order_and_repeats_no_domain() {
+        assert_eq!(
+            parse_uv_list("the profile `x`", &["swatch".to_owned(), "face".to_owned()]).unwrap(),
+            [ArrayDomain::Swatch, ArrayDomain::Face]
+        );
+        assert!(parse_uv_list("the profile `x`", &["face".to_owned(), "face".to_owned()]).is_err());
+        assert!(parse_uv_list("the profile `x`", &["edge".to_owned()]).is_err());
+    }
+
+    #[test]
+    fn a_new_key_pushes_and_a_seen_key_errors() {
+        let mut items = vec![("a", 1)];
+
+        assert!(push_unique(&mut items, ("b", 2), |item| item.0, |_| String::new()).is_ok());
+        assert!(push_unique(&mut items, ("a", 3), |item| item.0, |_| String::new()).is_err());
+        assert_eq!(items, [("a", 1), ("b", 2)]);
+    }
+
+    /// A write of `x` to `file` in `form`.
+    fn write(file: &str, form: FileForm) -> FileWrite {
+        FileWrite {
+            file: file.to_owned(),
+            value: WrittenValue {
+                expression: "x".to_owned(),
+                transfer: Transfer::Linear,
+            },
+            form,
+        }
+    }
+
+    /// A JSON entry named `name`.
+    fn json(name: &str) -> FileForm {
+        FileForm::Json {
+            name: name.to_owned(),
+        }
+    }
+
+    #[test]
+    fn json_entries_merge_by_name_and_pngs_never_repeat() {
+        let mut files = Vec::new();
+        let origin = "--write-file-json-value";
+
+        assert!(push_file_write(&mut files, write("v.json", json("a")), origin).is_ok());
+        assert!(push_file_write(&mut files, write("v.json", json("b")), origin).is_ok());
+        assert!(push_file_write(&mut files, write("v.json", json("a")), origin).is_err());
+
+        let origin = "--write-file-png-value";
+
+        assert!(push_file_write(&mut files, write("m.png", FileForm::Png), origin).is_ok());
+        assert!(push_file_write(&mut files, write("m.png", FileForm::Png), origin).is_err());
+        assert!(push_file_write(&mut files, write("m.png", json("a")), origin).is_err());
+        assert!(push_file_write(&mut files, write("v.json", FileForm::Png), origin).is_err());
+
+        assert_eq!(files.len(), 3);
+    }
+
+    #[test]
+    fn accepts_a_bare_file_name() {
+        assert_eq!(require_file_name("skin.png").unwrap(), "skin.png");
+    }
+
+    #[test]
+    fn rejects_an_empty_name() {
+        assert!(require_file_name("").is_err());
+    }
+
+    #[test]
+    fn rejects_a_name_with_a_path_separator() {
+        assert!(require_file_name("textures/skin.png").is_err());
+        assert!(require_file_name("textures\\skin.png").is_err());
+        assert!(require_file_name("../skin.png").is_err());
+    }
+
+    #[test]
+    fn the_placeholder_fills_and_a_literal_stays() {
+        assert_eq!(
+            fill_file_template("{file-stem}-mse.png", "turret"),
+            "turret-mse.png"
+        );
+        assert_eq!(
+            fill_file_template("metallic-smoothness.png", "turret"),
+            "metallic-smoothness.png"
+        );
+    }
+
+    #[test]
+    fn a_broken_expression_errors_at_its_origin() {
+        assert!(check_expression("--primitive", "emissiveStrength > 0").is_ok());
+
+        let error = check_expression("--primitive", "1 +")
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("--primitive"), "{error}");
+        assert!(error.contains("`1 +`"), "{error}");
+    }
+
+    #[test]
+    fn to_beats_the_output_extension_beats_glb() {
+        assert_eq!(
+            resolve_gltf_container(Some(GltfContainer::Gltf), Some(Path::new("out.glb"))),
+            GltfContainer::Gltf
+        );
+        assert_eq!(
+            resolve_gltf_container(None, Some(Path::new("out.gltf"))),
+            GltfContainer::Gltf
+        );
+        assert_eq!(
+            resolve_gltf_container(None, Some(Path::new("out.mesh"))),
+            GltfContainer::Glb
+        );
+        assert_eq!(resolve_gltf_container(None, None), GltfContainer::Glb);
+    }
+
+    #[test]
+    fn every_selected_object_is_meshed_and_an_empty_document_errors() {
+        let mut main: VoxMain = VoxMain::default();
+        let a = main
+            .retain_object(VoxObject::new("a".to_owned(), TyVector3U32::ONE).unwrap())
+            .unwrap();
+        let b = main
+            .retain_object(VoxObject::new("b".to_owned(), TyVector3U32::ONE).unwrap())
+            .unwrap();
+
+        assert_eq!(
+            select_mesh_objects(&main, &try_parse_object_selection(&[]).unwrap()).unwrap(),
+            vec![a, b]
+        );
+        assert_eq!(
+            select_mesh_objects(
+                &main,
+                &try_parse_object_selection(&["--select-index", "1"]).unwrap()
+            )
+            .unwrap(),
+            vec![b]
+        );
+
+        let empty: VoxMain = VoxMain::default();
+        assert!(select_mesh_objects(&empty, &try_parse_object_selection(&[]).unwrap()).is_err());
     }
 }

@@ -8,20 +8,20 @@ use ty_math::{TyVector3I32, TyVector3U32};
 use voxcore::{BVoxHierarchyNode, BVoxMaterial, BVoxObject, VoxHierarchyNode, VoxMain, VoxObject};
 
 /// Gives a bare main a synthesized [`GoxlExt`](crate::GoxlExt), the main
-/// [`to_goxl_file`](crate::to_goxl_file) writes as a file synthesized from
+/// [`to_goxl_file`](crate::to_goxl_file()) writes as a file synthesized from
 /// the scene. Goxel has flat layers of placed `16 x 16 x 16` blocks and no
 /// hierarchy, so the scene takes the shape a loaded file has. Every object
 /// placement becomes one root node with no transform, named for the placing
 /// node, holding the placement's tiles: `16 x 16 x 16` objects cut from the
-/// object's grid on the world grid at the placement's translation, summed
-/// down the hierarchy from the roots and rounded to whole voxels. A tile
-/// holding no live voxel is not cut. An object placed by no node is tiled
-/// once at the origin under a node named for it. An object placed by several
-/// nodes is tiled per placement. The ext's layer entry for each node stamps
-/// its tiles at their world positions. The original nodes and objects are
-/// released. Palettes and value pools stay, and a tile's voxel samples the
-/// materials its source voxel did. Every layer entry is the synthesized
-/// entry a node retained later also gets.
+/// object's grid on the world grid at the placement's translation, summed down
+/// the hierarchy from the roots and rounded to whole voxels. A tile holding no
+/// live voxel is not cut. An object placed by no node is tiled once at the
+/// origin under a node named for it. An object placed by several nodes is tiled
+/// per placement. The ext's layer entry for each node stamps its tiles at their
+/// world positions. The original nodes and objects are released. Palettes and
+/// value pools stay, and a tile's voxel samples the materials its source voxel
+/// did. Every layer entry is the synthesized entry a node retained later also
+/// gets.
 ///
 /// Lossy where Goxel cannot represent the source. Grouping collapses because
 /// layers do not nest. Rotation and scale drop because only translation
@@ -131,12 +131,14 @@ pub fn to_goxl_vox_main(mut main: VoxMain<()>) -> Result<GoxlVoxMain> {
 /// A layer to synthesize: the placing node's name and the tiles it stamps.
 struct Layer {
     name: String,
+
     stamps: Vec<Stamp>,
 }
 
 /// One tile object stamped at the world position of its lower corner.
 struct Stamp {
     tile_id: U32Id<BVoxObject>,
+
     origin: [i32; 3],
 }
 
@@ -144,6 +146,7 @@ struct Stamp {
 /// materials it samples, one per layer.
 struct Cell {
     local: TyVector3U32,
+
     samples: Vec<U32Id<BVoxMaterial>>,
 }
 
@@ -151,7 +154,9 @@ struct Cell {
 /// translation the placement lands at.
 struct Placement {
     name: String,
+
     object_id: U32Id<BVoxObject>,
+
     world: TyVector3I32,
 }
 
@@ -252,7 +257,7 @@ fn tiles(object: &VoxObject, world: TyVector3I32) -> Result<Vec<([i32; 3], VoxOb
 
 #[cfg(test)]
 mod tests {
-    use crate::{GoxlExtPlacement, from_goxl_file, to_goxl_file, to_goxl_vox_main};
+    use crate::{from_goxl_file, placement, to_goxl_file, to_goxl_vox_main};
     use branded_id::U32Id;
     use goxl::{GoxlBlock, GoxlFile};
     use std::collections::BTreeSet;
@@ -260,16 +265,10 @@ mod tests {
         TyHexColor, TyQuaternionF64, TySrgbaU8, TyTransformF64, TyVector3F64, TyVector3U32,
     };
     use voxcore::{
-        BVoxHierarchyNode, BVoxMaterial, BVoxObject, VoxHierarchyNode, VoxMain, VoxObject,
-        VoxPalette, VoxValuePool, color::lin_srgba_f64_from_srgba_u8, material::BASE_COLOR,
+        BVoxHierarchyNode, BVoxMaterial, BVoxObject, BVoxPalette, VoxHierarchyNode, VoxMain,
+        VoxObject, VoxPalette, VoxValuePool, color::lin_srgba_f64_from_srgba_u8,
+        material::BASE_COLOR,
     };
-
-    fn placement(object_index: u32, position: [i32; 3]) -> GoxlExtPlacement {
-        GoxlExtPlacement {
-            object_id: U32Id::from_u32(object_index),
-            position,
-        }
-    }
 
     /// The linear-light components of a `#RRGGBBAA` hex string.
     fn linear_rgba(hex: &str) -> [f64; 4] {
@@ -634,7 +633,7 @@ mod tests {
         let mut loose = VoxObject::new("loose".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
 
         loose.retain_layer(
-            U32Id::<voxcore::BVoxPalette>::from_u32(0),
+            U32Id::<BVoxPalette>::from_u32(0),
             U32Id::<BVoxMaterial>::from_u32(0),
         );
 

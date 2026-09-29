@@ -3,12 +3,12 @@ use qbcl::qbt::QbtFile;
 use voxcore::VoxMain;
 
 /// Gives a bare state a synthesized [`QbtExt`](crate::QbtExt), the state
-/// [`to_qbt_file`](crate::to_qbt_file) writes as a file synthesized from the
+/// [`to_qbt_file`](crate::to_qbt_file()) writes as a file synthesized from the
 /// scene. The hierarchy first takes the shape of a Qubicle scene tree: one
 /// synthetic root model over every root, a node cloned per extra path to it,
-/// each node at its world position, and an object no node places under a
-/// node of its own at the origin. Each node then takes the entry a retained
-/// node takes. The header takes the defaults.
+/// each node at its world position, and an object no node places under a node
+/// of its own at the origin. Each node then takes the entry a retained node
+/// takes. The header takes the defaults.
 ///
 /// Lossy where Qubicle cannot represent the source. A model carries no name
 /// or translation, so a group's name drops and its placement folds into its

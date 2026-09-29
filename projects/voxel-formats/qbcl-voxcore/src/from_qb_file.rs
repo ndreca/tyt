@@ -1,19 +1,19 @@
-use crate::{Error, QbVoxMain, Result, qb_ext_from_file};
+use crate::{Error, QbVoxMain, Result, color_floats, qb_ext_from_file, translation};
 use branded_id::U32Id;
 use qbcl::qb::{QbFile, QbMatrix};
 use std::collections::{HashMap, HashSet};
-use ty_math::{TySrgbaU8, TyTransformF64, TyVector3I32, TyVector3U32};
+use ty_math::TyVector3U32;
 use voxcore::{
     BVoxMaterial, BVoxPalette, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette, VoxValuePool,
-    color::lin_srgba_f64_from_srgba_u8, material::BASE_COLOR,
+    material::BASE_COLOR,
 };
 
-/// Loads a decoded Qubicle Binary [`QbFile`] into a [`QbVoxMain`], the
-/// inverse of [`to_qb_file`](crate::to_qb_file). Each matrix becomes an
-/// object sharing one `baseColor` palette, placed by a root hierarchy node
-/// named for the matrix at the matrix's scene position. The header flags go
-/// to the ext. The per-voxel visibility bytes are not kept: the writer
-/// derives them from the grid.
+/// Loads a decoded Qubicle Binary [`QbFile`] into a [`QbVoxMain`], the inverse
+/// of [`to_qb_file`](crate::to_qb_file()). Each matrix becomes an object
+/// sharing one `baseColor` palette, placed by a root hierarchy node named for
+/// the matrix at the matrix's scene position. The header flags go to the ext.
+/// The per-voxel visibility bytes are not kept: the writer derives them from
+/// the grid.
 ///
 /// Errors on a matrix grid that exceeds the dense limit, or on a
 /// cross-reference the checked insertions reject.
@@ -134,18 +134,6 @@ fn build_object(
     }
 
     Ok(object)
-}
-
-/// A translation-only transform from a scene position.
-fn translation(position: [i32; 3]) -> TyTransformF64 {
-    TyTransformF64::from_translation(TyVector3I32::from_array(position).as_dvec3())
-}
-
-/// The linear-light components of an `[r, g, b]` byte color.
-fn color_floats(color: [u8; 3]) -> [f64; 3] {
-    let [red, green, blue] = color;
-    let linear = lin_srgba_f64_from_srgba_u8(TySrgbaU8::new(red, green, blue, 255));
-    [linear.red, linear.green, linear.blue]
 }
 
 #[cfg(test)]
