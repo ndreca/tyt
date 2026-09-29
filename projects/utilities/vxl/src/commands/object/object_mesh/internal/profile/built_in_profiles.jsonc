@@ -1,7 +1,7 @@
 {
-  // The glTF spec defaults, a mixin every profile builds on. Each
-  // entry shadows its property with a defaulted copy.
+  // Each entry shadows its property with a defaulted copy.
   "defaults": {
+    "description": "The glTF spec defaults the other profiles build on",
     "values": [
       "baseColor = swatch(default(baseColor, rgba(1, 1, 1, 1)))",
       "occlusionStrength = swatch(default(occlusionStrength, 1))",
@@ -13,6 +13,7 @@
   },
 
   "albedo": {
+    "description": "A base color texture",
     "valuesFrom": ["defaults"],
     "values": ["albedo = baseColor"],
     "materials": [
@@ -26,6 +27,7 @@
 
   // One value may fill several slots.
   "orm": {
+    "description": "Occlusion, roughness, and metallic packed in one texture",
     "valuesFrom": ["defaults"],
     "values": ["orm = rgb(occlusionStrength, roughness, metallic)"],
     "materials": [
@@ -40,6 +42,7 @@
 
   // white pins emissiveFactor against glTF's black default.
   "emissive": {
+    "description": "An emissive texture normalized to its peak strength",
     "valuesFrom": ["defaults"],
     "values": [
       "maxStrength = max(emissiveStrength)",
@@ -60,6 +63,7 @@
   // Writers never travel with valuesFrom, so pbr is no bundle: it
   // imports the three profiles' values and writes the whole material itself.
   "pbr": {
+    "description": "The albedo, orm, and emissive textures in one material",
     "valuesFrom": ["albedo", "orm", "emissive"],
     "materials": [
       {

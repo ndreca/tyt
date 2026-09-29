@@ -1,5 +1,5 @@
 use crate::{
-    NamedCliValue, PositiveF64,
+    NamedCliValue, PositiveF64, Profile, ProfileDescription,
     commands::{Background, LightEntry, ViewEntry},
 };
 use serde::Deserialize;
@@ -11,6 +11,9 @@ use voxsmith::operations::object::RenderOcclusion;
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields, rename_all = "camelCase")]
 pub struct RenderProfile {
+    /// Printed beside the profile name in the profile listings.
+    pub(crate) description: Option<ProfileDescription>,
+
     /// Mirrors `--width`.
     pub(crate) width: Option<NonZeroU32>,
 
@@ -39,10 +42,16 @@ pub struct RenderProfile {
     pub(crate) lights: Vec<LightEntry>,
 }
 
+impl Profile for RenderProfile {
+    fn description(&self) -> Option<&ProfileDescription> {
+        self.description.as_ref()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        NamedCliValue, PositiveF64,
+        NamedCliValue, PositiveF64, ProfileDescription,
         commands::{
             Background, DistanceEntry, LightEntry, NonNegativeF64, PoseTransformEntry,
             PositionTransformEntry, ProjectionKind, RenderProfile, RotationEntry,
@@ -56,6 +65,7 @@ mod tests {
     fn every_key_reads_into_its_element() {
         let profile: RenderProfile = serde_json::from_str(
             r##"{
+                "description": "A test rig",
                 "width": 640,
                 "height": 480,
                 "background": "#202020",
@@ -108,6 +118,10 @@ mod tests {
         )
         .unwrap();
 
+        assert_eq!(
+            profile.description.as_ref().map(ProfileDescription::as_str),
+            Some("A test rig")
+        );
         assert_eq!(profile.width.map(u32::from), Some(640));
         assert_eq!(profile.height.map(u32::from), Some(480));
         assert_eq!(

@@ -1,4 +1,7 @@
-use crate::{Error, NamedCliValue, NoneOr, PositiveF64, Result, Rgba, commands::ResolutionEntry};
+use crate::{
+    Error, NamedCliValue, NoneOr, PositiveF64, Profile, ProfileDescription, Result, Rgba,
+    commands::ResolutionEntry,
+};
 use serde::Deserialize;
 use voxsmith::operations::mesh_doc::{
     FillMode, GridResolution, MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelFrame, VoxelScale,
@@ -8,6 +11,9 @@ use voxsmith::operations::mesh_doc::{
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields, rename_all = "camelCase")]
 pub struct MeshDocVoxelizeProfile {
+    /// Printed beside the profile name in the profile listings.
+    pub(crate) description: Option<ProfileDescription>,
+
     /// Mirrors `--resolution`.
     pub(crate) resolution: Option<ResolutionEntry>,
 
@@ -34,6 +40,12 @@ pub struct MeshDocVoxelizeProfile {
 
     /// Mirrors `--out-of-range-property`.
     pub(crate) out_of_range_property: Option<NamedCliValue<OutOfRangeProperty>>,
+}
+
+impl Profile for MeshDocVoxelizeProfile {
+    fn description(&self) -> Option<&ProfileDescription> {
+        self.description.as_ref()
+    }
 }
 
 impl MeshDocVoxelizeProfile {

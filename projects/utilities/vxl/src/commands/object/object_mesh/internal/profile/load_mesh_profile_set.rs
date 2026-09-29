@@ -64,7 +64,11 @@ mod tests {
         let groups: Vec<_> = profiles
             .by_origin()
             .into_iter()
-            .map(|(origin, names)| format!("{origin}: {}", names.join(" ")))
+            .map(|(origin, profiles)| {
+                let names: Vec<_> = profiles.into_iter().map(|(name, _)| name).collect();
+
+                format!("{origin}: {}", names.join(" "))
+            })
             .collect();
         assert_eq!(
             groups,

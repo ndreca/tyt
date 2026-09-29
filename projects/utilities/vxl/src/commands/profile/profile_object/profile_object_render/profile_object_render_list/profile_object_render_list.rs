@@ -2,7 +2,7 @@ use crate::{
     Dependencies, Result, cli_value_parser,
     commands::{list_profiles, load_render_profile_set},
 };
-use clap::Parser;
+use clap::{ArgAction, Parser};
 use voxsmith::operations::profile::ProfileListLayout;
 
 /// Lists the profiles `object render --profile` can apply, grouped by the
@@ -18,13 +18,27 @@ pub struct ProfileObjectRenderList {
         value_parser = cli_value_parser::<ProfileListLayout>()
     )]
     layout: ProfileListLayout,
+
+    /// Show each profile's description. `--show-descriptions false` drops
+    /// them.
+    #[arg(
+        value_name = "show-descriptions",
+        long,
+        default_value_t = true,
+        default_missing_value = "true",
+        num_args = 0..=1,
+        action = ArgAction::Set
+    )]
+    show_descriptions: bool,
 }
 
 impl ProfileObjectRenderList {
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let profiles = load_render_profile_set(&dependencies)?;
 
-        Ok(dependencies.write_stdout(list_profiles(&profiles, self.layout).as_bytes())?)
+        Ok(dependencies.write_stdout(
+            list_profiles(&profiles, self.layout, self.show_descriptions).as_bytes(),
+        )?)
     }
 }
 
@@ -44,5 +58,19 @@ mod tests {
         assert_eq!(list.layout, ProfileListLayout::TextRows);
 
         assert!(ProfileObjectRenderList::try_parse_from(["list", "model.voxj"]).is_err());
+    }
+
+    #[test]
+    fn descriptions_show_unless_turned_off() {
+        let parse = |args: &[&str]| {
+            ProfileObjectRenderList::try_parse_from(args)
+                .unwrap()
+                .show_descriptions
+        };
+
+        assert!(parse(&["list"]));
+        assert!(parse(&["list", "--show-descriptions"]));
+        assert!(parse(&["list", "--show-descriptions", "true"]));
+        assert!(!parse(&["list", "--show-descriptions", "false"]));
     }
 }

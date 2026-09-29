@@ -50,6 +50,9 @@ type Transfer = "linear" | "srgb";
 
 /** A profile; each element mirrors a `vxl object mesh` flag. */
 interface Profile {
+  /** One line the profile listings print beside the name. */
+  description?: string;
+
   /** Mirrors `--values-from` per entry; writers never travel. */
   valuesFrom?: string[];
 
@@ -293,9 +296,9 @@ profile loads: the built-ins take the same schema by construction:
 
 ```jsonc
 {
-  // The glTF spec defaults, a mixin every profile builds on. Each
-  // entry shadows its property with a defaulted copy.
+  // Each entry shadows its property with a defaulted copy.
   "defaults": {
+    "description": "The glTF spec defaults the other profiles build on",
     "values": [
       "baseColor = swatch(default(baseColor, rgba(1, 1, 1, 1)))",
       "occlusionStrength = swatch(default(occlusionStrength, 1))",
@@ -307,6 +310,7 @@ profile loads: the built-ins take the same schema by construction:
   },
 
   "albedo": {
+    "description": "A base color texture",
     "valuesFrom": ["defaults"],
     "values": ["albedo = baseColor"],
     "materials": [
@@ -320,6 +324,7 @@ profile loads: the built-ins take the same schema by construction:
 
   // One value may fill several slots.
   "orm": {
+    "description": "Occlusion, roughness, and metallic packed in one texture",
     "valuesFrom": ["defaults"],
     "values": ["orm = rgb(occlusionStrength, roughness, metallic)"],
     "materials": [
@@ -334,6 +339,7 @@ profile loads: the built-ins take the same schema by construction:
 
   // white pins emissiveFactor against glTF's black default.
   "emissive": {
+    "description": "An emissive texture normalized to its peak strength",
     "valuesFrom": ["defaults"],
     "values": [
       "maxStrength = max(emissiveStrength)",
@@ -354,6 +360,7 @@ profile loads: the built-ins take the same schema by construction:
   // Writers never travel with valuesFrom, so pbr is no bundle: it
   // imports the three profiles' values and writes the whole material itself.
   "pbr": {
+    "description": "The albedo, orm, and emissive textures in one material",
     "valuesFrom": ["albedo", "orm", "emissive"],
     "materials": [
       {

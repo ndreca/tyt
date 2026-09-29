@@ -39,7 +39,10 @@ These hold across the commands and match the existing `vox-doc to` commands.
    `profile palette show list` offer `box-hierarchy` (their default),
    `box-tables`, `json-compact`, `json-pretty`, `md-lists`, `md-tables`, or
    `text-rows`.
-6. Multiple values are passed by repeating the flag, as in
+6. Every profile takes an optional one-line `description`. The profile `list`
+   commands print it beside the profile's name unless
+   `--show-descriptions false` turns it off.
+7. Multiple values are passed by repeating the flag, as in
    `--select-index 0 --select-index 3`, not as one comma-separated argument. The
    exception is the `--texture-map` channel list, where the comma-separated RGBA
    packing is a single structured value.

@@ -20,7 +20,7 @@ pub fn built_in_profiles() -> BTreeMap<String, MeshProfile> {
 
 #[cfg(test)]
 mod tests {
-    use crate::commands::built_in_profiles;
+    use crate::{Profile, commands::built_in_profiles};
     use vox_value_language::parse;
 
     #[test]
@@ -49,5 +49,12 @@ mod tests {
         assert_eq!(pbr.values_from, ["albedo", "orm", "emissive"]);
         assert!(pbr.values.is_empty());
         assert_eq!(pbr.materials[0].slots.len(), 6);
+    }
+
+    #[test]
+    fn every_built_in_carries_a_description() {
+        for (name, profile) in built_in_profiles() {
+            assert!(profile.description().is_some(), "{name}");
+        }
     }
 }

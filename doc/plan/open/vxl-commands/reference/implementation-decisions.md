@@ -1061,3 +1061,15 @@ element: either one on the command line replaces whichever key the profile set.
 The fill-color and world-reference checks moved onto the resolved
 `VoxelizeOptions` because a profile can set the flags they test.
 
+
+## Profile descriptions
+
+Every profile type takes an optional `description`, which the `Profile` trait
+hands to the shared list helper. The description has to be one line holding text
+because the listings print it beside the name, so a line break or a blank value
+errors at load. Stacks and imports ignore it.
+
+With descriptions shown, the table layouts switch from one column per origin to
+one `label` and `description` record table per origin because a column of long
+descriptions reads poorly. `text-rows` heads each origin over a row per profile,
+and `md-lists` appends the description to each item.

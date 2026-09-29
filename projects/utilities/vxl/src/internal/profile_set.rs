@@ -47,23 +47,23 @@ impl<P> ProfileSet<P> {
         Self::layered(profiles, [])
     }
 
-    /// Each origin supplying a name, in cascade order, with the names it
+    /// Each origin supplying a name, in cascade order, with the profiles it
     /// supplies in name order. An origin every later layer overrode is
     /// absent.
-    pub(crate) fn by_origin(&self) -> Vec<(&ProfileOrigin, Vec<&str>)> {
+    pub(crate) fn by_origin(&self) -> Vec<(&ProfileOrigin, Vec<(&str, &P)>)> {
         self.cascade
             .iter()
             .map(|origin| {
-                let names = self
+                let profiles = self
                     .profiles
                     .iter()
                     .filter(|(_, (supplier, _))| supplier == origin)
-                    .map(|(name, _)| name.as_str())
+                    .map(|(name, (_, profile))| (name.as_str(), profile))
                     .collect::<Vec<_>>();
 
-                (origin, names)
+                (origin, profiles)
             })
-            .filter(|(_, names)| !names.is_empty())
+            .filter(|(_, profiles)| !profiles.is_empty())
             .collect()
     }
 
@@ -144,15 +144,18 @@ mod tests {
         let groups: Vec<_> = profiles
             .by_origin()
             .into_iter()
-            .map(|(origin, names)| (origin.to_string(), names))
+            .map(|(origin, profiles)| (origin.to_string(), profiles))
             .collect();
 
         assert_eq!(
             groups,
             [
-                ("built in".to_owned(), vec!["albedo", "pbr"]),
-                ("/repo/.vxlconfig".to_owned(), vec!["a"]),
-                ("/repo/sub/.vxlconfig".to_owned(), vec!["orm"]),
+                (
+                    "built in".to_owned(),
+                    vec![("albedo", &"built in"), ("pbr", &"built in")]
+                ),
+                ("/repo/.vxlconfig".to_owned(), vec![("a", &"repo")]),
+                ("/repo/sub/.vxlconfig".to_owned(), vec![("orm", &"sub")]),
             ]
         );
     }

@@ -1,53 +1,57 @@
 {
-  // One perspective view from the front-right-top.
   "hero": {
+    "description": "One perspective view from the front-right-top",
     "views": {
       "hero": { "transform": { "kind": "orbit", "azimuth": 45, "elevation": 30 } },
     },
   },
 
-  // One view each on an orbit along an axis.
   "front": {
+    "description": "One view of the front",
     "views": {
       "front": { "transform": { "kind": "orbit", "azimuth": 0, "elevation": 0 } },
     },
   },
   "back": {
+    "description": "One view of the back",
     "views": {
       "back": { "transform": { "kind": "orbit", "azimuth": 180, "elevation": 0 } },
     },
   },
   "left": {
+    "description": "One view of the left side",
     "views": {
       "left": { "transform": { "kind": "orbit", "azimuth": -90, "elevation": 0 } },
     },
   },
   "right": {
+    "description": "One view of the right side",
     "views": {
       "right": { "transform": { "kind": "orbit", "azimuth": 90, "elevation": 0 } },
     },
   },
-  // From above, the front lands at the bottom of the image.
   "top": {
+    "description": "One view from above with the front at the bottom of the image",
     "views": {
       "top": { "transform": { "kind": "orbit", "azimuth": 0, "elevation": 90 } },
     },
   },
   "bottom": {
+    "description": "One view from below",
     "views": {
       "bottom": { "transform": { "kind": "orbit", "azimuth": 0, "elevation": -90 } },
     },
   },
 
-  // The hero and the four sides in one run.
   "turnaround": {
+    "description": "The hero view and the four sides",
     "viewsFrom": ["hero", "front", "right", "back", "left"],
   },
 
-  // A key light above and to the left of the viewer, over a hemisphere
-  // light. The offset gives a box three distinct shades. The shadow takes
-  // the default granularity.
+  // The key light's offset gives a box three distinct shades. The shadow
+  // takes the default granularity.
   "studio": {
+    "description": "A key light from the upper left over a hemisphere light",
     "lights": [
       {
         "kind": "directional",
@@ -67,9 +71,9 @@
     ],
   },
 
-  // A headlight with no shadow, for judging color alone. Its strength of
-  // pi renders a white base color as white.
+  // The strength of pi renders a white base color as white.
   "flat": {
+    "description": "A shadowless headlight for judging color",
     "lights": [
       {
         "kind": "directional",

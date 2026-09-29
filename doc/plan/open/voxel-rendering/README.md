@@ -220,6 +220,9 @@ carry over:
 ```ts
 /** A profile; each element mirrors a `vxl object render` flag. */
 interface Profile {
+  /** One line the profile listings print beside the name. */
+  description?: string;
+
   /** Mirrors `--width`. */
   width?: number;
 

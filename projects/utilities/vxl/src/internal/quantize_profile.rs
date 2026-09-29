@@ -1,4 +1,4 @@
-use crate::NamedCliValue;
+use crate::{NamedCliValue, Profile, ProfileDescription};
 use serde::Deserialize;
 use std::num::NonZeroUsize;
 use voxsmith::utilities::{AlphaMode, ColorSpace, Dither, PropertyInterpretation, ReductionMethod};
@@ -8,6 +8,9 @@ use voxsmith::utilities::{AlphaMode, ColorSpace, Dither, PropertyInterpretation,
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields, rename_all = "camelCase")]
 pub struct QuantizeProfile {
+    /// Printed beside the profile name in the profile listings.
+    pub(crate) description: Option<ProfileDescription>,
+
     /// Mirrors `--max-materials`.
     pub(crate) max_materials: Option<NonZeroUsize>,
 
@@ -31,6 +34,12 @@ pub struct QuantizeProfile {
 
     /// Mirrors `--dither`.
     pub(crate) dither: Option<NamedCliValue<Dither>>,
+}
+
+impl Profile for QuantizeProfile {
+    fn description(&self) -> Option<&ProfileDescription> {
+        self.description.as_ref()
+    }
 }
 
 #[cfg(test)]

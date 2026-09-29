@@ -21,7 +21,10 @@ pub fn built_in_render_profiles() -> BTreeMap<String, RenderProfile> {
 
 #[cfg(test)]
 mod tests {
-    use crate::commands::{LightEntry, PoseTransformEntry, built_in_render_profiles};
+    use crate::{
+        Profile,
+        commands::{LightEntry, PoseTransformEntry, built_in_render_profiles},
+    };
 
     #[test]
     fn the_ten_built_ins_load_as_view_sets_and_light_rigs() {
@@ -74,5 +77,12 @@ mod tests {
                 ..
             }
         ));
+    }
+
+    #[test]
+    fn every_built_in_carries_a_description() {
+        for (name, profile) in built_in_render_profiles() {
+            assert!(profile.description().is_some(), "{name}");
+        }
     }
 }

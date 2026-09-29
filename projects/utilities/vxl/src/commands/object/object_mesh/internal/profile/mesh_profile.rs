@@ -1,5 +1,5 @@
 use crate::{
-    NamedCliValue,
+    NamedCliValue, Profile, ProfileDescription,
     commands::{
         BoundNames, ComputeIndexEntry, ExtraEntry, FileEntries, MaterialEntry, PrimitiveEntry,
         TextureShapeEntry,
@@ -14,6 +14,9 @@ use voxsmith::operations::object::Method;
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields, rename_all = "camelCase")]
 pub struct MeshProfile {
+    /// Printed beside the profile name in the profile listings.
+    pub(crate) description: Option<ProfileDescription>,
+
     /// Mirrors `--values-from` per entry. Writers never travel.
     pub(crate) values_from: Vec<String>,
 
@@ -49,6 +52,12 @@ pub struct MeshProfile {
 
     /// Mirrors the `--write-mesh-extra-*` flags, an entry per name.
     pub(crate) mesh_extras: BTreeMap<String, ExtraEntry>,
+}
+
+impl Profile for MeshProfile {
+    fn description(&self) -> Option<&ProfileDescription> {
+        self.description.as_ref()
+    }
 }
 
 #[cfg(test)]
