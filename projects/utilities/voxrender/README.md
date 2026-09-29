@@ -111,6 +111,27 @@ if let Some(hit) = cast_ray(&scene, &ray, f64::INFINITY) {
 }
 ```
 
+## Rendering
+
+`render` draws a view of the scene into a linear image under every light of
+the scene. Each hit shades with glTF's metallic-roughness model: Lambert
+diffuse, GGX specular with Smith visibility and Schlick Fresnel, and the
+emissive term. The light kinds reach a hit differently:
+
+1. A directional light shines down its -Z
+2. A point light falls off by the inverse square, with glTF's smooth
+   cutoff at its range
+3. A hemisphere light mixes sky and ground by the normal's +Y
+
+Under `RenderOcclusion::Corner`, the corner occlusion darkens the
+hemisphere light. A shadow is one grid ray toward the light. `RenderShadow`
+casts it per pixel, per face, or per corner, and blends the corner results
+across the face.
+
+```rust
+let image = render(&scene, view_id, RenderOcclusion::Corner, 1024, 1024)?;
+```
+
 ## Images
 
 A `RenderImage` is a linear-light RGBA `f32` buffer, rows top to bottom.

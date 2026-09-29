@@ -134,3 +134,27 @@ they land.
   unchanged.
 - The `cpu` feature gates `RenderViewRays`, `cast_ray`, `RenderRay`, and
   `RenderHit`. The GPU crate computes its own hits.
+
+## S6. Shading
+
+- Shading math runs on `TyLinSrgbF64` through palette's component
+  arithmetic. The image narrows to `f32` at `set_pixel`.
+- The hemisphere term reflects off the diffuse color plus the
+  normal-incidence reflectance. The reflectance keeps a metal under
+  ambient light alone from going black: the metal reflects the sky in its
+  base color. glTF fixes the BRDF and leaves the ambient approximation to
+  the renderer.
+- A floor of `1e-3` on GGX alpha keeps a roughness of zero from producing
+  a NaN at the reflection.
+- The corner occlusion darkens only the hemisphere term, as glTF's
+  occlusion texture does. The material's occlusion strength scales it.
+- A shadow sample starts `1e-4` grid units out along the face normal. A
+  per-pixel or per-corner sample also sits at least `1e-3` of the face in
+  from its edges. Every sample starts in the empty cell in front of its
+  face, and a corner ray still meets a solid neighbor across the edge.
+- `bilinear` serves both the per-corner shadow blend and the corner
+  occlusion blend. It reads values in the span's winding order.
+- A point light's shadow ray ends at the light, so an occluder past the
+  light casts nothing.
+- `render.rs` is the only caller of the shading and shadow helpers, so
+  they live there as private functions with their tests.

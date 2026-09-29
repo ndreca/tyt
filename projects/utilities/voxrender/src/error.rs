@@ -26,6 +26,9 @@ pub enum Error {
     /// A flatten's voxel size is not finite and positive.
     VoxelSize { voxel_size: f64 },
 
+    /// A render asked for an image with a zero side.
+    ImageSide { width: u32, height: u32 },
+
     /// A mutation named a material that is not one of the scene's.
     UnknownMaterial { material_id: U32Id<BRenderMaterial> },
 
@@ -132,6 +135,9 @@ impl Display for Error {
             ),
             Error::VoxelSize { voxel_size } => {
                 write!(f, "voxel size {voxel_size} is not finite and positive")
+            }
+            Error::ImageSide { width, height } => {
+                write!(f, "a {width} by {height} image has a zero side")
             }
             Error::UnknownMaterial { material_id } => write!(
                 f,

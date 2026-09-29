@@ -83,7 +83,7 @@ resample plan has one.
       cell, the face axis, and the face coordinates for corner interpolation.
       Tests: a hit on each of a voxel's six faces, a miss, a ray from inside
       a voxel, and the nearer of two placements.
-- [ ] **S6. Shading.** Shade with glTF's metallic-roughness model in linear
+- [x] **S6. Shading.** Shade with glTF's metallic-roughness model in linear
       light: Lambert diffuse, GGX specular with Smith visibility and Schlick
       Fresnel, and the emissive term. The hemisphere term mixes sky and
       ground by the normal's +Y component, scaled by the corner occlusion and

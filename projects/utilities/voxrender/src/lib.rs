@@ -60,6 +60,12 @@ mod cast_ray;
 pub use cast_ray::*;
 
 #[cfg(feature = "cpu")]
+mod render;
+
+#[cfg(feature = "cpu")]
+pub use render::*;
+
+#[cfg(feature = "cpu")]
 mod render_hit;
 
 #[cfg(feature = "cpu")]
@@ -82,3 +88,9 @@ pub use render_view_rays::*;
 mod fit_radius;
 
 pub(crate) use fit_radius::*;
+
+#[cfg(feature = "cpu")]
+mod shadow_target;
+
+#[cfg(feature = "cpu")]
+pub(crate) use shadow_target::*;
