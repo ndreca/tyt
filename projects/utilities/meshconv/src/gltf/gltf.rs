@@ -1,13 +1,12 @@
 use crate::{
     Dependencies, Format, MeshDocumentFile, ReadFormat, Result, WriteFormat,
-    gltf::{GltfContainer, GltfWriteFormat},
+    gltf::{GltfContainer, GltfWriteFormat, document_files, loose_files},
 };
 use gltf_meshdoc::{
-    codec::{GltfBytes, from_gltf_bytes, gltf_loose_uris, to_glb_bytes, to_gltf_bytes},
+    codec::{from_gltf_bytes, gltf_loose_uris, to_glb_bytes, to_gltf_bytes},
     to_gltf_mesh_main,
 };
 use meshdoc::MeshMain;
-use std::collections::BTreeMap;
 
 /// glTF 2.0, the `.glb` and `.gltf` files. Both containers are one format:
 /// the reader detects the container, and the write options pick it.
@@ -62,26 +61,4 @@ impl Format for Gltf {
 
         Ok(document_files(bytes))
     }
-}
-
-/// The files beside the primary, keyed by their relative paths.
-pub(crate) fn loose_files(files: &[MeshDocumentFile]) -> BTreeMap<String, Vec<u8>> {
-    MeshDocumentFile::loose_files(files)
-        .map(|(path, bytes)| (path.to_owned(), bytes.to_vec()))
-        .collect()
-}
-
-/// A written document's bytes as its files: the primary, then each loose
-/// file at its relative path.
-pub(crate) fn document_files(bytes: GltfBytes) -> Vec<MeshDocumentFile> {
-    let mut files = vec![MeshDocumentFile::primary(bytes.primary)];
-
-    files.extend(
-        bytes
-            .loose_files
-            .into_iter()
-            .map(|(path, bytes)| MeshDocumentFile::new(path, bytes)),
-    );
-
-    files
 }

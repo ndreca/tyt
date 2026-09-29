@@ -9,6 +9,8 @@
 //! The `ext` feature, on by default, opens this module and enables every
 //! enabled bridge's `serde` feature.
 
+// Public API
+
 mod format_ext;
 mod load_with_ext;
 mod meshconv_ext;
@@ -25,7 +27,7 @@ pub use read_with_ext::*;
 pub use save_with_ext::*;
 pub use write_with_ext::*;
 
-// Shared by the formats' typed paths.
+// Internal API
 
 mod box_ext;
 

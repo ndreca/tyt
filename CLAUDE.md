@@ -58,6 +58,7 @@ cargo check
 - Each library crate has a default `impl` feature that gates the concrete `DependenciesImpl` and any deps it needs (e.g., `glob`, `tyt-injection`)
 - `#[cfg(feature = "impl")]` guards `mod dependencies_impl` and its `pub use` in `lib.rs`
 - The parent `tyt` crate's `impl` feature transitively enables sub-crate `impl` features
+- A `cfg` switch between alternative definitions stays in one file, so a stand-in for a gated-off item lives beside the code that picks it
 
 ## Architecture
 

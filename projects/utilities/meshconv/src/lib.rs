@@ -81,12 +81,10 @@ mod dependencies_impl;
 #[cfg(feature = "impl")]
 pub use dependencies_impl::*;
 
-// One module per format feature.
-
 #[cfg(feature = "gltf")]
 pub mod gltf;
 
-// Test support.
+// Test support
 
 #[cfg(all(test, feature = "impl"))]
 mod test;
