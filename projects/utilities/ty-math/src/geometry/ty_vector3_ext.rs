@@ -35,6 +35,10 @@ pub trait TyVector3Ext {
     /// A vector with the given `z` and zero `x` and `y`.
     fn from_z(z: Self::Scalar) -> Self;
 
+    /// The unit vector at `azimuth` radians from +Z toward +X and `elevation`
+    /// radians from that toward +Y.
+    fn from_azimuth_elevation(azimuth: Self::Scalar, elevation: Self::Scalar) -> Self;
+
     /// This vector's `x`, taken as a uniform scale factor. Assumes the
     /// components are equal.
     fn to_scale(self) -> Self::Scalar;
@@ -106,6 +110,17 @@ macro_rules! impl_ty_vector3_ext {
 
             fn from_z(z: $scalar) -> Self {
                 Self::new(0.0, 0.0, z)
+            }
+
+            fn from_azimuth_elevation(azimuth: $scalar, elevation: $scalar) -> Self {
+                let (sin_azimuth, cos_azimuth) = azimuth.sin_cos();
+                let (sin_elevation, cos_elevation) = elevation.sin_cos();
+
+                Self::new(
+                    sin_azimuth * cos_elevation,
+                    sin_elevation,
+                    cos_azimuth * cos_elevation,
+                )
             }
 
             fn to_scale(self) -> $scalar {
@@ -185,6 +200,26 @@ impl_ty_vector3_ext!(Vec3, f32, Quat);
 mod tests {
     use crate::{TyQuaternionF64, TyVector3Ext, TyVector3F64, TyVector3U32, close_vec};
     use std::f64::consts::PI;
+
+    #[test]
+    fn from_azimuth_elevation_turns_from_plus_z_toward_plus_x_and_plus_y() {
+        assert!(close_vec(
+            TyVector3F64::from_azimuth_elevation(0.0, 0.0),
+            TyVector3F64::Z
+        ));
+        assert!(close_vec(
+            TyVector3F64::from_azimuth_elevation(PI / 2.0, 0.0),
+            TyVector3F64::X
+        ));
+        assert!(close_vec(
+            TyVector3F64::from_azimuth_elevation(0.0, PI / 2.0),
+            TyVector3F64::Y
+        ));
+        assert!(close_vec(
+            TyVector3F64::from_azimuth_elevation(PI, -PI / 2.0),
+            -TyVector3F64::Y
+        ));
+    }
 
     #[test]
     fn zup_yup_axis_rotations_are_inverses() {

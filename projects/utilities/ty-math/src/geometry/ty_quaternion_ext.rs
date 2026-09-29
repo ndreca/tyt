@@ -36,6 +36,12 @@ pub trait TyQuaternionExt {
     /// frame.
     fn from_right_up(right: TyVector3F64, up: TyVector3F64) -> TyQuaternionF64;
 
+    /// The rotation whose local -Z points along `direction` and whose local
+    /// +Y lies as close to `up` as that allows. A camera with this rotation
+    /// looks along `direction`. Returns `None` when `direction` is zero or
+    /// runs along `up`.
+    fn from_look_direction(direction: TyVector3F64, up: TyVector3F64) -> Option<TyQuaternionF64>;
+
     /// This rotation with a rotation of `angle` radians about `axis` applied
     /// after it. The axis is normalized first.
     fn rotate_around_axis(self, axis: TyVector3F64, angle: f64) -> TyQuaternionF64;
@@ -109,6 +115,22 @@ impl TyQuaternionExt for TyQuaternionF64 {
         TyQuaternionF64::from_rotation_axes(right, up, forward)
     }
 
+    fn from_look_direction(direction: TyVector3F64, up: TyVector3F64) -> Option<TyQuaternionF64> {
+        const DEGENERATE: f64 = 1e-12;
+
+        let back = -direction.try_normalize()?;
+        let right = up.cross(back);
+
+        if right.length() < DEGENERATE {
+            return None;
+        }
+
+        let right = right.normalize();
+        let up = back.cross(right);
+
+        Some(TyQuaternionF64::from_rotation_axes(right, up, back))
+    }
+
     fn rotate_around_axis(self, axis: TyVector3F64, angle: f64) -> TyQuaternionF64 {
         TyQuaternionF64::from_axis_angle(axis.normalize(), angle) * self
     }
@@ -135,6 +157,35 @@ impl TyQuaternionExt for TyQuaternionF64 {
 mod tests {
     use crate::{TyMatrix4x4F64, TyQuaternionExt, TyQuaternionF64, TyVector3F64, close, close_vec};
     use std::f64::consts::PI;
+
+    #[test]
+    fn from_look_direction_aims_minus_z_and_keeps_up() {
+        let ahead =
+            TyQuaternionF64::from_look_direction(-TyVector3F64::Z, TyVector3F64::Y).unwrap();
+        assert!(close(ahead.dot(TyQuaternionF64::IDENTITY).abs(), 1.0));
+
+        let right =
+            TyQuaternionF64::from_look_direction(TyVector3F64::X * 3.0, TyVector3F64::Y).unwrap();
+        assert!(close_vec(right * -TyVector3F64::Z, TyVector3F64::X));
+        assert!(close_vec(right * TyVector3F64::Y, TyVector3F64::Y));
+
+        // A tilted up straightens onto the plane perpendicular to the direction.
+        let tilted = TyQuaternionF64::from_look_direction(
+            -TyVector3F64::Z,
+            TyVector3F64::new(0.0, 1.0, 1.0),
+        )
+        .unwrap();
+        assert!(close_vec(tilted * TyVector3F64::Y, TyVector3F64::Y));
+
+        assert_eq!(
+            TyQuaternionF64::from_look_direction(TyVector3F64::Y, TyVector3F64::Y),
+            None
+        );
+        assert_eq!(
+            TyQuaternionF64::from_look_direction(TyVector3F64::ZERO, TyVector3F64::Y),
+            None
+        );
+    }
 
     /// A hand-rolled Tait-Bryan formula that pins the euler convention the wire
     /// reads.

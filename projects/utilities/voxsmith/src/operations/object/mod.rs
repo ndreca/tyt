@@ -30,6 +30,14 @@ pub use trim_objects::*;
 pub use unlink_objects::*;
 pub use upsample_objects::*;
 
+// Optional API
+
+#[cfg(feature = "render")]
+mod object_render;
+
+#[cfg(feature = "render")]
+pub use object_render::*;
+
 // Internal API
 
 mod error_object_ext;

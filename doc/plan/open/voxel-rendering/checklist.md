@@ -60,7 +60,7 @@ resample plan has one.
       The flattened object implements `voxsurface`'s grid trait. A subject's
       world bounds come from the eight transformed corners of each of its
       placements.
-- [ ] **S4. Transforms.**
+- [x] **S4. Transforms.**
       1. `ty-math` gains a look-at rotation on `TyQuaternionF64` and a unit
          vector from azimuth and elevation
       2. `voxrender` gains the `fit` rule. The subject's bounding sphere fits

@@ -1,5 +1,7 @@
 #[cfg(feature = "object")]
 use crate::operations::object::MeshElement;
+#[cfg(feature = "render")]
+use crate::operations::object::RenderElement;
 use meshdoc::Error as MeshError;
 use pathspec::Error as PathSpecError;
 use std::{
@@ -36,6 +38,16 @@ pub enum Error {
     #[cfg(feature = "object")]
     Png(String),
 
+    /// A render record element the run could not render.
+    #[cfg(feature = "render")]
+    RenderRecord {
+        /// The element the error rose from.
+        element: RenderElement,
+
+        /// What went wrong with it.
+        reason: String,
+    },
+
     /// An image of the mesh document could not be decoded.
     #[cfg(feature = "mesh_doc")]
     DecodeImage(String),
@@ -65,6 +77,8 @@ impl Display for Error {
             Error::MeshRecord { element, reason } => write!(f, "{element} {reason}"),
             #[cfg(feature = "object")]
             Error::Png(message) => write!(f, "could not encode PNG: {message}"),
+            #[cfg(feature = "render")]
+            Error::RenderRecord { element, reason } => write!(f, "{element} {reason}"),
             #[cfg(feature = "mesh_doc")]
             Error::DecodeImage(message) => write!(f, "could not decode image: {message}"),
             #[cfg(feature = "_treegrid")]
@@ -84,6 +98,8 @@ impl StdError for Error {
             Error::MeshRecord { .. } => None,
             #[cfg(feature = "object")]
             Error::Png(_) => None,
+            #[cfg(feature = "render")]
+            Error::RenderRecord { .. } => None,
             #[cfg(feature = "mesh_doc")]
             Error::DecodeImage(_) => None,
             #[cfg(feature = "_treegrid")]

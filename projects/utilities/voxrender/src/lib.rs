@@ -16,6 +16,9 @@ mod b_render_material;
 mod b_render_placement;
 mod b_render_view;
 mod error;
+mod fit_distance;
+mod fit_margin;
+mod fit_scale;
 mod render_image;
 mod render_light;
 mod render_material;
@@ -33,6 +36,9 @@ pub use b_render_material::*;
 pub use b_render_placement::*;
 pub use b_render_view::*;
 pub use error::*;
+pub use fit_distance::*;
+pub use fit_margin::*;
+pub use fit_scale::*;
 pub use render_image::*;
 pub use render_light::*;
 pub use render_material::*;
@@ -44,3 +50,9 @@ pub use render_scene::*;
 pub use render_shadow::*;
 pub use render_view::*;
 pub use result::*;
+
+// Internal API
+
+mod fit_radius;
+
+pub(crate) use fit_radius::*;

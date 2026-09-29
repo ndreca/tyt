@@ -79,3 +79,34 @@ they land.
 - A voxel's material resolves through `VoxEffectivePalette::voxel_value`,
   one lookup per property per voxel. A scalar reads a float pool and a
   color a float vector pool, dropping alpha. Any other kind errors.
+
+## S4. Transforms
+
+- `TyQuaternionExt::from_look_direction` takes an explicit up and returns
+  `None` for a zero direction or one along the up. The up rule of the
+  contract, +Y unless the direction runs along +Y or -Y, then -Z, lives in
+  voxsmith's `look_rotation`, because the fallback is the contract's choice
+  and not math.
+- `TyVector3Ext::from_azimuth_elevation` turns from +Z toward +X and then
+  toward +Y, the direction the `angles` and `orbit` forms share. Both take
+  degrees and pass through `TyAngleUnit`.
+- `FIT_MARGIN` is five percent of the bounding radius. `fit_distance` fits
+  the sphere into the vertical field of view on a square or wide image and
+  into the narrower horizontal one on a tall image. `fit_scale` is the
+  sphere's diameter with the margin.
+- An orbit under an orthographic projection with a `fit` distance sits one
+  `fit_scale` out from the center, past the sphere. The distance never
+  changes what an orthographic image frames.
+- The shapes are voxsmith enums with the README's names: `PoseTransform`,
+  `RotationTransform`, `PositionTransform`, and `Rotation`. `FitOrFixed`
+  is one enum for the orbit distance and the orthographic scale, and
+  `ViewProjection` pairs each projection with the one length it reads, so a
+  `fov` under `orthographic` is unrepresentable in voxsmith. vxl errors on
+  that pairing while it builds the record.
+- The resolvers take the `RenderElement` they report on. A `subject` or
+  `orbit` frame over a subject with no voxel, a `fit` over one, and a
+  look-at aimed at the entity's own position error on that element.
+- A directional light's look-at needs a target because the light sits at
+  its frame's origin.
+- A `camera`-frame light composes with the view's resolved pose, so the
+  render operation resolves it once per view.

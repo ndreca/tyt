@@ -2265,6 +2265,7 @@ dependencies = [
  "ty-math",
  "vox-value-language",
  "voxcore",
+ "voxrender",
  "voxsurface",
  "zune-jpeg",
 ]
