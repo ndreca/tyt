@@ -15,13 +15,17 @@ cargo check
 ## Style
 
 - Rust edition 2024
-- Consolidate imports into minimal nested `use` statements — no duplicate path prefixes (e.g., `use std::{fs, io::{ErrorKind, Write}, path::{Path, PathBuf}}` not separate `use std::fs; use std::io::Write;`)
-- No fully-qualified paths in code bodies — import all referenced items in `use` blocks
+- Consolidate imports into minimal nested `use` statements with no duplicate path prefixes (e.g., `use std::{fs, io::{ErrorKind, Write}, path::{Path, PathBuf}}` not separate `use std::fs; use std::io::Write;`)
+- Code bodies name items through `use` imports, never fully-qualified paths
 - Import types/traits/enums as leaf items, with aliases to avoid collisions (e.g., `Error as IOError`, `Result as StdResult`, `Error as StdError`)
 - Import modules for free functions and keep the module prefix in calls (e.g., `use std::{env, fs, io, process};` then `fs::read()`, `env::temp_dir()`, `io::stdout()`, `process::exit(1)`)
 - Prefer `#[derive(Default)]` over manual `impl Default` when all field defaults match the type's inherent default
 - One public item per file (struct, trait, enum, or function), file named to match the item in snake_case; capability methods on a type from another file ride an extension trait, one trait per file
-- Impl-only files: a file adding a single method to another file's type is named for the method (e.g., `resolve_json.rs`); a constructor-family file keeps the extended type's name
+- A type's inherent `impl`s go where their feature gate puts them:
+  1. An `impl` under the type's gate lives in the type's file
+  2. An `impl` under a narrower gate lives in `{type}_{module}_ext.rs`, named for the module holding the file, with the `cfg` on the `mod` line and never on a method
+  3. A narrower gate that two or more files share gets its own submodule
+  4. A type gets at most one ext file per module, so a second narrower gate for the type moves into a submodule
 - Doc comments (`///`) on all public items
 - `#[arg]` attributes always start with `value_name` (e.g., `#[arg(value_name = "input-fbx")]`, `#[arg(value_name = "max-iterations", long)]`)
 
@@ -36,11 +40,15 @@ cargo check
 
 ## Module structure
 
-- One public item per file — the file is a private `mod` in its parent `mod.rs` or `lib.rs`
-- `mod.rs` / `lib.rs` files have two sections: private `mod` declarations, then `pub use module_name::*;` re-exports to flatten the public API
+- A parent `mod.rs` or `lib.rs` declares each one-public-item file as a private `mod`
+- `mod.rs` / `lib.rs` files group declarations under these section comments, in this order, and drop empty sections. voxj-voxcore's `lib.rs` shows the layout.
+  1. `// Public API`: private `mod` declarations, then the `pub use module_name::*;` re-exports that flatten the public API
+  2. `// Optional API`: feature-gated modules, each gate's `mod` followed by its re-export
+  3. `// Internal API`: crate-internal modules
+  4. `// Test support`: `#[cfg(test)]` modules
 - Crate-internal items use `pub(crate) use module_name::*;`
 - Subdirectories that consumers navigate are declared `pub mod` (e.g., `pub mod commands;`)
-- Leaf files are always private modules — their public items are re-exported by the parent
+- Leaf files are always private modules whose public items the parent re-exports
 - Prefer `use crate` over `use super`
 
 ## Feature gates
@@ -52,7 +60,7 @@ cargo check
 ## Architecture
 
 - `tyt` is the top-level binary that ties sub-crates together via `clap` subcommands
-- `tyt-common` provides shared types (e.g., `ExecFailed`) used across all tyt crates — every crate depends on it non-optionally
-- `tyt-injection` provides shared implementation helpers (free functions) used by sub-crate `DependenciesImpl`s — depended on optionally behind the `impl` feature
+- Every tyt crate depends non-optionally on `tyt-common`, which provides shared types (e.g., `ExecFailed`)
+- Sub-crate `DependenciesImpl`s take shared helper free functions from `tyt-injection`, which each crate's `impl` feature pulls in as an optional dependency
 - Each sub-crate (`tyt-fbx`, `tyt-material`) has a `Dependencies` trait for dependency injection and a feature-gated `DependenciesImpl`
 - The `tyt` crate bridges sub-crate dependencies through associated types on its own `Dependencies` trait
