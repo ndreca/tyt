@@ -11,7 +11,7 @@ use ty_math::{
 };
 
 /// The 8-byte PNG signature.
-pub const PNG_MAGIC: [u8; 8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+const PNG_MAGIC: [u8; 8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
 /// A bare main exercising every modeled entity, with one image over its own
 /// bytes and one over a file, every material factor away from its default,
@@ -95,24 +95,24 @@ pub fn test_main() -> MeshMain<()> {
                     value: MeshPropertyValue::Floats(vec![0.5, 0.25, 0.125]),
                 },
                 MeshProperty {
-                    name: "flags".to_owned(),
-                    value: MeshPropertyValue::Bools(vec![true, false]),
-                },
-                MeshProperty {
                     name: "flagRows".to_owned(),
                     value: MeshPropertyValue::BoolRows(vec![vec![true, false], vec![false, true]]),
+                },
+                MeshProperty {
+                    name: "flags".to_owned(),
+                    value: MeshPropertyValue::Bools(vec![true, false]),
                 },
                 MeshProperty {
                     name: "group".to_owned(),
                     value: MeshPropertyValue::Int(3),
                 },
                 MeshProperty {
-                    name: "groups".to_owned(),
-                    value: MeshPropertyValue::Ints(vec![1, 2]),
-                },
-                MeshProperty {
                     name: "groupRows".to_owned(),
                     value: MeshPropertyValue::IntRows(vec![vec![1, 2], vec![3, 4]]),
+                },
+                MeshProperty {
+                    name: "groups".to_owned(),
+                    value: MeshPropertyValue::Ints(vec![1, 2]),
                 },
                 MeshProperty {
                     name: "heat".to_owned(),
@@ -123,15 +123,15 @@ pub fn test_main() -> MeshMain<()> {
                     value: MeshPropertyValue::Text("shell".to_owned()),
                 },
                 MeshProperty {
-                    name: "labels".to_owned(),
-                    value: MeshPropertyValue::Texts(vec!["a".to_owned(), "b".to_owned()]),
-                },
-                MeshProperty {
                     name: "labelRows".to_owned(),
                     value: MeshPropertyValue::TextRows(vec![
                         vec!["a".to_owned(), "b".to_owned()],
                         vec!["c".to_owned()],
                     ]),
+                },
+                MeshProperty {
+                    name: "labels".to_owned(),
+                    value: MeshPropertyValue::Texts(vec!["a".to_owned(), "b".to_owned()]),
                 },
                 MeshProperty {
                     name: "subsurface".to_owned(),

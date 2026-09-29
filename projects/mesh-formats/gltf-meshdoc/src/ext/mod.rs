@@ -1,3 +1,5 @@
+// Public API
+
 mod gltf_ext;
 mod gltf_ext_animation;
 mod gltf_ext_animation_channel;

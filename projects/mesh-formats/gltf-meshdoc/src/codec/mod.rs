@@ -1,6 +1,8 @@
 //! Reads and writes `.gltf` and `.glb` bytes, gated behind the `codec`
 //! feature.
 
+// Public API
+
 mod from_gltf_bytes;
 mod gltf_bytes;
 mod gltf_loose_uris;
@@ -16,3 +18,8 @@ pub use to_gltf_bytes::*;
 // Re-exported so a caller can refer to the dependencies the functions here
 // take and bind them through the impl behind `impl`.
 pub use crate::dependencies;
+
+// Internal API
+
+mod internal;
+pub(crate) use internal::*;

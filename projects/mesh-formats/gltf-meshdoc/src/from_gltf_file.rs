@@ -3,17 +3,17 @@ use crate::{
     GltfExtAnimationOutput, GltfExtAnimationSampler, GltfExtAsset, GltfExtImage,
     GltfExtImageSource, GltfExtMaterial, GltfExtMesh, GltfExtMorphTarget, GltfExtNode,
     GltfExtPrimitive, GltfExtSampler, GltfExtScene, GltfExtSkin, GltfExtTexture, GltfFile,
-    GltfMeshMain, Result, VxlExtras, data_uri_payload, file_uris_of_root, media_type_from_bytes,
-    property_value_from_json, read_attribute, resolve_buffers, resolve_uri, transform_from_gltf,
-    value_from_extras,
+    GltfMeshMain, Result, VxlExtras, data_uri_payload, file_uris_of_root, value_from_extras,
 };
 use branded_id::U32Id;
 use gltf::{
-    Buffer, Document, Material, Primitive, Semantic, Texture,
+    Accessor, Buffer, Document, Material, Node, Primitive, Semantic, Texture,
+    accessor::{DataType, Dimensions, Item, Iter},
     animation::{
         Interpolation,
         util::{ReadOutputs, Reader as AnimationReader},
     },
+    buffer::Source as BufferSource,
     image::Source,
     material::{AlphaMode, NormalTexture, OcclusionTexture},
     mesh::Mode,
@@ -21,13 +21,17 @@ use gltf::{
 };
 use meshdoc::{
     BMeshFile, BMeshHierarchyNode, BMeshImage, BMeshMaterial, BMeshTexture, MeshAlphaMode,
-    MeshFile, MeshHierarchyNode, MeshImage, MeshImageMediaType, MeshImageSource, MeshMagFilter,
-    MeshMain, MeshMaterial, MeshMinFilter, MeshObject, MeshPrimitive, MeshProperty, MeshTexture,
-    MeshTextureRef, MeshTriangle, MeshVertexAttribute, MeshWrap,
+    MeshAttributeComponents, MeshFile, MeshHierarchyNode, MeshImage, MeshImageMediaType,
+    MeshImageSource, MeshMagFilter, MeshMain, MeshMaterial, MeshMinFilter, MeshObject,
+    MeshPrimitive, MeshProperty, MeshPropertyValue, MeshTexture, MeshTextureRef, MeshTriangle,
+    MeshVertexAttribute, MeshWrap,
 };
 use serde_json::{Map, Value};
 use std::collections::{BTreeMap, HashSet, btree_map::Entry};
-use ty_math::{TyLinSrgbF64, TyLinSrgbaF64, TyVector2F64, TyVector3F64, TyVector4F64};
+use ty_math::{
+    TyLinSrgbF64, TyLinSrgbaF64, TyQuaternionF64, TyTransformF64, TyVector2F64, TyVector3F64,
+    TyVector4F64,
+};
 
 /// Loads a glTF [`GltfFile`] into a [`GltfMeshMain`], the inverse of
 /// [`to_gltf_file`](crate::to_gltf_file). The images become images, the
@@ -797,10 +801,371 @@ where
     })
 }
 
+/// The bytes of every buffer, in buffer order: the blob for the buffer with
+/// no URI, a decoded data URI, or the loose file at a relative URI.
+fn resolve_buffers<D: DecodeBase64>(
+    dependencies: &D,
+    file: &GltfFile,
+    document: &Document,
+) -> Result<Vec<Vec<u8>>> {
+    document
+        .buffers()
+        .map(|buffer| {
+            let bytes = match buffer.source() {
+                BufferSource::Bin => file.blob.clone().ok_or_else(|| {
+                    Error::invalid("a buffer names no URI and the document has no binary chunk")
+                })?,
+                BufferSource::Uri(uri) => resolve_uri(dependencies, file, uri)?,
+            };
+
+            if bytes.len() < buffer.length() {
+                return Err(Error::invalid(format!(
+                    "buffer {} declares {} bytes but holds {}",
+                    buffer.index(),
+                    buffer.length(),
+                    bytes.len()
+                )));
+            }
+
+            Ok(bytes)
+        })
+        .collect()
+}
+
+/// The bytes at a URI: a decoded data URI, or the loose file under the URI,
+/// raw or percent-decoded.
+fn resolve_uri<D: DecodeBase64>(dependencies: &D, file: &GltfFile, uri: &str) -> Result<Vec<u8>> {
+    if let Some((_, payload)) = data_uri_payload(uri) {
+        return dependencies
+            .decode_base64(payload)
+            .map_err(|reason| Error::invalid(format!("a data URI is not base64: {reason}")));
+    }
+
+    if uri.starts_with("data:") {
+        return Err(Error::invalid("a data URI is not base64 encoded"));
+    }
+
+    file.loose_files
+        .get(uri)
+        .or_else(|| percent_decode(uri).and_then(|decoded| file.loose_files.get(&decoded)))
+        .cloned()
+        .ok_or_else(|| Error::invalid(format!("the document has no file at `{uri}`")))
+}
+
+/// `uri` with its percent-encoded bytes decoded, the file name it points
+/// to, or `None` when a `%` is not followed by two hex digits or the result
+/// is not UTF-8.
+fn percent_decode(uri: &str) -> Option<String> {
+    let bytes = uri.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+
+    while index < bytes.len() {
+        if bytes[index] == b'%' {
+            let hex = uri.get(index + 1..index + 3)?;
+            decoded.push(u8::from_str_radix(hex, 16).ok()?);
+            index += 3;
+        } else {
+            decoded.push(bytes[index]);
+            index += 1;
+        }
+    }
+
+    String::from_utf8(decoded).ok()
+}
+
+/// The media type whose signature `bytes` start with, or `None` for neither.
+fn media_type_from_bytes(bytes: &[u8]) -> Option<MeshImageMediaType> {
+    [MeshImageMediaType::Png, MeshImageMediaType::Jpeg]
+        .into_iter()
+        .find(|media_type| media_type.matches(bytes))
+}
+
+/// A node's transform: its TRS, or its matrix decomposed.
+fn transform_from_gltf(node: &Node) -> TyTransformF64 {
+    let (translation, rotation, scale) = node.transform().decomposed();
+
+    TyTransformF64 {
+        position: TyVector3F64::from_array(translation.map(f64::from)),
+        rotation: TyQuaternionF64::from_xyzw(
+            f64::from(rotation[0]),
+            f64::from(rotation[1]),
+            f64::from(rotation[2]),
+            f64::from(rotation[3]),
+        ),
+        scale: TyVector3F64::from_array(scale.map(f64::from)),
+    }
+}
+
+/// The property value a `vxl.values` entry named `name` holds. A texture
+/// entry holds a texture index into `texture_ids`, and a file entry a
+/// relative URI that `file_id_for_uri` resolves. Errors on a shape no
+/// property value has.
+fn property_value_from_json(
+    name: &str,
+    value: &Value,
+    texture_ids: &[U32Id<BMeshTexture>],
+    file_id_for_uri: &impl Fn(&str) -> Result<U32Id<BMeshFile>>,
+) -> Result<MeshPropertyValue> {
+    let malformed = |what: &str| {
+        Error::invalid(format!(
+            "extras `vxl.values.{name}` {what}, which no property value holds"
+        ))
+    };
+
+    Ok(match value {
+        Value::Bool(value) => MeshPropertyValue::Bool(*value),
+        Value::Number(number) => match number.as_i64() {
+            Some(value) => MeshPropertyValue::Int(value),
+            None => MeshPropertyValue::Float(
+                number
+                    .as_f64()
+                    .ok_or_else(|| malformed("is a number outside f64"))?,
+            ),
+        },
+        Value::String(value) => MeshPropertyValue::Text(value.clone()),
+        Value::Array(entries) => list_from_json(entries).ok_or_else(|| malformed("mixes kinds"))?,
+        Value::Object(object) => {
+            if let Some(uri) = object.get("uri") {
+                let uri = uri
+                    .as_str()
+                    .ok_or_else(|| malformed("has a `uri` that is not a string"))?;
+                MeshPropertyValue::File(file_id_for_uri(uri)?)
+            } else if let Some(index) = object.get("index") {
+                let index = index
+                    .as_u64()
+                    .and_then(|index| usize::try_from(index).ok())
+                    .ok_or_else(|| malformed("has an `index` that is not a texture index"))?;
+                let texture_id = *texture_ids
+                    .get(index)
+                    .ok_or_else(|| malformed("names a texture index past the textures"))?;
+                let uv_stream = match object.get("texCoord") {
+                    None => 0,
+                    Some(set) => set
+                        .as_u64()
+                        .and_then(|set| u32::try_from(set).ok())
+                        .ok_or_else(|| malformed("has a `texCoord` that is not a set"))?,
+                };
+                MeshPropertyValue::Texture(MeshTextureRef {
+                    texture_id,
+                    uv_stream_id: U32Id::from_u32(uv_stream),
+                })
+            } else {
+                return Err(malformed("is an object with neither `uri` nor `index`"));
+            }
+        }
+        Value::Null => return Err(malformed("is null")),
+    })
+}
+
+/// The list value of `entries`, all of one kind, or `None` when they mix.
+/// An empty list, or a list of empty rows, reads as float.
+fn list_from_json(entries: &[Value]) -> Option<MeshPropertyValue> {
+    if entries.is_empty() {
+        return Some(MeshPropertyValue::Floats(vec![]));
+    }
+
+    let rows: Option<Vec<&[Value]>> = entries
+        .iter()
+        .map(|entry| entry.as_array().map(Vec::as_slice))
+        .collect();
+
+    let Some(rows) = rows else {
+        if let Some(values) = leaves(entries, Value::as_bool) {
+            return Some(MeshPropertyValue::Bools(values));
+        }
+
+        if let Some(values) = leaves(entries, text) {
+            return Some(MeshPropertyValue::Texts(values));
+        }
+
+        if let Some(values) = leaves(entries, Value::as_i64) {
+            return Some(MeshPropertyValue::Ints(values));
+        }
+
+        return leaves(entries, Value::as_f64).map(MeshPropertyValue::Floats);
+    };
+
+    if rows.iter().all(|row| row.is_empty()) {
+        return Some(MeshPropertyValue::FloatRows(vec![vec![]; rows.len()]));
+    }
+
+    if let Some(rows) = rows_of(&rows, Value::as_bool) {
+        return Some(MeshPropertyValue::BoolRows(rows));
+    }
+
+    if let Some(rows) = rows_of(&rows, text) {
+        return Some(MeshPropertyValue::TextRows(rows));
+    }
+
+    if let Some(rows) = rows_of(&rows, Value::as_i64) {
+        return Some(MeshPropertyValue::IntRows(rows));
+    }
+
+    rows_of(&rows, Value::as_f64).map(MeshPropertyValue::FloatRows)
+}
+
+/// Every entry of `values` read by `leaf`, or `None` when one is another
+/// kind.
+fn leaves<T>(values: &[Value], leaf: impl Fn(&Value) -> Option<T>) -> Option<Vec<T>> {
+    values.iter().map(leaf).collect()
+}
+
+/// Every row of `rows` read by `leaf`, or `None` when a leaf is another kind.
+fn rows_of<T>(rows: &[&[Value]], leaf: impl Fn(&Value) -> Option<T>) -> Option<Vec<Vec<T>>> {
+    rows.iter().map(|row| leaves(row, &leaf)).collect()
+}
+
+/// A string leaf, owned.
+fn text(value: &Value) -> Option<String> {
+    value.as_str().map(str::to_owned)
+}
+
+/// A further vertex attribute's components with its width: the accessor's
+/// elements flattened. Unsigned 8- and 16-bit integers keep their type;
+/// floats, the signed and 32-bit integers, and integers the accessor
+/// normalizes read as floats.
+fn read_attribute<'a, 's, F>(
+    accessor: Accessor<'a>,
+    get: F,
+) -> Result<(usize, MeshAttributeComponents)>
+where
+    F: Clone + Fn(Buffer<'a>) -> Option<&'s [u8]>,
+{
+    let width = match accessor.dimensions() {
+        Dimensions::Scalar => 1,
+        Dimensions::Vec2 => 2,
+        Dimensions::Vec3 => 3,
+        Dimensions::Vec4 | Dimensions::Mat2 => 4,
+        Dimensions::Mat3 => 9,
+        Dimensions::Mat4 => 16,
+    };
+
+    let normalized = accessor.normalized();
+    let dimensions = accessor.dimensions();
+
+    let components = match accessor.data_type() {
+        DataType::F32 => MeshAttributeComponents::F64(
+            read_elements::<f32, _>(accessor, dimensions, get)?
+                .into_iter()
+                .map(f64::from)
+                .collect(),
+        ),
+        DataType::U8 if !normalized => {
+            MeshAttributeComponents::U8(read_elements::<u8, _>(accessor, dimensions, get)?)
+        }
+        DataType::U8 => MeshAttributeComponents::F64(
+            read_elements::<u8, _>(accessor, dimensions, get)?
+                .into_iter()
+                .map(|value| normalize(f64::from(value), f64::from(u8::MAX)))
+                .collect(),
+        ),
+        DataType::I8 => MeshAttributeComponents::F64(
+            read_elements::<i8, _>(accessor, dimensions, get)?
+                .into_iter()
+                .map(|value| {
+                    if normalized {
+                        normalize(f64::from(value), f64::from(i8::MAX))
+                    } else {
+                        f64::from(value)
+                    }
+                })
+                .collect(),
+        ),
+        DataType::U16 if !normalized => {
+            MeshAttributeComponents::U16(read_elements::<u16, _>(accessor, dimensions, get)?)
+        }
+        DataType::U16 => MeshAttributeComponents::F64(
+            read_elements::<u16, _>(accessor, dimensions, get)?
+                .into_iter()
+                .map(|value| normalize(f64::from(value), f64::from(u16::MAX)))
+                .collect(),
+        ),
+        DataType::I16 => MeshAttributeComponents::F64(
+            read_elements::<i16, _>(accessor, dimensions, get)?
+                .into_iter()
+                .map(|value| {
+                    if normalized {
+                        normalize(f64::from(value), f64::from(i16::MAX))
+                    } else {
+                        f64::from(value)
+                    }
+                })
+                .collect(),
+        ),
+        DataType::U32 => MeshAttributeComponents::F64(
+            read_elements::<u32, _>(accessor, dimensions, get)?
+                .into_iter()
+                .map(f64::from)
+                .collect(),
+        ),
+    };
+
+    Ok((width, components))
+}
+
+/// The accessor's elements of `T` components, flattened, iterated at the
+/// element width `dimensions` gives.
+fn read_elements<'a, 's, T, F>(
+    accessor: Accessor<'a>,
+    dimensions: Dimensions,
+    get: F,
+) -> Result<Vec<T>>
+where
+    T: Item + Copy,
+    F: Clone + Fn(Buffer<'a>) -> Option<&'s [u8]>,
+{
+    let missing = || Error::invalid("a vertex attribute accessor has no buffer data");
+
+    Ok(match dimensions {
+        Dimensions::Scalar => Iter::<T>::new(accessor, get).ok_or_else(missing)?.collect(),
+        Dimensions::Vec2 => Iter::<[T; 2]>::new(accessor, get)
+            .ok_or_else(missing)?
+            .flatten()
+            .collect(),
+        Dimensions::Vec3 => Iter::<[T; 3]>::new(accessor, get)
+            .ok_or_else(missing)?
+            .flatten()
+            .collect(),
+        Dimensions::Vec4 => Iter::<[T; 4]>::new(accessor, get)
+            .ok_or_else(missing)?
+            .flatten()
+            .collect(),
+        Dimensions::Mat2 => Iter::<[[T; 2]; 2]>::new(accessor, get)
+            .ok_or_else(missing)?
+            .flatten()
+            .flatten()
+            .collect(),
+        Dimensions::Mat3 => Iter::<[[T; 3]; 3]>::new(accessor, get)
+            .ok_or_else(missing)?
+            .flatten()
+            .flatten()
+            .collect(),
+        Dimensions::Mat4 => Iter::<[[T; 4]; 4]>::new(accessor, get)
+            .ok_or_else(missing)?
+            .flatten()
+            .flatten()
+            .collect(),
+    })
+}
+
+/// `value` divided by `max`, clamped at `-1` for a signed type as the spec
+/// says.
+fn normalize(value: f64, max: f64) -> f64 {
+    (value / max).max(-1.0)
+}
+
 #[cfg(all(test, feature = "impl"))]
 mod tests {
-    use crate::{DependenciesImpl, GltfFile, from_gltf_file};
+    use crate::{DependenciesImpl, GltfFile, from_gltf_file, from_gltf_file::percent_decode};
     use gltf::json::Root;
+
+    #[test]
+    fn decodes_escapes_and_rejects_a_short_one() {
+        assert_eq!(percent_decode("a%20b.png").as_deref(), Some("a b.png"));
+        assert_eq!(percent_decode("plain.png").as_deref(), Some("plain.png"));
+        assert_eq!(percent_decode("bad%2"), None);
+    }
 
     #[test]
     fn rejects_a_root_that_fails_validation() {

@@ -1,4 +1,8 @@
-use crate::{Result, data_uri_payload, file_uris_of_root, is_glb, parse_glb};
+use crate::{
+    Result,
+    codec::{is_glb, parse_glb},
+    data_uri_payload, file_uris_of_root,
+};
 use gltf::json::Root;
 
 /// The relative URIs the bytes of a `.gltf` or `.glb` file reference, the

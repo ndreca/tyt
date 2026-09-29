@@ -1,5 +1,7 @@
 use crate::{
-    EncodeBase64, GltfMeshMain, GltfWriteOptions, Result, codec::GltfBytes, frame_glb, to_gltf_file,
+    EncodeBase64, GltfMeshMain, GltfWriteOptions, Result,
+    codec::{GltfBytes, frame_glb},
+    to_gltf_file,
 };
 
 /// Writes a [`GltfMeshMain`] to the bytes of a `.glb` file through

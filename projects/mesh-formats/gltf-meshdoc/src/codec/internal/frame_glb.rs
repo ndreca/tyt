@@ -1,10 +1,7 @@
-use crate::{Error, Result};
-
-/// The GLB `JSON` chunk type.
-const JSON_CHUNK: u32 = 0x4E4F_534A;
-
-/// The GLB `BIN` chunk type.
-const BIN_CHUNK: u32 = 0x004E_4942;
+use crate::{
+    Error, Result,
+    codec::{BIN_CHUNK, JSON_CHUNK},
+};
 
 /// Frames `json` and `blob` as a binary glTF. The spec pads the JSON chunk
 /// with spaces and the BIN chunk with zeros. No `blob` writes no BIN chunk.
@@ -45,7 +42,7 @@ fn glb_length(len: usize) -> Result<u32> {
 
 #[cfg(test)]
 mod tests {
-    use crate::frame_glb;
+    use crate::codec::frame_glb;
 
     #[test]
     fn frames_and_pads_both_chunks() {

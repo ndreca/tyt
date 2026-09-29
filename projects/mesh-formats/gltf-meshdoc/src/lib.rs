@@ -55,7 +55,7 @@ pub mod codec;
 mod internal;
 pub(crate) use internal::*;
 
-// Test support.
+// Test support
 
 #[cfg(all(test, feature = "impl"))]
 mod test;

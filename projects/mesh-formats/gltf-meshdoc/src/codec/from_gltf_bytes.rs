@@ -1,4 +1,8 @@
-use crate::{DecodeBase64, GltfFile, GltfMeshMain, Result, from_gltf_file, is_glb, parse_glb};
+use crate::{
+    DecodeBase64, GltfFile, GltfMeshMain, Result,
+    codec::{is_glb, parse_glb},
+    from_gltf_file,
+};
 use gltf::json::Root;
 use std::collections::BTreeMap;
 

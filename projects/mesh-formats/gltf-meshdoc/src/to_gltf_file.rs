@@ -1,13 +1,12 @@
 use crate::{
     EncodeBase64, Error, GltfBlob, GltfExtAnimationOutput, GltfExtImageSource, GltfExtSampler,
     GltfFile, GltfImageStorage, GltfMeshMain, GltfWriteOptions, Result, VxlExtras,
-    extras_from_value, f32_bytes, property_value_to_json, push_accessor, transform_to_gltf,
 };
 use branded_id::U32Id;
 use gltf::json::{
-    Accessor, Animation, Asset, Buffer, Camera, Image, Index, Material, Mesh, Node, Root, Scene,
-    Skin, Texture,
-    accessor::{ComponentType, Type},
+    Accessor, Animation, Asset, Buffer, Camera, Extras, Image, Index, Material, Mesh, Node, Root,
+    Scene, Skin, Texture,
+    accessor::{ComponentType, GenericComponentType, Type},
     animation::{Channel, Interpolation, Property, Sampler as AnimationSampler, Target},
     buffer::Target as BufferTarget,
     extensions,
@@ -19,19 +18,21 @@ use gltf::json::{
     mesh::{MorphTarget, Primitive, Semantic},
     scene::UnitQuaternion,
     texture::{Info, MagFilter, MinFilter, Sampler, WrappingMode},
-    validation::Checked,
+    validation::{Checked, USize64},
 };
 use meshdoc::{
     BMeshFile, BMeshHierarchyNode, BMeshImage, BMeshMaterial, BMeshObject, BMeshTexture,
     MeshAlphaMode, MeshAttributeComponents, MeshImage, MeshImageSource, MeshMagFilter,
-    MeshMinFilter, MeshPrimitive, MeshProperty, MeshState, MeshTextureRef, MeshWrap,
+    MeshMinFilter, MeshPrimitive, MeshProperty, MeshPropertyValue, MeshState, MeshTextureRef,
+    MeshWrap,
     material::{EMISSIVE_STRENGTH_DEFAULT, IOR_DEFAULT, TRANSMISSION_DEFAULT},
 };
-use serde_json::{Map, Value, json};
+use serde_json::{Map, Value, json, value::RawValue};
 use std::{
     collections::{BTreeMap, HashMap, HashSet},
     path::Path,
 };
+use ty_math::TyTransformF64;
 
 /// The extension the writer declares for a material's emissive strength.
 const EMISSIVE_STRENGTH_EXTENSION: &str = "KHR_materials_emissive_strength";
@@ -1070,6 +1071,105 @@ fn push_vec3s(root: &mut Root, blob: &mut GltfBlob, values: &[[f32; 3]]) -> Inde
 /// `max`, or `None` for no keyframes.
 fn min_max(input: &[f32]) -> Option<Value> {
     (!input.is_empty()).then(|| json!([input.iter().copied().fold(f32::INFINITY, f32::min)]))
+}
+
+/// Appends `data`, `count` elements of `component_type` by `type_`, to the
+/// blob as its own view and an accessor over it, returning the accessor's
+/// index.
+#[allow(clippy::too_many_arguments)]
+fn push_accessor(
+    root: &mut Root,
+    blob: &mut GltfBlob,
+    data: &[u8],
+    count: usize,
+    component_type: ComponentType,
+    type_: Type,
+    normalized: bool,
+    target: Option<BufferTarget>,
+    min: Option<Value>,
+    max: Option<Value>,
+) -> Index<Accessor> {
+    let buffer_view = blob.push_view(data, target);
+
+    let accessor = Accessor {
+        buffer_view: Some(buffer_view),
+        byte_offset: None,
+        count: USize64::from(count),
+        component_type: Checked::Valid(GenericComponentType(component_type)),
+        extensions: None,
+        extras: Default::default(),
+        type_: Checked::Valid(type_),
+        min,
+        max,
+        name: None,
+        normalized,
+        sparse: None,
+    };
+
+    root.push(accessor)
+}
+
+/// `values` as little-endian bytes, the form a buffer holds floats in.
+fn f32_bytes(values: impl IntoIterator<Item = f32>) -> Vec<u8> {
+    values
+        .into_iter()
+        .flat_map(|value| value.to_le_bytes())
+        .collect()
+}
+
+/// A JSON value as an object's `extras`, `None` for none.
+fn extras_from_value(value: &Option<Value>) -> Extras {
+    value.as_ref().map(|value| {
+        RawValue::from_string(value.to_string()).expect("a serialized value is valid JSON")
+    })
+}
+
+/// A node's transform as the `f32` triples glTF stores.
+fn transform_to_gltf(transform: &TyTransformF64) -> ([f32; 3], [f32; 4], [f32; 3]) {
+    (
+        transform.position.to_array().map(|value| value as f32),
+        [
+            transform.rotation.x as f32,
+            transform.rotation.y as f32,
+            transform.rotation.z as f32,
+            transform.rotation.w as f32,
+        ],
+        transform.scale.to_array().map(|value| value as f32),
+    )
+}
+
+/// A property value as its `vxl.values` entry. A texture writes as a texture
+/// info over `texture_indices`, and a file as the relative URI of the state's
+/// file.
+fn property_value_to_json(
+    value: &MeshPropertyValue,
+    texture_indices: &HashMap<U32Id<BMeshTexture>, u32>,
+    state: &MeshState,
+) -> Value {
+    match value {
+        MeshPropertyValue::Bool(value) => json!(value),
+        MeshPropertyValue::Bools(values) => json!(values),
+        MeshPropertyValue::BoolRows(rows) => json!(rows),
+        MeshPropertyValue::Int(value) => json!(value),
+        MeshPropertyValue::Ints(values) => json!(values),
+        MeshPropertyValue::IntRows(rows) => json!(rows),
+        MeshPropertyValue::Float(value) => json!(value),
+        MeshPropertyValue::Floats(values) => json!(values),
+        MeshPropertyValue::FloatRows(rows) => json!(rows),
+        MeshPropertyValue::Text(value) => json!(value),
+        MeshPropertyValue::Texts(values) => json!(values),
+        MeshPropertyValue::TextRows(rows) => json!(rows),
+        MeshPropertyValue::Texture(texture_ref) => json!({
+            "index": texture_indices[&texture_ref.texture_id],
+            "texCoord": texture_ref.uv_stream_id.to_u32(),
+        }),
+        MeshPropertyValue::File(file_id) => json!({
+            "uri": state
+                .file(*file_id)
+                .expect("a property points at a live file in a valid state")
+                .name,
+        }),
+    }
 }
 
 #[cfg(all(test, feature = "impl"))]

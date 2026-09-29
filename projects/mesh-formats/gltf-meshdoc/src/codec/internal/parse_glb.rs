@@ -1,15 +1,7 @@
-use crate::{Error, Result};
-
-/// The GLB `JSON` chunk type.
-const JSON_CHUNK: u32 = 0x4E4F_534A;
-
-/// The GLB `BIN` chunk type.
-const BIN_CHUNK: u32 = 0x004E_4942;
-
-/// Whether `bytes` start with the GLB magic.
-pub fn is_glb(bytes: &[u8]) -> bool {
-    bytes.starts_with(b"glTF")
-}
+use crate::{
+    Error, Result,
+    codec::{BIN_CHUNK, JSON_CHUNK, is_glb},
+};
 
 /// The JSON chunk and the optional BIN chunk of a binary glTF. Errors on a
 /// header or chunk that does not fit the container spec.
@@ -74,7 +66,7 @@ fn u32_at(bytes: &[u8], offset: usize) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::{frame_glb, parse_glb};
+    use crate::codec::{frame_glb, parse_glb};
 
     #[test]
     fn parses_what_the_framer_writes() {
