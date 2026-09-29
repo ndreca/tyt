@@ -1,0 +1,15 @@
+[package]
+name = "voxsurface"
+version = "0.1.0"
+edition = "2024"
+license-file = "LICENSE"
+repository = "https://github.com/tyleo/tyt"
+description = "The boundary of a voxel grid: its faces meshed and the occlusion at their corners."
+
+[package.metadata.workspaces]
+independent = true
+
+[dependencies]
+branded-id = "0.1.11"
+ty-math = { version = "0.2.0", default-features = false }
+voxcore = { version = "0.2.2", default-features = false }

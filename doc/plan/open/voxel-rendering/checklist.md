@@ -23,7 +23,7 @@ resample plan has one.
 
 ## Steps
 
-- [ ] **S1. voxsurface split.** Create `projects/utilities/voxsurface`. Move
+- [x] **S1. voxsurface split.** Create `projects/utilities/voxsurface`. Move
       `is_solid`, `FaceSpan`, `MeshGeometry`, `Method`, `mesh_slices`,
       `object_to_mesh_geometry`, and the corner rule of `compute_occlusion`
       out of voxsmith's `object_mesh`.

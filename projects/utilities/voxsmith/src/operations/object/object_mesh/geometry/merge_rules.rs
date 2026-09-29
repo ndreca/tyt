@@ -173,23 +173,16 @@ impl<'a> MergeRules<'a> {
             HashMap::new()
         } else {
             culled
-                .face_voxel_ids
+                .spans
                 .iter()
+                .zip(&culled.face_cells)
                 .enumerate()
-                .map(|(face, voxel_ids)| {
+                .map(|(face, (span, voxel_ids))| {
                     let [voxel_id] = voxel_ids.as_slice() else {
                         unreachable!("a culled face covers one voxel");
                     };
 
-                    let normal = culled.normals[face * 4].to_array();
-
-                    let d = (0..3)
-                        .find(|&axis| normal[axis] != 0.0)
-                        .expect("a face normal lies along one axis");
-
-                    let sign = if normal[d] > 0.0 { 1 } else { -1 };
-
-                    ((*voxel_id, d, sign), face)
+                    ((*voxel_id, span.d, span.sign), face)
                 })
                 .collect()
         };
@@ -274,10 +267,10 @@ impl<'a> MergeRules<'a> {
     }
 
     /// The culled face of the cell at `position` on `span`'s side.
-    fn culled_face(&self, span: &FaceSpan, position: [u32; 3]) -> usize {
+    fn culled_face(&self, span: &FaceSpan, position: TyVector3U32) -> usize {
         let voxel_id = self
             .object
-            .voxel_id(TyVector3U32::from_array(position))
+            .voxel_id(position)
             .expect("a span covers cells within the grid");
 
         *self
@@ -397,7 +390,7 @@ mod tests {
         ArrayDomain, AttributeWrite, Computation, ComputedBinding, ExtraForm, ExtraSource,
         ExtraWrite, FileForm, FileWrite, MaterialRecord, MergeRules, MeshGeometry, MeshRecord,
         Method, PrimitiveRecord, ProgramRun, SlotSource, SlotWrite, Streams, Swatches,
-        TextureShape, Transfer, WrittenValue, mesh_slices,
+        TextureShape, Transfer, WrittenValue,
     };
     use branded_id::{IdVec, U32Id};
     use ty_math::TyVector3U32;
@@ -405,6 +398,7 @@ mod tests {
         VoxMain, VoxObject, VoxPalette, VoxValuePool,
         material::{BASE_COLOR, METALLIC},
     };
+    use voxsurface::{mesh_grid, mesh_grid_keyed};
 
     /// A main whose one palette carries `baseColor` and `metallic`, and a
     /// 2x1x1 bar painted with its two materials, which share an alpha of
@@ -494,7 +488,7 @@ mod tests {
     fn merges(record: &MeshRecord) -> bool {
         let (main, object) = painted();
         let swatches = Swatches::resolve(&main, &object).unwrap();
-        let culled = mesh_slices(&object, Method::Culled, &|_| 0, &|_| true, false);
+        let culled = mesh_grid(&object, Method::Culled);
         let run = ProgramRun::over(&object, &swatches, record, &culled).unwrap();
 
         let streams = Streams::derive(record, &run.destinations).unwrap();
@@ -615,18 +609,17 @@ mod tests {
         }
         let swatches = Swatches::resolve(&main, &object).unwrap();
 
-        let culled = mesh_slices(&object, Method::Culled, &|_| 0, &|_| true, false);
+        let culled = mesh_grid(&object, Method::Culled);
         let run = ProgramRun::over(&object, &swatches, record, &culled).unwrap();
         let streams = Streams::derive(record, &run.destinations).unwrap();
         let rules =
             MergeRules::derive(&object, record, &swatches, &culled, &run, &streams).unwrap();
 
-        let geometry = mesh_slices(
+        let geometry = mesh_grid_keyed(
             &object,
             Method::Greedy,
             &|voxel_id| rules.voxel_class(voxel_id),
             &|span| rules.span_fits(span),
-            false,
         );
 
         let tops = (0..geometry.quad_count())

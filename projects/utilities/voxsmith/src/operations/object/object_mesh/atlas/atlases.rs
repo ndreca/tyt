@@ -69,7 +69,7 @@ impl<'a> Atlases<'a> {
             (Domain::Swatch, ArrayDomain::Voxel) => vec![swatch_of(cell)],
 
             (Domain::Swatch | Domain::Voxel, ArrayDomain::Corner | ArrayDomain::Face) => {
-                self.geometry.face_voxel_ids[cell]
+                self.geometry.face_cells[cell]
                     .iter()
                     .map(|&voxel_id| {
                         let voxel_entry = self
@@ -134,11 +134,10 @@ impl<'a> Atlases<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::operations::object::{
-        ArrayDomain, Atlases, Method, Swatches, TextureShape, object_to_mesh_geometry,
-    };
+    use crate::operations::object::{ArrayDomain, Atlases, Method, Swatches, TextureShape};
     use ty_math::{TyVector2F64, TyVector3U32};
     use voxcore::{VoxMain, VoxObject};
+    use voxsurface::mesh_grid;
 
     /// A 2x1x1 bar of two live voxels with no layers.
     fn bar() -> VoxObject {
@@ -155,7 +154,7 @@ mod tests {
         let main: VoxMain = VoxMain::default();
         let object = bar();
         let swatches = Swatches::resolve(&main, &object).unwrap();
-        let culled = object_to_mesh_geometry(&object, Method::Culled);
+        let culled = mesh_grid(&object, Method::Culled);
         let atlases = Atlases::new(TextureShape::Pot, &swatches, &culled);
         let faces: Vec<usize> = (0..culled.quad_count()).collect();
 
@@ -206,7 +205,7 @@ mod tests {
         let main: VoxMain = VoxMain::default();
         let object = bar();
         let swatches = Swatches::resolve(&main, &object).unwrap();
-        let culled = object_to_mesh_geometry(&object, Method::Culled);
+        let culled = mesh_grid(&object, Method::Culled);
         let atlases = Atlases::new(TextureShape::Line, &swatches, &culled);
         let faces: Vec<usize> = (0..culled.quad_count()).collect();
 

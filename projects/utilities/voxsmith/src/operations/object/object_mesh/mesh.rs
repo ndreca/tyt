@@ -3,15 +3,15 @@ use crate::{
     dependencies::object::EncodePng,
     operations::object::{
         Atlases, FacePartition, Images, MergeRules, MeshElement, MeshRecord, MeshTarget, Method,
-        ProgramRun, Streams, Swatches, WriteContext, mesh_slices, object_to_mesh_geometry,
-        table_index, write_attributes, write_extras, write_files, write_hierarchy, write_materials,
-        write_primitive,
+        ProgramRun, Streams, Swatches, WriteContext, table_index, write_attributes, write_extras,
+        write_files, write_hierarchy, write_materials, write_primitive,
     },
 };
 use branded_id::U32Id;
 use meshdoc::{BMeshObject, MeshMain, MeshObject};
 use std::collections::{HashMap, HashSet};
 use voxcore::{Error as VoxError, VoxExt, VoxMain, VoxObject};
+use voxsurface::{mesh_grid, mesh_grid_keyed};
 
 /// Meshes each of `targets` into one document, one object per target under
 /// its record, placed by the hierarchy of `main` narrowed to the nodes reaching
@@ -101,7 +101,7 @@ fn mesh_object<D: EncodePng, T: VoxExt>(
     }
 
     let geometry = if record.method == Method::Greedy {
-        let culled = object_to_mesh_geometry(object, Method::Culled);
+        let culled = mesh_grid(object, Method::Culled);
 
         let run = ProgramRun::over(object, &swatches, record, &culled)?;
 
@@ -109,15 +109,14 @@ fn mesh_object<D: EncodePng, T: VoxExt>(
 
         let rules = MergeRules::derive(object, record, &swatches, &culled, &run, &streams)?;
 
-        mesh_slices(
+        mesh_grid_keyed(
             object,
             Method::Greedy,
             &|voxel_id| rules.voxel_class(voxel_id),
             &|span| rules.span_fits(span),
-            false,
         )
     } else {
-        object_to_mesh_geometry(object, record.method)
+        mesh_grid(object, record.method)
     };
 
     let run = ProgramRun::over(object, &swatches, record, &geometry)?;

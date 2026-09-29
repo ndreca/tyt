@@ -27,6 +27,7 @@ members = [
     "projects/utilities/voxcore",
     "projects/utilities/vox-value-language",
     "projects/utilities/voxsmith",
+    "projects/utilities/voxsurface",
     "projects/utilities/vxl",
 
     "projects/mesh-formats/gltf-meshdoc",
@@ -80,6 +81,7 @@ voxconv = { path = "projects/utilities/voxconv" }
 voxcore = { path = "projects/utilities/voxcore" }
 vox-value-language = { path = "projects/utilities/vox-value-language" }
 voxsmith = { path = "projects/utilities/voxsmith" }
+voxsurface = { path = "projects/utilities/voxsurface" }
 vxl = { path = "projects/utilities/vxl" }
 
 gltf-meshdoc = { path = "projects/mesh-formats/gltf-meshdoc" }

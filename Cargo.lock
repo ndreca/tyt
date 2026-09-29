@@ -2255,7 +2255,17 @@ dependencies = [
  "ty-math",
  "vox-value-language",
  "voxcore",
+ "voxsurface",
  "zune-jpeg",
+]
+
+[[package]]
+name = "voxsurface"
+version = "0.1.0"
+dependencies = [
+ "branded-id",
+ "ty-math",
+ "voxcore",
 ]
 
 [[package]]

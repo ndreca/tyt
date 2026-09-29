@@ -126,12 +126,12 @@ mod tests {
         operations::object::{
             ArrayDomain, Atlases, Computation, ComputedBinding, FacePartition, MeshElement,
             MeshRecord, Method, PrimitiveRecord, ProgramRun, Swatches, TextureShape,
-            object_to_mesh_geometry,
         },
     };
     use branded_id::{IdVec, U32Id};
     use ty_math::TyVector3U32;
     use voxcore::{VoxMain, VoxObject, VoxPalette, VoxValuePool, material::METALLIC};
+    use voxsurface::mesh_grid;
 
     /// A main whose one palette carries `metallic`, and a 2x1x1 bar painted
     /// with its two materials.
@@ -175,7 +175,7 @@ mod tests {
     fn routed(program: &str, selects: &[&str]) -> Result<Vec<Vec<usize>>, MeshElement> {
         let (main, object) = painted();
         let swatches = Swatches::resolve(&main, &object).unwrap();
-        let culled = object_to_mesh_geometry(&object, Method::Culled);
+        let culled = mesh_grid(&object, Method::Culled);
         let record = MeshRecord {
             method: Method::Culled,
             texture_shape: TextureShape::Pot,

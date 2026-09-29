@@ -1,8 +1,6 @@
 use crate::{
     Error, Result,
-    operations::object::{
-        Computation, ComputedBinding, MeshElement, MeshGeometry, Swatches, is_solid,
-    },
+    operations::object::{Computation, ComputedBinding, MeshElement, MeshGeometry, Swatches},
 };
 use branded_id::{U32Id, UsizeId};
 use std::{collections::HashMap, slice};
@@ -10,6 +8,7 @@ use vox_value_language::{
     Components, Dimension, Domain, Groupings, TypeEnvironment, Value, ValueEnvironment,
 };
 use voxcore::{VoxObject, VoxValuePoolKind, VoxValuePoolValueRef};
+use voxsurface::mesh_occlusion;
 
 /// The names a run's program reads but never defines: the effective palette's
 /// properties, one swatch array each, and the computed bindings.
@@ -285,80 +284,14 @@ fn compute_voxel_position(object: &VoxObject) -> Value {
         .expect("three components per voxel fill a vec3 array")
 }
 
-/// Each face corner's occlusion from the voxels meeting there, a corner `f32`
-/// vec1 array in `[0, 1]` with `1` fully open. Each of the three cells beside
-/// the corner in the layer the face looks into closes a third. Both cells
-/// along the face's edges together close it fully. So does a solid cell over
-/// the face, which only `naive` emits.
+/// Each face corner's [`mesh_occlusion`] as a corner `f32` vec1 array.
 fn compute_occlusion(object: &VoxObject, geometry: &MeshGeometry) -> Value {
-    let mut components = Vec::with_capacity(geometry.positions.len());
-
-    for quad in 0..geometry.quad_count() {
-        let corners: Vec<[f32; 3]> = geometry.positions[quad * 4..quad * 4 + 4]
-            .iter()
-            .map(|position| position.to_array())
-            .collect();
-
-        let normal = geometry.normals[quad * 4].to_array();
-
-        let axis = (0..3)
-            .find(|&axis| normal[axis] != 0.0)
-            .expect("a face normal lies along one axis");
-
-        let [first, second] = match axis {
-            0 => [1, 2],
-            1 => [0, 2],
-            _ => [0, 1],
-        };
-
-        let center = |axis: usize| corners.iter().map(|corner| corner[axis]).sum::<f32>() / 4.0;
-        let centers = [center(first), center(second)];
-
-        for corner in &corners {
-            let mut cell = [0i64; 3];
-            cell[axis] = if normal[axis] > 0.0 {
-                corner[axis] as i64
-            } else {
-                corner[axis] as i64 - 1
-            };
-
-            // Along each tangent axis, the cell under the face and the cell
-            // beside the corner outside it.
-            let along = |tangent: usize, center: f32| {
-                let at = corner[tangent] as i64;
-                if corner[tangent] < center {
-                    (at, at - 1)
-                } else {
-                    (at - 1, at)
-                }
-            };
-            let (under_first, beside_first) = along(first, centers[0]);
-            let (under_second, beside_second) = along(second, centers[1]);
-
-            let solid = |first_at: i64, second_at: i64| {
-                let mut cell = cell;
-                cell[first] = first_at;
-                cell[second] = second_at;
-                is_solid(object, cell)
-            };
-
-            let over = solid(under_first, under_second);
-            let side_first = solid(beside_first, under_second);
-            let side_second = solid(under_first, beside_second);
-            let diagonal = solid(beside_first, beside_second);
-
-            let open = if over || (side_first && side_second) {
-                0
-            } else {
-                3 - u8::from(side_first) - u8::from(side_second) - u8::from(diagonal)
-            };
-
-            components.push(f32::from(open) / 3.0);
-        }
-    }
-
-    Value::new(Domain::Corner, Dimension::Vec1, Components::F32(components))
-        .expect("one component per corner fills a vec1 array")
+    Value::new(
+        Domain::Corner,
+        Dimension::Vec1,
+        Components::F32(mesh_occlusion(object, geometry)),
+    )
+    .expect("one component per corner fills a vec1 array")
 }
 
 /// The tables the reductions and climbs walk: each voxel entry's swatch and
@@ -367,7 +300,7 @@ fn groupings_of(swatches: &Swatches<'_>, geometry: &MeshGeometry) -> Groupings {
     Groupings {
         voxel_swatches: swatches.voxel_swatch_ids().clone(),
         face_voxels: geometry
-            .face_voxel_ids
+            .face_cells
             .iter()
             .map(|voxel_ids| {
                 voxel_ids
@@ -388,12 +321,12 @@ mod tests {
                 compute_index, compute_occlusion, compute_voxel_position, groupings_of,
                 property_value,
             },
-            object_to_mesh_geometry,
         },
         test_utilities::live_object,
     };
     use vox_value_language::{Components, Dimension, Domain, Scalar};
-    use voxcore::{VoxMain, VoxObject, VoxValue, VoxValuePool, VoxValuePoolValueRef};
+    use voxcore::{VoxMain, VoxValue, VoxValuePool, VoxValuePoolValueRef};
+    use voxsurface::mesh_grid;
 
     #[test]
     fn the_index_counts_the_entries_up() {
@@ -416,69 +349,16 @@ mod tests {
         );
     }
 
-    /// The occlusion at each corner of the quads facing `normal`, as
-    /// `(corner position, occlusion)`.
-    fn facing(object: &VoxObject, method: Method, normal: [f32; 3]) -> Vec<([f32; 3], f32)> {
-        let geometry = object_to_mesh_geometry(object, method);
-        let value = compute_occlusion(object, &geometry);
-        let Components::F32(occlusion) = value.components() else {
-            panic!("occlusion is f32");
-        };
-
-        (0..geometry.quad_count())
-            .filter(|&quad| geometry.normals[quad * 4].to_array() == normal)
-            .flat_map(|quad| {
-                (quad * 4..quad * 4 + 4)
-                    .map(|corner| (geometry.positions[corner].to_array(), occlusion[corner]))
-            })
-            .collect()
-    }
-
     #[test]
-    fn a_lone_voxel_is_open_at_every_corner() {
+    fn the_occlusion_lands_one_corner_entry_per_vertex() {
         let object = live_object([3, 3, 3], &[[1, 1, 1]]);
-        let geometry = object_to_mesh_geometry(&object, Method::Culled);
+        let geometry = mesh_grid(&object, Method::Culled);
 
         let value = compute_occlusion(&object, &geometry);
 
+        assert_eq!(value.domain(), Domain::Corner);
         assert_eq!(value.entries(), 24);
         assert_eq!(value.components(), &Components::F32(vec![1.0; 24]));
-    }
-
-    #[test]
-    fn a_neighbor_beside_a_corner_closes_a_third_and_two_close_it() {
-        // A step: the top of (0,0,0) meets (1,0,1) along its x = 1 edge.
-        let step = live_object([3, 3, 3], &[[0, 0, 0], [1, 0, 0], [1, 0, 1]]);
-        for (position, occlusion) in facing(&step, Method::Culled, [0.0, 0.0, 1.0]) {
-            if position[2] != 1.0 {
-                continue;
-            }
-            let expected = if position[0] == 1.0 { 2.0 / 3.0 } else { 1.0 };
-            assert_eq!(occlusion, expected, "{position:?}");
-        }
-
-        // An inner corner: the top of (0,0,0) meets both (1,0,1) and (0,1,1),
-        // and the diagonal (1,1,1) is empty.
-        let inner = live_object([3, 3, 3], &[[0, 0, 0], [1, 0, 1], [0, 1, 1]]);
-        let corners = facing(&inner, Method::Culled, [0.0, 0.0, 1.0]);
-        let (_, occlusion) = corners
-            .iter()
-            .find(|(position, _)| *position == [1.0, 1.0, 1.0])
-            .unwrap();
-        assert_eq!(*occlusion, 0.0);
-    }
-
-    #[test]
-    fn a_face_under_a_solid_cell_is_closed() {
-        // Under naive the shared face between two voxels still emits.
-        let pair = live_object([3, 3, 3], &[[0, 0, 0], [1, 0, 0]]);
-        let corners = facing(&pair, Method::Naive, [1.0, 0.0, 0.0]);
-        let buried: Vec<f32> = corners
-            .iter()
-            .filter(|(position, _)| position[0] == 1.0)
-            .map(|(_, occlusion)| *occlusion)
-            .collect();
-        assert_eq!(buried, [0.0; 4]);
     }
 
     #[test]
@@ -486,7 +366,7 @@ mod tests {
         let main: VoxMain = VoxMain::default();
         let object = live_object([2, 1, 1], &[[0, 0, 0], [1, 0, 0]]);
         let swatches = Swatches::resolve(&main, &object).unwrap();
-        let geometry = object_to_mesh_geometry(&object, Method::Greedy);
+        let geometry = mesh_grid(&object, Method::Greedy);
 
         let groupings = groupings_of(&swatches, &geometry);
 

@@ -26,6 +26,7 @@ treeselect = { version = "0.1.1", optional = true }
 ty-math = "0.2.0"
 vox-value-language = { version = "0.1.0", optional = true }
 voxcore = { version = "0.2.1", default-features = false, features = ["color"] }
+voxsurface = { version = "0.1.0", optional = true }
 zune-jpeg = { version = "0.5", optional = true }
 
 [features]
@@ -41,7 +42,7 @@ default = [
 
 mesh_doc = []
 node = ["_treegrid", "dep:treeselect"]
-object = ["dep:serde_json", "dep:vox-value-language"]
+object = ["dep:serde_json", "dep:vox-value-language", "dep:voxsurface"]
 palette = ["_treegrid", "dep:serde_json"]
 profile = ["_treegrid"]
 vox_doc = ["_treegrid"]
