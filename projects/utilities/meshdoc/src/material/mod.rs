@@ -3,6 +3,8 @@
 //! property under the same meaning uses the same key, so a bake reads across
 //! without a translation table. The constants cover the modeled set.
 
+// Public API
+
 mod color_range;
 mod consts;
 mod default_scalar;

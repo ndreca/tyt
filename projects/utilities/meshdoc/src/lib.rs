@@ -2,6 +2,8 @@
 
 //! Core types for working with meshes.
 
+// Public API
+
 pub mod check;
 pub mod material;
 
@@ -81,7 +83,13 @@ pub use mesh_wrap::*;
 pub use result::*;
 pub use taken_ext::*;
 
-// Test support.
+// Internal API
+
+mod first_cycle_node_index;
+
+pub(crate) use first_cycle_node_index::*;
+
+// Test support
 
 #[cfg(test)]
 mod test;

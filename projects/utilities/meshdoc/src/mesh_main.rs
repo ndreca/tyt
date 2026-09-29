@@ -2,7 +2,7 @@ use crate::{
     BMeshFile, BMeshHierarchyNode, BMeshImage, BMeshMaterial, BMeshObject, BMeshPrimitive,
     BMeshTexture, Error, MeshExt, MeshFile, MeshGcRemap, MeshHierarchyNode, MeshImage,
     MeshImageSource, MeshMaterial, MeshObject, MeshPrimitive, MeshProperty, MeshState, MeshTexture,
-    Result, TakenExt, mesh_state::first_cycle_node_index,
+    Result, TakenExt, first_cycle_node_index,
 };
 use branded_id::{IdVec, U32Id, soa::IdRemap};
 use std::collections::{HashMap, HashSet};
