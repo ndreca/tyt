@@ -96,7 +96,7 @@ resample plan has one.
       blend across the face. Tests: `studio` gives a cube three shades, a
       wall shadows the floor behind it at each granularity, and a point light
       reaches zero at `range`.
-- [ ] **S7. Output encoding.** Apply the Khronos PBR Neutral tonemap to
+- [x] **S7. Output encoding.** Apply the Khronos PBR Neutral tonemap to
       `RenderImage`, then `ty-math`'s sRGB transfer to 8-bit RGBA with
       straight alpha. A pixel no ray hits is transparent, or the background
       color at full alpha.

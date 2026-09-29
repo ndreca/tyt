@@ -24,12 +24,14 @@ mod render_light;
 mod render_material;
 mod render_object;
 mod render_occlusion;
+mod render_output;
 mod render_placement;
 mod render_projection;
 mod render_scene;
 mod render_shadow;
 mod render_view;
 mod result;
+mod tonemap;
 
 pub use b_render_light::*;
 pub use b_render_material::*;
@@ -44,12 +46,14 @@ pub use render_light::*;
 pub use render_material::*;
 pub use render_object::*;
 pub use render_occlusion::*;
+pub use render_output::*;
 pub use render_placement::*;
 pub use render_projection::*;
 pub use render_scene::*;
 pub use render_shadow::*;
 pub use render_view::*;
 pub use result::*;
+pub use tonemap::*;
 
 // Optional API
 

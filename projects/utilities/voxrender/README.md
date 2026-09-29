@@ -138,8 +138,13 @@ A `RenderImage` is a linear-light RGBA `f32` buffer, rows top to bottom.
 `RenderOcclusion` picks whether a render shades with the corner occlusion
 `voxsurface` computes.
 
-```rust
-let mut image = RenderImage::new(1024, 1024);
+`RenderOutput` holds the 8-bit sRGB image a PNG stores.
+`RenderOutput::from_image` runs each hit through the Khronos PBR Neutral
+curve in `tonemap` and then the sRGB transfer. Each miss becomes
+transparent or the background color.
 
-image.set_pixel(0, 0, TyLinSrgbaF32::new(1.0, 1.0, 1.0, 1.0));
+```rust
+let output = RenderOutput::from_image(&image, None);
+
+let bytes = output.to_bytes();
 ```

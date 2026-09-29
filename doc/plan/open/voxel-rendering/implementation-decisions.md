@@ -158,3 +158,14 @@ they land.
   light casts nothing.
 - `render.rs` is the only caller of the shading and shadow helpers, so
   they live there as private functions with their tests.
+
+## S7. Output encoding
+
+- `tonemap` implements the published Khronos PBR Neutral curve at the
+  image's `f32` precision. A mid gray keeps its value less the flare
+  offset. Only a color whose brightest channel passes `0.8` compresses.
+- `RenderOutput::from_image` composites the background after the tonemap
+  and the transfer. The caller's sRGB byte background lands in the file
+  unchanged.
+- `RenderOutput` and `tonemap` stay outside the `cpu` feature because a
+  GPU tier reads back a linear image and encodes it the same way.
