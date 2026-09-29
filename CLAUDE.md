@@ -21,6 +21,7 @@ cargo check
 - Import modules for free functions and keep the module prefix in calls (e.g., `use std::{env, fs, io, process};` then `fs::read()`, `env::temp_dir()`, `io::stdout()`, `process::exit(1)`)
 - Prefer `#[derive(Default)]` over manual `impl Default` when all field defaults match the type's inherent default
 - A blank line separates each top-level item in a file and each member of a struct, enum, trait, or `impl` (fields, variants, methods, associated types and consts); `use` lines and `mod` declarations stay grouped
+- A blank line separates every arm of a `match` in which any arm spans more than one line; a match whose arms are all one line stays compact
 - One public item per file (struct, trait, enum, or function), file named to match the item in snake_case; capability methods on a type from another file ride an extension trait, one trait per file
 - A file holding only consts may hold several related ones (e.g., a material vocabulary's keys and defaults)
 - A helper that only one file calls on another file's type lives in that file as a private free function taking the type as a parameter
