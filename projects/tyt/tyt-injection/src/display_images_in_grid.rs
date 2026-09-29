@@ -12,9 +12,14 @@ use viuer::{Config, print};
 /// single image scaled so its width spans `side_percent` percent of the
 /// terminal's shorter visual side. This keeps a full set of thumbnails on one
 /// screen rather than stacking them down the scrollback. Renders nothing when
-/// `paths` is empty.
+/// `paths` is empty, and errors when `columns` is zero.
 pub fn display_images_in_grid(paths: &[&Path], columns: u32, side_percent: u32) -> Result<()> {
-    let columns = columns.max(1);
+    if columns == 0 {
+        return Err(IOError::new(
+            ErrorKind::InvalidInput,
+            "an image grid needs at least one column",
+        ));
+    }
     let images = paths
         .iter()
         .map(|path| {
@@ -32,7 +37,7 @@ pub fn display_images_in_grid(paths: &[&Path], columns: u32, side_percent: u32) 
     // cell-width per column) or its height (a cell is roughly twice as tall as
     // wide, so two cell-widths per row). Size the grid to a fraction of it, and
     // never wider than the terminal itself.
-    let (term_cols, term_rows) = size().unwrap_or((80, 24));
+    let (term_cols, term_rows) = size()?;
     let shortest = (term_cols as u32).min((term_rows as u32) * 2).max(1);
     let width = (shortest * side_percent / 100).clamp(1, term_cols as u32);
     let cfg = Config {

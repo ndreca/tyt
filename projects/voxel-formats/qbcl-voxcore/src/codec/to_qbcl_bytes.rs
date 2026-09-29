@@ -8,7 +8,7 @@ use qbcl_codec::{CompressZlib, qbcl::to_qbcl_file_bytes};
 pub fn to_qbcl_bytes<D: CompressZlib>(dependencies: &D, main: &QbclVoxMain) -> Result<Vec<u8>> {
     let file = to_qbcl_file(main)?;
 
-    Ok(to_qbcl_file_bytes(dependencies, &file))
+    Ok(to_qbcl_file_bytes(dependencies, &file)?)
 }
 
 #[cfg(test)]

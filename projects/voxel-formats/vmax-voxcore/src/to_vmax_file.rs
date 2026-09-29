@@ -1992,11 +1992,9 @@ mod tests {
 
     /// A material carrying dispersion, a transmission color (`tc`), and a
     /// non-finite coefficient round-trips exactly, alongside a plain material
-    /// and the padded default slots. The value pools carry a finite-defaulted
-    /// neutral copy, but the ext keeps the exact values, so the rebuilt
-    /// document matches byte for byte. Coefficients are f32-exact, as Voxel Max
-    /// stores them, and the non-finite `mc` is infinity, not NaN, so it
-    /// compares equal.
+    /// and the padded default slots. The value pools carry a neutral copy, but
+    /// the ext keeps the exact values, so the rebuilt document matches byte for
+    /// byte. Coefficients are f32-exact, as Voxel Max stores them.
     #[test]
     fn round_trips_rich_materials() {
         let mut original = sample();
@@ -2027,6 +2025,21 @@ mod tests {
         let main = from_vmax_file(&original).unwrap();
         let rebuilt = to_vmax_file(&main, &VMaxWriteOptions::default()).unwrap();
         assert_eq!(rebuilt, original);
+    }
+
+    #[test]
+    fn nan_material_coefficient_is_an_error() {
+        let mut original = sample();
+        let mut materials = vec![material("1", f32r(0.5), f32r(0.25), f64::NAN, false)];
+        for slot in materials.len()..8 {
+            materials.push(default_material(slot));
+        }
+        original
+            .palette_settings_files
+            .get_mut("palette1.settings.vmaxpsb")
+            .unwrap()
+            .materials = materials;
+        assert!(from_vmax_file(&original).is_err());
     }
 
     /// Puts a scene camera in the state's ext for the typed path to keep or

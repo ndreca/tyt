@@ -410,11 +410,13 @@ impl Builder<'_> {
         let kind = if is_group { "(Group)" } else { "(Object)" };
         self.grid.node_mut(grid_node).annotation = Some(kind.to_owned());
 
-        if self.show_transforms.is_some() {
-            self.build_transform(index, grid_node);
+        if let Some(view) = self.show_transforms {
+            self.build_transform(index, grid_node, view);
         }
-        if self.show_bounds.is_some() && self.nodes[index].bounds.is_some() {
-            self.build_bounds(index, grid_node);
+        if let Some(precision) = self.show_bounds
+            && let Some(bounds) = self.nodes[index].bounds
+        {
+            self.build_bounds(grid_node, bounds, precision);
         }
 
         if is_group {
@@ -478,10 +480,7 @@ impl Builder<'_> {
             .is_some_and(|selection| selection.match_roots().binary_search(&index).is_ok())
     }
 
-    fn build_transform(&mut self, index: usize, parent: GridNodeId) {
-        let Some(view) = self.show_transforms else {
-            return;
-        };
+    fn build_transform(&mut self, index: usize, parent: GridNodeId, view: TransformView) {
         let resolved = self.transforms[index];
 
         // The resolved rotation is euler radians; scale it to degrees
@@ -505,12 +504,12 @@ impl Builder<'_> {
         self.retain_value_leaf(subtree, "scale", fmt3(resolved.scale, precision));
     }
 
-    fn build_bounds(&mut self, index: usize, parent: GridNodeId) {
-        let precision = self.show_bounds.unwrap_or(2);
-        let Some((min, max)) = self.nodes[index].bounds else {
-            return;
-        };
-
+    fn build_bounds(
+        &mut self,
+        parent: GridNodeId,
+        (min, max): ([f64; 3], [f64; 3]),
+        precision: usize,
+    ) {
         let subtree = self
             .grid
             .retain_child(parent, TreeGridLabel::bare("bounds"));

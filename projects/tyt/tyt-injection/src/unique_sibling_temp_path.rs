@@ -1,15 +1,22 @@
 use crate::temp_counter_next;
 use std::{
-    io::{Error as IOError, Result},
+    ffi::OsString,
+    io::{Error as IOError, ErrorKind, Result},
     path::{Path, PathBuf},
     process,
     time::{SystemTime, UNIX_EPOCH},
 };
 
 /// A fresh hidden temp path beside `dst` for a write that renames over `dst`.
+/// Errors when `dst` has no file name.
 pub fn unique_sibling_temp_path(dst: &Path) -> Result<PathBuf> {
-    let parent = dst.parent().unwrap_or_else(|| Path::new("."));
-    let file_name = dst.file_name().and_then(|s| s.to_str()).unwrap_or("file");
+    let file_name = dst.file_name().ok_or_else(|| {
+        IOError::new(
+            ErrorKind::InvalidInput,
+            format!("{} has no file name to write", dst.display()),
+        )
+    })?;
+    let parent = dst.parent().expect("a path with a file name has a parent");
 
     let now_ns = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -19,7 +26,44 @@ pub fn unique_sibling_temp_path(dst: &Path) -> Result<PathBuf> {
     let pid = process::id();
     let n = temp_counter_next();
 
-    let mut tmp = parent.to_path_buf();
-    tmp.push(format!(".{}.tmp-{}-{}-{}", file_name, pid, now_ns, n));
-    Ok(tmp)
+    let mut tmp_name = OsString::from(".");
+    tmp_name.push(file_name);
+    tmp_name.push(format!(".tmp-{pid}-{now_ns}-{n}"));
+
+    Ok(parent.join(tmp_name))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::unique_sibling_temp_path;
+    use std::path::Path;
+
+    #[test]
+    fn a_path_without_a_file_name_is_an_error() {
+        assert!(unique_sibling_temp_path(Path::new("/")).is_err());
+        assert!(unique_sibling_temp_path(Path::new("dir/..")).is_err());
+    }
+
+    #[test]
+    fn the_temp_path_sits_beside_the_destination_under_its_name() {
+        let tmp = unique_sibling_temp_path(Path::new("dir/config.json")).unwrap();
+        assert_eq!(tmp.parent(), Some(Path::new("dir")));
+        let tmp_name = tmp.file_name().unwrap().to_str().unwrap();
+        assert!(tmp_name.starts_with(".config.json.tmp-"), "{tmp_name}");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_non_utf8_file_name_is_kept() {
+        use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
+
+        let dst = Path::new(OsStr::from_bytes(b"dir/\xff.json"));
+        let tmp = unique_sibling_temp_path(dst).unwrap();
+        assert!(
+            tmp.file_name()
+                .unwrap()
+                .as_bytes()
+                .starts_with(b".\xff.json.tmp-")
+        );
+    }
 }

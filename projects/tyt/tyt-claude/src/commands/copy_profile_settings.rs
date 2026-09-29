@@ -35,7 +35,7 @@ impl CopyProfileSettings {
             }
         })?);
 
-        let canon_from = from_dir.canonicalize().ok();
+        let canon_from = from_dir.canonicalize()?;
         let mut copied: Vec<PathBuf> = Vec::new();
 
         for filename in SETTINGS_FILES {
@@ -57,14 +57,7 @@ impl CopyProfileSettings {
                 if !candidate.is_file() {
                     continue;
                 }
-                let canon_candidate = match candidate.canonicalize() {
-                    Ok(p) => p,
-                    Err(_) => continue,
-                };
-                let safe = canon_from
-                    .as_ref()
-                    .is_some_and(|f| canon_candidate.starts_with(f));
-                if !safe {
+                if !candidate.canonicalize()?.starts_with(&canon_from) {
                     continue;
                 }
                 let dst = to_dir.join(trimmed);

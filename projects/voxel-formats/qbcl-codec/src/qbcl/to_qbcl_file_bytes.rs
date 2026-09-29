@@ -1,4 +1,7 @@
-use crate::{ByteWriter, CompressZlib, NODE_COMPOUND, NODE_MATRIX, NODE_MODEL, qbcl::RLE_MASK};
+use crate::{
+    ByteWriter, CompressZlib, NODE_COMPOUND, NODE_MATRIX, NODE_MODEL, Result, check_voxel_count,
+    invalid, qbcl::RLE_MASK,
+};
 use qbcl::qbcl::{
     QbclCompound, QbclFile, QbclMatrix, QbclMetadata, QbclModel, QbclNode, QbclNodeBody,
     QbclThumbnail, QbclVoxel,
@@ -21,19 +24,20 @@ const MAX_RUN: usize = 255;
 /// run-length-encoding and zlib-compressing each matrix's voxel grid. The
 /// compressed bytes may differ from another encoder's (compression and run
 /// boundaries are encoder choices) but decode to the same grid, so a decoded
-/// file re-encodes to an equivalent one.
-pub fn to_qbcl_file_bytes<D: CompressZlib>(dependencies: &D, file: &QbclFile) -> Vec<u8> {
+/// file re-encodes to an equivalent one. A matrix whose grid does not match its
+/// size, or a length too large for its field, is an error.
+pub fn to_qbcl_file_bytes<D: CompressZlib>(dependencies: &D, file: &QbclFile) -> Result<Vec<u8>> {
     let mut out = ByteWriter::new();
 
     out.write_bytes(b"QBCL");
     out.write_u32(file.program_version);
     out.write_u32(file.file_version);
     write_thumbnail(&mut out, &file.thumbnail);
-    write_metadata(&mut out, &file.metadata);
+    write_metadata(&mut out, &file.metadata)?;
     out.write_bytes(&file.guid);
-    write_node(dependencies, &mut out, &file.root);
+    write_node(dependencies, &mut out, &file.root)?;
 
-    out.into_bytes()
+    Ok(out.into_bytes())
 }
 
 /// Writes the thumbnail: its dimensions then its pixels in `BGRA` order.
@@ -46,7 +50,7 @@ fn write_thumbnail(out: &mut ByteWriter, thumbnail: &QbclThumbnail) {
 }
 
 /// Writes the seven metadata strings, in the order the editor's UI lists them.
-fn write_metadata(out: &mut ByteWriter, metadata: &QbclMetadata) {
+fn write_metadata(out: &mut ByteWriter, metadata: &QbclMetadata) -> Result<()> {
     for value in [
         &metadata.title,
         &metadata.description,
@@ -56,20 +60,28 @@ fn write_metadata(out: &mut ByteWriter, metadata: &QbclMetadata) {
         &metadata.website,
         &metadata.copyright,
     ] {
-        write_len_string(out, value);
+        write_len_string(out, value)?;
     }
+
+    Ok(())
 }
 
 /// Writes a `u32`-length-prefixed string.
-fn write_len_string(out: &mut ByteWriter, value: &str) {
+fn write_len_string(out: &mut ByteWriter, value: &str) -> Result<()> {
     let bytes = value.as_bytes();
-    out.write_len(bytes.len());
+    out.write_len(bytes.len())?;
     out.write_bytes(bytes);
+
+    Ok(())
 }
 
 /// Writes one node: the common header (type, name, and editor flags) then a
 /// type-specific body.
-fn write_node<D: CompressZlib>(dependencies: &D, out: &mut ByteWriter, node: &QbclNode) {
+fn write_node<D: CompressZlib>(
+    dependencies: &D,
+    out: &mut ByteWriter,
+    node: &QbclNode,
+) -> Result<()> {
     let type_id = match node.body {
         QbclNodeBody::Matrix(_) => NODE_MATRIX,
         QbclNodeBody::Model(_) => NODE_MODEL,
@@ -77,7 +89,7 @@ fn write_node<D: CompressZlib>(dependencies: &D, out: &mut ByteWriter, node: &Qb
     };
     out.write_u32(type_id);
     out.write_u32(NODE_RESERVED);
-    write_len_string(out, &node.name);
+    write_len_string(out, &node.name)?;
     out.write_u8(node.visible as u8);
     out.write_u8(NODE_FLAG);
     out.write_u8(node.locked as u8);
@@ -90,7 +102,11 @@ fn write_node<D: CompressZlib>(dependencies: &D, out: &mut ByteWriter, node: &Qb
 }
 
 /// Writes a matrix body: size, position, pivot, then the compressed voxel grid.
-fn write_matrix<D: CompressZlib>(dependencies: &D, out: &mut ByteWriter, matrix: &QbclMatrix) {
+fn write_matrix<D: CompressZlib>(
+    dependencies: &D,
+    out: &mut ByteWriter,
+    matrix: &QbclMatrix,
+) -> Result<()> {
     for value in matrix.size {
         out.write_u32(value);
     }
@@ -100,15 +116,21 @@ fn write_matrix<D: CompressZlib>(dependencies: &D, out: &mut ByteWriter, matrix:
     for value in matrix.pivot {
         out.write_f32(value);
     }
-    let compressed = dependencies.compress_zlib(&encode_voxels(matrix));
-    out.write_len(compressed.len());
+    let compressed = dependencies.compress_zlib(&encode_voxels(matrix)?);
+    out.write_len(compressed.len())?;
     out.write_bytes(&compressed);
+
+    Ok(())
 }
 
 /// Writes a model body: the 36-byte transform chunk then the child nodes.
-fn write_model<D: CompressZlib>(dependencies: &D, out: &mut ByteWriter, model: &QbclModel) {
+fn write_model<D: CompressZlib>(
+    dependencies: &D,
+    out: &mut ByteWriter,
+    model: &QbclModel,
+) -> Result<()> {
     out.write_bytes(&model.transform);
-    write_children(dependencies, out, &model.children);
+    write_children(dependencies, out, &model.children)
 }
 
 /// Writes a compound body: a matrix grid then the child nodes.
@@ -116,17 +138,23 @@ fn write_compound<D: CompressZlib>(
     dependencies: &D,
     out: &mut ByteWriter,
     compound: &QbclCompound,
-) {
-    write_matrix(dependencies, out, &compound.matrix);
-    write_children(dependencies, out, &compound.children);
+) -> Result<()> {
+    write_matrix(dependencies, out, &compound.matrix)?;
+    write_children(dependencies, out, &compound.children)
 }
 
 /// Writes a `u32` child count then each child node.
-fn write_children<D: CompressZlib>(dependencies: &D, out: &mut ByteWriter, children: &[QbclNode]) {
-    out.write_len(children.len());
+fn write_children<D: CompressZlib>(
+    dependencies: &D,
+    out: &mut ByteWriter,
+    children: &[QbclNode],
+) -> Result<()> {
+    out.write_len(children.len())?;
     for child in children {
-        write_node(dependencies, out, child);
+        write_node(dependencies, out, child)?;
     }
+
+    Ok(())
 }
 
 /// Run-length-encodes a matrix's voxel grid into the raw bytes that the zlib
@@ -135,17 +163,15 @@ fn write_children<D: CompressZlib>(dependencies: &D, out: &mut ByteWriter, child
 /// cell; a lone cell is written directly unless its own mask byte collides with
 /// [`RLE_MASK`], in which case it too is escaped as a one-cell run so it round
 /// trips. Runs longer than [`MAX_RUN`] are split.
-fn encode_voxels(matrix: &QbclMatrix) -> Vec<u8> {
+fn encode_voxels(matrix: &QbclMatrix) -> Result<Vec<u8>> {
+    check_voxel_count(matrix.size, matrix.voxels.len())?;
     let [size_x, size_y, size_z] = matrix.size.map(|value| value as usize);
-    let columns = size_x.saturating_mul(size_z);
+    let columns = size_x * size_z;
 
     let mut out = ByteWriter::new();
     for column in 0..columns {
-        let base = column.saturating_mul(size_y);
-        let cells = matrix
-            .voxels
-            .get(base..base.saturating_add(size_y))
-            .unwrap_or(&[]);
+        let base = column * size_y;
+        let cells = &matrix.voxels[base..base + size_y];
 
         let mut column_data = ByteWriter::new();
         let mut integers = 0usize;
@@ -172,15 +198,16 @@ fn encode_voxels(matrix: &QbclMatrix) -> Vec<u8> {
             i += run;
         }
 
-        debug_assert!(
-            integers <= u16::MAX as usize,
-            "voxel column has {integers} integers; the .qbcl format stores the count in a u16"
-        );
-        write_u16(&mut out, integers as u16);
+        let integers = u16::try_from(integers).map_err(|_| {
+            invalid(format!(
+                "voxel column has {integers} integers; the .qbcl format stores the count in a u16"
+            ))
+        })?;
+        write_u16(&mut out, integers);
         out.write_bytes(&column_data.into_bytes());
     }
 
-    out.into_bytes()
+    Ok(out.into_bytes())
 }
 
 /// Appends a little-endian `u16`.

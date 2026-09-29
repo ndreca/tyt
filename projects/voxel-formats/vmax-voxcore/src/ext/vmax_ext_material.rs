@@ -6,10 +6,10 @@ use serde::{Deserialize, Serialize};
 /// ext, aligned by index with a palette's material list.
 ///
 /// The palette's value pools carry a neutral copy of these for a
-/// cross-format consumer. A material's optional dispersion and a NaN
-/// coefficient cannot ride in a value pool, so the exact material is kept here
-/// and read back on write. The `mi` token is re-derived from the slot and the
-/// transparency color `tc` is dropped, matching the writer's behavior.
+/// cross-format consumer. A material's optional dispersion cannot ride in a
+/// value pool, so the exact material is kept here and read back on write. The
+/// `mi` token is re-derived from the slot and the transparency color `tc` is
+/// dropped, matching the writer's behavior.
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct VMaxExtMaterial {

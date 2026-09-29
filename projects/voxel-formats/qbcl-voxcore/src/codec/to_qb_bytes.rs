@@ -7,7 +7,7 @@ use qbcl_codec::qb::to_qb_file_bytes;
 pub fn to_qb_bytes(main: &QbVoxMain) -> Result<Vec<u8>> {
     let file = to_qb_file(main)?;
 
-    Ok(to_qb_file_bytes(&file))
+    Ok(to_qb_file_bytes(&file)?)
 }
 
 #[cfg(test)]

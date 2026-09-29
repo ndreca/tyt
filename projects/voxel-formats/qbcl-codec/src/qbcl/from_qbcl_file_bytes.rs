@@ -388,7 +388,7 @@ mod tests {
     #[test]
     fn round_trips_full_file() {
         let file = sample_file();
-        let bytes = to_qbcl_file_bytes(&DependenciesImpl, &file);
+        let bytes = to_qbcl_file_bytes(&DependenciesImpl, &file).unwrap();
         assert_eq!(
             from_qbcl_file_bytes(&DependenciesImpl, &bytes).unwrap(),
             file
@@ -398,7 +398,7 @@ mod tests {
     #[test]
     fn round_trips_empty_file() {
         let file = QbclFile::default();
-        let bytes = to_qbcl_file_bytes(&DependenciesImpl, &file);
+        let bytes = to_qbcl_file_bytes(&DependenciesImpl, &file).unwrap();
         assert_eq!(
             from_qbcl_file_bytes(&DependenciesImpl, &bytes).unwrap(),
             file
@@ -409,7 +409,7 @@ mod tests {
     fn indexes_voxels_by_coordinate() {
         let decoded = from_qbcl_file_bytes(
             &DependenciesImpl,
-            &to_qbcl_file_bytes(&DependenciesImpl, &sample_file()),
+            &to_qbcl_file_bytes(&DependenciesImpl, &sample_file()).unwrap(),
         )
         .unwrap();
         let QbclNodeBody::Model(model) = &decoded.root.body else {
@@ -429,7 +429,7 @@ mod tests {
     fn preserves_node_flags() {
         let decoded = from_qbcl_file_bytes(
             &DependenciesImpl,
-            &to_qbcl_file_bytes(&DependenciesImpl, &sample_file()),
+            &to_qbcl_file_bytes(&DependenciesImpl, &sample_file()).unwrap(),
         )
         .unwrap();
         let QbclNodeBody::Model(model) = &decoded.root.body else {
@@ -441,22 +441,40 @@ mod tests {
 
     #[test]
     fn rejects_bad_magic() {
-        let mut bytes = to_qbcl_file_bytes(&DependenciesImpl, &QbclFile::default());
+        let mut bytes = to_qbcl_file_bytes(&DependenciesImpl, &QbclFile::default()).unwrap();
         bytes[0] = b'X';
         assert!(from_qbcl_file_bytes(&DependenciesImpl, &bytes).is_err());
     }
 
     #[test]
     fn rejects_unsupported_version() {
-        let mut bytes = to_qbcl_file_bytes(&DependenciesImpl, &QbclFile::default());
+        let mut bytes = to_qbcl_file_bytes(&DependenciesImpl, &QbclFile::default()).unwrap();
         // The file version is the u32 after the 4-byte magic and program version.
         bytes[8] = 9;
         assert!(from_qbcl_file_bytes(&DependenciesImpl, &bytes).is_err());
     }
 
     #[test]
+    fn writer_rejects_a_grid_that_does_not_match_its_size() {
+        let file = QbclFile {
+            root: QbclNode {
+                name: "matrix".to_owned(),
+                visible: true,
+                locked: false,
+                body: QbclNodeBody::Matrix(QbclMatrix {
+                    size: [2, 1, 1],
+                    voxels: vec![solid(1, 2, 3)],
+                    ..Default::default()
+                }),
+            },
+            ..Default::default()
+        };
+        assert!(to_qbcl_file_bytes(&DependenciesImpl, &file).is_err());
+    }
+
+    #[test]
     fn rejects_trailing_bytes() {
-        let mut bytes = to_qbcl_file_bytes(&DependenciesImpl, &QbclFile::default());
+        let mut bytes = to_qbcl_file_bytes(&DependenciesImpl, &QbclFile::default()).unwrap();
         bytes.push(0);
         assert!(from_qbcl_file_bytes(&DependenciesImpl, &bytes).is_err());
     }

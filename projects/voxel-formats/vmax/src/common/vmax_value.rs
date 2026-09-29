@@ -1,7 +1,7 @@
 #[cfg(feature = "serde")]
 use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
-    de::{MapAccess, SeqAccess, Visitor},
+    de::{Error as DeError, MapAccess, SeqAccess, Unexpected, Visitor},
     ser::{SerializeMap, SerializeSeq},
 };
 use std::collections::BTreeMap;
@@ -98,8 +98,10 @@ impl<'de> Deserialize<'de> for VMaxValue {
                 Ok(VMaxValue::Integer(value))
             }
 
-            fn visit_u64<E>(self, value: u64) -> Result<VMaxValue, E> {
-                Ok(VMaxValue::Integer(i64::try_from(value).unwrap_or(i64::MAX)))
+            fn visit_u64<E: DeError>(self, value: u64) -> Result<VMaxValue, E> {
+                let value = i64::try_from(value)
+                    .map_err(|_| E::invalid_value(Unexpected::Unsigned(value), &self))?;
+                Ok(VMaxValue::Integer(value))
             }
 
             fn visit_f64<E>(self, value: f64) -> Result<VMaxValue, E> {
@@ -140,5 +142,29 @@ impl<'de> Deserialize<'de> for VMaxValue {
         }
 
         deserializer.deserialize_any(ValueVisitor)
+    }
+}
+
+#[cfg(all(test, feature = "serde"))]
+mod tests {
+    use crate::VMaxValue;
+    use serde::{
+        Deserialize,
+        de::{IntoDeserializer, value::Error as ValueError},
+    };
+
+    #[test]
+    fn unsigned_integer_past_i64_is_an_error() {
+        let deserializer = IntoDeserializer::<ValueError>::into_deserializer(u64::MAX);
+        assert!(VMaxValue::deserialize(deserializer).is_err());
+    }
+
+    #[test]
+    fn unsigned_integer_within_i64_reads() {
+        let deserializer = IntoDeserializer::<ValueError>::into_deserializer(7u64);
+        assert_eq!(
+            VMaxValue::deserialize(deserializer).unwrap(),
+            VMaxValue::Integer(7)
+        );
     }
 }

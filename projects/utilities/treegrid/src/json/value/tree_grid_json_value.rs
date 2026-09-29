@@ -79,7 +79,7 @@ impl TreeGridJsonValue {
     /// value itself as the native form, no swatch.
     pub fn json(value: Value) -> Self {
         Self {
-            value: TreeGridValue::new(json_text(&value)),
+            value: TreeGridValue::new(value.to_string()),
             json: Some(value),
         }
     }
@@ -115,11 +115,6 @@ impl TreeGridJsonValue {
             value,
         }
     }
-}
-
-/// A JSON value as its compact text.
-fn json_text(value: &Value) -> String {
-    serde_json::to_string(value).unwrap_or_else(|_| "null".to_owned())
 }
 
 #[cfg(test)]

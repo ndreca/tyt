@@ -249,7 +249,7 @@ mod tests {
     #[test]
     fn round_trips_full_file() {
         let file = sample_file();
-        let bytes = to_qbt_file_bytes(&DependenciesImpl, &file);
+        let bytes = to_qbt_file_bytes(&DependenciesImpl, &file).unwrap();
         assert_eq!(
             from_qbt_file_bytes(&DependenciesImpl, &bytes).unwrap(),
             file
@@ -259,7 +259,7 @@ mod tests {
     #[test]
     fn round_trips_empty_file() {
         let file = QbtFile::default();
-        let bytes = to_qbt_file_bytes(&DependenciesImpl, &file);
+        let bytes = to_qbt_file_bytes(&DependenciesImpl, &file).unwrap();
         assert_eq!(
             from_qbt_file_bytes(&DependenciesImpl, &bytes).unwrap(),
             file
@@ -271,7 +271,7 @@ mod tests {
         let file = sample_file();
         let decoded = from_qbt_file_bytes(
             &DependenciesImpl,
-            &to_qbt_file_bytes(&DependenciesImpl, &file),
+            &to_qbt_file_bytes(&DependenciesImpl, &file).unwrap(),
         )
         .unwrap();
         let QbtNode::Model(model) = &decoded.root else {
@@ -290,7 +290,7 @@ mod tests {
         // The reader ignores a known node's data-size field, so a round trip
         // cannot catch a wrong value; check it against the bytes directly. The
         // root node's size must cover every byte after its own header.
-        let bytes = to_qbt_file_bytes(&DependenciesImpl, &sample_file());
+        let bytes = to_qbt_file_bytes(&DependenciesImpl, &sample_file()).unwrap();
         let mut pos = 4 + 2 + 12; // magic, version, global scale
         assert_eq!(&bytes[pos..pos + 8], b"COLORMAP");
         pos += 8;
@@ -305,14 +305,27 @@ mod tests {
 
     #[test]
     fn rejects_bad_magic() {
-        let mut bytes = to_qbt_file_bytes(&DependenciesImpl, &QbtFile::default());
+        let mut bytes = to_qbt_file_bytes(&DependenciesImpl, &QbtFile::default()).unwrap();
         bytes[0] = b'X';
         assert!(from_qbt_file_bytes(&DependenciesImpl, &bytes).is_err());
     }
 
     #[test]
+    fn writer_rejects_a_grid_that_does_not_match_its_size() {
+        let file = QbtFile {
+            root: QbtNode::Matrix(QbtMatrix {
+                size: [2, 1, 1],
+                voxels: vec![solid(1, 2, 3)],
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        assert!(to_qbt_file_bytes(&DependenciesImpl, &file).is_err());
+    }
+
+    #[test]
     fn rejects_trailing_bytes() {
-        let mut bytes = to_qbt_file_bytes(&DependenciesImpl, &QbtFile::default());
+        let mut bytes = to_qbt_file_bytes(&DependenciesImpl, &QbtFile::default()).unwrap();
         bytes.push(0);
         assert!(from_qbt_file_bytes(&DependenciesImpl, &bytes).is_err());
     }

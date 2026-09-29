@@ -1,3 +1,5 @@
+use crate::{Result, invalid};
+
 /// A little-endian byte sink, the write counterpart of
 /// [`ByteReader`](crate::ByteReader).
 #[derive(Default)]
@@ -26,15 +28,17 @@ impl ByteWriter {
         self.bytes.extend_from_slice(&value.to_le_bytes());
     }
 
-    /// Appends a length or count as a little-endian `u32` (the formats store
-    /// these in a `u32`). No real file exceeds `u32::MAX`; the `debug_assert!`
-    /// catches a violation instead of truncating.
-    pub fn write_len(&mut self, len: usize) {
-        debug_assert!(
-            len <= u32::MAX as usize,
-            "length {len} exceeds the u32 the Qubicle formats store it in"
-        );
-        self.write_u32(len as u32);
+    /// Appends a length or count as the little-endian `u32` the formats store
+    /// it in, or an error if it exceeds `u32::MAX`.
+    pub fn write_len(&mut self, len: usize) -> Result<()> {
+        let len = u32::try_from(len).map_err(|_| {
+            invalid(format!(
+                "length {len} exceeds the u32 the Qubicle formats store it in"
+            ))
+        })?;
+        self.write_u32(len);
+
+        Ok(())
     }
 
     /// Appends a little-endian `i32`.

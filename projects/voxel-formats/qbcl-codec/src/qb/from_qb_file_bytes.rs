@@ -229,28 +229,28 @@ mod tests {
     #[test]
     fn round_trips_uncompressed() {
         let file = sample_file(false, QbColorFormat::Rgba);
-        let bytes = to_qb_file_bytes(&file);
+        let bytes = to_qb_file_bytes(&file).unwrap();
         assert_eq!(from_qb_file_bytes(&bytes).unwrap(), file);
     }
 
     #[test]
     fn round_trips_compressed() {
         let file = sample_file(true, QbColorFormat::Rgba);
-        let bytes = to_qb_file_bytes(&file);
+        let bytes = to_qb_file_bytes(&file).unwrap();
         assert_eq!(from_qb_file_bytes(&bytes).unwrap(), file);
     }
 
     #[test]
     fn round_trips_bgra() {
         let file = sample_file(true, QbColorFormat::Bgra);
-        let bytes = to_qb_file_bytes(&file);
+        let bytes = to_qb_file_bytes(&file).unwrap();
         assert_eq!(from_qb_file_bytes(&bytes).unwrap(), file);
     }
 
     #[test]
     fn round_trips_empty_file() {
         let file = QbFile::default();
-        let bytes = to_qb_file_bytes(&file);
+        let bytes = to_qb_file_bytes(&file).unwrap();
         assert_eq!(from_qb_file_bytes(&bytes).unwrap(), file);
     }
 
@@ -289,8 +289,21 @@ mod tests {
     }
 
     #[test]
+    fn writer_rejects_a_grid_that_does_not_match_its_size() {
+        let file = QbFile {
+            matrices: vec![QbMatrix {
+                size: [2, 1, 1],
+                voxels: vec![QbVoxel::new(1, 2, 3)],
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        assert!(to_qb_file_bytes(&file).is_err());
+    }
+
+    #[test]
     fn rejects_trailing_bytes() {
-        let mut bytes = to_qb_file_bytes(&QbFile::default());
+        let mut bytes = to_qb_file_bytes(&QbFile::default()).unwrap();
         bytes.push(0);
         assert!(from_qb_file_bytes(&bytes).is_err());
     }
