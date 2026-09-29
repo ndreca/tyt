@@ -30,91 +30,93 @@ impl<C: TreeGridCells> TreeGridRenderBoxHierarchy for TreeGrid<C> {
                 if index > 0 {
                     output.push('\n');
                 }
-                let line = self.node_line(root, options);
+                let line = node_line(self, root, options);
                 output.push_str(&format!("{line}\n"));
-                self.render_under(&mut output, root, "", options);
+                render_under(self, &mut output, root, "", options);
             }
         } else {
             let total = self.roots().len();
             for (index, &root) in self.roots().iter().enumerate() {
-                self.render_subtree(&mut output, root, "", index + 1 == total, options);
+                render_subtree(self, &mut output, root, "", index + 1 == total, options);
             }
         }
         output
     }
 }
 
-impl<C: TreeGridCells> TreeGrid<C> {
-    /// Appends `id`'s connector line and everything beneath it, under
-    /// `prefix`.
-    fn render_subtree(
-        &self,
-        output: &mut String,
-        id: U32Id<BTreeGridNode>,
-        prefix: &str,
-        last: bool,
-        options: &TreeGridBoxHierarchyOptions,
-    ) {
-        let connector = if last { CONNECTOR_LAST } else { CONNECTOR_MID };
-        let line = self.node_line(id, options);
-        output.push_str(&format!("{prefix}{connector} {line}\n"));
+/// Appends `id`'s connector line and everything beneath it, under
+/// `prefix`.
+fn render_subtree<C: TreeGridCells>(
+    grid: &TreeGrid<C>,
+    output: &mut String,
+    id: U32Id<BTreeGridNode>,
+    prefix: &str,
+    last: bool,
+    options: &TreeGridBoxHierarchyOptions,
+) {
+    let connector = if last { CONNECTOR_LAST } else { CONNECTOR_MID };
+    let line = node_line(grid, id, options);
+    output.push_str(&format!("{prefix}{connector} {line}\n"));
 
-        let extension = if last { EXTENSION_LAST } else { EXTENSION_MID };
-        self.render_under(output, id, &format!("{prefix}{extension}"), options);
-    }
+    let extension = if last { EXTENSION_LAST } else { EXTENSION_MID };
+    render_under(grid, output, id, &format!("{prefix}{extension}"), options);
+}
 
-    /// Appends the lines below `id`'s line: its value lines then its
-    /// child subtrees, the last of the combined list taking the
-    /// last-child connector.
-    fn render_under(
-        &self,
-        output: &mut String,
-        id: U32Id<BTreeGridNode>,
-        prefix: &str,
-        options: &TreeGridBoxHierarchyOptions,
-    ) {
-        let node = self.node(id);
-        let values: &[C::Value] = if options.value_children {
-            &node.values
+/// Appends the lines below `id`'s line: its value lines then its
+/// child subtrees, the last of the combined list taking the
+/// last-child connector.
+fn render_under<C: TreeGridCells>(
+    grid: &TreeGrid<C>,
+    output: &mut String,
+    id: U32Id<BTreeGridNode>,
+    prefix: &str,
+    options: &TreeGridBoxHierarchyOptions,
+) {
+    let node = grid.node(id);
+    let values: &[C::Value] = if options.value_children {
+        &node.values
+    } else {
+        &[]
+    };
+    let total = values.len() + node.children().len();
+
+    for (index, value) in values.iter().enumerate() {
+        let connector = if index + 1 == total {
+            CONNECTOR_LAST
         } else {
-            &[]
+            CONNECTOR_MID
         };
-        let total = values.len() + node.children().len();
-
-        for (index, value) in values.iter().enumerate() {
-            let connector = if index + 1 == total {
-                CONNECTOR_LAST
-            } else {
-                CONNECTOR_MID
-            };
-            let cell = Cell::render(self.cells(), node.format, value);
-            output.push_str(&format!("{prefix}{connector} {}\n", cell.rendered));
-        }
-
-        for (index, &child) in node.children().iter().enumerate() {
-            let last = values.len() + index + 1 == total;
-            self.render_subtree(output, child, prefix, last, options);
-        }
+        let cell = Cell::render(grid.cells(), node.format, value);
+        output.push_str(&format!("{prefix}{connector} {}\n", cell.rendered));
     }
 
-    /// The node's line content: label, annotation, then the inline
-    /// cells; the cells are omitted when values print as child lines
-    /// instead.
-    fn node_line(&self, id: U32Id<BTreeGridNode>, options: &TreeGridBoxHierarchyOptions) -> String {
-        let node = self.node(id);
-        let mut line = node.annotated_label();
-        if !options.value_children && !node.values.is_empty() {
-            let cells: Vec<Cell> = node
-                .values
-                .iter()
-                .map(|value| Cell::render(self.cells(), node.format, value))
-                .collect();
-            let rendered: Vec<&str> = cells.iter().map(|cell| cell.rendered.as_str()).collect();
-            line.push_str(": ");
-            line.push_str(&rendered.join(Cell::separator(&cells)));
-        }
-        line
+    for (index, &child) in node.children().iter().enumerate() {
+        let last = values.len() + index + 1 == total;
+        render_subtree(grid, output, child, prefix, last, options);
     }
+}
+
+/// The node's line content: label, annotation, then the inline
+/// cells; the cells are omitted when values print as child lines
+/// instead.
+fn node_line<C: TreeGridCells>(
+    grid: &TreeGrid<C>,
+    id: U32Id<BTreeGridNode>,
+    options: &TreeGridBoxHierarchyOptions,
+) -> String {
+    let node = grid.node(id);
+    let mut line = node.annotated_label();
+    if !options.value_children && !node.values.is_empty() {
+        let cells: Vec<Cell> = node
+            .values
+            .iter()
+            .map(|value| Cell::render(grid.cells(), node.format, value))
+            .collect();
+        let rendered: Vec<&str> = cells.iter().map(|cell| cell.rendered.as_str()).collect();
+        line.push_str(": ");
+        line.push_str(&rendered.join(Cell::separator(&cells)));
+    }
+    line
 }
 
 #[cfg(test)]

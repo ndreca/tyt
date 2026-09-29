@@ -16,7 +16,7 @@ impl<C: TreeGridCells> TreeGridRenderMdLists for TreeGrid<C> {
     fn render_md_lists(&self, options: &TreeGridMdListsOptions) -> String {
         let mut blocks: Vec<String> = Vec::new();
         for &root in self.roots() {
-            self.collect_list_blocks(root, 0, options, &mut blocks);
+            collect_list_blocks(self, root, 0, options, &mut blocks);
         }
         if blocks.is_empty() {
             String::new()
@@ -26,52 +26,50 @@ impl<C: TreeGridCells> TreeGridRenderMdLists for TreeGrid<C> {
     }
 }
 
-impl<C: TreeGridCells> TreeGrid<C> {
-    /// The blocks of `id`'s subtree: a heading when the label mode
-    /// emits one and the node bears or leads to data, a list when the
-    /// node bears data, then each child's blocks.
-    fn collect_list_blocks(
-        &self,
-        id: U32Id<BTreeGridNode>,
-        depth: usize,
-        options: &TreeGridMdListsOptions,
-        blocks: &mut Vec<String>,
-    ) {
-        let node = self.node(id);
-        let bears_data = !node.values.is_empty();
-        if !bears_data && !self.leads_to_data(id) {
-            return;
-        }
-        if let TreeGridMdListsLabelMode::Header(header) = options.label {
-            blocks.push(render::heading(
-                header.level,
-                depth,
-                &node.annotated_label(),
-            ));
-        }
-        if bears_data {
-            blocks.push(self.list_block(id));
-        }
-        for &child in node.children() {
-            self.collect_list_blocks(child, depth + 1, options, blocks);
-        }
+/// The blocks of `id`'s subtree: a heading when the label mode
+/// emits one and the node bears or leads to data, a list when the
+/// node bears data, then each child's blocks.
+fn collect_list_blocks<C: TreeGridCells>(
+    grid: &TreeGrid<C>,
+    id: U32Id<BTreeGridNode>,
+    depth: usize,
+    options: &TreeGridMdListsOptions,
+    blocks: &mut Vec<String>,
+) {
+    let node = grid.node(id);
+    let bears_data = !node.values.is_empty();
+    if !bears_data && !grid.leads_to_data(id) {
+        return;
     }
+    if let TreeGridMdListsLabelMode::Header(header) = options.label {
+        blocks.push(render::heading(
+            header.level,
+            depth,
+            &node.annotated_label(),
+        ));
+    }
+    if bears_data {
+        blocks.push(list_block(grid, id));
+    }
+    for &child in node.children() {
+        collect_list_blocks(grid, child, depth + 1, options, blocks);
+    }
+}
 
-    /// One node's list block: its values as `1.`-numbered lines.
-    fn list_block(&self, id: U32Id<BTreeGridNode>) -> String {
-        let node = self.node(id);
-        node.values
-            .iter()
-            .enumerate()
-            .map(|(index, value)| {
-                let cell = Cell::render(self.cells(), node.format, value);
-                format!("{}. {}", index + 1, cell.rendered)
-                    .trim_end()
-                    .to_string()
-            })
-            .collect::<Vec<_>>()
-            .join("\n")
-    }
+/// One node's list block: its values as `1.`-numbered lines.
+fn list_block<C: TreeGridCells>(grid: &TreeGrid<C>, id: U32Id<BTreeGridNode>) -> String {
+    let node = grid.node(id);
+    node.values
+        .iter()
+        .enumerate()
+        .map(|(index, value)| {
+            let cell = Cell::render(grid.cells(), node.format, value);
+            format!("{}. {}", index + 1, cell.rendered)
+                .trim_end()
+                .to_string()
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 #[cfg(test)]

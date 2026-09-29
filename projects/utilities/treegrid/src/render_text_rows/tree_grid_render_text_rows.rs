@@ -17,14 +17,14 @@ impl<C: TreeGridCells> TreeGridRenderTextRows for TreeGrid<C> {
         match options.label {
             TreeGridLabelMode::None => {
                 for (_, id) in self.data_paths() {
-                    blocks.push(self.row_block(None, 0, id, options.width));
+                    blocks.push(row_block(self, None, 0, id, options.width));
                 }
             }
             TreeGridLabelMode::Concat => {
                 let rows = self.data_paths();
                 let width = label_width(rows.iter().map(|(path, _)| path.as_str()));
                 for (path, id) in &rows {
-                    blocks.push(self.row_block(Some(path), width, *id, options.width));
+                    blocks.push(row_block(self, Some(path), width, *id, options.width));
                 }
             }
             TreeGridLabelMode::Header(header) => {
@@ -43,7 +43,7 @@ impl<C: TreeGridCells> TreeGridRenderTextRows for TreeGrid<C> {
                         .collect();
                     let width = label_width(labels.iter().map(String::as_str));
                     for (label, &id) in labels.iter().zip(&group.members) {
-                        blocks.push(self.row_block(Some(label), width, id, options.width));
+                        blocks.push(row_block(self, Some(label), width, id, options.width));
                     }
                 }
             }
@@ -56,50 +56,44 @@ impl<C: TreeGridCells> TreeGridRenderTextRows for TreeGrid<C> {
     }
 }
 
-impl<C: TreeGridCells> TreeGrid<C> {
-    /// One node's row block: padded label, cells, indented
-    /// continuation lines.
-    fn row_block(
-        &self,
-        label: Option<&str>,
-        label_width: usize,
-        id: U32Id<BTreeGridNode>,
-        width: Option<usize>,
-    ) -> String {
-        let node = self.node(id);
-        let cells: Vec<Cell> = node
-            .values
-            .iter()
-            .map(|value| Cell::render(self.cells(), node.format, value))
-            .collect();
-        let separator = Cell::separator(&cells);
-        let indent = if label.is_some() { label_width + 1 } else { 0 };
-        let segments = match width {
-            // Leave room for at least one cell beside the label indent.
-            Some(width) => wrap_cells(&cells, separator, width.saturating_sub(indent).max(1)),
-            None => {
-                let rendered: Vec<&str> = cells.iter().map(|cell| cell.rendered.as_str()).collect();
-                vec![rendered.join(separator)]
-            }
-        };
-        segments
-            .iter()
-            .enumerate()
-            .map(|(line, segment)| {
-                let prefix = match (line, label) {
-                    (0, Some(label)) => format!("{} ", render::pad_right(label, label_width)),
-                    (0, None) => String::new(),
-                    _ => " ".repeat(indent),
-                };
-                format!("{prefix}{segment}").trim_end().to_string()
-            })
-            .collect::<Vec<_>>()
-            .join("\n")
-    }
-}
-
-fn label_width<'a>(labels: impl Iterator<Item = &'a str>) -> usize {
-    labels.map(render::visible_width).max().unwrap_or(0)
+/// One node's row block: padded label, cells, indented
+/// continuation lines.
+fn row_block<C: TreeGridCells>(
+    grid: &TreeGrid<C>,
+    label: Option<&str>,
+    label_width: usize,
+    id: U32Id<BTreeGridNode>,
+    width: Option<usize>,
+) -> String {
+    let node = grid.node(id);
+    let cells: Vec<Cell> = node
+        .values
+        .iter()
+        .map(|value| Cell::render(grid.cells(), node.format, value))
+        .collect();
+    let separator = Cell::separator(&cells);
+    let indent = if label.is_some() { label_width + 1 } else { 0 };
+    let segments = match width {
+        // Leave room for at least one cell beside the label indent.
+        Some(width) => wrap_cells(&cells, separator, width.saturating_sub(indent).max(1)),
+        None => {
+            let rendered: Vec<&str> = cells.iter().map(|cell| cell.rendered.as_str()).collect();
+            vec![rendered.join(separator)]
+        }
+    };
+    segments
+        .iter()
+        .enumerate()
+        .map(|(line, segment)| {
+            let prefix = match (line, label) {
+                (0, Some(label)) => format!("{} ", render::pad_right(label, label_width)),
+                (0, None) => String::new(),
+                _ => " ".repeat(indent),
+            };
+            format!("{prefix}{segment}").trim_end().to_string()
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 /// Greedily packs cells into segments of at most `budget` visible
@@ -126,6 +120,10 @@ fn wrap_cells(cells: &[Cell], separator: &str, budget: usize) -> Vec<String> {
         segments.push(current.join(separator));
     }
     segments
+}
+
+fn label_width<'a>(labels: impl Iterator<Item = &'a str>) -> usize {
+    labels.map(render::visible_width).max().unwrap_or(0)
 }
 
 #[cfg(test)]

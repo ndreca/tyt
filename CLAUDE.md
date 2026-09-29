@@ -21,11 +21,13 @@ cargo check
 - Import modules for free functions and keep the module prefix in calls (e.g., `use std::{env, fs, io, process};` then `fs::read()`, `env::temp_dir()`, `io::stdout()`, `process::exit(1)`)
 - Prefer `#[derive(Default)]` over manual `impl Default` when all field defaults match the type's inherent default
 - One public item per file (struct, trait, enum, or function), file named to match the item in snake_case; capability methods on a type from another file ride an extension trait, one trait per file
+- A helper that only one file calls on another file's type lives in that file as a private free function taking the type as a parameter
 - A type's inherent `impl`s go where their feature gate puts them:
   1. An `impl` under the type's gate lives in the type's file
   2. An `impl` under a narrower gate lives in `{type}_{module}_ext.rs`, named for the module holding the file, with the `cfg` on the `mod` line and never on a method
   3. A narrower gate that two or more files share gets its own submodule
   4. A type gets at most one ext file per module, so a second narrower gate for the type moves into a submodule
+  5. When callers in several modules share a narrower-gated method, the type's file becomes a submodule holding `{type}.rs` plus one `{method}.rs` per gate, with each `cfg` on its `mod` line
 - Doc comments (`///`) on all public items
 - `#[arg]` attributes always start with `value_name` (e.g., `#[arg(value_name = "input-fbx")]`, `#[arg(value_name = "max-iterations", long)]`)
 

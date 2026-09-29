@@ -18,12 +18,12 @@ impl<C: TreeGridCells> TreeGridRenderTextColumns for TreeGrid<C> {
             TreeGridLabelMode::None => {
                 let ids: Vec<U32Id<BTreeGridNode>> =
                     self.data_paths().into_iter().map(|(_, id)| id).collect();
-                blocks.extend(self.column_block(None, &ids));
+                blocks.extend(column_block(self, None, &ids));
             }
             TreeGridLabelMode::Concat => {
                 let (labels, ids): (Vec<String>, Vec<U32Id<BTreeGridNode>>) =
                     self.data_paths().into_iter().unzip();
-                blocks.extend(self.column_block(Some(&labels), &ids));
+                blocks.extend(column_block(self, Some(&labels), &ids));
             }
             TreeGridLabelMode::Header(header) => {
                 for group in self.groups() {
@@ -39,7 +39,7 @@ impl<C: TreeGridCells> TreeGridRenderTextColumns for TreeGrid<C> {
                         .iter()
                         .map(|&id| self.node(id).annotated_label())
                         .collect();
-                    blocks.extend(self.column_block(Some(&labels), &group.members));
+                    blocks.extend(column_block(self, Some(&labels), &group.members));
                 }
             }
         }
@@ -51,54 +51,52 @@ impl<C: TreeGridCells> TreeGridRenderTextColumns for TreeGrid<C> {
     }
 }
 
-impl<C: TreeGridCells> TreeGrid<C> {
-    /// One block of columns: an optional label line, then one line
-    /// per value index; `None` when there are no columns.
-    fn column_block(
-        &self,
-        labels: Option<&[String]>,
-        ids: &[U32Id<BTreeGridNode>],
-    ) -> Option<String> {
-        if ids.is_empty() {
-            return None;
-        }
-        let columns: Vec<Vec<Cell>> = ids
-            .iter()
-            .map(|&id| {
-                let node = self.node(id);
-                node.values
-                    .iter()
-                    .map(|value| Cell::render(self.cells(), node.format, value))
-                    .collect()
-            })
-            .collect();
-        let widths: Vec<usize> = columns
-            .iter()
-            .enumerate()
-            .map(|(index, column)| {
-                let cells = column.iter().map(|cell| cell.width).max().unwrap_or(0);
-                match labels {
-                    Some(labels) => render::visible_width(&labels[index]).max(cells),
-                    None => cells,
-                }
-            })
-            .collect();
-        let row_count = columns.iter().map(Vec::len).max().unwrap_or(0);
-
-        let mut lines: Vec<String> = Vec::new();
-        if let Some(labels) = labels {
-            lines.push(join_padded(labels.iter().map(String::as_str), &widths));
-        }
-        for row in 0..row_count {
-            lines.push(join_padded(
-                columns
-                    .iter()
-                    .map(|column| column.get(row).map_or("", |cell| cell.rendered.as_str())),
-                &widths,
-            ));
-        }
-        Some(lines.join("\n"))
+/// One block of columns: an optional label line, then one line
+/// per value index; `None` when there are no columns.
+fn column_block<C: TreeGridCells>(
+    grid: &TreeGrid<C>,
+    labels: Option<&[String]>,
+    ids: &[U32Id<BTreeGridNode>],
+) -> Option<String> {
+    if ids.is_empty() {
+        return None;
     }
+    let columns: Vec<Vec<Cell>> = ids
+        .iter()
+        .map(|&id| {
+            let node = grid.node(id);
+            node.values
+                .iter()
+                .map(|value| Cell::render(grid.cells(), node.format, value))
+                .collect()
+        })
+        .collect();
+    let widths: Vec<usize> = columns
+        .iter()
+        .enumerate()
+        .map(|(index, column)| {
+            let cells = column.iter().map(|cell| cell.width).max().unwrap_or(0);
+            match labels {
+                Some(labels) => render::visible_width(&labels[index]).max(cells),
+                None => cells,
+            }
+        })
+        .collect();
+    let row_count = columns.iter().map(Vec::len).max().unwrap_or(0);
+
+    let mut lines: Vec<String> = Vec::new();
+    if let Some(labels) = labels {
+        lines.push(join_padded(labels.iter().map(String::as_str), &widths));
+    }
+    for row in 0..row_count {
+        lines.push(join_padded(
+            columns
+                .iter()
+                .map(|column| column.get(row).map_or("", |cell| cell.rendered.as_str())),
+            &widths,
+        ));
+    }
+    Some(lines.join("\n"))
 }
 
 /// Joins one value per column, each padded to its column's width, with

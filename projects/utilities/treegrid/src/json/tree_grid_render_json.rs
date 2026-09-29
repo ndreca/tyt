@@ -19,49 +19,52 @@ pub trait TreeGridRenderJson {
 
 impl<C: TreeGridJsonCells> TreeGridRenderJson for TreeGrid<C> {
     fn render_json_pretty(&self) -> String {
-        finish(serde_json::to_string_pretty(&self.records()))
+        finish(serde_json::to_string_pretty(&records(self)))
     }
 
     fn render_json_compact(&self) -> String {
-        finish(serde_json::to_string(&self.records()))
+        finish(serde_json::to_string(&records(self)))
     }
 }
 
-impl<C: TreeGridJsonCells> TreeGrid<C> {
-    /// The envelope: an array of root records.
-    fn records(&self) -> Value {
-        Value::Array(self.roots().iter().map(|&root| self.record(root)).collect())
-    }
+/// The envelope: an array of root records.
+fn records<C: TreeGridJsonCells>(grid: &TreeGrid<C>) -> Value {
+    Value::Array(
+        grid.roots()
+            .iter()
+            .map(|&root| record(grid, root))
+            .collect(),
+    )
+}
 
-    /// `id`'s record. Insertion order is the emitted key order.
-    fn record(&self, id: U32Id<BTreeGridNode>) -> Value {
-        let node = self.node(id);
-        let mut record = Map::new();
-        record.insert(
-            "label".to_owned(),
-            Value::String(node.label.text().to_owned()),
-        );
-        if let Some(annotation) = &node.annotation {
-            record.insert("annotation".to_owned(), Value::String(annotation.clone()));
-        }
-        if !node.values.is_empty() {
-            let values = node
-                .values
-                .iter()
-                .map(|value| self.cells().json(value))
-                .collect();
-            record.insert("values".to_owned(), Value::Array(values));
-        }
-        if !node.children().is_empty() {
-            let children = node
-                .children()
-                .iter()
-                .map(|&child| self.record(child))
-                .collect();
-            record.insert("children".to_owned(), Value::Array(children));
-        }
-        Value::Object(record)
+/// `id`'s record. Insertion order is the emitted key order.
+fn record<C: TreeGridJsonCells>(grid: &TreeGrid<C>, id: U32Id<BTreeGridNode>) -> Value {
+    let node = grid.node(id);
+    let mut fields = Map::new();
+    fields.insert(
+        "label".to_owned(),
+        Value::String(node.label.text().to_owned()),
+    );
+    if let Some(annotation) = &node.annotation {
+        fields.insert("annotation".to_owned(), Value::String(annotation.clone()));
     }
+    if !node.values.is_empty() {
+        let values = node
+            .values
+            .iter()
+            .map(|value| grid.cells().json(value))
+            .collect();
+        fields.insert("values".to_owned(), Value::Array(values));
+    }
+    if !node.children().is_empty() {
+        let children = node
+            .children()
+            .iter()
+            .map(|&child| record(grid, child))
+            .collect();
+        fields.insert("children".to_owned(), Value::Array(children));
+    }
+    Value::Object(fields)
 }
 
 /// Appends the trailing newline. Serializing a built `Value` cannot
