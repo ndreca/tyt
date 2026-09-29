@@ -1,6 +1,6 @@
 use crate::{
     Dependencies, Result,
-    commands::{ProfileObjectMesh, ProfileObjectVoxels},
+    commands::{ProfileObjectMesh, ProfileObjectRender, ProfileObjectVoxels},
 };
 use clap::Subcommand;
 
@@ -11,6 +11,9 @@ pub enum ProfileObjectCommand {
     #[command(name = "mesh")]
     ProfileObjectMesh(ProfileObjectMesh),
 
+    #[command(name = "render")]
+    ProfileObjectRender(ProfileObjectRender),
+
     #[command(name = "voxels")]
     ProfileObjectVoxels(ProfileObjectVoxels),
 }
@@ -20,6 +23,7 @@ impl ProfileObjectCommand {
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             ProfileObjectCommand::ProfileObjectMesh(mesh) => mesh.execute(dependencies),
+            ProfileObjectCommand::ProfileObjectRender(render) => render.execute(dependencies),
             ProfileObjectCommand::ProfileObjectVoxels(voxels) => voxels.execute(dependencies),
         }
     }

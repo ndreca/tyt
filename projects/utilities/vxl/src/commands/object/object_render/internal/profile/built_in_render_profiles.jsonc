@@ -1,0 +1,86 @@
+{
+  // One perspective view from the front-right-top.
+  "hero": {
+    "views": {
+      "hero": { "transform": { "kind": "orbit", "azimuth": 45, "elevation": 30 } },
+    },
+  },
+
+  // One view each on an orbit along an axis.
+  "front": {
+    "views": {
+      "front": { "transform": { "kind": "orbit", "azimuth": 0, "elevation": 0 } },
+    },
+  },
+  "back": {
+    "views": {
+      "back": { "transform": { "kind": "orbit", "azimuth": 180, "elevation": 0 } },
+    },
+  },
+  "left": {
+    "views": {
+      "left": { "transform": { "kind": "orbit", "azimuth": -90, "elevation": 0 } },
+    },
+  },
+  "right": {
+    "views": {
+      "right": { "transform": { "kind": "orbit", "azimuth": 90, "elevation": 0 } },
+    },
+  },
+  // From above, the front lands at the bottom of the image.
+  "top": {
+    "views": {
+      "top": { "transform": { "kind": "orbit", "azimuth": 0, "elevation": 90 } },
+    },
+  },
+  "bottom": {
+    "views": {
+      "bottom": { "transform": { "kind": "orbit", "azimuth": 0, "elevation": -90 } },
+    },
+  },
+
+  // The hero and the four sides in one run.
+  "turnaround": {
+    "viewsFrom": ["hero", "front", "right", "back", "left"],
+  },
+
+  // A key light above and to the left of the viewer, over a hemisphere
+  // light. The offset gives a box three distinct shades. The shadow takes
+  // the default granularity.
+  "studio": {
+    "lights": [
+      {
+        "kind": "directional",
+        "transform": {
+          "kind": "camera",
+          "rotation": { "kind": "angles", "azimuth": -30, "elevation": 30 },
+        },
+        "color": "#FFFFFF",
+        "strength": 2.5,
+      },
+      {
+        "kind": "hemisphere",
+        "sky": "#9FB4CC",
+        "ground": "#4A3E33",
+        "strength": 1,
+      },
+    ],
+  },
+
+  // A headlight with no shadow, for judging color alone. Its strength of
+  // pi renders a white base color as white.
+  "flat": {
+    "lights": [
+      {
+        "kind": "directional",
+        "transform": {
+          "kind": "camera",
+          "rotation": { "kind": "angles", "azimuth": 0, "elevation": 0 },
+        },
+        "shadow": "none",
+        "color": "#FFFFFF",
+        "strength": 3.1416,
+      },
+    ],
+  },
+}

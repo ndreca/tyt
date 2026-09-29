@@ -100,15 +100,16 @@ resample plan has one.
       `RenderImage`, then `ty-math`'s sRGB transfer to 8-bit RGBA with
       straight alpha. A pixel no ray hits is transparent, or the background
       color at full alpha.
-- [ ] **S8. Profiles.** Add `RenderConfig` under `object.render` and
+- [x] **S8. Profiles.** Add `RenderConfig` under `object.render` and
       `RenderProfile` per the README schema to vxl. The unions tag on `kind`,
       keys are camelCase, and an unknown key errors. Embed the built-ins
       `hero`, `front`, `back`, `left`, `right`, `top`, `bottom`,
       `turnaround`, `studio`, and `flat` as jsonc. Stack `--profile` by the
-      mesh rules. Add `vxl profile object render list` over voxsmith's
+      mesh rules. Resolve `viewsFrom` and `lightsFrom` imports as the stack
+      lands. Add `vxl profile object render list` over voxsmith's
       `profile_list`. The mirroring flags:
-      1. `--width`, `--height`, `--background`, `--occlusion`, and
-         `--voxel-size`
+      1. `--width`, `--height`, `--background`, `--occlusion`,
+         `--voxel-size`, `--views-from`, and `--lights-from`
       2. Per view name: `--view-frame`, `--view-position`,
          `--view-quaternion`, `--view-euler`, `--view-look-at`,
          `--view-angles`, `--view-orbit`, `--view-projection`, `--view-fov`,

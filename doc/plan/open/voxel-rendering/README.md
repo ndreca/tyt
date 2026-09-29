@@ -235,8 +235,14 @@ interface Profile {
   /** Mirrors `--voxel-size`, meters per voxel; omitted, `1`. */
   voxelSize?: number;
 
+  /** Mirrors `--views-from` per entry; only the views travel. */
+  viewsFrom?: string[];
+
   /** Mirrors the `--view-*` flags, keyed by the name that suffixes the file. */
   views?: Record<string, ViewEntry>;
+
+  /** Mirrors `--lights-from` per entry; only the rig travels. */
+  lightsFrom?: string[];
 
   /** Mirrors the `--light-*` flags, its list position the `<light-index>`. */
   lights?: LightEntry[];
@@ -337,13 +343,32 @@ Views and lights are independent halves. A profile may set either. A stack
 that sets no view renders the built-in `hero` view. A stack that sets no
 light uses the built-in `studio` rig, the way `object mesh` falls back to its
 implicit primitive. `--profile turnaround --profile dusk` composes a view set
-with a light rig. The built-ins:
+with a light rig.
+
+A profile can import one half of another profile, the way a mesh profile's
+`valuesFrom` imports values. `viewsFrom` imports views and `lightsFrom`
+imports a rig:
+
+1. Imports land depth-first in list order, ahead of the profile's own views
+   or rig
+2. Only the imported half travels. The image elements and the other half
+   stay behind
+3. A profile's views and its rig each land once, however many imports and
+   `--profile` flags bring them
+4. Imports resolve after the cascade merges, so a config that overrides
+   `hero` changes `turnaround`
+5. An imported element collides like a stack member's. A rig is one
+   element, so a profile's rig comes from its `lights` or from one import
+6. An import cycle errors
+
+The built-ins:
 
 1. `hero`: one perspective view on an orbit at 45 degrees of azimuth and 30
    of elevation, the front-right-top.
 2. `front`, `back`, `left`, `right`, `top`, `bottom`: one view each on an
    orbit along an axis.
-3. `turnaround`: `hero`, `front`, `right`, `back`, and `left` in one run.
+3. `turnaround`: imports the views of `hero`, `front`, `right`, `back`, and
+   `left` for one run.
 4. `studio`: one directional light in the `camera` frame at `angles` of -30
    and 30, above and to the left of whoever is looking, over a hemisphere
    light. The offset gives a box three distinct shades. The three-shadow
@@ -422,7 +447,9 @@ grid cap of `2^27` cells bounds an object, never a scene.
 11. Views and lights are profile elements with mirroring flags, cascaded and
     stacked as the mesh profiles are. Views key by name because the name
     suffixes the file and lets view profiles compose. Lights index by list
-    position because a rig is one list.
+    position because a rig is one list. `viewsFrom` and `lightsFrom` import
+    one half of a profile, the way `valuesFrom` imports a mesh profile's
+    values.
 12. Projection is per view and perspective by default.
 13. `fit` is the bounding-sphere rule, so every fitted view of a subject
     sits at one distance whatever its orientation.

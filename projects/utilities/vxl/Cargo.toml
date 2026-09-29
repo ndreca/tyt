@@ -35,6 +35,7 @@ voxsmith = { version = "0.3.0", default-features = false, features = [
     "object",
     "palette",
     "profile",
+    "render",
     "vox_doc",
 ] }
 

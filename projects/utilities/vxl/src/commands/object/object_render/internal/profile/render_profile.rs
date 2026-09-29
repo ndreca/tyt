@@ -1,0 +1,262 @@
+use crate::{
+    NamedCliValue, PositiveF64,
+    commands::{Background, LightEntry, ViewEntry},
+};
+use serde::Deserialize;
+use std::{collections::BTreeMap, num::NonZeroU32};
+use voxsmith::operations::object::RenderOcclusion;
+
+/// A render profile. Each element mirrors an `object render` flag. An
+/// unknown key errors at load.
+#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
+#[serde(default, deny_unknown_fields, rename_all = "camelCase")]
+pub struct RenderProfile {
+    /// Mirrors `--width`.
+    pub(crate) width: Option<NonZeroU32>,
+
+    /// Mirrors `--height`.
+    pub(crate) height: Option<NonZeroU32>,
+
+    /// Mirrors `--background`.
+    pub(crate) background: Option<Background>,
+
+    /// Mirrors `--occlusion`.
+    pub(crate) occlusion: Option<NamedCliValue<RenderOcclusion>>,
+
+    /// Mirrors `--voxel-size`.
+    pub(crate) voxel_size: Option<PositiveF64>,
+
+    /// Mirrors `--views-from` per entry. Only the views travel.
+    pub(crate) views_from: Vec<String>,
+
+    /// Mirrors the `--view-*` flags, keyed by the name that suffixes the file.
+    pub(crate) views: BTreeMap<String, ViewEntry>,
+
+    /// Mirrors `--lights-from` per entry. Only the rig travels.
+    pub(crate) lights_from: Vec<String>,
+
+    /// Mirrors the `--light-*` flags. A light's list position gives its index.
+    pub(crate) lights: Vec<LightEntry>,
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        NamedCliValue, PositiveF64,
+        commands::{
+            Background, DistanceEntry, LightEntry, NonNegativeF64, PoseTransformEntry,
+            PositionTransformEntry, ProjectionKind, RenderProfile, RotationEntry,
+            RotationTransformEntry, SrgbColor,
+        },
+    };
+    use ty_math::{TyAngleUnit, TySrgbU8};
+    use voxsmith::operations::object::{FitOrFixed, RenderOcclusion, RenderShadow};
+
+    #[test]
+    fn every_key_reads_into_its_element() {
+        let profile: RenderProfile = serde_json::from_str(
+            r##"{
+                "width": 640,
+                "height": 480,
+                "background": "#202020",
+                "occlusion": "none",
+                "voxelSize": 0.1,
+                "viewsFrom": ["front", "top"],
+                "lightsFrom": ["studio"],
+                "views": {
+                    "hero": {
+                        "transform": { "kind": "orbit", "azimuth": 45, "elevation": 30 },
+                        "fov": 50,
+                        "select": ["house/**"]
+                    },
+                    "plan": {
+                        "transform": {
+                            "kind": "subject",
+                            "position": [0, 5, 0],
+                            "rotation": { "kind": "look-at" }
+                        },
+                        "projection": "orthographic",
+                        "scale": 12
+                    },
+                    "fixed": {
+                        "transform": {
+                            "kind": "world",
+                            "position": [1, 2, 3],
+                            "rotation": { "kind": "euler", "value": [0, 90, 0], "unit": "deg" }
+                        }
+                    }
+                },
+                "lights": [
+                    {
+                        "kind": "directional",
+                        "transform": {
+                            "kind": "camera",
+                            "rotation": { "kind": "angles", "azimuth": -30, "elevation": 30 }
+                        },
+                        "shadow": "per-face",
+                        "color": "#FFFFFF",
+                        "strength": 3
+                    },
+                    {
+                        "kind": "point",
+                        "transform": { "kind": "orbit", "azimuth": 0, "elevation": 45, "distance": 4 },
+                        "range": 10
+                    },
+                    { "kind": "hemisphere", "sky": "#8090A0", "ground": "#403020", "strength": 0.5 }
+                ]
+            }"##,
+        )
+        .unwrap();
+
+        assert_eq!(profile.width.map(u32::from), Some(640));
+        assert_eq!(profile.height.map(u32::from), Some(480));
+        assert_eq!(
+            profile.background,
+            Some(Background::Color(SrgbColor(TySrgbU8::new(32, 32, 32))))
+        );
+        assert_eq!(
+            profile.occlusion,
+            Some(NamedCliValue(RenderOcclusion::None))
+        );
+        assert_eq!(profile.voxel_size, Some(PositiveF64(0.1)));
+        assert_eq!(profile.views_from, ["front", "top"]);
+        assert_eq!(profile.lights_from, ["studio"]);
+
+        let hero = &profile.views["hero"];
+        assert_eq!(
+            hero.transform,
+            Some(PoseTransformEntry::Orbit {
+                azimuth: 45.0,
+                elevation: 30.0,
+                distance: None,
+            })
+        );
+        assert_eq!(hero.fov, Some(PositiveF64(50.0)));
+        assert_eq!(hero.select.as_deref(), Some(&["house/**".to_owned()][..]));
+
+        let plan = &profile.views["plan"];
+        assert_eq!(
+            plan.transform,
+            Some(PoseTransformEntry::Subject {
+                position: [0.0, 5.0, 0.0],
+                rotation: RotationEntry::LookAt { target: None },
+            })
+        );
+        assert_eq!(
+            plan.projection,
+            Some(NamedCliValue(ProjectionKind::Orthographic))
+        );
+        assert_eq!(plan.scale, Some(PositiveF64(12.0)));
+
+        assert_eq!(
+            profile.views["fixed"].transform,
+            Some(PoseTransformEntry::World {
+                position: [1.0, 2.0, 3.0],
+                rotation: RotationEntry::Euler {
+                    value: [0.0, 90.0, 0.0],
+                    unit: Some(NamedCliValue(TyAngleUnit::Degrees)),
+                },
+            })
+        );
+
+        let [sun, lamp, sky] = profile.lights.as_slice() else {
+            panic!("three lights");
+        };
+        assert_eq!(
+            *sun,
+            LightEntry::Directional {
+                transform: Some(RotationTransformEntry::Camera {
+                    rotation: RotationEntry::Angles {
+                        azimuth: -30.0,
+                        elevation: 30.0,
+                    },
+                }),
+                shadow: Some(NamedCliValue(RenderShadow::PerFace)),
+                color: Some(SrgbColor(TySrgbU8::new(255, 255, 255))),
+                strength: Some(NonNegativeF64(3.0)),
+            }
+        );
+        assert_eq!(
+            *lamp,
+            LightEntry::Point {
+                transform: Some(PositionTransformEntry::Orbit {
+                    azimuth: 0.0,
+                    elevation: 45.0,
+                    distance: PositiveF64(4.0),
+                }),
+                shadow: None,
+                color: None,
+                strength: None,
+                range: Some(PositiveF64(10.0)),
+            }
+        );
+        assert!(matches!(sky, LightEntry::Hemisphere { .. }));
+
+        assert_eq!(
+            serde_json::from_str::<DistanceEntry>(r#""fit""#).unwrap(),
+            DistanceEntry(FitOrFixed::Fit)
+        );
+    }
+
+    #[test]
+    fn the_empty_profile_takes_every_default() {
+        assert_eq!(
+            serde_json::from_str::<RenderProfile>("{}").unwrap(),
+            RenderProfile::default()
+        );
+    }
+
+    #[test]
+    fn an_unknown_key_errors_at_every_depth() {
+        assert!(serde_json::from_str::<RenderProfile>(r#"{ "size": 1 }"#).is_err());
+        assert!(serde_json::from_str::<RenderProfile>(r#"{ "width": 0 }"#).is_err());
+        assert!(
+            serde_json::from_str::<RenderProfile>(r#"{ "views": { "a": { "fovy": 1 } } }"#)
+                .is_err()
+        );
+        assert!(
+            serde_json::from_str::<RenderProfile>(
+                r#"{ "views": { "a": { "transform": { "kind": "orbit", "azimuth": 0, "elevation": 0, "position": [0, 0, 0] } } } }"#
+            )
+            .is_err()
+        );
+        assert!(
+            serde_json::from_str::<RenderProfile>(
+                r#"{ "views": { "a": { "transform": { "kind": "world", "position": [0, 0, 0], "rotation": { "kind": "look-at", "value": [0, 0, 0, 1] } } } } }"#
+            )
+            .is_err()
+        );
+        assert!(
+            serde_json::from_str::<RenderProfile>(
+                r#"{ "lights": [{ "kind": "hemisphere", "range": 1 }] }"#
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn a_kind_outside_the_vocabulary_errors() {
+        assert!(
+            serde_json::from_str::<RenderProfile>(r#"{ "lights": [{ "kind": "spot" }] }"#).is_err()
+        );
+        assert!(
+            serde_json::from_str::<RenderProfile>(
+                r#"{ "views": { "a": { "transform": { "kind": "node", "position": [0, 0, 0] } } } }"#
+            )
+            .is_err()
+        );
+        assert!(
+            serde_json::from_str::<RenderProfile>(
+                r#"{ "lights": [{ "kind": "directional", "transform": { "kind": "subject", "rotation": { "kind": "look-at" } } }] }"#
+            )
+            .is_err()
+        );
+        assert!(serde_json::from_str::<RenderProfile>(r#"{ "occlusion": "traced" }"#).is_err());
+        assert!(
+            serde_json::from_str::<RenderProfile>(
+                r#"{ "views": { "a": { "transform": { "kind": "orbit", "azimuth": 0, "elevation": 0, "distance": "near" } } } }"#
+            )
+            .is_err()
+        );
+    }
+}

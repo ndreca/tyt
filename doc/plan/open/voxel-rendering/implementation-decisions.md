@@ -169,3 +169,38 @@ they land.
   unchanged.
 - `RenderOutput` and `tonemap` stay outside the `cpu` feature because a
   GPU tier reads back a linear image and encodes it the same way.
+
+## S8. Profiles
+
+- The profile types mirror the README's TypeScript with serde:
+  1. The shapes and rotation forms tag on `kind` in kebab case
+  2. Every struct denies an unknown key
+  3. Every element is optional, so a stack member can set a view's
+     projection alone
+  4. The entry types carry an `Entry` suffix, as the mesh profile's do
+- Each field's type rejects a bad value at load:
+  1. `width` and `height` are `NonZeroU32`
+  2. Strengths are `NonNegativeF64`
+  3. Ranges, distances, fields of view, and scales are `PositiveF64`
+  4. Colors are `SrgbColor`, parsed from a `#RRGGBB` hex
+- The record builder checks the field of view's upper bound.
+- Views stack by name, element by element. The lights stack as one
+  element, the rig. Stacking two rigs errors instead of merging lights by
+  position. A view set and a rig compose.
+- `viewsFrom` and `lightsFrom` resolve as the stack lands, the way mesh's
+  program builder resolves `valuesFrom`. A cycle errors when a stack
+  reaches it. The claims track the profile that set each element, so an
+  error reports the imported profile itself.
+- Each profile's views and rig land once. A stack of `turnaround` and
+  `hero` lands `hero`'s view once instead of erroring on a collision with
+  itself.
+- `lightsFrom` takes a list for symmetry with `viewsFrom`. Only one entry
+  can bring a rig because a rig is one element.
+- `studio` sets no shadow granularity, so it takes the record builder's
+  default. That default is the value's one home, which S12 changes.
+- `flat` has a strength of pi. Under a head-on Lambert term, pi renders a
+  white base color as white.
+- vxl reaches the voxrender enums through voxsmith's `object_render`
+  re-exports, so vxl still speaks voxsmith only.
+- The mirroring flags land with the `object render` command in S10
+  because a flag without a command has no parser to test.

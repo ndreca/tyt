@@ -34,4 +34,7 @@ pub use object_voxels::*;
 // Internal API
 
 mod internal;
+mod object_render;
+
 pub(crate) use internal::*;
+pub(crate) use object_render::*;

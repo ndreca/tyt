@@ -1,4 +1,4 @@
-use crate::commands::{MeshConfig, ObjectVoxelsConfig};
+use crate::commands::{MeshConfig, ObjectVoxelsConfig, RenderConfig};
 use serde::Deserialize;
 
 /// The `object` section of a `.vxlconfig` layer, one entry per `object`
@@ -7,6 +7,8 @@ use serde::Deserialize;
 #[serde(default, deny_unknown_fields)]
 pub struct ObjectConfig {
     pub(crate) mesh: MeshConfig,
+
+    pub(crate) render: RenderConfig,
 
     pub(crate) voxels: ObjectVoxelsConfig,
 }
