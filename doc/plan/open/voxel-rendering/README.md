@@ -67,10 +67,11 @@ The chain is `vxl` over `voxsmith` over `voxrender` over `voxsurface` over
       values; per placement, a world transform; per view and light, a world
       pose. Every renderer consumes it, CPU or GPU.
    2. The scene is built the way voxcore builds `VoxMain`. Every entity kind
-      lives in a branded id pool, so nothing indexed is addressed by a bare
-      integer. Objects, placements, materials, voxels, lights, and views each
-      get a brand. Ids are `U32Id` or `UsizeId` over that brand, stored in
-      `IdVec` and the `soa` pools. A voxel's material is an id into the
+      has a branded id, so nothing indexed is addressed by a bare integer.
+      Objects and voxels take voxcore's ids because each mirrors one voxcore
+      object or voxel. Placements, materials, lights, and views each get a
+      brand of their own. Ids are `U32Id` or `UsizeId` over a brand, stored
+      in `IdVec` and the `soa` pools. A voxel's material is an id into the
       scene's material table. A placement references its object by id, and a
       view references its subject placements by id. Mutation is `retain_*`
       and `release_*` with voxcore's cross-reference checks, which lets an

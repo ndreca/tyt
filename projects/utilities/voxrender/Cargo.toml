@@ -1,0 +1,20 @@
+[package]
+name = "voxrender"
+version = "0.1.0"
+edition = "2024"
+license-file = "LICENSE"
+repository = "https://github.com/tyleo/tyt"
+description = "The render contract for voxel scenes and its CPU reference renderer."
+
+[package.metadata.workspaces]
+independent = true
+
+[dependencies]
+branded-id = "0.1.11"
+ty-math = { version = "0.2.0", default-features = false, features = ["color"] }
+voxcore = { version = "0.2.2", default-features = false }
+voxsurface = "0.1.0"
+
+[features]
+default = ["cpu"]
+cpu = []

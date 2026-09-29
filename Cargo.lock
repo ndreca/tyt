@@ -2242,6 +2242,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "voxrender"
+version = "0.1.0"
+dependencies = [
+ "branded-id",
+ "ty-math",
+ "voxcore",
+ "voxsurface",
+]
+
+[[package]]
 name = "voxsmith"
 version = "0.3.1"
 dependencies = [

@@ -78,8 +78,8 @@ impl VoxObject {
         })
     }
 
-    /// Cell count `X*Y*Z`, saturating.
-    fn volume_of(bounds: TyVector3U32) -> u64 {
+    /// Cell count `X*Y*Z` of a grid of `bounds`, saturating.
+    pub fn volume_of(bounds: TyVector3U32) -> u64 {
         (bounds.x as u64)
             .saturating_mul(bounds.y as u64)
             .saturating_mul(bounds.z as u64)
@@ -388,11 +388,16 @@ impl VoxObject {
         Self::raster_id(self.bounds, position)
     }
 
-    /// The raster id of `position` on a grid of `bounds`, or `None` if outside
-    /// it. `bounds` is within the cell cap, which keeps the arithmetic within
-    /// u32.
-    fn raster_id(bounds: TyVector3U32, position: TyVector3U32) -> Option<U32Id<BVoxVoxel>> {
-        if position.x >= bounds.x || position.y >= bounds.y || position.z >= bounds.z {
+    /// The voxel id of `position` on any grid of `bounds`, or `None` if
+    /// `position` is outside the grid or the grid exceeds
+    /// [`MAX_GRID_CELLS`](Self::MAX_GRID_CELLS).
+    pub fn raster_id(bounds: TyVector3U32, position: TyVector3U32) -> Option<U32Id<BVoxVoxel>> {
+        // The cap keeps the arithmetic below within u32.
+        if Self::volume_of(bounds) > Self::MAX_GRID_CELLS
+            || position.x >= bounds.x
+            || position.y >= bounds.y
+            || position.z >= bounds.z
+        {
             return None;
         }
 
@@ -424,12 +429,16 @@ impl VoxObject {
         Self::raster_position(self.bounds, id)
     }
 
-    /// The position of the raster id `id` on a grid of `bounds`, or `None` if
-    /// outside it. `bounds` is within the cell cap, which keeps the arithmetic
-    /// within u32.
-    fn raster_position(bounds: TyVector3U32, id: U32Id<BVoxVoxel>) -> Option<TyVector3U32> {
+    /// The position of the voxel id `id` on any grid of `bounds`, or `None`
+    /// if `id` is outside the grid or the grid exceeds
+    /// [`MAX_GRID_CELLS`](Self::MAX_GRID_CELLS). Inverse of
+    /// [`raster_id`](Self::raster_id).
+    pub fn raster_position(bounds: TyVector3U32, id: U32Id<BVoxVoxel>) -> Option<TyVector3U32> {
         let raster = id.to_u32();
-        if (raster as u64) >= Self::volume_of(bounds) {
+        let volume = Self::volume_of(bounds);
+
+        // The cap keeps the arithmetic below within u32.
+        if volume > Self::MAX_GRID_CELLS || u64::from(raster) >= volume {
             return None;
         }
 
@@ -1175,5 +1184,31 @@ mod tests {
 
         assert_eq!(palette_ids, [10, 11]);
         assert_eq!(live_cells(&object), before);
+    }
+
+    #[test]
+    fn raster_ids_number_any_grid_within_the_cap() {
+        let bounds = TyVector3U32::new(2, 3, 4);
+        let position = TyVector3U32::new(1, 2, 3);
+        let id = VoxObject::raster_id(bounds, position).unwrap();
+
+        assert_eq!(id.to_u32(), 12 + 2 * 4 + 3);
+        assert_eq!(VoxObject::raster_position(bounds, id), Some(position));
+        assert_eq!(
+            VoxObject::raster_id(bounds, TyVector3U32::new(2, 0, 0)),
+            None
+        );
+        assert_eq!(
+            VoxObject::raster_position(bounds, U32Id::from_u32(24)),
+            None
+        );
+
+        let object = VoxObject::new("o".to_owned(), bounds).unwrap();
+        assert_eq!(object.voxel_id(position), Some(id));
+
+        // Past the cap, no grid of these bounds exists to number.
+        let over = TyVector3U32::new(1 << 16, 1 << 16, 1);
+        assert_eq!(VoxObject::raster_id(over, TyVector3U32::new(1, 1, 0)), None);
+        assert_eq!(VoxObject::raster_position(over, U32Id::from_u32(1)), None);
     }
 }

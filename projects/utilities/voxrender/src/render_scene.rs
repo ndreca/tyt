@@ -1,0 +1,1437 @@
+use crate::{
+    BRenderLight, BRenderMaterial, BRenderPlacement, BRenderView, Error, RenderLight,
+    RenderMaterial, RenderObject, RenderPlacement, RenderProjection, RenderView, Result,
+};
+use branded_id::{
+    IdVec, U32Id,
+    soa::{IdField, IdStruct},
+};
+use std::{
+    collections::{HashMap, HashSet, hash_map::Entry},
+    f64::consts::PI,
+};
+use ty_math::{
+    TyBoundsF64, TyLinSrgbF64, TyQuaternionExt, TyQuaternionF64, TyTransformF64, TyVector3F64,
+    TyVector3I32, UNIT_ROTATION_TOLERANCE,
+};
+use voxcore::{
+    BVoxHierarchyNode, BVoxObject, BVoxVoxel, VoxEffectivePalette, VoxExt, VoxMain,
+    VoxValuePoolValueRef,
+    material::{
+        BASE_COLOR, EMISSIVE_COLOR, EMISSIVE_STRENGTH, METALLIC, OCCLUSION_STRENGTH, ROUGHNESS,
+    },
+};
+
+/// A scene flattened for drawing: objects over a table of materials,
+/// placements of the objects in world meters, and the lights and views in
+/// world space. Every renderer consumes it.
+///
+/// Objects are keyed by the id of the voxcore object each mirrors, which
+/// lets an edit to the document find its object here. Materials,
+/// placements, lights, and views match nothing in voxcore one to one. Each
+/// of those kinds lives in an id pool, and its ids are meaningful only
+/// within the scene that issued them. Every mutation checks the
+/// cross-references it could break, so a scene reached through the public
+/// API never places an unknown object or samples an unknown material. A
+/// release leaves a hole, and the survivors keep their order.
+#[derive(Default)]
+pub struct RenderScene {
+    material_ids: IdStruct<BRenderMaterial>,
+
+    materials: IdField<BRenderMaterial, RenderMaterial>,
+
+    objects: IdVec<BVoxObject, Option<RenderObject>>,
+
+    placement_ids: IdStruct<BRenderPlacement>,
+
+    placements: IdField<BRenderPlacement, RenderPlacement>,
+
+    light_ids: IdStruct<BRenderLight>,
+
+    lights: IdField<BRenderLight, RenderLight>,
+
+    view_ids: IdStruct<BRenderView>,
+
+    views: IdField<BRenderView, RenderView>,
+}
+
+impl RenderScene {
+    /// Flattens the objects `object_ids` of `main` for drawing at
+    /// `voxel_size` meters per voxel.
+    ///
+    /// Each object yields one material per live voxel, resolved by the
+    /// layer-override rule of the effective palette and deduplicated into
+    /// the material table. A shaded property the palette does not supply
+    /// takes its standard default. Each root-to-object path of the hierarchy
+    /// yields one placement carrying the path's world transform, with the
+    /// grid origin folded in and every position scaled by the voxel size. An
+    /// object no path reaches gets one placement at the identity. Errors if:
+    ///
+    /// 1. `voxel_size` is not finite and positive
+    /// 2. an object id is not one of `main`'s or is listed twice
+    /// 3. a shaded property's value pool is not the kind the contract reads
+    /// 4. a shaded value is outside its range
+    /// 5. voxcore refuses a read
+    pub fn from_vox_main<T: VoxExt>(
+        main: &VoxMain<T>,
+        object_ids: &[U32Id<BVoxObject>],
+        voxel_size: f64,
+    ) -> Result<Self> {
+        if !(voxel_size.is_finite() && voxel_size > 0.0) {
+            return Err(Error::VoxelSize { voxel_size });
+        }
+
+        let mut scene = RenderScene::default();
+        let mut material_ids: HashMap<MaterialKey, U32Id<BRenderMaterial>> = HashMap::new();
+
+        for &object_id in object_ids {
+            let Some(object) = main.object(object_id) else {
+                return Err(Error::UnknownVoxObject { object_id });
+            };
+
+            let effective = main.effective_palette(object)?;
+
+            let mut render_object = RenderObject::new(object.name().to_owned(), object.bounds())?;
+
+            for voxel_id in object.iter_live() {
+                let material = resolve_material(&effective, voxel_id)?;
+
+                let material_id = match material_ids.entry(material_key(&material)) {
+                    Entry::Occupied(entry) => *entry.get(),
+                    Entry::Vacant(entry) => *entry.insert(scene.retain_material(material)?),
+                };
+
+                render_object
+                    .set_voxel_material(voxel_id, Some(material_id))
+                    .expect("the render grid shares the object's bounds");
+            }
+
+            scene.retain_object(object_id, render_object)?;
+        }
+
+        let mut placed = HashSet::new();
+
+        for &root_id in main.root_hierarchy_node_ids() {
+            place(
+                main,
+                root_id,
+                &TyTransformF64::IDENTITY,
+                voxel_size,
+                &mut scene,
+                &mut placed,
+            )?;
+        }
+
+        for &object_id in object_ids {
+            if placed.contains(&object_id) {
+                continue;
+            }
+
+            let origin = main
+                .object(object_id)
+                .expect("a flattened object is one of the main's")
+                .origin();
+
+            scene.retain_placement(RenderPlacement {
+                object_id,
+                transform: placement_transform(&TyTransformF64::IDENTITY, origin, voxel_size),
+            })?;
+        }
+
+        Ok(scene)
+    }
+
+    /// Retains `material` at the end of the listing, returning its id.
+    /// Errors, changing nothing, if a value is outside its range.
+    pub fn retain_material(&mut self, material: RenderMaterial) -> Result<U32Id<BRenderMaterial>> {
+        check_material(&material)?;
+
+        let id = self.material_ids.retain();
+        self.materials.retain(id, material);
+
+        Ok(id)
+    }
+
+    /// Releases material `id`. Errors, changing nothing, if `id` is not one
+    /// of the scene's or a voxel still samples it.
+    pub fn release_material(&mut self, id: U32Id<BRenderMaterial>) -> Result<()> {
+        if !self.material_ids.is_retained(id) {
+            return Err(Error::UnknownMaterial { material_id: id });
+        }
+
+        let object_ids: Vec<_> = self
+            .iter_objects()
+            .filter(|(_, object)| object.iter_live().any(|(_, material_id)| material_id == id))
+            .map(|(object_id, _)| object_id)
+            .collect();
+
+        if !object_ids.is_empty() {
+            return Err(Error::MaterialInUse {
+                material_id: id,
+                object_ids,
+            });
+        }
+
+        // Safety: a retained id has a value.
+        unsafe { self.materials.release(id) };
+        self.material_ids.release_stable(id);
+
+        Ok(())
+    }
+
+    /// The material `id`, or `None` if not one of the scene's.
+    pub fn material(&self, id: U32Id<BRenderMaterial>) -> Option<&RenderMaterial> {
+        // Safety: retained ids have a value.
+        self.material_ids
+            .is_retained(id)
+            .then(|| unsafe { self.materials.get(id) })
+    }
+
+    /// Materials in listing order, as `(id, material)`.
+    pub fn iter_materials(
+        &self,
+    ) -> impl Iterator<Item = (U32Id<BRenderMaterial>, &RenderMaterial)> + '_ {
+        // Safety: retained ids have a value.
+        self.material_ids
+            .iter()
+            .map(move |id| (id, unsafe { self.materials.get(id) }))
+    }
+
+    /// Number of materials.
+    pub fn material_count(&self) -> usize {
+        self.material_ids.len()
+    }
+
+    /// Retains `object` under `id`, the id of the voxcore object it mirrors.
+    /// Errors, changing nothing, if the scene already holds `id` or a voxel
+    /// samples a material that is not one of the scene's.
+    pub fn retain_object(&mut self, id: U32Id<BVoxObject>, object: RenderObject) -> Result<()> {
+        if self.object(id).is_some() {
+            return Err(Error::DuplicateObject { object_id: id });
+        }
+
+        for (voxel_id, material_id) in object.iter_live() {
+            if !self.material_ids.is_retained(material_id) {
+                return Err(Error::VoxelMaterialRef {
+                    voxel_id,
+                    material_id,
+                });
+            }
+        }
+
+        let len = id.to_u32() as usize + 1;
+
+        if self.objects.len() < len {
+            self.objects.resize(len, None);
+        }
+
+        self.objects[id.to_usize_id()] = Some(object);
+
+        Ok(())
+    }
+
+    /// Releases object `id`. Errors, changing nothing, if `id` is not one of
+    /// the scene's or a placement still places it.
+    pub fn release_object(&mut self, id: U32Id<BVoxObject>) -> Result<()> {
+        if self.object(id).is_none() {
+            return Err(Error::UnknownObject { object_id: id });
+        }
+
+        let placement_ids: Vec<_> = self
+            .iter_placements()
+            .filter(|(_, placement)| placement.object_id == id)
+            .map(|(placement_id, _)| placement_id)
+            .collect();
+
+        if !placement_ids.is_empty() {
+            return Err(Error::ObjectInUse {
+                object_id: id,
+                placement_ids,
+            });
+        }
+
+        self.objects[id.to_usize_id()] = None;
+
+        Ok(())
+    }
+
+    /// Writes the material the cell `voxel_id` of object `object_id` holds,
+    /// `None` to empty it. Errors, changing nothing, if the object or the
+    /// material is not one of the scene's or the voxel is outside the grid.
+    pub fn set_voxel_material(
+        &mut self,
+        object_id: U32Id<BVoxObject>,
+        voxel_id: U32Id<BVoxVoxel>,
+        material_id: Option<U32Id<BRenderMaterial>>,
+    ) -> Result<()> {
+        if self.object(object_id).is_none() {
+            return Err(Error::UnknownObject { object_id });
+        }
+
+        if let Some(material_id) = material_id
+            && !self.material_ids.is_retained(material_id)
+        {
+            return Err(Error::UnknownMaterial { material_id });
+        }
+
+        let object = self.objects[object_id.to_usize_id()]
+            .as_mut()
+            .expect("the object is one of the scene's");
+
+        object.set_voxel_material(voxel_id, material_id)
+    }
+
+    /// The object `id`, or `None` if not one of the scene's.
+    pub fn object(&self, id: U32Id<BVoxObject>) -> Option<&RenderObject> {
+        self.objects.get(id.to_usize_id()).and_then(Option::as_ref)
+    }
+
+    /// Objects in id order, as `(id, object)`.
+    pub fn iter_objects(&self) -> impl Iterator<Item = (U32Id<BVoxObject>, &RenderObject)> + '_ {
+        self.objects
+            .iter()
+            .enumerate()
+            .filter_map(|(index, object)| {
+                let id =
+                    U32Id::from_u32(u32::try_from(index).expect("an object index is a u32 id"));
+
+                object.as_ref().map(|object| (id, object))
+            })
+    }
+
+    /// Number of objects.
+    pub fn object_count(&self) -> usize {
+        self.objects.iter().flatten().count()
+    }
+
+    /// Retains `placement` at the end of the listing, returning its id.
+    /// Errors, changing nothing, if its object is not one of the scene's or
+    /// its transform is not finite, has a zero scale, or has a non-unit
+    /// rotation.
+    pub fn retain_placement(
+        &mut self,
+        placement: RenderPlacement,
+    ) -> Result<U32Id<BRenderPlacement>> {
+        if self.object(placement.object_id).is_none() {
+            return Err(Error::UnknownObject {
+                object_id: placement.object_id,
+            });
+        }
+
+        check_transform(&placement.transform)?;
+
+        let id = self.placement_ids.retain();
+        self.placements.retain(id, placement);
+
+        Ok(id)
+    }
+
+    /// Releases placement `id`. Errors, changing nothing, if `id` is not one
+    /// of the scene's.
+    pub fn release_placement(&mut self, id: U32Id<BRenderPlacement>) -> Result<()> {
+        if !self.placement_ids.is_retained(id) {
+            return Err(Error::UnknownPlacement { placement_id: id });
+        }
+
+        // Safety: a retained id has a value.
+        unsafe { self.placements.release(id) };
+        self.placement_ids.release_stable(id);
+
+        Ok(())
+    }
+
+    /// Moves placement `id` onto `transform`. Errors, changing nothing, if
+    /// `id` is not one of the scene's or `transform` fails the checks
+    /// [`retain_placement`](Self::retain_placement) makes.
+    pub fn set_placement_transform(
+        &mut self,
+        id: U32Id<BRenderPlacement>,
+        transform: TyTransformF64,
+    ) -> Result<()> {
+        if !self.placement_ids.is_retained(id) {
+            return Err(Error::UnknownPlacement { placement_id: id });
+        }
+
+        check_transform(&transform)?;
+
+        // Safety: a retained id has a value.
+        unsafe { self.placements.get_mut(id) }.transform = transform;
+
+        Ok(())
+    }
+
+    /// The placement `id`, or `None` if not one of the scene's.
+    pub fn placement(&self, id: U32Id<BRenderPlacement>) -> Option<&RenderPlacement> {
+        // Safety: retained ids have a value.
+        self.placement_ids
+            .is_retained(id)
+            .then(|| unsafe { self.placements.get(id) })
+    }
+
+    /// Placements in listing order, as `(id, placement)`.
+    pub fn iter_placements(
+        &self,
+    ) -> impl Iterator<Item = (U32Id<BRenderPlacement>, &RenderPlacement)> + '_ {
+        // Safety: retained ids have a value.
+        self.placement_ids
+            .iter()
+            .map(move |id| (id, unsafe { self.placements.get(id) }))
+    }
+
+    /// Number of placements.
+    pub fn placement_count(&self) -> usize {
+        self.placement_ids.len()
+    }
+
+    /// Retains `light` at the end of the listing, returning its id. Errors,
+    /// changing nothing, if a value is not finite, a color or strength is
+    /// negative, a rotation is not unit length, or a range is not positive.
+    pub fn retain_light(&mut self, light: RenderLight) -> Result<U32Id<BRenderLight>> {
+        check_light(&light)?;
+
+        let id = self.light_ids.retain();
+        self.lights.retain(id, light);
+
+        Ok(id)
+    }
+
+    /// Releases light `id`. Errors, changing nothing, if `id` is not one of
+    /// the scene's.
+    pub fn release_light(&mut self, id: U32Id<BRenderLight>) -> Result<()> {
+        if !self.light_ids.is_retained(id) {
+            return Err(Error::UnknownLight { light_id: id });
+        }
+
+        // Safety: a retained id has a value.
+        unsafe { self.lights.release(id) };
+        self.light_ids.release_stable(id);
+
+        Ok(())
+    }
+
+    /// Replaces light `id` with `light`. Errors, changing nothing, if `id` is
+    /// not one of the scene's or `light` fails the checks
+    /// [`retain_light`](Self::retain_light) makes.
+    pub fn set_light(&mut self, id: U32Id<BRenderLight>, light: RenderLight) -> Result<()> {
+        if !self.light_ids.is_retained(id) {
+            return Err(Error::UnknownLight { light_id: id });
+        }
+
+        check_light(&light)?;
+
+        // Safety: a retained id has a value.
+        *unsafe { self.lights.get_mut(id) } = light;
+
+        Ok(())
+    }
+
+    /// The light `id`, or `None` if not one of the scene's.
+    pub fn light(&self, id: U32Id<BRenderLight>) -> Option<&RenderLight> {
+        // Safety: retained ids have a value.
+        self.light_ids
+            .is_retained(id)
+            .then(|| unsafe { self.lights.get(id) })
+    }
+
+    /// Lights in listing order, as `(id, light)`.
+    pub fn iter_lights(&self) -> impl Iterator<Item = (U32Id<BRenderLight>, &RenderLight)> + '_ {
+        // Safety: retained ids have a value.
+        self.light_ids
+            .iter()
+            .map(move |id| (id, unsafe { self.lights.get(id) }))
+    }
+
+    /// Number of lights.
+    pub fn light_count(&self) -> usize {
+        self.light_ids.len()
+    }
+
+    /// Retains `view` at the end of the listing, returning its id. Errors,
+    /// changing nothing, if its position is not finite, its rotation is not
+    /// unit length, its field of view is not within `(0, pi)`, or its scale
+    /// is not finite and positive.
+    pub fn retain_view(&mut self, view: RenderView) -> Result<U32Id<BRenderView>> {
+        check_view(&view)?;
+
+        let id = self.view_ids.retain();
+        self.views.retain(id, view);
+
+        Ok(id)
+    }
+
+    /// Releases view `id`. Errors, changing nothing, if `id` is not one of
+    /// the scene's.
+    pub fn release_view(&mut self, id: U32Id<BRenderView>) -> Result<()> {
+        if !self.view_ids.is_retained(id) {
+            return Err(Error::UnknownView { view_id: id });
+        }
+
+        // Safety: a retained id has a value.
+        unsafe { self.views.release(id) };
+        self.view_ids.release_stable(id);
+
+        Ok(())
+    }
+
+    /// Replaces view `id` with `view`. Errors, changing nothing, if `id` is
+    /// not one of the scene's or `view` fails the checks
+    /// [`retain_view`](Self::retain_view) makes.
+    pub fn set_view(&mut self, id: U32Id<BRenderView>, view: RenderView) -> Result<()> {
+        if !self.view_ids.is_retained(id) {
+            return Err(Error::UnknownView { view_id: id });
+        }
+
+        check_view(&view)?;
+
+        // Safety: a retained id has a value.
+        *unsafe { self.views.get_mut(id) } = view;
+
+        Ok(())
+    }
+
+    /// The view `id`, or `None` if not one of the scene's.
+    pub fn view(&self, id: U32Id<BRenderView>) -> Option<&RenderView> {
+        // Safety: retained ids have a value.
+        self.view_ids
+            .is_retained(id)
+            .then(|| unsafe { self.views.get(id) })
+    }
+
+    /// Views in listing order, as `(id, view)`.
+    pub fn iter_views(&self) -> impl Iterator<Item = (U32Id<BRenderView>, &RenderView)> + '_ {
+        // Safety: retained ids have a value.
+        self.view_ids
+            .iter()
+            .map(move |id| (id, unsafe { self.views.get(id) }))
+    }
+
+    /// Number of views.
+    pub fn view_count(&self) -> usize {
+        self.view_ids.len()
+    }
+
+    /// The world bounds of the live voxels under `placement_ids`, or `None`
+    /// where none is live. Each placement contributes the eight transformed
+    /// corners of its object's live extent. Errors if a placement is not one
+    /// of the scene's.
+    pub fn subject_bounds(
+        &self,
+        placement_ids: &[U32Id<BRenderPlacement>],
+    ) -> Result<Option<TyBoundsF64>> {
+        let mut bounds: Option<TyBoundsF64> = None;
+
+        for &placement_id in placement_ids {
+            let Some(placement) = self.placement(placement_id) else {
+                return Err(Error::UnknownPlacement { placement_id });
+            };
+
+            let object = self
+                .object(placement.object_id)
+                .expect("a placement's object is one of the scene's");
+
+            let Some((min, max)) = object.live_extent() else {
+                continue;
+            };
+
+            let min = min.as_dvec3();
+            let max = max.as_dvec3() + TyVector3F64::ONE;
+
+            let corners = (0..8).map(|corner| {
+                let pick = |axis: usize| {
+                    if corner & (1 << axis) == 0 {
+                        min[axis]
+                    } else {
+                        max[axis]
+                    }
+                };
+
+                placement
+                    .transform
+                    .transform_point(TyVector3F64::new(pick(0), pick(1), pick(2)))
+            });
+
+            let placed = TyBoundsF64::from_points(corners).expect("eight corners bound a box");
+
+            bounds = Some(match bounds {
+                Some(bounds) => bounds.encapsulate(&placed),
+                None => placed,
+            });
+        }
+
+        Ok(bounds)
+    }
+}
+
+impl Drop for RenderScene {
+    fn drop(&mut self) {
+        // Safety: each column holds a value for every id in its id pool; the
+        // fields free their own storage on drop.
+        unsafe {
+            self.materials.release_all(&self.material_ids);
+            self.placements.release_all(&self.placement_ids);
+            self.lights.release_all(&self.light_ids);
+            self.views.release_all(&self.view_ids);
+        }
+    }
+}
+
+/// Whether `value` is within `0..=1`. `NaN` is not.
+fn is_unit(value: f64) -> bool {
+    (0.0..=1.0).contains(&value)
+}
+
+fn is_unit_color(color: TyLinSrgbF64) -> bool {
+    is_unit(color.red) && is_unit(color.green) && is_unit(color.blue)
+}
+
+fn is_finite_color(color: TyLinSrgbF64) -> bool {
+    color.red.is_finite() && color.green.is_finite() && color.blue.is_finite()
+}
+
+fn is_non_negative_color(color: TyLinSrgbF64) -> bool {
+    color.red >= 0.0 && color.green >= 0.0 && color.blue >= 0.0
+}
+
+fn is_unit_rotation(rotation: TyQuaternionF64) -> bool {
+    rotation.is_normalized_within(UNIT_ROTATION_TOLERANCE)
+}
+
+fn check_material(material: &RenderMaterial) -> Result<()> {
+    let checks = [
+        (BASE_COLOR, is_unit_color(material.base_color)),
+        (METALLIC, is_unit(material.metallic)),
+        (ROUGHNESS, is_unit(material.roughness)),
+        (EMISSIVE_COLOR, is_unit_color(material.emissive_color)),
+        (
+            EMISSIVE_STRENGTH,
+            material.emissive_strength.is_finite() && material.emissive_strength >= 0.0,
+        ),
+        (OCCLUSION_STRENGTH, is_unit(material.occlusion_strength)),
+    ];
+
+    for (property, holds) in checks {
+        if !holds {
+            return Err(Error::MaterialOutOfRange {
+                property: property.to_owned(),
+            });
+        }
+    }
+
+    Ok(())
+}
+
+fn check_transform(transform: &TyTransformF64) -> Result<()> {
+    if !transform.position.is_finite() || !transform.scale.is_finite() {
+        return Err(Error::NonFinitePlacement);
+    }
+
+    let scale = transform.scale;
+
+    if scale.x == 0.0 || scale.y == 0.0 || scale.z == 0.0 {
+        return Err(Error::ZeroPlacementScale);
+    }
+
+    if !is_unit_rotation(transform.rotation) {
+        return Err(Error::NonUnitPlacementRotation);
+    }
+
+    Ok(())
+}
+
+fn check_light(light: &RenderLight) -> Result<()> {
+    match *light {
+        RenderLight::Directional {
+            rotation,
+            color,
+            strength,
+            ..
+        } => {
+            if !is_finite_color(color) || !strength.is_finite() {
+                return Err(Error::NonFiniteLight);
+            }
+
+            if !is_unit_rotation(rotation) {
+                return Err(Error::NonUnitLightRotation);
+            }
+
+            if !is_non_negative_color(color) || strength < 0.0 {
+                return Err(Error::NegativeLight);
+            }
+        }
+
+        RenderLight::Point {
+            position,
+            color,
+            strength,
+            range,
+            ..
+        } => {
+            if !position.is_finite()
+                || !is_finite_color(color)
+                || !strength.is_finite()
+                || range.is_some_and(|range| !range.is_finite())
+            {
+                return Err(Error::NonFiniteLight);
+            }
+
+            if !is_non_negative_color(color) || strength < 0.0 {
+                return Err(Error::NegativeLight);
+            }
+
+            if let Some(range) = range
+                && range <= 0.0
+            {
+                return Err(Error::NonPositiveLightRange { range });
+            }
+        }
+
+        RenderLight::Hemisphere {
+            sky,
+            ground,
+            strength,
+        } => {
+            if !is_finite_color(sky) || !is_finite_color(ground) || !strength.is_finite() {
+                return Err(Error::NonFiniteLight);
+            }
+
+            if !is_non_negative_color(sky) || !is_non_negative_color(ground) || strength < 0.0 {
+                return Err(Error::NegativeLight);
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn check_view(view: &RenderView) -> Result<()> {
+    if !view.pose.position.is_finite() {
+        return Err(Error::NonFiniteView);
+    }
+
+    if !is_unit_rotation(view.pose.rotation) {
+        return Err(Error::NonUnitViewRotation);
+    }
+
+    match view.projection {
+        RenderProjection::Perspective { fov } => {
+            if !(fov > 0.0 && fov < PI) {
+                return Err(Error::FieldOfViewOutOfRange { fov });
+            }
+        }
+
+        RenderProjection::Orthographic { scale } => {
+            if !(scale.is_finite() && scale > 0.0) {
+                return Err(Error::ViewScale { scale });
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// A material's six values by their bits, the key that deduplicates the
+/// table.
+type MaterialKey = [u64; 10];
+
+/// Places every flattened object under `node_id`, itself under `parent`,
+/// the world transform of its parent path, then walks its child nodes in
+/// order.
+fn place<T: VoxExt>(
+    main: &VoxMain<T>,
+    node_id: U32Id<BVoxHierarchyNode>,
+    parent: &TyTransformF64,
+    voxel_size: f64,
+    scene: &mut RenderScene,
+    placed: &mut HashSet<U32Id<BVoxObject>>,
+) -> Result<()> {
+    let node = main
+        .hierarchy_node(node_id)
+        .expect("a walked node is one of the main's");
+
+    let world = parent.compose(&node.transform);
+
+    for &object_id in &node.child_object_ids {
+        if scene.object(object_id).is_none() {
+            continue;
+        }
+
+        let origin = main
+            .object(object_id)
+            .expect("a placed object is one of the main's")
+            .origin();
+
+        scene.retain_placement(RenderPlacement {
+            object_id,
+            transform: placement_transform(&world, origin, voxel_size),
+        })?;
+
+        placed.insert(object_id);
+    }
+
+    for &child_id in &node.child_node_ids {
+        place(main, child_id, &world, voxel_size, scene, placed)?;
+    }
+
+    Ok(())
+}
+
+/// The grid-to-world transform of an object at `origin` under the node path
+/// `world`, at `voxel_size` meters per voxel. Scaling every node position by
+/// the voxel size is one uniform scale of the whole path, so the path's
+/// position scales and the grid units fold into the placement's scale.
+fn placement_transform(
+    world: &TyTransformF64,
+    origin: TyVector3I32,
+    voxel_size: f64,
+) -> TyTransformF64 {
+    let scaled = TyTransformF64 {
+        position: world.position * voxel_size,
+        ..*world
+    };
+
+    scaled.compose(&TyTransformF64::new(
+        origin.as_dvec3() * voxel_size,
+        TyQuaternionF64::IDENTITY,
+        TyVector3F64::splat(voxel_size),
+    ))
+}
+
+/// The material the live voxel `voxel_id` samples, each shaded property
+/// read through `effective` or left at its default.
+fn resolve_material(
+    effective: &VoxEffectivePalette<'_>,
+    voxel_id: U32Id<BVoxVoxel>,
+) -> Result<RenderMaterial> {
+    let mut material = RenderMaterial::default();
+
+    if let Some(value) = read(effective, voxel_id, BASE_COLOR) {
+        material.base_color = color(BASE_COLOR, value)?;
+    }
+
+    if let Some(value) = read(effective, voxel_id, METALLIC) {
+        material.metallic = scalar(METALLIC, value)?;
+    }
+
+    if let Some(value) = read(effective, voxel_id, ROUGHNESS) {
+        material.roughness = scalar(ROUGHNESS, value)?;
+    }
+
+    if let Some(value) = read(effective, voxel_id, EMISSIVE_COLOR) {
+        material.emissive_color = color(EMISSIVE_COLOR, value)?;
+    }
+
+    if let Some(value) = read(effective, voxel_id, EMISSIVE_STRENGTH) {
+        material.emissive_strength = scalar(EMISSIVE_STRENGTH, value)?;
+    }
+
+    if let Some(value) = read(effective, voxel_id, OCCLUSION_STRENGTH) {
+        material.occlusion_strength = scalar(OCCLUSION_STRENGTH, value)?;
+    }
+
+    Ok(material)
+}
+
+/// The value `voxel_id` samples for `property`, or `None` where the
+/// effective palette does not supply it.
+fn read<'a>(
+    effective: &'a VoxEffectivePalette<'a>,
+    voxel_id: U32Id<BVoxVoxel>,
+    property: &str,
+) -> Option<VoxValuePoolValueRef<'a>> {
+    let property_id = effective.property_id_by_name(property)?;
+
+    Some(
+        effective
+            .voxel_value(voxel_id, property_id)
+            .expect("a live voxel samples a material holding every property of its palette"),
+    )
+}
+
+fn scalar(property: &str, value: VoxValuePoolValueRef<'_>) -> Result<f64> {
+    match value {
+        VoxValuePoolValueRef::Float(value) => Ok(value),
+        _ => Err(Error::MaterialPropertyKind {
+            property: property.to_owned(),
+        }),
+    }
+}
+
+fn color(property: &str, value: VoxValuePoolValueRef<'_>) -> Result<TyLinSrgbF64> {
+    match value {
+        VoxValuePoolValueRef::Vec3Float(&[red, green, blue])
+        | VoxValuePoolValueRef::Vec4Float(&[red, green, blue, _]) => {
+            Ok(TyLinSrgbF64::new(red, green, blue))
+        }
+        _ => Err(Error::MaterialPropertyKind {
+            property: property.to_owned(),
+        }),
+    }
+}
+
+fn material_key(material: &RenderMaterial) -> MaterialKey {
+    [
+        material.base_color.red,
+        material.base_color.green,
+        material.base_color.blue,
+        material.metallic,
+        material.roughness,
+        material.emissive_color.red,
+        material.emissive_color.green,
+        material.emissive_color.blue,
+        material.emissive_strength,
+        material.occlusion_strength,
+    ]
+    .map(f64::to_bits)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        BRenderMaterial, Error, RenderLight, RenderMaterial, RenderObject, RenderPlacement,
+        RenderProjection, RenderScene, RenderShadow, RenderView,
+    };
+    use branded_id::U32Id;
+    use std::f64::consts::PI;
+    use ty_math::{
+        TyLinSrgbF64, TyPoseF64, TyQuaternionF64, TyTransformF64, TyVector3F64, TyVector3I32,
+        TyVector3U32,
+    };
+    use voxcore::{
+        BVoxObject, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette, VoxValuePool,
+        material::{BASE_COLOR, METALLIC},
+    };
+
+    fn white() -> TyLinSrgbF64 {
+        TyLinSrgbF64::new(1.0, 1.0, 1.0)
+    }
+
+    /// A scene with one material and a one-voxel object sampling it.
+    fn painted() -> (RenderScene, U32Id<BRenderMaterial>, U32Id<BVoxObject>) {
+        let mut scene = RenderScene::default();
+        let material_id = scene.retain_material(RenderMaterial::default()).unwrap();
+
+        let mut object = RenderObject::new("o".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
+        object
+            .set_voxel_material(U32Id::from_u32(0), Some(material_id))
+            .unwrap();
+        let object_id = U32Id::from_u32(3);
+        scene.retain_object(object_id, object).unwrap();
+
+        (scene, material_id, object_id)
+    }
+
+    #[test]
+    fn a_material_a_voxel_samples_and_an_object_a_placement_places_stay() {
+        let (mut scene, material_id, object_id) = painted();
+
+        assert_eq!(
+            scene.release_material(material_id),
+            Err(Error::MaterialInUse {
+                material_id,
+                object_ids: vec![object_id],
+            })
+        );
+
+        let placement_id = scene
+            .retain_placement(RenderPlacement {
+                object_id,
+                transform: TyTransformF64::IDENTITY,
+            })
+            .unwrap();
+
+        assert_eq!(
+            scene.release_object(object_id),
+            Err(Error::ObjectInUse {
+                object_id,
+                placement_ids: vec![placement_id],
+            })
+        );
+
+        scene.release_placement(placement_id).unwrap();
+        scene.release_object(object_id).unwrap();
+        scene.release_material(material_id).unwrap();
+
+        assert_eq!(scene.material_count(), 0);
+        assert_eq!(scene.object_count(), 0);
+        assert_eq!(scene.placement_count(), 0);
+        assert_eq!(
+            scene.release_placement(placement_id),
+            Err(Error::UnknownPlacement { placement_id })
+        );
+    }
+
+    #[test]
+    fn a_voxel_samples_only_a_material_of_the_scene() {
+        let (mut scene, material_id, object_id) = painted();
+
+        let mut object = RenderObject::new("p".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
+        object
+            .set_voxel_material(U32Id::from_u32(0), Some(U32Id::from_u32(9)))
+            .unwrap();
+
+        assert_eq!(
+            scene.retain_object(U32Id::from_u32(4), object.clone()),
+            Err(Error::VoxelMaterialRef {
+                voxel_id: U32Id::from_u32(0),
+                material_id: U32Id::from_u32(9),
+            })
+        );
+        assert_eq!(
+            scene.retain_object(object_id, object),
+            Err(Error::DuplicateObject { object_id })
+        );
+
+        assert_eq!(
+            scene.set_voxel_material(object_id, U32Id::from_u32(0), Some(U32Id::from_u32(9))),
+            Err(Error::UnknownMaterial {
+                material_id: U32Id::from_u32(9)
+            })
+        );
+
+        scene
+            .set_voxel_material(object_id, U32Id::from_u32(0), None)
+            .unwrap();
+
+        assert_eq!(scene.object(object_id).unwrap().live_count(), 0);
+        scene.release_material(material_id).unwrap();
+    }
+
+    #[test]
+    fn a_material_holds_to_its_ranges() {
+        let mut scene = RenderScene::default();
+
+        let too_bright = RenderMaterial {
+            base_color: TyLinSrgbF64::new(1.5, 0.0, 0.0),
+            ..RenderMaterial::default()
+        };
+        assert_eq!(
+            scene.retain_material(too_bright),
+            Err(Error::MaterialOutOfRange {
+                property: BASE_COLOR.to_owned()
+            })
+        );
+
+        let not_a_number = RenderMaterial {
+            metallic: f64::NAN,
+            ..RenderMaterial::default()
+        };
+        assert_eq!(
+            scene.retain_material(not_a_number),
+            Err(Error::MaterialOutOfRange {
+                property: METALLIC.to_owned()
+            })
+        );
+    }
+
+    #[test]
+    fn a_placement_needs_an_object_and_a_sound_transform() {
+        let (mut scene, _, object_id) = painted();
+
+        let placement = |transform| RenderPlacement {
+            object_id,
+            transform,
+        };
+
+        assert_eq!(
+            scene.retain_placement(RenderPlacement {
+                object_id: U32Id::from_u32(5),
+                transform: TyTransformF64::IDENTITY,
+            }),
+            Err(Error::UnknownObject {
+                object_id: U32Id::from_u32(5)
+            })
+        );
+        assert_eq!(
+            scene.retain_placement(placement(TyTransformF64 {
+                scale: TyVector3F64::new(1.0, 0.0, 1.0),
+                ..TyTransformF64::IDENTITY
+            })),
+            Err(Error::ZeroPlacementScale)
+        );
+        assert_eq!(
+            scene.retain_placement(placement(TyTransformF64 {
+                position: TyVector3F64::new(f64::INFINITY, 0.0, 0.0),
+                ..TyTransformF64::IDENTITY
+            })),
+            Err(Error::NonFinitePlacement)
+        );
+        assert_eq!(
+            scene.retain_placement(placement(TyTransformF64 {
+                rotation: TyQuaternionF64::from_xyzw(0.0, 0.0, 0.0, 2.0),
+                ..TyTransformF64::IDENTITY
+            })),
+            Err(Error::NonUnitPlacementRotation)
+        );
+
+        let placement_id = scene
+            .retain_placement(placement(TyTransformF64::IDENTITY))
+            .unwrap();
+        let moved = TyTransformF64::from_translation(TyVector3F64::new(1.0, 2.0, 3.0));
+        scene.set_placement_transform(placement_id, moved).unwrap();
+        assert_eq!(scene.placement(placement_id).unwrap().transform, moved);
+    }
+
+    #[test]
+    fn a_light_holds_to_its_checks() {
+        let mut scene = RenderScene::default();
+
+        assert_eq!(
+            scene.retain_light(RenderLight::Directional {
+                rotation: TyQuaternionF64::from_xyzw(0.0, 0.0, 0.0, 2.0),
+                color: white(),
+                strength: 1.0,
+                shadow: RenderShadow::None,
+            }),
+            Err(Error::NonUnitLightRotation)
+        );
+        assert_eq!(
+            scene.retain_light(RenderLight::Point {
+                position: TyVector3F64::ZERO,
+                color: white(),
+                strength: 1.0,
+                range: Some(0.0),
+                shadow: RenderShadow::None,
+            }),
+            Err(Error::NonPositiveLightRange { range: 0.0 })
+        );
+        assert_eq!(
+            scene.retain_light(RenderLight::Hemisphere {
+                sky: white(),
+                ground: white(),
+                strength: -1.0,
+            }),
+            Err(Error::NegativeLight)
+        );
+        assert_eq!(
+            scene.retain_light(RenderLight::Hemisphere {
+                sky: white(),
+                ground: white(),
+                strength: f64::NAN,
+            }),
+            Err(Error::NonFiniteLight)
+        );
+
+        let light_id = scene
+            .retain_light(RenderLight::Hemisphere {
+                sky: white(),
+                ground: white(),
+                strength: 1.0,
+            })
+            .unwrap();
+        let dimmed = RenderLight::Hemisphere {
+            sky: white(),
+            ground: white(),
+            strength: 0.5,
+        };
+        scene.set_light(light_id, dimmed).unwrap();
+        assert_eq!(scene.light(light_id), Some(&dimmed));
+        assert_eq!(scene.iter_lights().count(), 1);
+        scene.release_light(light_id).unwrap();
+        assert_eq!(scene.light_count(), 0);
+    }
+
+    #[test]
+    fn a_view_holds_to_its_checks() {
+        let mut scene = RenderScene::default();
+
+        let view = |projection| RenderView {
+            pose: TyPoseF64::IDENTITY,
+            projection,
+        };
+
+        assert_eq!(
+            scene.retain_view(view(RenderProjection::Perspective { fov: PI })),
+            Err(Error::FieldOfViewOutOfRange { fov: PI })
+        );
+        assert_eq!(
+            scene.retain_view(view(RenderProjection::Orthographic { scale: -1.0 })),
+            Err(Error::ViewScale { scale: -1.0 })
+        );
+        assert_eq!(
+            scene.retain_view(RenderView {
+                pose: TyPoseF64::new(
+                    TyVector3F64::new(f64::NAN, 0.0, 0.0),
+                    TyQuaternionF64::IDENTITY
+                ),
+                projection: RenderProjection::Perspective { fov: 1.0 },
+            }),
+            Err(Error::NonFiniteView)
+        );
+
+        let view_id = scene
+            .retain_view(view(RenderProjection::Perspective { fov: 1.0 }))
+            .unwrap();
+        let flat = view(RenderProjection::Orthographic { scale: 4.0 });
+        scene.set_view(view_id, flat).unwrap();
+        assert_eq!(scene.view(view_id), Some(&flat));
+        scene.release_view(view_id).unwrap();
+        assert_eq!(
+            scene.release_view(view_id),
+            Err(Error::UnknownView { view_id })
+        );
+    }
+
+    #[test]
+    fn a_release_keeps_the_survivors_in_order() {
+        let mut scene = RenderScene::default();
+        let ids: Vec<_> = (0..3)
+            .map(|_| scene.retain_material(RenderMaterial::default()).unwrap())
+            .collect();
+
+        scene.release_material(ids[1]).unwrap();
+
+        assert_eq!(
+            scene.iter_materials().map(|(id, _)| id).collect::<Vec<_>>(),
+            [ids[0], ids[2]]
+        );
+        assert_eq!(scene.material(ids[1]), None);
+    }
+
+    /// A main whose palette carries a red and a blue `baseColor` over one
+    /// `metallic` of `0`, a 2x1x1 bar painted red then blue at origin
+    /// `(1, 0, 0)`, and a one-voxel `lone` object painted blue.
+    fn painted_main() -> (VoxMain, U32Id<BVoxObject>, U32Id<BVoxObject>) {
+        let mut main: VoxMain = VoxMain::default();
+        let colors = main.retain_value_pool(
+            VoxValuePool::vec_4_float(vec![[1.0, 0.0, 0.0, 1.0], [0.0, 0.0, 1.0, 1.0]]).unwrap(),
+        );
+        let metals = main.retain_value_pool(VoxValuePool::float(vec![0.0]).unwrap());
+
+        let mut palette = VoxPalette::default();
+        palette
+            .retain_property(BASE_COLOR.to_owned(), colors, U32Id::from_u32(0))
+            .unwrap();
+        palette
+            .retain_property(METALLIC.to_owned(), metals, U32Id::from_u32(0))
+            .unwrap();
+        for color in 0..2 {
+            palette
+                .retain_material(vec![U32Id::from_u32(color), U32Id::from_u32(0)])
+                .unwrap();
+        }
+        let palette_id = main.retain_palette(palette).unwrap();
+
+        let mut bar = VoxObject::new("bar".to_owned(), TyVector3U32::new(2, 1, 1)).unwrap();
+        bar.set_origin(TyVector3I32::new(1, 0, 0));
+        bar.retain_layer(palette_id, U32Id::from_u32(0));
+        for x in 0..2 {
+            let voxel_id = bar.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap();
+            bar.retain_voxel(voxel_id, &[U32Id::from_u32(x)]).unwrap();
+        }
+        let bar_id = main.retain_object(bar).unwrap();
+
+        let mut lone = VoxObject::new("lone".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
+        lone.retain_layer(palette_id, U32Id::from_u32(0));
+        lone.retain_voxel(U32Id::from_u32(0), &[U32Id::from_u32(1)])
+            .unwrap();
+        let lone_id = main.retain_object(lone).unwrap();
+
+        (main, bar_id, lone_id)
+    }
+
+    #[test]
+    fn voxels_resolve_their_materials_and_share_the_table() {
+        let (main, bar_id, lone_id) = painted_main();
+
+        let scene = RenderScene::from_vox_main(&main, &[bar_id, lone_id], 1.0).unwrap();
+
+        assert_eq!(scene.material_count(), 2);
+        assert_eq!(scene.object_count(), 2);
+
+        let bar = scene.object(bar_id).unwrap();
+        let red_id = bar
+            .voxel_material(bar.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap())
+            .unwrap();
+        let blue_id = bar
+            .voxel_material(bar.voxel_id(TyVector3U32::new(1, 0, 0)).unwrap())
+            .unwrap();
+        assert_eq!(
+            scene.material(red_id),
+            Some(&RenderMaterial {
+                base_color: TyLinSrgbF64::new(1.0, 0.0, 0.0),
+                metallic: 0.0,
+                ..RenderMaterial::default()
+            })
+        );
+
+        let lone = scene.object(lone_id).unwrap();
+        assert_eq!(lone.voxel_material(U32Id::from_u32(0)), Some(blue_id));
+    }
+
+    #[test]
+    fn each_root_path_places_and_an_unplaced_object_sits_at_the_identity() {
+        let (mut main, bar_id, lone_id) = painted_main();
+
+        let leaf_id = main
+            .retain_hierarchy_node(VoxHierarchyNode {
+                name: "leaf".to_owned(),
+                transform: TyTransformF64::from_translation(TyVector3F64::new(0.0, 2.0, 0.0)),
+                child_object_ids: vec![bar_id],
+                ..Default::default()
+            })
+            .unwrap();
+        let root_transform = TyTransformF64::new(
+            TyVector3F64::new(10.0, 0.0, 0.0),
+            TyQuaternionF64::IDENTITY,
+            TyVector3F64::splat(2.0),
+        );
+        let root_id = main
+            .retain_hierarchy_node(VoxHierarchyNode {
+                name: "root".to_owned(),
+                transform: root_transform,
+                child_node_ids: vec![leaf_id],
+                ..Default::default()
+            })
+            .unwrap();
+        let other_id = main
+            .retain_hierarchy_node(VoxHierarchyNode {
+                name: "other".to_owned(),
+                child_node_ids: vec![leaf_id],
+                ..Default::default()
+            })
+            .unwrap();
+        main.set_root_hierarchy_node_ids(vec![root_id, other_id])
+            .unwrap();
+
+        let scene = RenderScene::from_vox_main(&main, &[bar_id, lone_id], 0.5).unwrap();
+
+        let placements: Vec<_> = scene
+            .iter_placements()
+            .map(|(_, placement)| *placement)
+            .collect();
+        assert_eq!(placements.len(), 3);
+
+        // Under root then leaf: position 0.5 * (10 + 2 * (0, 2, 0)) plus the
+        // origin (1, 0, 0) at scale 2 * 0.5, then the grid at scale 2 * 0.5.
+        assert_eq!(placements[0].object_id, bar_id);
+        assert_eq!(
+            placements[0].transform,
+            TyTransformF64::new(
+                TyVector3F64::new(6.0, 2.0, 0.0),
+                TyQuaternionF64::IDENTITY,
+                TyVector3F64::splat(1.0),
+            )
+        );
+        assert_eq!(
+            placements[0]
+                .transform
+                .transform_point(TyVector3F64::new(2.0, 1.0, 1.0)),
+            TyVector3F64::new(8.0, 3.0, 1.0)
+        );
+
+        // Under other then leaf: the same object, a second placement.
+        assert_eq!(placements[1].object_id, bar_id);
+        assert_eq!(
+            placements[1].transform,
+            TyTransformF64::new(
+                TyVector3F64::new(0.5, 1.0, 0.0),
+                TyQuaternionF64::IDENTITY,
+                TyVector3F64::splat(0.5),
+            )
+        );
+
+        // No path reaches lone, which sits at its origin under the voxel size.
+        assert_eq!(placements[2].object_id, lone_id);
+        assert_eq!(
+            placements[2].transform,
+            TyTransformF64::new(
+                TyVector3F64::ZERO,
+                TyQuaternionF64::IDENTITY,
+                TyVector3F64::splat(0.5),
+            )
+        );
+    }
+
+    #[test]
+    fn a_flatten_refuses_a_bad_selection_and_a_bad_voxel_size() {
+        let (main, bar_id, _) = painted_main();
+
+        assert_eq!(
+            RenderScene::from_vox_main(&main, &[U32Id::from_u32(7)], 1.0).err(),
+            Some(Error::UnknownVoxObject {
+                object_id: U32Id::from_u32(7)
+            })
+        );
+        assert_eq!(
+            RenderScene::from_vox_main(&main, &[bar_id, bar_id], 1.0).err(),
+            Some(Error::DuplicateObject { object_id: bar_id })
+        );
+        assert_eq!(
+            RenderScene::from_vox_main(&main, &[bar_id], 0.0).err(),
+            Some(Error::VoxelSize { voxel_size: 0.0 })
+        );
+    }
+
+    #[test]
+    fn a_shaded_property_of_the_wrong_kind_is_refused() {
+        let mut main: VoxMain = VoxMain::default();
+        let ints = main.retain_value_pool(VoxValuePool::int(vec![1]).unwrap());
+
+        let mut palette = VoxPalette::default();
+        palette
+            .retain_property(METALLIC.to_owned(), ints, U32Id::from_u32(0))
+            .unwrap();
+        palette.retain_material(vec![U32Id::from_u32(0)]).unwrap();
+        let palette_id = main.retain_palette(palette).unwrap();
+
+        let mut object = VoxObject::new("o".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
+        object.retain_layer(palette_id, U32Id::from_u32(0));
+        object
+            .retain_voxel(U32Id::from_u32(0), &[U32Id::from_u32(0)])
+            .unwrap();
+        let object_id = main.retain_object(object).unwrap();
+
+        assert_eq!(
+            RenderScene::from_vox_main(&main, &[object_id], 1.0).err(),
+            Some(Error::MaterialPropertyKind {
+                property: METALLIC.to_owned()
+            })
+        );
+    }
+
+    #[test]
+    fn the_bounds_cover_every_placement_of_the_live_voxels() {
+        let mut scene = RenderScene::default();
+        let material_id = scene.retain_material(RenderMaterial::default()).unwrap();
+
+        // A 4x4x4 grid live at (1, 1, 1) and (2, 2, 2) only.
+        let mut object = RenderObject::new("o".to_owned(), TyVector3U32::new(4, 4, 4)).unwrap();
+        for position in [TyVector3U32::new(1, 1, 1), TyVector3U32::new(2, 2, 2)] {
+            let voxel_id = object.voxel_id(position).unwrap();
+            object
+                .set_voxel_material(voxel_id, Some(material_id))
+                .unwrap();
+        }
+        let object_id = U32Id::from_u32(0);
+        scene.retain_object(object_id, object).unwrap();
+
+        let placement_ids: Vec<_> = [
+            TyTransformF64::IDENTITY,
+            TyTransformF64::new(
+                TyVector3F64::new(10.0, 0.0, 0.0),
+                TyQuaternionF64::IDENTITY,
+                TyVector3F64::splat(2.0),
+            ),
+        ]
+        .into_iter()
+        .map(|transform| {
+            scene
+                .retain_placement(RenderPlacement {
+                    object_id,
+                    transform,
+                })
+                .unwrap()
+        })
+        .collect();
+
+        let bounds = scene.subject_bounds(&placement_ids).unwrap().unwrap();
+
+        // The first placement spans 1..3 on each axis, the second 12..16 on
+        // x and 2..6 on y and z.
+        assert_eq!(bounds.min(), TyVector3F64::new(1.0, 1.0, 1.0));
+        assert_eq!(bounds.max(), TyVector3F64::new(16.0, 6.0, 6.0));
+
+        assert_eq!(scene.subject_bounds(&[]).unwrap(), None);
+        assert!(scene.subject_bounds(&[U32Id::from_u32(9)]).is_err());
+    }
+}

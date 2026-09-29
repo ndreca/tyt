@@ -36,7 +36,7 @@ resample plan has one.
          `merge_rules`, `provenance`, program, records, and writers stay.
          `compute_occlusion` lifts the floats into a value-language array
       5. Tests move with their code. voxsmith's mesh tests pass unchanged
-- [ ] **S2. voxrender scaffold.** Create `projects/utilities/voxrender` with a
+- [x] **S2. voxrender scaffold.** Create `projects/utilities/voxrender` with a
       default `cpu` feature. Add:
       1. The brands `BRenderObject`, `BRenderPlacement`, `BRenderMaterial`,
          `BRenderVoxel`, `BRenderLight`, and `BRenderView`
@@ -46,7 +46,7 @@ resample plan has one.
          or an orthographic scale
       5. `RenderOcclusion` and `RenderShadow`
       6. `RenderImage`, a linear RGBA `f32` buffer
-- [ ] **S3. Render scene.** Add `RenderScene` over `IdVec` and the `soa`
+- [x] **S3. Render scene.** Add `RenderScene` over `IdVec` and the `soa`
       pools, mutated through `retain_*` and `release_*` with cross-reference
       checks. One constructor flattens a `VoxMain`:
       1. Each selected object yields one effective material per live voxel,
