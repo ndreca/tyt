@@ -86,6 +86,31 @@ let view = RenderView {
 };
 ```
 
+## Rays
+
+The `cpu` feature adds the rays. `RenderViewRays` gives the world ray
+through each pixel center of a view over an image. `cast_ray` marches a
+ray through every placement's grid to the nearest voxel and returns a
+`RenderHit` with:
+
+1. The placement
+2. The cell
+3. The face the ray entered through, as a unit `SurfaceSpan`
+4. Where on the face the ray landed
+5. The distance
+
+A shadow ray is the same cast toward a light with a distance cap.
+
+```rust
+let rays = RenderViewRays::new(&view, 1024, 1024);
+let ray = rays.ray(512, 512);
+
+if let Some(hit) = cast_ray(&scene, &ray, f64::INFINITY) {
+    let object_id = scene.placement(hit.placement_id)?.object_id;
+    let occlusion = corner_occlusion(scene.object(object_id)?, &hit.face);
+}
+```
+
 ## Images
 
 A `RenderImage` is a linear-light RGBA `f32` buffer, rows top to bottom.

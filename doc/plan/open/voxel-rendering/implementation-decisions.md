@@ -110,3 +110,27 @@ they land.
   its frame's origin.
 - A `camera`-frame light composes with the view's resolved pose, so the
   render operation resolves it once per view.
+
+## S5. DDA
+
+- `cast_ray` moves the ray into each placement's grid units with the
+  inverse rotation and a division by the scale. The direction keeps its
+  length, which leaves the ray parameter in world distance. Hits in
+  different placements compare by that distance directly.
+- A hit's face is a unit `SurfaceSpan`, which `corner_occlusion` reads
+  like a merged quad. The hit's `along` holds the fractions across the
+  face's `u` and `v`, the coordinates the corner blend takes.
+- A ray that starts inside the grid skips its starting cell. A camera
+  inside a voxel sees out of it. A shadow ray cast from a face cannot hit
+  that face's voxel through rounding.
+- The entry cell is the entry point floored and clamped into the grid. A
+  ray that enters on a face lands in the cell behind that face. A solid
+  entry cell reports its hit on the slab's entry axis.
+- `RenderViewRays` lowers a view's projection once per render into pixel
+  (0, 0)'s ray plus per-pixel steps for the origin and the direction.
+  Perspective zeroes the origin steps and orthographic zeroes the direction
+  steps. Building a pixel's ray takes no branch on the projection and
+  recomputes no per-view constant. The contract keeps `RenderProjection`
+  unchanged.
+- The `cpu` feature gates `RenderViewRays`, `cast_ray`, `RenderRay`, and
+  `RenderHit`. The GPU crate computes its own hits.

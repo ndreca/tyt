@@ -51,6 +51,32 @@ pub use render_shadow::*;
 pub use render_view::*;
 pub use result::*;
 
+// Optional API
+
+#[cfg(feature = "cpu")]
+mod cast_ray;
+
+#[cfg(feature = "cpu")]
+pub use cast_ray::*;
+
+#[cfg(feature = "cpu")]
+mod render_hit;
+
+#[cfg(feature = "cpu")]
+pub use render_hit::*;
+
+#[cfg(feature = "cpu")]
+mod render_ray;
+
+#[cfg(feature = "cpu")]
+pub use render_ray::*;
+
+#[cfg(feature = "cpu")]
+mod render_view_rays;
+
+#[cfg(feature = "cpu")]
+pub use render_view_rays::*;
+
 // Internal API
 
 mod fit_radius;

@@ -75,7 +75,7 @@ resample plan has one.
       look-at whose eye is its target errors. A direction along +Y or -Y
       within `unit_rotation_tolerance` takes -Z as up. The `top` and `bottom`
       built-ins exercise it.
-- [ ] **S5. DDA.** Rays start at pixel centers. Perspective rays fan out by
+- [x] **S5. DDA.** Rays start at pixel centers. Perspective rays fan out by
       the field of view and aspect. Orthographic rays run parallel across the
       scale. Each ray enters every placement through the inverse placement
       transform, clips to the grid's slab, and steps the dense grid

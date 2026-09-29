@@ -9,6 +9,9 @@ description = "The render contract for voxel scenes and its CPU reference render
 [package.metadata.workspaces]
 independent = true
 
+[package.metadata.docs.rs]
+all-features = true
+
 [dependencies]
 branded-id = "0.1.11"
 ty-math = { version = "0.2.0", default-features = false, features = ["color"] }
