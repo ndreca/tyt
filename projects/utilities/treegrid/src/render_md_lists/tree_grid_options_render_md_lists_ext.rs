@@ -15,7 +15,9 @@ impl TreeGridOptions {
                 self.no_header_level()?;
                 TreeGridMdListsLabelMode::None
             }
+
             TreeGridLabelKind::Concat => return Err(TreeGridError::LabelConcatWithMdLists),
+
             TreeGridLabelKind::Header => TreeGridMdListsLabelMode::Header(TreeGridHeaderOptions {
                 level: self.level(),
             }),

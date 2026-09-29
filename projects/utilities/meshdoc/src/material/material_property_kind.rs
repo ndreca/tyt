@@ -23,9 +23,12 @@ impl MaterialPropertyKind {
     pub fn of(key: &str) -> Option<Self> {
         match key {
             BASE_COLOR => Some(Self::ColorRgba),
+
             EMISSIVE_COLOR => Some(Self::ColorRgb),
+
             METALLIC | ROUGHNESS | OCCLUSION_STRENGTH | NORMAL_SCALE | EMISSIVE_STRENGTH | IOR
             | TRANSMISSION | ALPHA_CUTOFF => Some(Self::Scalar),
+
             _ => None,
         }
     }

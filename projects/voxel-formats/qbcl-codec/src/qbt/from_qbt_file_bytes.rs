@@ -85,12 +85,15 @@ fn read_node<D: DecompressZlib>(
     let data_size = reader.read_u32()? as usize;
     match type_id {
         NODE_MATRIX => Ok(QbtNode::Matrix(read_matrix(dependencies, reader)?)),
+
         NODE_MODEL => Ok(QbtNode::Model(read_model(dependencies, reader, depth)?)),
+
         NODE_COMPOUND => Ok(QbtNode::Compound(read_compound(
             dependencies,
             reader,
             depth,
         )?)),
+
         other => Ok(QbtNode::Unknown(QbtUnknownNode {
             type_id: other,
             data: reader.read_bytes(data_size)?.to_vec(),

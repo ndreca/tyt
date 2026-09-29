@@ -434,6 +434,7 @@ impl VoxState {
 
                 match property_id_by_name.get(property.name.as_str()) {
                     Some(&effective_id) => properties[effective_id] = entry,
+
                     None => {
                         let effective_id = properties.push(entry);
                         property_id_by_name.insert(property.name.as_str(), effective_id);

@@ -54,48 +54,57 @@ impl Display for TreeGridError {
                     "bare roots were requested, but the layout is not box hierarchy"
                 )
             }
+
             TreeGridError::HeaderLabelWithBoxTables => {
                 write!(f, "the box tables layout takes the concat label mode")
             }
+
             TreeGridError::HeaderLabelWithFlatTables => {
                 write!(f, "the flat table shape requires the concat label mode")
             }
+
             TreeGridError::HeaderLevelWithoutHeaders => {
                 write!(
                     f,
                     "a header level was set, but the render emits no headings"
                 )
             }
+
             TreeGridError::LabelConcatWithMdLists => {
                 write!(
                     f,
                     "the markdown lists layout takes the header or none label mode"
                 )
             }
+
             TreeGridError::LabelModeWithoutLabels => {
                 write!(
                     f,
                     "a label mode was set, but the layout carries its labels structurally"
                 )
             }
+
             TreeGridError::LabelNoneWithTables => {
                 write!(
                     f,
                     "the table layouts require labels, but the label mode is none"
                 )
             }
+
             TreeGridError::TableShapeWithoutTables => {
                 write!(
                     f,
                     "a table shape was set, but the layout is not a table layout"
                 )
             }
+
             TreeGridError::ValueChildrenWithoutBoxHierarchy => {
                 write!(
                     f,
                     "value children were requested, but the layout is not box hierarchy"
                 )
             }
+
             TreeGridError::WidthWithoutTextRows => {
                 write!(f, "a width was set, but the layout is not text rows")
             }

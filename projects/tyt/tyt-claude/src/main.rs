@@ -30,6 +30,7 @@ fn main() {
         Command::Completion { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "claude", &mut io::stdout());
         }
+
         Command::TytClaude(cmd) => {
             if let Err(e) = cmd.execute(DependenciesImpl) {
                 eprintln!("error: {e}");

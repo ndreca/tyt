@@ -30,6 +30,7 @@ fn main() {
         Command::Completion { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "cubemap", &mut io::stdout());
         }
+
         Command::TytCubemap(cubemap) => {
             if let Err(e) = cubemap.execute(DependenciesImpl) {
                 eprintln!("error: {e}");

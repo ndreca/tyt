@@ -143,6 +143,7 @@ impl Render {
                 };
                 (absolute, None)
             }
+
             None => {
                 let dir = dependencies.create_temp_dir()?;
                 (dir.join("render.png"), Some(dir))
@@ -158,6 +159,7 @@ impl Render {
                     )));
                 }
             }
+
             Projection::Orthographic => {
                 if focal_length.is_some() {
                     return Err(Error::IO(IOError::new(

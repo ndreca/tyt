@@ -76,9 +76,11 @@ fn encode_positions<D: EncodeBase64>(
 ) -> (Vec<usize>, VoxjPositionBlock) {
     match encoding {
         PositionEncoding::RawJson => raw_positions(&object.positions),
+
         PositionEncoding::BitmapBase64 => {
             bitmap_positions(dependencies, &object.positions, object.bounds)
         }
+
         PositionEncoding::Hilbert => {
             hilbert_positions(dependencies, &object.positions, object.bounds)
         }

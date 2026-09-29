@@ -390,6 +390,7 @@ fn scene_node_body(
                 frames,
             }))
         }
+
         MVoxExtNodeBody::Group => {
             if !node.child_object_ids.is_empty() {
                 return Err(Error::Invalid(format!(
@@ -403,6 +404,7 @@ fn scene_node_body(
                 .collect();
             Ok(MVoxSceneNodeBody::Group(MVoxGroupNode { children }))
         }
+
         MVoxExtNodeBody::Shape { models } => {
             if !node.child_node_ids.is_empty() {
                 return Err(Error::Invalid(format!(

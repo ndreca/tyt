@@ -95,6 +95,7 @@ impl Evaluator<'_> {
             } => self.mix(first, second, chooser, output),
 
             CheckedKind::Name(name) => Ok(self.named(name).clone()),
+
             CheckedKind::Number(value) => Ok(build(output, number(*value))),
 
             CheckedKind::Reduce {
@@ -321,6 +322,7 @@ impl Evaluator<'_> {
                     .map(|value| -value)
                     .collect(),
             ),
+
             UnaryOperator::Not => Components::Bool(
                 bools(&operand)
                     .components
@@ -466,12 +468,15 @@ fn f32_call(
         ElementwiseFunction::Abs => {
             componentwise(fixed(&operands), entries, width, |[a]| Ok(a.abs()))
         }
+
         ElementwiseFunction::Ceil => {
             componentwise(fixed(&operands), entries, width, |[a]| Ok(a.ceil()))
         }
+
         ElementwiseFunction::Floor => {
             componentwise(fixed(&operands), entries, width, |[a]| Ok(a.floor()))
         }
+
         ElementwiseFunction::Round => {
             componentwise(fixed(&operands), entries, width, |[a]| Ok(a.round()))
         }
@@ -510,12 +515,15 @@ fn f32_call(
         ElementwiseFunction::OklabFromRgb => per_entry(fixed(&operands), entries, |[color]| {
             Ok(oklab_from_rgb(triple(color)).to_vec())
         }),
+
         ElementwiseFunction::OklchFromRgb => per_entry(fixed(&operands), entries, |[color]| {
             Ok(oklch_from_rgb(triple(color)).to_vec())
         }),
+
         ElementwiseFunction::RgbFromOklab => per_entry(fixed(&operands), entries, |[color]| {
             Ok(rgb_from_oklab(triple(color)).to_vec())
         }),
+
         ElementwiseFunction::RgbFromOklch => per_entry(fixed(&operands), entries, |[color]| {
             Ok(rgb_from_oklch(triple(color))?.to_vec())
         }),
@@ -636,7 +644,9 @@ fn unsigned_keep<T: Unsigned>(
 
         Ok(match function {
             ElementwiseFunction::Max => a.max(b),
+
             ElementwiseFunction::Min => a.min(b),
+
             ElementwiseFunction::Mod => {
                 if b.to_u64() == 0 {
                     return Err(EvalFailure::DivisionByZero);
@@ -644,6 +654,7 @@ fn unsigned_keep<T: Unsigned>(
 
                 T::from_u64(a.to_u64() % b.to_u64()).expect("a remainder fits its type")
             }
+
             _ => unreachable!("the f32 calls take their own path"),
         })
     })
@@ -665,11 +676,14 @@ fn unsigned_binary<T: Unsigned>(
 
         match operator {
             BinaryOperator::Add => T::from_u64(a + b).ok_or_else(overflow),
+
             BinaryOperator::Multiply => T::from_u64(a * b).ok_or_else(overflow),
+
             BinaryOperator::Subtract => a
                 .checked_sub(b)
                 .and_then(T::from_u64)
                 .ok_or(EvalFailure::BelowZero { left: a, right: b }),
+
             BinaryOperator::Divide => {
                 if b == 0 {
                     return Err(EvalFailure::DivisionByZero);
@@ -693,20 +707,25 @@ fn compare_values(
         Scalar::F32 => componentwise([f32s(left), f32s(right)], entries, width, |[a, b]| {
             Ok(compare(operator, a, b))
         }),
+
         Scalar::U8 => componentwise([u8s(left), u8s(right)], entries, width, |[a, b]| {
             Ok(compare(operator, a, b))
         }),
+
         Scalar::U16 => componentwise([u16s(left), u16s(right)], entries, width, |[a, b]| {
             Ok(compare(operator, a, b))
         }),
+
         Scalar::U32 => componentwise([u32s(left), u32s(right)], entries, width, |[a, b]| {
             Ok(compare(operator, a, b))
         }),
+
         Scalar::String => {
             componentwise([strings(left), strings(right)], entries, width, |[a, b]| {
                 Ok(compare(operator, a, b))
             })
         }
+
         Scalar::Bool => componentwise([bools(left), bools(right)], entries, width, |[a, b]| {
             Ok(compare(operator, a, b))
         }),
@@ -900,27 +919,35 @@ fn reduce(
         (Reduction::Avg, Components::F32(components)) => {
             Components::F32(average(components, width, &groups, &operation, target)?)
         }
+
         (Reduction::Avg, Components::U8(components)) => {
             Components::F32(average(components, width, &groups, &operation, target)?)
         }
+
         (Reduction::Avg, Components::U16(components)) => {
             Components::F32(average(components, width, &groups, &operation, target)?)
         }
+
         (Reduction::Avg, Components::U32(components)) => {
             Components::F32(average(components, width, &groups, &operation, target)?)
         }
+
         (_, Components::F32(components)) => Components::F32(fold(
             components, width, &groups, reduction, &operation, target,
         )?),
+
         (_, Components::U8(components)) => Components::U8(fold(
             components, width, &groups, reduction, &operation, target,
         )?),
+
         (_, Components::U16(components)) => Components::U16(fold(
             components, width, &groups, reduction, &operation, target,
         )?),
+
         (_, Components::U32(components)) => Components::U32(fold(
             components, width, &groups, reduction, &operation, target,
         )?),
+
         (_, Components::Bool(_) | Components::String(_)) => {
             unreachable!("the checker rejects a reduction over bools and strings")
         }
@@ -1049,7 +1076,9 @@ fn groups(
 
                     match source {
                         Domain::Face => groups[destination].push(face),
+
                         Domain::Corner => groups[destination].extend(corners_of(face)),
+
                         _ => {
                             unreachable!("the checker keeps a reduction's source above its target")
                         }
@@ -1075,12 +1104,15 @@ fn groups(
 fn convert(value: &Value, target: Scalar, rounding: Option<Rounding>) -> EvalResult<Value> {
     let components = match (value.components(), target) {
         (Components::F32(components), Scalar::F32) => Components::F32(components.clone()),
+
         (Components::F32(components), Scalar::U8) => {
             Components::U8(from_f32(components, rounding, target)?)
         }
+
         (Components::F32(components), Scalar::U16) => {
             Components::U16(from_f32(components, rounding, target)?)
         }
+
         (Components::F32(components), Scalar::U32) => {
             Components::U32(from_f32(components, rounding, target)?)
         }
@@ -1088,9 +1120,11 @@ fn convert(value: &Value, target: Scalar, rounding: Option<Rounding>) -> EvalRes
         (Components::U8(components), Scalar::F32) => {
             Components::F32(components.iter().map(|&value| f32::from(value)).collect())
         }
+
         (Components::U16(components), Scalar::F32) => {
             Components::F32(components.iter().map(|&value| f32::from(value)).collect())
         }
+
         (Components::U32(components), Scalar::F32) => Components::F32(
             components
                 .iter()
@@ -1105,13 +1139,21 @@ fn convert(value: &Value, target: Scalar, rounding: Option<Rounding>) -> EvalRes
         ),
 
         (Components::U8(components), Scalar::U8) => Components::U8(components.clone()),
+
         (Components::U8(components), Scalar::U16) => Components::U16(between(components, target)?),
+
         (Components::U8(components), Scalar::U32) => Components::U32(between(components, target)?),
+
         (Components::U16(components), Scalar::U8) => Components::U8(between(components, target)?),
+
         (Components::U16(components), Scalar::U16) => Components::U16(components.clone()),
+
         (Components::U16(components), Scalar::U32) => Components::U32(between(components, target)?),
+
         (Components::U32(components), Scalar::U8) => Components::U8(between(components, target)?),
+
         (Components::U32(components), Scalar::U16) => Components::U16(between(components, target)?),
+
         (Components::U32(components), Scalar::U32) => Components::U32(components.clone()),
 
         (Components::Bool(_) | Components::String(_), _) | (_, Scalar::Bool | Scalar::String) => {
@@ -1137,9 +1179,13 @@ fn from_f32<T: Unsigned>(
                 None if value.fract() != 0.0 => {
                     return Err(EvalFailure::Fraction { value, target });
                 }
+
                 None => value,
+
                 Some(Rounding::Ceil) => value.ceil(),
+
                 Some(Rounding::Floor) => value.floor(),
+
                 Some(Rounding::Round) => value.round(),
             };
             let out_of_range = || EvalFailure::OutOfRange {
@@ -1234,21 +1280,27 @@ fn transform_entry_pairs(
         (Components::F32(first), Components::F32(second)) => {
             Components::F32(transform.apply(first, second))
         }
+
         (Components::U8(first), Components::U8(second)) => {
             Components::U8(transform.apply(first, second))
         }
+
         (Components::U16(first), Components::U16(second)) => {
             Components::U16(transform.apply(first, second))
         }
+
         (Components::U32(first), Components::U32(second)) => {
             Components::U32(transform.apply(first, second))
         }
+
         (Components::Bool(first), Components::Bool(second)) => {
             Components::Bool(transform.apply(first, second))
         }
+
         (Components::String(first), Components::String(second)) => {
             Components::String(transform.apply(first, second))
         }
+
         _ => unreachable!("the checker settles one type across the pair"),
     }
 }
@@ -1426,6 +1478,7 @@ mod tests {
                 binding: None,
                 failure,
             }) => failure,
+
             other => panic!("{text} gave {other:?}"),
         }
     }

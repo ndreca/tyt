@@ -132,7 +132,9 @@ fn node_provenance(node: &MVoxSceneNode) -> MVoxExtNode {
                 layer: transform.layer,
                 frames: transform.frames.iter().map(frame_provenance).collect(),
             },
+
             MVoxSceneNodeBody::Group(_) => MVoxExtNodeBody::Group,
+
             MVoxSceneNodeBody::Shape(shape) => MVoxExtNodeBody::Shape {
                 models: shape
                     .models
@@ -402,6 +404,7 @@ fn build_hierarchy(
                     transform: transform_from_frames(&transform.frames),
                 }
             }
+
             MVoxSceneNodeBody::Group(group) => {
                 let mut child_node_ids = Vec::with_capacity(group.children.len());
                 let mut seen = HashSet::new();
@@ -419,6 +422,7 @@ fn build_hierarchy(
                     transform: TyTransformF64::default(),
                 }
             }
+
             MVoxSceneNodeBody::Shape(shape) => {
                 let mut child_object_ids = Vec::with_capacity(shape.models.len());
                 let mut seen = HashSet::new();

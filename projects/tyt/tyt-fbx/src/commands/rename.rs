@@ -83,6 +83,7 @@ impl Rename {
 
         let suffix_num = match suffix_num {
             None => None,
+
             Some(v) => {
                 let start = match v.first() {
                     Some(s) => s.parse::<u32>().map_err(|e| {
@@ -91,6 +92,7 @@ impl Rename {
                             format!("invalid --suffix-num start '{s}': {e}"),
                         ))
                     })?,
+
                     None => 0,
                 };
                 let pad = match v.get(1) {
@@ -100,6 +102,7 @@ impl Rename {
                             format!("invalid --suffix-num pad '{p}': {e}"),
                         ))
                     })?,
+
                     None => false,
                 };
                 Some((start, pad))

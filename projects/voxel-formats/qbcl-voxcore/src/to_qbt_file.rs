@@ -88,6 +88,7 @@ fn rebuild_node(node_id: U32Id<BVoxHierarchyNode>, main: &QbtVoxMain) -> Result<
         QbtExtNode::Model => {
             synthesized_node(main, hierarchy.name.clone(), position, &objects, children)?
         }
+
         QbtExtNode::Matrix { local_scale, pivot } => entry_node(
             main,
             node_id,
@@ -96,6 +97,7 @@ fn rebuild_node(node_id: U32Id<BVoxHierarchyNode>, main: &QbtVoxMain) -> Result<
             children,
             false,
         )?,
+
         QbtExtNode::Compound { local_scale, pivot } => entry_node(
             main,
             node_id,
@@ -104,6 +106,7 @@ fn rebuild_node(node_id: U32Id<BVoxHierarchyNode>, main: &QbtVoxMain) -> Result<
             children,
             true,
         )?,
+
         QbtExtNode::Unknown { type_id, data } => {
             // Opaque bytes have no place for a grid or a child.
             if !objects.is_empty() || !children.is_empty() {

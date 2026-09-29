@@ -47,14 +47,17 @@ fn write_node<D: CompressZlib>(
             NODE_MATRIX,
             build(|body| write_matrix(dependencies, body, matrix))?,
         ),
+
         QbtNode::Model(model) => (
             NODE_MODEL,
             build(|body| write_model(dependencies, body, model))?,
         ),
+
         QbtNode::Compound(compound) => (
             NODE_COMPOUND,
             build(|body| write_compound(dependencies, body, compound))?,
         ),
+
         QbtNode::Unknown(unknown) => (unknown.type_id, unknown.data.clone()),
     };
     out.write_u32(type_id);

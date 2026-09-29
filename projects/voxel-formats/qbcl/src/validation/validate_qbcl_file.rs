@@ -36,7 +36,9 @@ fn validate_thumbnail(thumbnail: &QbclThumbnail) -> Result<()> {
 fn validate_node(node: &QbclNode) -> Result<()> {
     match &node.body {
         QbclNodeBody::Matrix(matrix) => validate_matrix(matrix),
+
         QbclNodeBody::Model(model) => model.children.iter().try_for_each(validate_node),
+
         QbclNodeBody::Compound(compound) => {
             validate_matrix(&compound.matrix)?;
             compound.children.iter().try_for_each(validate_node)

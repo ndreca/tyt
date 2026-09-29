@@ -22,7 +22,9 @@ impl CliValue for NodeListLayout {
                 "The scene graph as a box-glyph tree, each entity's tag and view rows inline on \
                  its nodes"
             }
+
             NodeListLayout::JsonCompact => "The scene graph as single-line JSON records",
+
             NodeListLayout::JsonPretty => "The scene graph as indented JSON records",
         }
     }

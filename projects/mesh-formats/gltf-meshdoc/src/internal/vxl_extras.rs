@@ -72,7 +72,9 @@ impl VxlExtras {
 
         let mut object = match rest {
             None => Map::new(),
+
             Some(Value::Object(object)) => object.clone(),
+
             Some(_) => {
                 return Err(Error::invalid(
                     "the ext extras are not a JSON object to hold the `vxl` entries",

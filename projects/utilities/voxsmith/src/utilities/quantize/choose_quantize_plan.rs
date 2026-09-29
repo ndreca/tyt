@@ -91,6 +91,7 @@ pub fn choose_quantize_plan<T: VoxExt>(
 
         let partition_index = match partitions.iter().position(|(other, _)| *other == key) {
             Some(partition_index) => partition_index,
+
             None => {
                 partitions.push((key, Vec::new()));
                 partitions.len() - 1
@@ -187,7 +188,9 @@ impl Reading {
             PropertyInterpretation::LinearColor | PropertyInterpretation::SrgbColor => {
                 let components = match kind {
                     VoxValuePoolKind::Vec3Float(_) => 3,
+
                     VoxValuePoolKind::Vec4Float(_) => 4,
+
                     _ => {
                         return Err(Error::invalid(format!(
                             "property `{name}` holds {kind_name} values, but a color reading \
@@ -198,7 +201,9 @@ impl Reading {
 
                 let alpha = match (components, options.alpha) {
                     (4, alpha) => Some(alpha.unwrap_or(AlphaMode::Partition)),
+
                     (_, None) => None,
+
                     (_, Some(_)) => {
                         return Err(Error::invalid(format!(
                             "property `{name}` reads as a 3-component color, which has no alpha \
@@ -229,9 +234,13 @@ impl Reading {
             PropertyInterpretation::Numeric => {
                 let dimensions = match kind {
                     VoxValuePoolKind::Float(_) | VoxValuePoolKind::Int(_) => 1,
+
                     VoxValuePoolKind::Vec2Float(_) | VoxValuePoolKind::Vec2Int(_) => 2,
+
                     VoxValuePoolKind::Vec3Float(_) | VoxValuePoolKind::Vec3Int(_) => 3,
+
                     VoxValuePoolKind::Vec4Float(_) | VoxValuePoolKind::Vec4Int(_) => 4,
+
                     VoxValuePoolKind::Bool(_)
                     | VoxValuePoolKind::Json(_)
                     | VoxValuePoolKind::String(_) => {
@@ -282,9 +291,11 @@ impl Reading {
                     VoxValuePoolValueRef::Vec3Float(&[red, green, blue]) => {
                         ([red, green, blue], None)
                     }
+
                     VoxValuePoolValueRef::Vec4Float(&[red, green, blue, alpha]) => {
                         ([red, green, blue], Some(alpha))
                     }
+
                     _ => unreachable!("a color reading resolved against a float vector"),
                 };
 
@@ -303,23 +314,31 @@ impl Reading {
                 let mut components = [0.0; 4];
                 match value {
                     VoxValuePoolValueRef::Float(number) => components[0] = number,
+
                     VoxValuePoolValueRef::Int(number) => components[0] = number as f64,
+
                     VoxValuePoolValueRef::Vec2Float(vector) => {
                         components[..2].copy_from_slice(vector)
                     }
+
                     VoxValuePoolValueRef::Vec3Float(vector) => {
                         components[..3].copy_from_slice(vector)
                     }
+
                     VoxValuePoolValueRef::Vec4Float(vector) => components.copy_from_slice(vector),
+
                     VoxValuePoolValueRef::Vec2Int(vector) => {
                         components[..2].copy_from_slice(&vector.map(|number| number as f64))
                     }
+
                     VoxValuePoolValueRef::Vec3Int(vector) => {
                         components[..3].copy_from_slice(&vector.map(|number| number as f64))
                     }
+
                     VoxValuePoolValueRef::Vec4Int(vector) => {
                         components.copy_from_slice(&vector.map(|number| number as f64))
                     }
+
                     _ => unreachable!("a numeric reading resolved against a number or vector"),
                 }
 
@@ -342,7 +361,9 @@ fn color_coords(rgb: [f64; 3], encoding: ColorEncoding, space: ColorSpace) -> Ty
 
     match space {
         ColorSpace::Lab => TyCielabColorF64::from_color(linear).to_vector3(),
+
         ColorSpace::Oklab => TyOklabColorF64::from_color(linear).to_vector3(),
+
         ColorSpace::Srgb => match encoding {
             ColorEncoding::Linear => TySrgbF64::from_linear(linear).to_vector3(),
             ColorEncoding::Srgb => TyVector3F64::new(red, green, blue),

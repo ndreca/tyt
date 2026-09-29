@@ -850,6 +850,7 @@ fn read<'a>(
 fn scalar(property: &str, value: VoxValuePoolValueRef<'_>) -> Result<f64> {
     match value {
         VoxValuePoolValueRef::Float(value) => Ok(value),
+
         _ => Err(Error::MaterialPropertyKind {
             property: property.to_owned(),
         }),
@@ -862,6 +863,7 @@ fn color(property: &str, value: VoxValuePoolValueRef<'_>) -> Result<TyLinSrgbF64
         | VoxValuePoolValueRef::Vec4Float(&[red, green, blue, _]) => {
             Ok(TyLinSrgbF64::new(red, green, blue))
         }
+
         _ => Err(Error::MaterialPropertyKind {
             property: property.to_owned(),
         }),

@@ -24,6 +24,7 @@ pub fn write_file_atomic(path: &Path, contents: &[u8]) -> Result<()> {
 
     match fs::rename(&tmp, path) {
         Ok(()) => Ok(()),
+
         Err(e) => {
             if e.kind() == ErrorKind::AlreadyExists || e.kind() == ErrorKind::PermissionDenied {
                 let _ = fs::remove_file(path);

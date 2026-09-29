@@ -143,6 +143,7 @@ impl StdError for Error {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match self {
             Error::IO(e) => Some(e),
+
             Error::ApiKeyNotConfigured
             | Error::LowpolyConflict(_)
             | Error::TextureOptionWithoutTexture(_)

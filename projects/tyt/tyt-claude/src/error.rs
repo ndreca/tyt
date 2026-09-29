@@ -76,6 +76,7 @@ impl StdError for Error {
             | Error::NoUserHome
             | Error::ProfileAlreadyExists { .. }
             | Error::ProfileNotFound { .. } => None,
+
             Error::IO(e) => Some(e),
         }
     }

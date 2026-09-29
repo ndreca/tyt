@@ -58,9 +58,11 @@ impl Format for Voxj {
 
         let bytes = match options.serialization {
             VoxjSerialization::Compact => to_voxj_bytes(dependencies, &main, &options.options)?,
+
             VoxjSerialization::Pretty => {
                 to_voxj_pretty_bytes(dependencies, &main, &options.options)?
             }
+
             VoxjSerialization::Zip => to_voxjz_bytes(dependencies, &main, &options.options)?,
         };
 

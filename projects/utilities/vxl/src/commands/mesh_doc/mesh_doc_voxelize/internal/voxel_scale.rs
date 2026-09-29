@@ -16,6 +16,7 @@ impl CliValue for VoxelScale {
             VoxelScale::Bake => {
                 "Apply node scale to the geometry, so every object's cubes are the voxel size"
             }
+
             VoxelScale::Keep => {
                 "Keep node scale on the node, so a scaled object's cubes scale with it"
             }

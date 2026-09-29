@@ -71,18 +71,26 @@ impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
             Error::Invalid(message) => write!(f, "{message}"),
+
             Error::Vox(error) => error.fmt(f),
+
             Error::Mesh(error) => error.fmt(f),
+
             #[cfg(feature = "object")]
             Error::MeshRecord { element, reason } => write!(f, "{element} {reason}"),
+
             #[cfg(feature = "object")]
             Error::Png(message) => write!(f, "could not encode PNG: {message}"),
+
             #[cfg(feature = "render")]
             Error::RenderRecord { element, reason } => write!(f, "{element} {reason}"),
+
             #[cfg(feature = "mesh_doc")]
             Error::DecodeImage(message) => write!(f, "could not decode image: {message}"),
+
             #[cfg(feature = "_treegrid")]
             Error::TreeGrid(error) => error.fmt(f),
+
             Error::PathSpec(error) => error.fmt(f),
         }
     }
@@ -92,18 +100,26 @@ impl StdError for Error {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match self {
             Error::Invalid(_) => None,
+
             Error::Vox(error) => Some(error),
+
             Error::Mesh(error) => Some(error),
+
             #[cfg(feature = "object")]
             Error::MeshRecord { .. } => None,
+
             #[cfg(feature = "object")]
             Error::Png(_) => None,
+
             #[cfg(feature = "render")]
             Error::RenderRecord { .. } => None,
+
             #[cfg(feature = "mesh_doc")]
             Error::DecodeImage(_) => None,
+
             #[cfg(feature = "_treegrid")]
             Error::TreeGrid(error) => Some(error),
+
             Error::PathSpec(error) => Some(error),
         }
     }

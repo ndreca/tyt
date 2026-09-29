@@ -36,10 +36,12 @@ impl MeshDocumentFile {
 
         match (primaries.next(), primaries.next()) {
             (Some(file), None) => Ok(&file.bytes),
+
             (None, _) => Err(Error::Files(
                 "a document holds one primary file at the empty path, and this holds none"
                     .to_owned(),
             )),
+
             (Some(_), Some(_)) => Err(Error::Files(
                 "a document holds one primary file at the empty path, and this holds several"
                     .to_owned(),

@@ -19,7 +19,9 @@ impl CliValue for PaletteShowLabel {
     fn help(self) -> &'static str {
         match self {
             PaletteShowLabel::None => "No labels",
+
             PaletteShowLabel::Concat => "Full dot-joined paths, like `0.\"baseColor\".a`",
+
             PaletteShowLabel::Header => {
                 "Nested markdown headings over value collections labeled by their leaf segment \
                  alone"

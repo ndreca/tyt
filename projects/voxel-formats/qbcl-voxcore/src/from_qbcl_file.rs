@@ -62,6 +62,7 @@ fn build_node(
             };
             (node_id, body)
         }
+
         QbclNodeBody::Model(model) => {
             let mut child_node_ids = Vec::with_capacity(model.children.len());
             for child in &model.children {
@@ -79,6 +80,7 @@ fn build_node(
             };
             (node_id, body)
         }
+
         QbclNodeBody::Compound(compound) => {
             let mut child_node_ids = Vec::with_capacity(compound.children.len());
             for child in &compound.children {
@@ -156,11 +158,13 @@ fn build_palette(
 fn collect_colors(node: &QbclNode, order: &mut Vec<[u8; 3]>, seen: &mut HashSet<[u8; 3]>) {
     match &node.body {
         QbclNodeBody::Matrix(matrix) => collect_matrix(matrix, order, seen),
+
         QbclNodeBody::Model(model) => {
             for child in &model.children {
                 collect_colors(child, order, seen);
             }
         }
+
         QbclNodeBody::Compound(compound) => {
             collect_matrix(&compound.matrix, order, seen);
             for child in &compound.children {

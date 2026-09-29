@@ -30,6 +30,7 @@ impl Display for Error {
             | Error::Plist(message)
             | Error::Png(message)
             | Error::Invalid(message) => write!(f, "{message}"),
+
             Error::Io(e) => e.fmt(f),
         }
     }

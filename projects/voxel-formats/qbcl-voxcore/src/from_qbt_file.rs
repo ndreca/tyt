@@ -60,6 +60,7 @@ fn build_node(
             };
             (node_id, entry)
         }
+
         QbtNode::Model(model) => {
             let mut child_node_ids = Vec::with_capacity(model.children.len());
             for child in &model.children {
@@ -74,6 +75,7 @@ fn build_node(
             let node_id = main.retain_hierarchy_node(hierarchy)?;
             (node_id, QbtExtNode::Model)
         }
+
         QbtNode::Compound(compound) => {
             let mut child_node_ids = Vec::with_capacity(compound.children.len());
             for child in &compound.children {
@@ -96,6 +98,7 @@ fn build_node(
             };
             (node_id, entry)
         }
+
         QbtNode::Unknown(unknown) => {
             let hierarchy = VoxHierarchyNode {
                 name: String::new(),
@@ -159,17 +162,20 @@ fn build_palette(
 fn collect_colors(node: &QbtNode, order: &mut Vec<[u8; 3]>, seen: &mut HashSet<[u8; 3]>) {
     match node {
         QbtNode::Matrix(matrix) => collect_matrix(matrix, order, seen),
+
         QbtNode::Model(model) => {
             for child in &model.children {
                 collect_colors(child, order, seen);
             }
         }
+
         QbtNode::Compound(compound) => {
             collect_matrix(&compound.matrix, order, seen);
             for child in &compound.children {
                 collect_colors(child, order, seen);
             }
         }
+
         QbtNode::Unknown(_) => {}
     }
 }

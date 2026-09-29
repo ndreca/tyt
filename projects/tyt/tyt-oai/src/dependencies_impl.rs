@@ -194,6 +194,7 @@ fn build_message(message: &InputMessage) -> Result<Value> {
 
     let content = match &message.image {
         None => Value::String(message.text.clone().unwrap_or_default()),
+
         Some(image) => {
             let image_part = json!({
                 "type": "input_image",
@@ -211,6 +212,7 @@ fn build_message(message: &InputMessage) -> Result<Value> {
                         parts.push(image_part);
                     }
                 }
+
                 None => parts.push(image_part),
             }
             Value::Array(parts)
@@ -273,6 +275,7 @@ fn parse_response(status: u16, bytes: &[u8]) -> Result<OaiResponse> {
     for item in output {
         match item.get("type").and_then(Value::as_str) {
             Some("message") => collect_message_text(item, &mut text),
+
             Some("image_generation_call") if image_png.is_none() => {
                 if let Some(result) = item.get("result").and_then(Value::as_str) {
                     let decoded = tyt_injection::decode_base64(result).map_err(|e| {
@@ -287,6 +290,7 @@ fn parse_response(status: u16, bytes: &[u8]) -> Result<OaiResponse> {
                         .map(str::to_owned);
                 }
             }
+
             _ => {}
         }
     }

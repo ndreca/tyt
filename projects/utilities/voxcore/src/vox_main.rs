@@ -3820,6 +3820,7 @@ mod tests {
                 let values = (0..1 + rng.below(3)).map(|v| v as i64).collect();
                 main.retain_value_pool(VoxValuePool::int(values).unwrap());
             }
+
             1 => {
                 let mut palette = VoxPalette::default();
                 for index in 0..rng.below(3) {
@@ -3839,6 +3840,7 @@ mod tests {
 
                 let _ = main.retain_palette(palette);
             }
+
             2 => {
                 let bounds = TyVector3U32::new(1 + rng.below(2) as u32, 1 + rng.below(2) as u32, 1);
                 let mut object = VoxObject::new(String::new(), bounds).unwrap();
@@ -3853,6 +3855,7 @@ mod tests {
                 let _ = object.retain_voxel(voxel_id(rng.below(4) as u32), &sample_ids);
                 let _ = main.retain_object(object);
             }
+
             3 => {
                 let _ = main.retain_hierarchy_node(VoxHierarchyNode {
                     child_node_ids: (0..rng.below(3))
@@ -3864,6 +3867,7 @@ mod tests {
                     ..VoxHierarchyNode::default()
                 });
             }
+
             4 => {
                 let nodes = (0..1 + rng.below(3))
                     .map(|_| {
@@ -3877,18 +3881,22 @@ mod tests {
 
                 let _ = main.retain_hierarchy_nodes(nodes);
             }
+
             5 => {
                 let _ = main.push_root_hierarchy_node_id(wild_node_id);
             }
+
             6 => {
                 let root_ids = (0..rng.below(3))
                     .map(|_| node_id(rng.below(8) as u32))
                     .collect();
                 let _ = main.set_root_hierarchy_node_ids(root_ids);
             }
+
             7 => {
                 let _ = main.retain_layer(wild_object_id, wild_palette_id, wild_material_id);
             }
+
             8 => {
                 let layers = main
                     .object(wild_object_id)
@@ -3901,12 +3909,15 @@ mod tests {
                 let _ =
                     main.retain_voxel(wild_object_id, voxel_id(rng.below(6) as u32), &sample_ids);
             }
+
             9 => {
                 let _ = main.release_voxel(wild_object_id, voxel_id(rng.below(6) as u32));
             }
+
             10 => {
                 let _ = main.release_layer(wild_object_id, U32Id::from_u32(rng.below(3) as u32));
             }
+
             11 => {
                 let _ = main.move_layer(
                     wild_object_id,
@@ -3914,6 +3925,7 @@ mod tests {
                     rng.below(3),
                 );
             }
+
             12 => {
                 let _ = main.retain_property(
                     wild_palette_id,
@@ -3922,6 +3934,7 @@ mod tests {
                     wild_value_id,
                 );
             }
+
             13 => {
                 let arity = main
                     .palette(wild_palette_id)
@@ -3930,34 +3943,43 @@ mod tests {
                 let row = (0..arity).map(|_| value_id(rng.below(4) as u32)).collect();
                 let _ = main.retain_material(wild_palette_id, row);
             }
+
             14 => {
                 let _ =
                     main.release_property(wild_palette_id, U32Id::from_u32(rng.below(3) as u32));
             }
+
             15 => {
                 let _ = main.release_object(wild_object_id);
             }
+
             16 => {
                 let _ = main.release_palette(wild_palette_id);
             }
+
             17 => {
                 let _ = main.release_hierarchy_node(wild_node_id);
             }
+
             18 => {
                 let _ = main.release_material(wild_palette_id, wild_material_id);
             }
+
             19 => {
                 let _ = main.release_value_pool_value(wild_value_pool_id, wild_value_id);
             }
+
             20 => {
                 let _ = main.release_value_pool(wild_value_pool_id);
             }
+
             21 => {
                 let _ = main.repaint_materials(
                     wild_palette_id,
                     &HashMap::from([(wild_material_id, material_id(rng.below(4) as u32))]),
                 );
             }
+
             22 => {
                 let _ = main.repoint_value_pool_value(
                     wild_value_pool_id,
@@ -3965,6 +3987,7 @@ mod tests {
                     value_id(rng.below(4) as u32),
                 );
             }
+
             _ => {
                 let _ = main.move_object(wild_object_id, rng.below(4));
             }

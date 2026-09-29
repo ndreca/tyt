@@ -16,6 +16,7 @@ impl CliValue for SurfaceMode {
             SurfaceMode::CenterInside => {
                 "Fill a cell when its center lies inside the surface. Expects a closed mesh"
             }
+
             SurfaceMode::TriangleCover => {
                 "Fill a cell when any triangle passes through it. Handles an open mesh, but marks \
                  both sides of a face that lands on a cell boundary"

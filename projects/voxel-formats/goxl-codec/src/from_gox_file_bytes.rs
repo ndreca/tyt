@@ -39,12 +39,19 @@ pub fn from_gox_file_bytes<D: DecodePng>(dependencies: &D, bytes: &[u8]) -> Resu
         let chunk = read_chunk(&mut reader)?;
         match &chunk.id {
             b"IMG " => file.image = read_image(chunk.data)?,
+
             b"PREV" => file.preview = Some(read_preview(dependencies, chunk.data)?),
+
             b"BL16" => file.blocks.push(read_block(dependencies, chunk.data)?),
+
             b"MATE" => file.materials.push(read_material(chunk.data)?),
+
             b"LAYR" => file.layers.push(read_layer(chunk.data)?),
+
             b"CAMR" => file.cameras.push(read_camera(chunk.data)?),
+
             b"LIGH" => file.light = Some(read_light(chunk.data)?),
+
             // Any other chunk is preserved verbatim so it survives the round
             // trip.
             _ => file.unknown_chunks.push(GoxlUnknownChunk {

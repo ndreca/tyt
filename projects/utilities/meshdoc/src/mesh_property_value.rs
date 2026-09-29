@@ -54,10 +54,13 @@ impl MeshPropertyValue {
     pub fn is_finite(&self) -> bool {
         match self {
             MeshPropertyValue::Float(value) => value.is_finite(),
+
             MeshPropertyValue::Floats(values) => values.iter().all(|value| value.is_finite()),
+
             MeshPropertyValue::FloatRows(rows) => rows
                 .iter()
                 .all(|row| row.iter().all(|value| value.is_finite())),
+
             _ => true,
         }
     }

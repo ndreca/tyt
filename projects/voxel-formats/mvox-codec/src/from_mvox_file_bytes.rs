@@ -53,6 +53,7 @@ pub fn from_mvox_file_bytes(bytes: &[u8]) -> Result<MVoxFile> {
         let mut exhaustive = true;
         match &chunk.id {
             b"PACK" => pack_count = Some(content.read_u32()?),
+
             b"SIZE" => {
                 if pending_size.is_some() {
                     return Err(invalid(
@@ -65,30 +66,42 @@ pub fn from_mvox_file_bytes(bytes: &[u8]) -> Result<MVoxFile> {
                     content.read_u32()?,
                 ]);
             }
+
             b"XYZI" => {
                 let size = pending_size.take().ok_or_else(|| {
                     invalid("XYZI chunk without a preceding SIZE chunk".to_owned())
                 })?;
                 file.models.push(read_model(size, &mut content)?);
             }
+
             b"RGBA" => {
                 file.palette = Some(read_rgba(chunk.content)?);
                 exhaustive = false;
             }
+
             b"nTRN" => file.scene_nodes.push(read_transform_node(&mut content)?),
+
             b"nGRP" => file.scene_nodes.push(read_group_node(&mut content)?),
+
             b"nSHP" => file.scene_nodes.push(read_shape_node(&mut content)?),
+
             b"MATL" => file.materials.push(read_material(&mut content)?),
+
             b"LAYR" => file.layers.push(read_layer(&mut content)?),
+
             b"rOBJ" => file.render_objects.push(MVoxRenderObject {
                 attributes: MVoxDict(content.read_dict()?),
             }),
+
             b"rCAM" => file.cameras.push(read_camera(&mut content)?),
+
             b"NOTE" => file.palette_notes = read_note(&mut content)?,
+
             b"IMAP" => {
                 file.index_map = Some(read_imap(chunk.content)?);
                 exhaustive = false;
             }
+
             // Any other chunk is preserved verbatim so it survives the round
             // trip. This includes the legacy MATT material chunk, which this
             // crate does not model; MATL supersedes it.
@@ -192,6 +205,7 @@ fn read_rgba(content: &[u8]) -> Result<MVoxPalette> {
 fn read_imap(content: &[u8]) -> Result<[u8; 256]> {
     match content.len() {
         256 => Ok(content.try_into().expect("length is 256")),
+
         1024 => {
             let mut map = [0u8; 256];
             for (index, slot) in map.iter_mut().enumerate() {
@@ -199,6 +213,7 @@ fn read_imap(content: &[u8]) -> Result<[u8; 256]> {
             }
             Ok(map)
         }
+
         other => Err(invalid(format!(
             "IMAP chunk has {other} bytes, expected 256 or 1024"
         ))),
@@ -230,6 +245,7 @@ fn read_frame(content: &mut ByteReader) -> Result<MVoxFrame> {
             }
             MVoxRotation(raw as u8)
         }
+
         None => MVoxRotation::IDENTITY,
     };
     let translation = take_vec3i(&mut dict, "_t")?.unwrap_or([0, 0, 0]);

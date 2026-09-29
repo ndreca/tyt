@@ -17,6 +17,7 @@ impl CliValue for VoxelFrame {
                 "Build each object's grid in world space with its node transforms applied, so \
                  every object's voxels align on one lattice"
             }
+
             VoxelFrame::Local => {
                 "Build each object's grid in its own frame and keep the node's rotation and \
                  translation, so a repeated object voxelizes once"

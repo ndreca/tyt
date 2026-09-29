@@ -20,11 +20,13 @@ impl<C: TreeGridCells> TreeGridRenderTextColumns for TreeGrid<C> {
                     self.data_paths().into_iter().map(|(_, id)| id).collect();
                 blocks.extend(column_block(self, None, &ids));
             }
+
             TreeGridLabelMode::Concat => {
                 let (labels, ids): (Vec<String>, Vec<U32Id<BTreeGridNode>>) =
                     self.data_paths().into_iter().unzip();
                 blocks.extend(column_block(self, Some(&labels), &ids));
             }
+
             TreeGridLabelMode::Header(header) => {
                 for group in self.groups() {
                     if let Some(branch) = group.branch {

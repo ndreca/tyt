@@ -22,6 +22,7 @@ impl TreeGridOptions {
                     level: self.level(),
                 }))
             }
+
             TreeGridTableShapeKind::Flat => {
                 if label == TreeGridTableLabelMode::Header {
                     return Err(TreeGridError::HeaderLabelWithFlatTables);
@@ -29,6 +30,7 @@ impl TreeGridOptions {
                 self.no_header_level()?;
                 Ok(TreeGridTableShape::Flat)
             }
+
             // Record sections are roots, whose concat path is their
             // leaf segment, so both heading label modes render alike.
             TreeGridTableShapeKind::Records => {

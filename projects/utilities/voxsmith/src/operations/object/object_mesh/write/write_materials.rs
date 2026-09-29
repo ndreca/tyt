@@ -209,8 +209,11 @@ fn set_factor(
 
             material.alpha_mode = match components[0].as_str() {
                 "BLEND" => MeshAlphaMode::Blend,
+
                 "MASK" => MeshAlphaMode::Mask,
+
                 "OPAQUE" => MeshAlphaMode::Opaque,
+
                 token => {
                     return Err(Error::mesh_record(
                         element.clone(),

@@ -119,6 +119,7 @@ impl<'a, D: DecodeImage> Walk<'a, '_, D> {
                 .state
                 .material(material_id)
                 .expect("a primitive draws one of the document's materials"),
+
             None => &DEFAULT_MATERIAL,
         };
 
@@ -142,12 +143,14 @@ impl<'a, D: DecodeImage> Walk<'a, '_, D> {
 
         let positions: Vec<TyVector3F64> = match (self.frame, self.scale) {
             (VoxelFrame::World, VoxelScale::Bake) => world_positions.clone(),
+
             // The document refuses a zero scale component, so this divides
             // safely.
             (VoxelFrame::World, VoxelScale::Keep) => world_positions
                 .iter()
                 .map(|&position| position / world.scale)
                 .collect(),
+
             (VoxelFrame::Local, _) => local.iter().copied().collect(),
         };
 

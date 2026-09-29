@@ -25,6 +25,7 @@ impl CliValue for ProjectionKind {
             ProjectionKind::Perspective => {
                 "Rays fan out from the view's position by its field of view"
             }
+
             ProjectionKind::Orthographic => "Rays run parallel across the view's scale",
         }
     }

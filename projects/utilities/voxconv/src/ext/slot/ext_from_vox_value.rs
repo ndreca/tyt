@@ -17,10 +17,13 @@ pub fn ext_from_vox_value<T: DeserializeOwned>(value: &VoxValue) -> Result<T> {
 fn json_value_from_vox_value(value: &VoxValue) -> Result<Value> {
     Ok(match value {
         VoxValue::Null => Value::Null,
+
         VoxValue::Bool(bool) => Value::Bool(*bool),
+
         VoxValue::Number(number) if !number.is_finite() => {
             return Err(Error::Ext(format!("number {number} must be finite")));
         }
+
         // The bound is exclusive because `i64::MAX as f64` rounds up to
         // `2^63`, past what an i64 holds.
         VoxValue::Number(number)
@@ -28,16 +31,20 @@ fn json_value_from_vox_value(value: &VoxValue) -> Result<Value> {
         {
             Value::Number(Number::from(*number as i64))
         }
+
         VoxValue::Number(number) => {
             Value::Number(Number::from_f64(*number).expect("a finite number has a json form"))
         }
+
         VoxValue::Text(text) => Value::String(text.clone()),
+
         VoxValue::Array(array) => Value::Array(
             array
                 .iter()
                 .map(json_value_from_vox_value)
                 .collect::<Result<_>>()?,
         ),
+
         VoxValue::Object(map) => {
             let mut object = Map::with_capacity(map.entries().len());
             for VoxMapEntry { key, value } in map.entries() {

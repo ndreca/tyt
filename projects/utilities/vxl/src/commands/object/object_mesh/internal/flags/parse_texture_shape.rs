@@ -5,9 +5,13 @@ use voxsmith::operations::object::TextureShape;
 pub fn parse_texture_shape(text: &str) -> Result<TextureShape, String> {
     match text {
         "fit" => Ok(TextureShape::Fit),
+
         "line" => Ok(TextureShape::Line),
+
         "pot" => Ok(TextureShape::Pot),
+
         "square" => Ok(TextureShape::Square),
+
         other => {
             let side = other.parse::<u32>().map_err(|_| {
                 format!("`{other}` is not `fit`, `line`, `pot`, `square`, or a side in cells")

@@ -30,10 +30,12 @@ fn main() {
         Command::Completion { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "vxl", &mut io::stdout());
         }
+
         Command::Vxl(cmd) => {
             if let Err(e) = cmd.execute(DependenciesImpl) {
                 match e {
                     Error::Usage(clap_error) => clap_error.exit(),
+
                     e => {
                         eprintln!("error: {e}");
                         process::exit(1);

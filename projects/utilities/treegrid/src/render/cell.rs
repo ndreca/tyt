@@ -46,6 +46,7 @@ impl Cell {
                 width: visual.width,
                 bare_visual: true,
             },
+
             (TreeGridCellFormat::VisualText, Some(visual)) => {
                 let text = cells.text(value);
                 let width = visual.width + 1 + render::visible_width(&text);
@@ -55,6 +56,7 @@ impl Cell {
                     bare_visual: false,
                 }
             }
+
             _ => Self::text(cells.text(value).into_owned()),
         }
     }

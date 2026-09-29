@@ -95,6 +95,7 @@ fn resolve_value_collections<T: VoxExt>(
                     )?);
                 }
             }
+
             PaletteRef::Index(palette_index) => {
                 let palette = palettes.get(palette_index).ok_or_else(|| {
                     Error::invalid(format!(
@@ -140,6 +141,7 @@ fn expand_property<T: VoxExt>(
                 )
             })
             .collect(),
+
         PropertyRef::Key { key, component } => {
             if palette.property_id_by_name(key).is_none() {
                 if palette_is_wild {
@@ -194,12 +196,14 @@ fn build_value_collection<T: VoxExt>(
                     component.letter()
                 )));
             }
+
             Some(width) if component.index() >= width => {
                 return Err(Error::invalid(format!(
                     "property `{key}` is {width} components wide and has no `.{}` component",
                     component.letter()
                 )));
             }
+
             Some(_) => {}
         }
     }
@@ -236,8 +240,11 @@ fn vector_width(value_pool: &VoxValuePool) -> Option<usize> {
         | VoxValuePoolKind::Int(_)
         | VoxValuePoolKind::Json(_)
         | VoxValuePoolKind::String(_) => None,
+
         VoxValuePoolKind::Vec2Float(_) | VoxValuePoolKind::Vec2Int(_) => Some(2),
+
         VoxValuePoolKind::Vec3Float(_) | VoxValuePoolKind::Vec3Int(_) => Some(3),
+
         VoxValuePoolKind::Vec4Float(_) | VoxValuePoolKind::Vec4Int(_) => Some(4),
     }
 }
@@ -273,15 +280,20 @@ fn resolve_reading(
                 }
                 Ok(Reading::SrgbHex)
             }
+
             Some(MaterialPropertyKind::Scalar) | None => Ok(Reading::Plain),
         },
+
         PaletteShowReading::LinearFloat => {
             color_reading(key, value_pool, "linear-float", Reading::LinearFloat)
         }
+
         PaletteShowReading::Plain => Ok(Reading::Plain),
+
         PaletteShowReading::SrgbFloat => {
             color_reading(key, value_pool, "srgb-float", Reading::SrgbFloat)
         }
+
         PaletteShowReading::SrgbHex => color_reading(key, value_pool, "srgb-hex", Reading::SrgbHex),
     }
 }
@@ -337,7 +349,9 @@ fn sample_whole(
                 _ => unreachable!("a color reading resolves only on a color shape"),
             })
         }
+
         Reading::Plain => Ok(sample_plain(value_pool, value_id)),
+
         Reading::SrgbFloat => {
             let floats = color_floats(value_pool, value_id);
             require_unit(key, &floats)?;
@@ -347,12 +361,15 @@ fn sample_whole(
                 [r, g, b] => {
                     TreeGridJsonValue::srgb(TySrgbF64::new(encode(r), encode(g), encode(b)))
                 }
+
                 [r, g, b, a] => {
                     TreeGridJsonValue::srgba(TySrgbaF64::new(encode(r), encode(g), encode(b), a))
                 }
+
                 _ => unreachable!("a color reading resolves only on a color shape"),
             })
         }
+
         Reading::SrgbHex => {
             let floats = color_floats(value_pool, value_id);
             require_unit(key, &floats)?;
@@ -383,7 +400,9 @@ fn sample_component(
             let byte = color_bytes(value_pool, value_id)[index];
             Ok(TreeGridJsonValue::float(stored).with_swatch(TreeGridSwatch::Gray(byte)))
         }
+
         Reading::Plain => Ok(sample_plain_component(value_pool, value_id, index)),
+
         Reading::SrgbFloat => {
             let stored = color_floats(value_pool, value_id)[index];
             require_unit(key, &[stored])?;
@@ -396,6 +415,7 @@ fn sample_component(
             let byte = color_bytes(value_pool, value_id)[index];
             Ok(TreeGridJsonValue::float(spelled).with_swatch(TreeGridSwatch::Gray(byte)))
         }
+
         Reading::SrgbHex => {
             let stored = color_floats(value_pool, value_id)[index];
             require_unit(key, &[stored])?;
@@ -540,10 +560,15 @@ fn number_json(value: f64) -> Value {
 fn vox_value_to_json(value: &VoxValue) -> Value {
     match value {
         VoxValue::Bool(boolean) => Value::Bool(*boolean),
+
         VoxValue::Number(number) => number_json(*number),
+
         VoxValue::Text(text) => Value::String(text.clone()),
+
         VoxValue::Null => Value::Null,
+
         VoxValue::Array(items) => Value::Array(items.iter().map(vox_value_to_json).collect()),
+
         VoxValue::Object(map) => Value::Object(
             map.entries()
                 .iter()
@@ -573,6 +598,7 @@ fn build_grid(value_collections: Vec<ValueCollection>) -> TreeGrid<TreeGridJsonV
             Some((palette_index, node_id)) if palette_index == value_collection.palette_index => {
                 node_id
             }
+
             _ => {
                 let node_id = grid.retain_root(TreeGridLabel::bare(
                     value_collection.palette_index.to_string(),
@@ -586,6 +612,7 @@ fn build_grid(value_collections: Vec<ValueCollection>) -> TreeGrid<TreeGridJsonV
             Some(component) => {
                 let property_node_id = match &property_node {
                     Some((key, node_id)) if *key == value_collection.key => *node_id,
+
                     _ => grid.retain_child(
                         palette_node_id,
                         TreeGridLabel::quoted(value_collection.key.as_str()),
@@ -595,6 +622,7 @@ fn build_grid(value_collections: Vec<ValueCollection>) -> TreeGrid<TreeGridJsonV
                 let letter = component.letter().to_string();
                 grid.retain_child(property_node_id, TreeGridLabel::bare(letter))
             }
+
             None => {
                 // A data node is always fresh, so a property selected twice
                 // keeps one value collection per selector.
@@ -792,11 +820,13 @@ mod tests {
                     },
                     property: match property {
                         "*" => PropertyRef::All,
+
                         key => {
                             let (key, component) = match key.rsplit_once('.') {
                                 Some((key, letter)) if letter.len() == 1 => {
                                     (key, Some(vector_component(letter)))
                                 }
+
                                 _ => (key, None),
                             };
                             PropertyRef::Key {

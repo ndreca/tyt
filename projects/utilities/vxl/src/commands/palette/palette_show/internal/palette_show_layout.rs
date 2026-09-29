@@ -30,24 +30,30 @@ impl CliValue for PaletteShowLayout {
                 "The value collections as a box-glyph tree of palettes, properties, and \
                  components, each value collection's values inline on its node"
             }
+
             PaletteShowLayout::BoxTables => {
                 "The value collections as box-glyph tables led by a `#` column of 0-based \
                  material indices, each section headed by a bare full-path line; `--table-shape` \
                  picks the shape and the label mode stays `concat`"
             }
+
             PaletteShowLayout::JsonCompact => {
                 "The value collection tree as single-line JSON records"
             }
+
             PaletteShowLayout::JsonPretty => "The value collection tree as indented JSON records",
+
             PaletteShowLayout::MdTables => {
                 "The value collections as aligned markdown tables led by a `#` column of 0-based \
                  material indices; `--table-shape` picks per-palette tables under headings or one \
                  flat comparison table"
             }
+
             PaletteShowLayout::TextColumns => {
                 "Each value collection as its own column beneath its label, padded to a common \
                  width"
             }
+
             PaletteShowLayout::TextRows => {
                 "Each value collection on one row, separated by a blank line, under labels padded \
                  to the longest so each row's first value aligns. Swatch cells abut into a strip; \

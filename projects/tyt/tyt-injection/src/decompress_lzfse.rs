@@ -22,8 +22,10 @@ pub fn decompress_lzfse(bytes: &[u8]) -> Vec<u8> {
                 out.truncate(len);
                 return out;
             }
+
             // A full buffer may mean truncation, so grow and retry.
             Ok(_) | Err(_) if capacity < ceiling => capacity = capacity.saturating_mul(2),
+
             // Give up and treat the payload as already decompressed.
             _ => return bytes.to_vec(),
         }

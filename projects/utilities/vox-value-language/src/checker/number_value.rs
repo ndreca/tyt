@@ -32,18 +32,22 @@ impl NumberValue {
                 .filter(|value| value.is_finite())
                 .map(NumberValue::F32)
                 .ok_or_else(out_of_range),
+
             Scalar::U8 => text
                 .parse()
                 .map(NumberValue::U8)
                 .map_err(|_| out_of_range()),
+
             Scalar::U16 => text
                 .parse()
                 .map(NumberValue::U16)
                 .map_err(|_| out_of_range()),
+
             Scalar::U32 => text
                 .parse()
                 .map(NumberValue::U32)
                 .map_err(|_| out_of_range()),
+
             Scalar::Bool | Scalar::String => Err(CheckFailure::NonNumericOperand {
                 operation: "a literal".to_owned(),
                 found: scalar,

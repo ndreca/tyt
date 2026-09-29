@@ -53,43 +53,54 @@ impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
             Error::IO(e) => e.fmt(f),
+
             Error::ApiKeyNotConfigured => f.write_str(
                 "no OpenAI API key configured; add an \"oai\" section with an \"apiKey\" \
                  to a .tytusrconfig file at your git root",
             ),
+
             Error::NoMessage => {
                 f.write_str("no message provided; pass a message argument or pipe one via stdin")
             }
+
             Error::SystemPromptsDirNotConfigured => f.write_str(
                 "no system prompts directory configured; add an \"oai\" section with an \
                  \"img\" object containing a \"systemPromptsDir\" to a .tytconfig file at \
                  your git root",
             ),
+
             Error::SystemPromptNotFound(path) => {
                 write!(f, "system prompt file not found: {path}")
             }
+
             Error::SystemPromptOnContinuation => f.write_str(
                 "--system-prompt cannot be used while continuing a conversation in place; \
                  the previous response already carries its system prompts. Omit \
                  --system-prompt to continue, or pass a reconstruction --continue-kind \
                  (e.g. all-images-all-text) to apply different system prompts.",
             ),
+
             Error::NoLastImage => f.write_str(
                 "--continue-kind last-image-all-text and last-image-only require a previously \
                  generated image to continue from, but the conversation has none",
             ),
+
             Error::InputImageWithLastImageOnly => f.write_str(
                 "--input-image cannot be combined with --continue-kind last-image-only, which \
                  sends only the conversation's last generated image; use a different \
                  --continue-kind to send your own image",
             ),
+
             Error::Http(e) => write!(f, "OpenAI request failed: {e}"),
+
             Error::Api(e) => write!(f, "OpenAI API error: {e}"),
+
             Error::PreviousResponseExpired => f.write_str(
                 "the previous response is no longer cached by OpenAI, so the conversation \
                  cannot be continued in place; re-run with --continue-kind last-image-all-text \
                  (or all-images-all-text / last-image-only) to rebuild the conversation locally",
             ),
+
             Error::InvalidResponse(e) => write!(f, "unexpected OpenAI response: {e}"),
         }
     }
@@ -99,6 +110,7 @@ impl StdError for Error {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match self {
             Error::IO(e) => Some(e),
+
             Error::ApiKeyNotConfigured
             | Error::NoMessage
             | Error::SystemPromptsDirNotConfigured

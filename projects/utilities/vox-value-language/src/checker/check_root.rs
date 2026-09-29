@@ -48,6 +48,7 @@ impl Checker<'_> {
             } => self.comparison(*operator, left, right),
 
             SyntaxNode::Default { name, fallback } => self.default(name, fallback),
+
             SyntaxNode::Index { source, index } => self.index(source, index),
 
             SyntaxNode::Logical {
@@ -57,6 +58,7 @@ impl Checker<'_> {
             } => self.logical(*operator, left, right),
 
             SyntaxNode::Name(name) => self.name(name),
+
             SyntaxNode::Number(literal) => number(literal),
 
             SyntaxNode::StringLiteral(text) => Ok(plain(
@@ -65,6 +67,7 @@ impl Checker<'_> {
             )),
 
             SyntaxNode::Swizzle { source, member } => self.swizzle(source, member),
+
             SyntaxNode::Unary { operator, operand } => self.unary(*operator, operand),
         }
     }
@@ -239,53 +242,81 @@ impl Checker<'_> {
 
             // The reductions.
             Function::Avg => reduce(operation, Reduction::Avg, Domain::Plain, only(checked)),
+
             Function::Sum => reduce(operation, Reduction::Sum, Domain::Plain, only(checked)),
+
             Function::FaceAvg => reduce(operation, Reduction::Avg, Domain::Face, only(checked)),
+
             Function::FaceMax => reduce(operation, Reduction::Max, Domain::Face, only(checked)),
+
             Function::FaceMin => reduce(operation, Reduction::Min, Domain::Face, only(checked)),
+
             Function::FaceSum => reduce(operation, Reduction::Sum, Domain::Face, only(checked)),
+
             Function::VoxelAvg => reduce(operation, Reduction::Avg, Domain::Voxel, only(checked)),
+
             Function::VoxelMax => reduce(operation, Reduction::Max, Domain::Voxel, only(checked)),
+
             Function::VoxelMin => reduce(operation, Reduction::Min, Domain::Voxel, only(checked)),
+
             Function::VoxelSum => reduce(operation, Reduction::Sum, Domain::Voxel, only(checked)),
+
             Function::SwatchAvg => reduce(operation, Reduction::Avg, Domain::Swatch, only(checked)),
+
             Function::SwatchMax => reduce(operation, Reduction::Max, Domain::Swatch, only(checked)),
+
             Function::SwatchMin => reduce(operation, Reduction::Min, Domain::Swatch, only(checked)),
+
             Function::SwatchSum => reduce(operation, Reduction::Sum, Domain::Swatch, only(checked)),
 
             // The climbs.
             Function::Swatch => climb(operation, Domain::Swatch, only(checked)),
+
             Function::Voxel => climb(operation, Domain::Voxel, only(checked)),
+
             Function::Face => climb(operation, Domain::Face, only(checked)),
+
             Function::Corner => climb(operation, Domain::Corner, only(checked)),
 
             // The conversions.
             Function::F32 => convert(operation, Scalar::F32, None, only(checked)),
+
             Function::U8 => convert(operation, Scalar::U8, None, only(checked)),
+
             Function::U16 => convert(operation, Scalar::U16, None, only(checked)),
+
             Function::U32 => convert(operation, Scalar::U32, None, only(checked)),
+
             Function::CeilU8 => convert(operation, Scalar::U8, Some(Rounding::Ceil), only(checked)),
+
             Function::CeilU16 => {
                 convert(operation, Scalar::U16, Some(Rounding::Ceil), only(checked))
             }
+
             Function::CeilU32 => {
                 convert(operation, Scalar::U32, Some(Rounding::Ceil), only(checked))
             }
+
             Function::FloorU8 => {
                 convert(operation, Scalar::U8, Some(Rounding::Floor), only(checked))
             }
+
             Function::FloorU16 => {
                 convert(operation, Scalar::U16, Some(Rounding::Floor), only(checked))
             }
+
             Function::FloorU32 => {
                 convert(operation, Scalar::U32, Some(Rounding::Floor), only(checked))
             }
+
             Function::RoundU8 => {
                 convert(operation, Scalar::U8, Some(Rounding::Round), only(checked))
             }
+
             Function::RoundU16 => {
                 convert(operation, Scalar::U16, Some(Rounding::Round), only(checked))
             }
+
             Function::RoundU32 => {
                 convert(operation, Scalar::U32, Some(Rounding::Round), only(checked))
             }
@@ -344,7 +375,9 @@ impl Checker<'_> {
 
         let fallback = match fallback.scalar() {
             None if existing.scalar.is_numeric() => fallback.resolve(existing.scalar)?,
+
             Some(scalar) if scalar == existing.scalar => typed(fallback),
+
             found => {
                 return Err(CheckFailure::MixedScalars {
                     operation: operation.to_owned(),
@@ -669,10 +702,12 @@ fn f32_only(operation: &str, operands: Vec<Checked>) -> CheckResult<Vec<CheckedN
         .into_iter()
         .map(|operand| match operand.scalar() {
             None | Some(Scalar::F32) => operand.resolve(Scalar::F32),
+
             Some(found) if found.is_numeric() => Err(CheckFailure::RequiresF32 {
                 operation: operation.to_owned(),
                 found,
             }),
+
             Some(found) => Err(CheckFailure::NonNumericOperand {
                 operation: operation.to_owned(),
                 found,
@@ -685,7 +720,9 @@ fn f32_only(operation: &str, operands: Vec<Checked>) -> CheckResult<Vec<CheckedN
 fn bool_operand(operation: &str, operand: Checked) -> CheckResult<CheckedNode> {
     match operand.scalar() {
         None => Err(CheckFailure::UntypedLiteral),
+
         Some(Scalar::Bool) => Ok(typed(operand)),
+
         Some(found) => Err(CheckFailure::NonBoolOperand {
             operation: operation.to_owned(),
             found,
@@ -944,6 +981,7 @@ fn number(literal: &NumberLiteral) -> CheckResult<Checked> {
             dimension: Dimension::Vec1,
             build: Box::new(move |scalar| number_node(&text, scalar)),
         })),
+
         Some(scalar) => Ok(Checked::Typed(number_node(&text, scalar)?)),
     }
 }
@@ -969,7 +1007,9 @@ fn swizzle_components(member: &str, source: Dimension) -> CheckResult<Vec<usize>
     for character in member.chars() {
         let (found, position) = match ("rgba".find(character), "xyzw".find(character)) {
             (Some(position), _) => ("rgba", position),
+
             (None, Some(position)) => ("xyzw", position),
+
             (None, None) => {
                 return Err(CheckFailure::SwizzleCharacter {
                     member: member.to_owned(),
@@ -1079,6 +1119,7 @@ fn bounds(value: Dimension, bound: Dimension) -> Option<Dimension> {
 fn require_each(operation: &str, expected: Dimension, dimensions: &[Dimension]) -> CheckResult<()> {
     match dimensions.iter().find(|dimension| **dimension != expected) {
         None => Ok(()),
+
         Some(&found) => Err(CheckFailure::RequiresDimension {
             operation: operation.to_owned(),
             expected,
@@ -1144,6 +1185,7 @@ mod tests {
                 binding: None,
                 failure,
             }) => failure,
+
             other => panic!("{text} gave {other:?}"),
         }
     }

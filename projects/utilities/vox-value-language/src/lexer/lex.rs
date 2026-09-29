@@ -159,6 +159,7 @@ impl Lexer<'_> {
         let name = &self.text[start..self.position];
         let kind = match name {
             "true" => TokenKind::True,
+
             "false" => TokenKind::False,
 
             _ => match Function::from_name(name) {
@@ -224,24 +225,43 @@ impl Lexer<'_> {
         let next = self.byte_at(start + 1);
         let (kind, length) = match self.bytes[start] {
             b'+' => (TokenKind::Plus, 1),
+
             b'-' => (TokenKind::Minus, 1),
+
             b'*' => (TokenKind::Star, 1),
+
             b'/' => (TokenKind::Slash, 1),
+
             b'(' => (TokenKind::LeftParen, 1),
+
             b')' => (TokenKind::RightParen, 1),
+
             b']' => (TokenKind::RightBracket, 1),
+
             b',' => (TokenKind::Comma, 1),
+
             b';' => (TokenKind::Semicolon, 1),
+
             b'^' => (TokenKind::Xor, 1),
+
             b'=' if next == Some(b'=') => (TokenKind::Equal, 2),
+
             b'=' => (TokenKind::Assign, 1),
+
             b'!' if next == Some(b'=') => (TokenKind::NotEqual, 2),
+
             b'!' => (TokenKind::Not, 1),
+
             b'<' if next == Some(b'=') => (TokenKind::LessEqual, 2),
+
             b'<' => (TokenKind::Less, 1),
+
             b'>' if next == Some(b'=') => (TokenKind::GreaterEqual, 2),
+
             b'>' => (TokenKind::Greater, 1),
+
             b'&' if next == Some(b'&') => (TokenKind::And, 2),
+
             b'|' if next == Some(b'|') => (TokenKind::Or, 2),
 
             _ => {

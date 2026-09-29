@@ -35,6 +35,7 @@ impl Display for Error {
                 }
                 Ok(())
             }
+
             Error::IO(e) => e.fmt(f),
         }
     }

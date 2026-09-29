@@ -19,7 +19,9 @@ impl CliValue for ValidateLayout {
     fn help(self) -> &'static str {
         match self {
             ValidateLayout::JsonCompact => "Compact, single-line JSON",
+
             ValidateLayout::JsonPretty => "Pretty-printed, multi-line JSON",
+
             ValidateLayout::MdTables => {
                 "A file-name heading over one line per check and a closing pass/fail summary"
             }

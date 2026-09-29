@@ -30,6 +30,7 @@ fn main() {
         Command::Completion { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "meshy", &mut io::stdout());
         }
+
         Command::TytMeshy(cmd) => {
             if let Err(e) = cmd.execute(DependenciesImpl) {
                 eprintln!("error: {e}");

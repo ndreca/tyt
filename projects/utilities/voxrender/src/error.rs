@@ -119,53 +119,66 @@ impl Display for Error {
         // brand name, which the surrounding wording already gives.
         match self {
             Error::Vox { error } => write!(f, "voxcore: {error}"),
+
             Error::GridCellCap { cells } => write!(
                 f,
                 "a {cells}-cell grid exceeds the {}-cell dense cap",
                 VoxObject::MAX_GRID_CELLS
             ),
+
             Error::UnknownVoxObject { object_id } => write!(
                 f,
                 "object {} is not one of the document's",
                 object_id.to_u32()
             ),
+
             Error::MaterialPropertyKind { property } => write!(
                 f,
                 "property {property} is not the kind the render contract reads"
             ),
+
             Error::VoxelSize { voxel_size } => {
                 write!(f, "voxel size {voxel_size} is not finite and positive")
             }
+
             Error::ImageSide { width, height } => {
                 write!(f, "a {width} by {height} image has a zero side")
             }
+
             Error::UnknownMaterial { material_id } => write!(
                 f,
                 "material {} is not one of the scene's",
                 material_id.to_u32()
             ),
+
             Error::UnknownObject { object_id } => {
                 write!(f, "object {} is not one of the scene's", object_id.to_u32())
             }
+
             Error::DuplicateObject { object_id } => write!(
                 f,
                 "object {} is already one of the scene's",
                 object_id.to_u32()
             ),
+
             Error::UnknownPlacement { placement_id } => write!(
                 f,
                 "placement {} is not one of the scene's",
                 placement_id.to_u32()
             ),
+
             Error::UnknownLight { light_id } => {
                 write!(f, "light {} is not one of the scene's", light_id.to_u32())
             }
+
             Error::UnknownView { view_id } => {
                 write!(f, "view {} is not one of the scene's", view_id.to_u32())
             }
+
             Error::UnknownVoxel { voxel_id } => {
                 write!(f, "voxel {} is outside the grid", voxel_id.to_u32())
             }
+
             Error::VoxelMaterialRef {
                 voxel_id,
                 material_id,
@@ -175,6 +188,7 @@ impl Display for Error {
                 voxel_id.to_u32(),
                 material_id.to_u32()
             ),
+
             Error::MaterialInUse {
                 material_id,
                 object_ids,
@@ -184,6 +198,7 @@ impl Display for Error {
                 material_id.to_u32(),
                 object_ids.len()
             ),
+
             Error::ObjectInUse {
                 object_id,
                 placement_ids,
@@ -193,25 +208,37 @@ impl Display for Error {
                 object_id.to_u32(),
                 placement_ids.len()
             ),
+
             Error::MaterialOutOfRange { property } => {
                 write!(f, "material property {property} is outside its range")
             }
+
             Error::NonFinitePlacement => write!(f, "a placement's transform is not finite"),
+
             Error::ZeroPlacementScale => write!(f, "a placement's scale has a zero component"),
+
             Error::NonUnitPlacementRotation => {
                 write!(f, "a placement's rotation is not unit length")
             }
+
             Error::NonFiniteLight => write!(f, "a light's values are not finite"),
+
             Error::NonUnitLightRotation => write!(f, "a light's rotation is not unit length"),
+
             Error::NegativeLight => write!(f, "a light's color or strength is negative"),
+
             Error::NonPositiveLightRange { range } => {
                 write!(f, "light range {range} is not positive")
             }
+
             Error::NonFiniteView => write!(f, "a view's position is not finite"),
+
             Error::NonUnitViewRotation => write!(f, "a view's rotation is not unit length"),
+
             Error::FieldOfViewOutOfRange { fov } => {
                 write!(f, "field of view {fov} is not within (0, pi) radians")
             }
+
             Error::ViewScale { scale } => {
                 write!(f, "view scale {scale} is not finite and positive")
             }

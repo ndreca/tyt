@@ -122,6 +122,7 @@ fn retain_texture(
 fn filters(bake: ArrayDomain) -> (MeshMagFilter, MeshMinFilter) {
     match bake {
         ArrayDomain::Corner => (MeshMagFilter::Linear, MeshMinFilter::Linear),
+
         ArrayDomain::Face | ArrayDomain::Swatch | ArrayDomain::Voxel => {
             (MeshMagFilter::Nearest, MeshMinFilter::Nearest)
         }

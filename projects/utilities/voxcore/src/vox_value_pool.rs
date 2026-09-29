@@ -192,13 +192,21 @@ impl VoxValuePool {
         for (value_id, value) in self.iter_values() {
             let in_domain = match value {
                 VoxValuePoolValueRef::Float(value) => float_in_domain(value),
+
                 VoxValuePoolValueRef::Int(value) => int_in_domain(value),
+
                 VoxValuePoolValueRef::Vec2Float(components) => floats_in_domain(components),
+
                 VoxValuePoolValueRef::Vec2Int(components) => ints_in_domain(components),
+
                 VoxValuePoolValueRef::Vec3Float(components) => floats_in_domain(components),
+
                 VoxValuePoolValueRef::Vec3Int(components) => ints_in_domain(components),
+
                 VoxValuePoolValueRef::Vec4Float(components) => floats_in_domain(components),
+
                 VoxValuePoolValueRef::Vec4Int(components) => ints_in_domain(components),
+
                 VoxValuePoolValueRef::Bool(_)
                 | VoxValuePoolValueRef::Json(_)
                 | VoxValuePoolValueRef::String(_) => true,
@@ -296,21 +304,31 @@ impl VoxValuePool {
         unsafe {
             match &self.kind {
                 VoxValuePoolKind::Bool(values) => VoxValuePoolValueRef::Bool(*values.get(id)),
+
                 VoxValuePoolKind::Float(values) => VoxValuePoolValueRef::Float(*values.get(id)),
+
                 VoxValuePoolKind::Int(values) => VoxValuePoolValueRef::Int(*values.get(id)),
+
                 VoxValuePoolKind::Json(values) => VoxValuePoolValueRef::Json(values.get(id)),
+
                 VoxValuePoolKind::String(values) => VoxValuePoolValueRef::String(values.get(id)),
+
                 VoxValuePoolKind::Vec2Float(values) => {
                     VoxValuePoolValueRef::Vec2Float(values.get(id))
                 }
+
                 VoxValuePoolKind::Vec2Int(values) => VoxValuePoolValueRef::Vec2Int(values.get(id)),
+
                 VoxValuePoolKind::Vec3Float(values) => {
                     VoxValuePoolValueRef::Vec3Float(values.get(id))
                 }
+
                 VoxValuePoolKind::Vec3Int(values) => VoxValuePoolValueRef::Vec3Int(values.get(id)),
+
                 VoxValuePoolKind::Vec4Float(values) => {
                     VoxValuePoolValueRef::Vec4Float(values.get(id))
                 }
+
                 VoxValuePoolKind::Vec4Int(values) => VoxValuePoolValueRef::Vec4Int(values.get(id)),
             }
         }
@@ -327,31 +345,41 @@ impl Clone for VoxValuePool {
                 VoxValuePoolKind::Bool(values) => {
                     VoxValuePoolKind::Bool(values.clone_retained(ids))
                 }
+
                 VoxValuePoolKind::Float(values) => {
                     VoxValuePoolKind::Float(values.clone_retained(ids))
                 }
+
                 VoxValuePoolKind::Int(values) => VoxValuePoolKind::Int(values.clone_retained(ids)),
+
                 VoxValuePoolKind::Json(values) => {
                     VoxValuePoolKind::Json(values.clone_retained(ids))
                 }
+
                 VoxValuePoolKind::String(values) => {
                     VoxValuePoolKind::String(values.clone_retained(ids))
                 }
+
                 VoxValuePoolKind::Vec2Float(values) => {
                     VoxValuePoolKind::Vec2Float(values.clone_retained(ids))
                 }
+
                 VoxValuePoolKind::Vec2Int(values) => {
                     VoxValuePoolKind::Vec2Int(values.clone_retained(ids))
                 }
+
                 VoxValuePoolKind::Vec3Float(values) => {
                     VoxValuePoolKind::Vec3Float(values.clone_retained(ids))
                 }
+
                 VoxValuePoolKind::Vec3Int(values) => {
                     VoxValuePoolKind::Vec3Int(values.clone_retained(ids))
                 }
+
                 VoxValuePoolKind::Vec4Float(values) => {
                     VoxValuePoolKind::Vec4Float(values.clone_retained(ids))
                 }
+
                 VoxValuePoolKind::Vec4Int(values) => {
                     VoxValuePoolKind::Vec4Int(values.clone_retained(ids))
                 }

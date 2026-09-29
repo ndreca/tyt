@@ -233,6 +233,7 @@ impl CameraArgs {
         if let Some(format_str) = tokens.first() {
             match format_str.as_str() {
                 "pose" | "pose-args" | "target-args" => {}
+
                 other => {
                     return Err(Error::IO(IOError::new(
                         ErrorKind::InvalidInput,
@@ -329,6 +330,7 @@ impl CameraArgs {
                 ry.map(|v| self.rot_unit.to_radians(v)),
                 rz.map(|v| self.rot_unit.to_radians(v)),
             ],
+
             None => [None; 6],
         };
         for slot in slots {
@@ -397,6 +399,7 @@ impl CameraArgs {
         let rad_to_out = if unit_str == "deg" { 180.0 / PI } else { 1.0 };
         let format = match requested_format {
             Some(f) => f,
+
             None => {
                 if self.has_explicit_pose() {
                     "pose-args"
@@ -428,6 +431,7 @@ impl CameraArgs {
                 precision,
                 rot_out[2],
             ),
+
             "pose-args" => format!(
                 "--cam-pos {:.prec$} {:.prec$} {:.prec$} --cam-rot {:.prec$} {:.prec$} {:.prec$} --rot-unit {unit}\n",
                 position[0],
@@ -439,7 +443,9 @@ impl CameraArgs {
                 unit = unit_str,
                 prec = precision,
             ),
+
             "target-args" => format_target_args(self, unit_str, precision),
+
             _ => unreachable!("format validated earlier"),
         };
 

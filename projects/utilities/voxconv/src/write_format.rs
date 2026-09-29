@@ -52,16 +52,22 @@ impl WriteFormat {
         match self {
             #[cfg(feature = "goxl")]
             WriteFormat::Goxl => visitor.visit::<Goxl>(&()),
+
             #[cfg(feature = "mvox")]
             WriteFormat::MVox => visitor.visit::<MVox>(&()),
+
             #[cfg(feature = "qbcl")]
             WriteFormat::Qb => visitor.visit::<Qb>(&()),
+
             #[cfg(feature = "qbcl")]
             WriteFormat::Qbt => visitor.visit::<Qbt>(&()),
+
             #[cfg(feature = "qbcl")]
             WriteFormat::Qbcl => visitor.visit::<Qbcl>(&()),
+
             #[cfg(feature = "vmax")]
             WriteFormat::VMax(options) => visitor.visit::<VMax>(options),
+
             #[cfg(feature = "voxj")]
             WriteFormat::Voxj(options) => visitor.visit::<Voxj>(options),
         }

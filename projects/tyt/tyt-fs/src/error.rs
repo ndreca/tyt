@@ -68,6 +68,7 @@ impl StdError for Error {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match self {
             Error::IO(e) => Some(e),
+
             Error::ConfigNotFound
             | Error::RelBaseNotFound(_)
             | Error::Rg(_)

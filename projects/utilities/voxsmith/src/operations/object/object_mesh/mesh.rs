@@ -455,6 +455,7 @@ mod tests {
                 Some(name) => FileForm::Json {
                     name: name.to_owned(),
                 },
+
                 None => FileForm::Png,
             },
         }

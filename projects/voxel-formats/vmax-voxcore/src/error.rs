@@ -36,8 +36,11 @@ impl Display for Error {
         match self {
             #[cfg(feature = "codec")]
             Error::Codec(error) => error.fmt(f),
+
             Error::Invalid(message) => write!(f, "{message}"),
+
             Error::Snapshots(error) => error.fmt(f),
+
             Error::Vox(error) => error.fmt(f),
         }
     }
@@ -48,8 +51,11 @@ impl StdError for Error {
         match self {
             #[cfg(feature = "codec")]
             Error::Codec(error) => Some(error),
+
             Error::Invalid(_) => None,
+
             Error::Snapshots(error) => Some(error),
+
             Error::Vox(error) => Some(error),
         }
     }

@@ -123,6 +123,7 @@ impl MeshState {
         for (image_id, image) in self.iter_images() {
             let bytes = match &image.source {
                 MeshImageSource::Bytes(bytes) => bytes.as_slice(),
+
                 MeshImageSource::File(file_id) => {
                     let file = self.file(*file_id).ok_or(Error::ImageFile {
                         image_id,
@@ -441,6 +442,7 @@ impl MeshState {
     pub(crate) fn check_inserted_image(&self, image: &MeshImage) -> Result<()> {
         let bytes = match &image.source {
             MeshImageSource::Bytes(bytes) => bytes.as_slice(),
+
             MeshImageSource::File(file_id) => {
                 let file = self
                     .file(*file_id)

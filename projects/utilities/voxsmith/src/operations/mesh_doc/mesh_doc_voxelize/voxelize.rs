@@ -305,6 +305,7 @@ mod document_tests {
                     material.base_color_factor = TyLinSrgbaF64::from(factor);
                     material.base_color_texture = Some(texture_ref(stream));
                 }
+
                 MapSpec::MetallicRoughness {
                     stream,
                     metallic,
@@ -315,10 +316,12 @@ mod document_tests {
                     material.roughness_factor = roughness;
                     material.metallic_roughness_texture = Some(texture_ref(stream));
                 }
+
                 MapSpec::Emissive { stream, factor, .. } => {
                     material.emissive_factor = TyLinSrgbF64::from(factor);
                     material.emissive_texture = Some(texture_ref(stream));
                 }
+
                 MapSpec::Occlusion {
                     stream, strength, ..
                 } => {

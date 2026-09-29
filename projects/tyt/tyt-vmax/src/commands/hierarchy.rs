@@ -280,7 +280,9 @@ fn parse_transform_view(values: Option<Vec<String>>) -> Result<Option<TransformV
 fn parse_space(value: Option<&str>) -> Result<bool> {
     match value {
         None | Some("" | "local") => Ok(false),
+
         Some("world") => Ok(true),
+
         Some(other) => Err(invalid_input(format!(
             "space must be 'local' or 'world', got '{other}'"
         ))),
@@ -291,7 +293,9 @@ fn parse_space(value: Option<&str>) -> Result<bool> {
 fn parse_rot_unit(value: Option<&str>) -> Result<bool> {
     match value {
         None | Some("" | "rad") => Ok(false),
+
         Some("deg") => Ok(true),
+
         Some(other) => Err(invalid_input(format!(
             "rot-unit must be 'rad' or 'deg', got '{other}'"
         ))),
@@ -303,6 +307,7 @@ fn parse_rot_unit(value: Option<&str>) -> Result<bool> {
 fn parse_precision(values: Option<Vec<String>>) -> Result<Option<usize>> {
     match values {
         None => Ok(None),
+
         Some(values) => Ok(Some(parse_precision_value(
             values.first().map(String::as_str),
         )?)),
@@ -314,6 +319,7 @@ fn parse_precision(values: Option<Vec<String>>) -> Result<Option<usize>> {
 fn parse_precision_value(value: Option<&str>) -> Result<usize> {
     let precision = match value {
         None | Some("") => 2,
+
         Some(text) => text.parse::<usize>().map_err(|error| {
             invalid_input(format!("precision must be a non-negative integer: {error}"))
         })?,

@@ -30,6 +30,7 @@ fn main() {
         Command::Completion { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "oai", &mut io::stdout());
         }
+
         Command::TytOAI(cmd) => {
             if let Err(e) = cmd.execute(DependenciesImpl) {
                 eprintln!("error: {e}");

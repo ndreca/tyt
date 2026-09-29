@@ -30,6 +30,7 @@ fn main() {
         Command::Completion { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "image", &mut io::stdout());
         }
+
         Command::TytImage(image) => {
             if let Err(e) = image.execute(DependenciesImpl) {
                 eprintln!("error: {e}");

@@ -31,6 +31,7 @@ fn main() {
         Command::Completion { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "fbx", &mut io::stdout());
         }
+
         Command::TytFbx(fbx) => {
             if let Err(e) = fbx.execute(DependenciesImpl) {
                 eprintln!("error: {e}");

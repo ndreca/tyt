@@ -158,6 +158,7 @@ fn component_strings(value: &Value, key: &str) -> StdResult<[String; 3], IOError
             [Value::String(x), Value::String(y), Value::String(z)] => {
                 Some([x.clone(), y.clone(), z.clone()])
             }
+
             _ => None,
         })
         .ok_or_else(|| {

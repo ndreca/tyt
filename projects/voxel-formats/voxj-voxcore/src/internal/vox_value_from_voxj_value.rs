@@ -13,15 +13,20 @@ pub fn vox_value_from_voxj_value(value: &VoxjValue) -> Result<VoxValue> {
             }
             VoxValue::Number(*number)
         }
+
         VoxjValue::Text(text) => VoxValue::Text(text.clone()),
+
         VoxjValue::Bool(bool) => VoxValue::Bool(*bool),
+
         VoxjValue::Array(array) => VoxValue::Array(
             array
                 .iter()
                 .map(vox_value_from_voxj_value)
                 .collect::<Result<_>>()?,
         ),
+
         VoxjValue::Object(object) => VoxValue::Object(vox_map_from_voxj_map(object)?),
+
         VoxjValue::Null => VoxValue::Null,
     })
 }

@@ -43,18 +43,22 @@ fn decode_png(bytes: &[u8]) -> Result<DecodedImage, String> {
             .chunks_exact(4)
             .map(|pixel| [pixel[0], pixel[1], pixel[2], pixel[3]])
             .collect(),
+
         ColorType::Rgb => samples
             .chunks_exact(3)
             .map(|pixel| [pixel[0], pixel[1], pixel[2], 255])
             .collect(),
+
         ColorType::GrayscaleAlpha => samples
             .chunks_exact(2)
             .map(|pixel| [pixel[0], pixel[0], pixel[0], pixel[1]])
             .collect(),
+
         ColorType::Grayscale => samples
             .iter()
             .map(|&gray| [gray, gray, gray, 255])
             .collect(),
+
         ColorType::Indexed => {
             return Err("png stayed indexed after normalization".to_owned());
         }

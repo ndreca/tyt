@@ -15,9 +15,11 @@ pub fn value_pool_lin_srgba_f64_color(
         VoxValuePoolValueRef::Vec3Float(&[red, green, blue]) => {
             Some(TyLinSrgbaF64::new(red, green, blue, 1.0))
         }
+
         VoxValuePoolValueRef::Vec4Float(&[red, green, blue, alpha]) => {
             Some(TyLinSrgbaF64::new(red, green, blue, alpha))
         }
+
         _ => None,
     }
 }

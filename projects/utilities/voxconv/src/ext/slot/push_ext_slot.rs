@@ -41,16 +41,21 @@ fn vox_value_from_ext<T: Serialize>(ext: &T) -> Result<VoxValue> {
 fn vox_value_from_json_value(value: Value) -> VoxValue {
     match value {
         Value::Null => VoxValue::Null,
+
         Value::Bool(bool) => VoxValue::Bool(bool),
+
         Value::Number(number) => VoxValue::Number(
             number
                 .as_f64()
                 .expect("a json number without arbitrary_precision reads as f64"),
         ),
+
         Value::String(text) => VoxValue::Text(text),
+
         Value::Array(array) => {
             VoxValue::Array(array.into_iter().map(vox_value_from_json_value).collect())
         }
+
         Value::Object(object) => VoxValue::Object(VoxMap::new(
             object
                 .into_iter()

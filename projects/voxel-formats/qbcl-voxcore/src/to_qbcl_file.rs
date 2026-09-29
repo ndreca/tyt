@@ -120,6 +120,7 @@ fn rebuild_node(node_id: U32Id<BVoxHierarchyNode>, main: &QbclVoxMain) -> Result
                 synthesized_body(main, position, &objects, children)?
             }
         }
+
         QbclExtNodeBody::Matrix { pivot } => entry_body(
             main,
             node_id,
@@ -128,6 +129,7 @@ fn rebuild_node(node_id: U32Id<BVoxHierarchyNode>, main: &QbclVoxMain) -> Result
             children,
             false,
         )?,
+
         QbclExtNodeBody::Compound { pivot } => entry_body(
             main,
             node_id,

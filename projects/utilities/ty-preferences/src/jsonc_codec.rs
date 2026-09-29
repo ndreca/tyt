@@ -40,6 +40,7 @@ impl<T: Serialize> SerializePrefs<T> for JsoncCodec {
             Some(bytes) => {
                 str::from_utf8(bytes).map_err(|e| IOError::new(ErrorKind::InvalidData, e))?
             }
+
             None => "",
         };
 
@@ -57,6 +58,7 @@ impl<T: Serialize> SerializePrefs<T> for JsoncCodec {
 
         match object.get(key) {
             Some(prop) => prop.set_value(section),
+
             None => {
                 object.append(key, section);
             }
@@ -82,12 +84,17 @@ fn parse_options() -> ParseOptions {
 fn cst_input_value(value: Value) -> CstInputValue {
     match value {
         Value::Null => CstInputValue::Null,
+
         Value::Bool(value) => CstInputValue::Bool(value),
+
         Value::Number(value) => CstInputValue::Number(value.to_string()),
+
         Value::String(value) => CstInputValue::String(value),
+
         Value::Array(values) => {
             CstInputValue::Array(values.into_iter().map(cst_input_value).collect())
         }
+
         Value::Object(values) => CstInputValue::Object(
             values
                 .into_iter()

@@ -264,7 +264,9 @@ fn mime_for(path: &Path) -> Result<&'static str> {
         .map(str::to_ascii_lowercase);
     match extension.as_deref() {
         Some("png") => Ok("image/png"),
+
         Some("jpg" | "jpeg") => Ok("image/jpeg"),
+
         other => Err(Error::UnsupportedImageFormat(
             other.unwrap_or("").to_owned(),
         )),

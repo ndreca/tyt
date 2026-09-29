@@ -111,6 +111,7 @@ pub fn to_vmax_file(main: &VMaxVoxMain, options: &VMaxWriteOptions) -> Result<VM
             let palette_id = object_layer(object)?.map(|(_, palette_id)| palette_id);
             let plan_index = match plan_index_of.get(&palette_id) {
                 Some(&plan_index) => plan_index,
+
                 None => {
                     let colored_count = plans.iter().filter(|p| p.color_table.is_some()).count();
                     plans.push(match palette_id {
@@ -149,6 +150,7 @@ pub fn to_vmax_file(main: &VMaxVoxMain, options: &VMaxWriteOptions) -> Result<VM
             // Instances share one contents file: rebuild it once.
             let data = match contents_by_object.get(&object_id) {
                 Some(data) => data.clone(),
+
                 None => {
                     let voxels = reconstruct_voxels(&tight, plan, object_placement.box_min)?;
                     let data = format!("contents{suffix}.vmaxb");
@@ -377,6 +379,7 @@ fn extend_bounds(bounds: &mut Option<([f64; 3], [f64; 3])>, center: [f64; 3], ha
             *min = TyVector3F64::from_array(*min).min(lo).to_array();
             *max = TyVector3F64::from_array(*max).max(hi).to_array();
         }
+
         None => *bounds = Some((lo.to_array(), hi.to_array())),
     }
 }
@@ -435,6 +438,7 @@ fn object_layer(object: &VoxObject) -> Result<Option<(U32Id<BVoxLayer>, U32Id<BV
     let mut layers = object.iter_layers();
     match (layers.next(), layers.next()) {
         (layer, None) => Ok(layer),
+
         _ => Err(Error::invalid(format!(
             "object \"{}\" has {} layers but a Voxel Max object reads one palette",
             object.name(),
@@ -757,6 +761,7 @@ fn pool_material(layout: &PaletteLayout, slot: u8) -> Result<VMaxMaterial> {
                 ior: unbound_scalar(scalar(IOR)?, IOR),
                 transmission: unbound_scalar(scalar(TRANSMISSION)?, TRANSMISSION),
             }),
+
             false => None,
         },
     })
@@ -842,7 +847,9 @@ fn material_slot(layout: &PaletteLayout, material_id: U32Id<BVoxMaterial>) -> Re
             .to_u32();
         match slot {
             None => slot = Some((value_id, property.name)),
+
             Some((slot, _)) if slot == value_id => {}
+
             Some((slot, first)) => {
                 return Err(Error::invalid(format!(
                     "material {} draws `{}` value {value_id} but `{first}` value {slot}, so it \
@@ -1000,6 +1007,7 @@ fn reconstruct_voxels(
                         .expect("a live voxel samples its layer");
                     plan.indices[&material_id]
                 }
+
                 None => VoxelIndices {
                     color_idx: 1,
                     material_idx: 0,

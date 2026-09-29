@@ -31,6 +31,7 @@ impl FormatExt for Gltf {
                 let ext = ext.clone();
                 main.take_ext().main.put_ext(ext)
             }
+
             None => to_gltf_mesh_main(main.take_ext().main),
         };
 

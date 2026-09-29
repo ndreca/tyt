@@ -41,7 +41,9 @@ fn wrap_texel(wrap: MeshWrap, coord: f64, size: u32) -> usize {
 
     let wrapped = match wrap {
         MeshWrap::Repeat => index.rem_euclid(size as i64),
+
         MeshWrap::ClampToEdge => index.clamp(0, last),
+
         MeshWrap::MirroredRepeat => {
             let period = 2 * size as i64;
             let folded = index.rem_euclid(period);

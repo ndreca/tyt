@@ -35,6 +35,7 @@ impl VoxDocumentFile {
     pub fn single_bytes(files: &[VoxDocumentFile]) -> Result<&[u8]> {
         match files {
             [file] => Ok(&file.bytes),
+
             _ => Err(Error::Files(format!(
                 "a single-file document holds one file, not {}",
                 files.len()

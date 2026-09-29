@@ -48,7 +48,9 @@ pub fn from_qb_file_bytes(bytes: &[u8]) -> Result<QbFile> {
 fn read_color_format(value: u32) -> Result<QbColorFormat> {
     match value {
         0 => Ok(QbColorFormat::Rgba),
+
         1 => Ok(QbColorFormat::Bgra),
+
         other => Err(invalid(format!(
             "colorFormat is {other}, expected 0 (RGBA) or 1 (BGRA)"
         ))),
@@ -59,7 +61,9 @@ fn read_color_format(value: u32) -> Result<QbColorFormat> {
 fn read_z_axis_orientation(value: u32) -> Result<QbZAxisOrientation> {
     match value {
         0 => Ok(QbZAxisOrientation::LeftHanded),
+
         1 => Ok(QbZAxisOrientation::RightHanded),
+
         other => Err(invalid(format!(
             "zAxisOrientation is {other}, expected 0 (left handed) or 1 (right handed)"
         ))),
@@ -174,6 +178,7 @@ fn decode_color(bytes: [u8; 4], color_format: QbColorFormat) -> QbVoxel {
             b: b2,
             visibility,
         },
+
         QbColorFormat::Bgra => QbVoxel {
             r: b2,
             g: b1,

@@ -64,10 +64,13 @@ pub fn voxelize_triangles(
     match (surface_mode, fill_mode) {
         // Cover shell, hollow: the rasterized shell as-is.
         (false, false) => {}
+
         // Cover shell, filled: flood the volume the shell encloses.
         (false, true) => fill_enclosed(&mut filled, nx, ny, nz),
+
         // Inside-center body, filled: the enclosed body itself.
         (true, true) => fill_center_inside(&mut filled, space, triangles, nx, ny, nz),
+
         // Inside-center body, hollow: that body eroded to its boundary layer.
         (true, false) => {
             fill_center_inside(&mut filled, space, triangles, nx, ny, nz);

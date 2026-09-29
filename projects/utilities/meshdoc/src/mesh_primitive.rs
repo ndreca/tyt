@@ -205,6 +205,7 @@ impl MeshPrimitive {
                     .iter()
                     .all(|component| component.is_finite())
             })?),
+
             None => None,
         };
 

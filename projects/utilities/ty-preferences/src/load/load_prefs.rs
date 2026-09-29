@@ -19,6 +19,7 @@ pub fn load_prefs<T>(
                 prefs,
             })
         }
+
         None => None,
     };
 
@@ -30,6 +31,7 @@ pub fn load_prefs<T>(
             }),
             load_hierarchy_prefs(dependencies, codec, root, &paths.cwd, file_name, key)?,
         ),
+
         None => (None, Vec::new()),
     };
 

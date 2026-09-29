@@ -42,6 +42,7 @@ impl GridResolutionOptions {
 
             let count = match count.parse::<u32>() {
                 Ok(count) if count >= 1 => count,
+
                 _ => {
                     return Err(Error::usage(format!(
                         "--resolution count `{count}` must be a whole number of at least 1"

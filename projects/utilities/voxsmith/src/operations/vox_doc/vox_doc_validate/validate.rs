@@ -21,9 +21,11 @@ fn render_markdown(checks: &[VoxCheck], name: &str) -> String {
     for check in checks {
         match &check.status {
             VoxCheckStatus::Passed => output.push_str(&format!("- {}: pass\n", check.name)),
+
             VoxCheckStatus::Unverifiable => {
                 output.push_str(&format!("- {}: unverifiable\n", check.name));
             }
+
             VoxCheckStatus::Failed(messages) => {
                 output.push_str(&format!("- {}: fail\n", check.name));
                 for message in messages {
@@ -64,9 +66,11 @@ fn build_json_grid(checks: &[VoxCheck], name: &str) -> TreeGrid<TreeGridJsonValu
             VoxCheckStatus::Passed => {
                 grid.push_value(node_id, TreeGridJsonValue::new("passed"));
             }
+
             VoxCheckStatus::Unverifiable => {
                 grid.push_value(node_id, TreeGridJsonValue::new("unverifiable"));
             }
+
             VoxCheckStatus::Failed(messages) => {
                 grid.push_value(node_id, TreeGridJsonValue::new("failed"));
                 let failures_id = grid.retain_child(node_id, TreeGridLabel::bare("failures"));

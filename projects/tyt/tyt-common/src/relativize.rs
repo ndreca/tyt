@@ -48,13 +48,17 @@ fn normalize(path: &Path) -> PathBuf {
     for component in path.components() {
         match component {
             Component::CurDir => {}
+
             Component::ParentDir => match result.components().next_back() {
                 Some(Component::Normal(_)) => {
                     result.pop();
                 }
+
                 Some(Component::RootDir | Component::Prefix(_)) => {}
+
                 _ => result.push(".."),
             },
+
             other => result.push(other.as_os_str()),
         }
     }

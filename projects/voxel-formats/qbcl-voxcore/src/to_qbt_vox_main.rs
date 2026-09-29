@@ -149,17 +149,20 @@ mod tests {
     fn collect_world_voxels(node: &QbtNode, set: &mut BTreeSet<WorldVoxel>) {
         match node {
             QbtNode::Matrix(matrix) => collect_matrix_voxels(matrix, set),
+
             QbtNode::Model(model) => {
                 for child in &model.children {
                     collect_world_voxels(child, set);
                 }
             }
+
             QbtNode::Compound(compound) => {
                 collect_matrix_voxels(&compound.matrix, set);
                 for child in &compound.children {
                     collect_world_voxels(child, set);
                 }
             }
+
             QbtNode::Unknown(_) => {}
         }
     }

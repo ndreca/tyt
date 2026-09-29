@@ -34,6 +34,7 @@ impl MeshAttributeComponents {
             MeshAttributeComponents::F64(components) => components
                 .iter()
                 .position(|component| !component.is_finite()),
+
             _ => None,
         }
     }

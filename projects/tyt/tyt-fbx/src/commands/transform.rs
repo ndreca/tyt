@@ -481,6 +481,7 @@ impl Transform {
                 [Some(v[3]), Some(v[4]), Some(v[5])],
                 [Some(v[6]), Some(v[7]), Some(v[8])],
             ),
+
             None => ([None; 3], [None; 3], [None; 3]),
         };
 
@@ -490,6 +491,7 @@ impl Transform {
                 [Some(v[3]), Some(v[4]), Some(v[5])],
                 [Some(v[6]), Some(v[7]), Some(v[8])],
             ),
+
             None => ([None; 3], [None; 3], [None; 3]),
         };
 

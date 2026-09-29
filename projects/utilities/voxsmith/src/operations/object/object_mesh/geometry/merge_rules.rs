@@ -343,19 +343,24 @@ fn entry_key(value: &Value, entry: usize, strings: &mut HashMap<String, u32>) ->
                 }
             })
             .collect(),
+
         Components::U8(components) => components[range]
             .iter()
             .map(|&component| u32::from(component))
             .collect(),
+
         Components::U16(components) => components[range]
             .iter()
             .map(|&component| u32::from(component))
             .collect(),
+
         Components::U32(components) => components[range].to_vec(),
+
         Components::Bool(components) => components[range]
             .iter()
             .map(|&component| u32::from(component))
             .collect(),
+
         Components::String(components) => components[range]
             .iter()
             .map(|component| {
@@ -370,10 +375,15 @@ fn entry_key(value: &Value, entry: usize, strings: &mut HashMap<String, u32>) ->
 fn component_f64(components: &Components, index: usize) -> f64 {
     match components {
         Components::F32(components) => f64::from(components[index]),
+
         Components::U8(components) => f64::from(components[index]),
+
         Components::U16(components) => f64::from(components[index]),
+
         Components::U32(components) => f64::from(components[index]),
+
         Components::Bool(components) => f64::from(u8::from(components[index])),
+
         Components::String(_) => {
             unreachable!("a string corner value errors before the rules hold it")
         }

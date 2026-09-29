@@ -21,7 +21,9 @@ impl CliValue for EditStateMode {
             EditStateMode::Auto => {
                 "Record it only when some object carries margin around its live voxels"
             }
+
             EditStateMode::Always => "Always record it, even when every object is already tight",
+
             EditStateMode::Never => {
                 "Never record it; margin around an object's live voxels is lost on reload"
             }

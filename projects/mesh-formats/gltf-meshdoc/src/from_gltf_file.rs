@@ -121,12 +121,14 @@ pub fn from_gltf_file<D: DecodeBase64>(dependencies: &D, file: &GltfFile) -> Res
                     Some(mime_type),
                 )
             }
+
             Source::Uri { uri, mime_type } => {
                 let (bytes, source) = match data_uri_payload(uri) {
                     Some(_) => (
                         MeshImageSource::Bytes(resolve_uri(dependencies, file, uri)?),
                         Some(GltfExtImageSource::DataUri),
                     ),
+
                     None => (MeshImageSource::File(file_id_for_uri(uri)?), None),
                 };
                 let declared =
@@ -137,6 +139,7 @@ pub fn from_gltf_file<D: DecodeBase64>(dependencies: &D, file: &GltfFile) -> Res
 
         let raw = match &bytes {
             MeshImageSource::Bytes(bytes) => bytes.as_slice(),
+
             MeshImageSource::File(file_id) => {
                 &main
                     .file(*file_id)
@@ -572,15 +575,21 @@ where
     for (semantic, accessor) in primitive.attributes() {
         match semantic {
             Semantic::TexCoords(set) => uv_sets.push(set),
+
             Semantic::Colors(0) => color_set = Some(0),
+
             Semantic::Colors(set) => {
                 return Err(Error::invalid(format!(
                     "a primitive carries COLOR_{set}, and only COLOR_0 is supported"
                 )));
             }
+
             Semantic::Joints(set) => joint_sets.push(set),
+
             Semantic::Weights(set) => weight_sets.push(set),
+
             Semantic::Extras(name) => extra_attributes.push((format!("_{name}"), accessor)),
+
             Semantic::Positions | Semantic::Normals | Semantic::Tangents => {}
         }
     }
@@ -690,6 +699,7 @@ fn triangles_of(mode: Mode, indices: &[u32]) -> Result<Vec<MeshTriangle>> {
             .chunks_exact(3)
             .map(|corners| triangle(corners[0], corners[1], corners[2]))
             .collect(),
+
         Mode::TriangleStrip => indices
             .windows(3)
             .enumerate()
@@ -701,11 +711,13 @@ fn triangles_of(mode: Mode, indices: &[u32]) -> Result<Vec<MeshTriangle>> {
                 }
             })
             .collect(),
+
         Mode::TriangleFan => indices
             .windows(2)
             .skip(1)
             .map(|corners| triangle(indices[0], corners[0], corners[1]))
             .collect(),
+
         Mode::Points | Mode::Lines | Mode::LineLoop | Mode::LineStrip => {
             return Err(Error::invalid(format!(
                 "a primitive of mode {mode:?} has no triangles"
@@ -779,10 +791,13 @@ where
 
     let output = match reader.read_outputs().ok_or_else(|| missing("outputs"))? {
         ReadOutputs::Translations(values) => GltfExtAnimationOutput::Translations(values.collect()),
+
         ReadOutputs::Rotations(values) => {
             GltfExtAnimationOutput::Rotations(values.into_f32().collect())
         }
+
         ReadOutputs::Scales(values) => GltfExtAnimationOutput::Scales(values.collect()),
+
         ReadOutputs::MorphTargetWeights(values) => {
             GltfExtAnimationOutput::MorphTargetWeights(values.into_f32().collect())
         }
@@ -815,6 +830,7 @@ fn resolve_buffers<D: DecodeBase64>(
                 BufferSource::Bin => file.blob.clone().ok_or_else(|| {
                     Error::invalid("a buffer names no URI and the document has no binary chunk")
                 })?,
+
                 BufferSource::Uri(uri) => resolve_uri(dependencies, file, uri)?,
             };
 
@@ -915,16 +931,21 @@ fn property_value_from_json(
 
     Ok(match value {
         Value::Bool(value) => MeshPropertyValue::Bool(*value),
+
         Value::Number(number) => match number.as_i64() {
             Some(value) => MeshPropertyValue::Int(value),
+
             None => MeshPropertyValue::Float(
                 number
                     .as_f64()
                     .ok_or_else(|| malformed("is a number outside f64"))?,
             ),
         },
+
         Value::String(value) => MeshPropertyValue::Text(value.clone()),
+
         Value::Array(entries) => list_from_json(entries).ok_or_else(|| malformed("mixes kinds"))?,
+
         Value::Object(object) => {
             if let Some(uri) = object.get("uri") {
                 let uri = uri
@@ -941,6 +962,7 @@ fn property_value_from_json(
                     .ok_or_else(|| malformed("names a texture index past the textures"))?;
                 let uv_stream = match object.get("texCoord") {
                     None => 0,
+
                     Some(set) => set
                         .as_u64()
                         .and_then(|set| u32::try_from(set).ok())
@@ -954,6 +976,7 @@ fn property_value_from_json(
                 return Err(malformed("is an object with neither `uri` nor `index`"));
             }
         }
+
         Value::Null => return Err(malformed("is null")),
     })
 }
@@ -1051,15 +1074,18 @@ where
                 .map(f64::from)
                 .collect(),
         ),
+
         DataType::U8 if !normalized => {
             MeshAttributeComponents::U8(read_elements::<u8, _>(accessor, dimensions, get)?)
         }
+
         DataType::U8 => MeshAttributeComponents::F64(
             read_elements::<u8, _>(accessor, dimensions, get)?
                 .into_iter()
                 .map(|value| normalize(f64::from(value), f64::from(u8::MAX)))
                 .collect(),
         ),
+
         DataType::I8 => MeshAttributeComponents::F64(
             read_elements::<i8, _>(accessor, dimensions, get)?
                 .into_iter()
@@ -1072,15 +1098,18 @@ where
                 })
                 .collect(),
         ),
+
         DataType::U16 if !normalized => {
             MeshAttributeComponents::U16(read_elements::<u16, _>(accessor, dimensions, get)?)
         }
+
         DataType::U16 => MeshAttributeComponents::F64(
             read_elements::<u16, _>(accessor, dimensions, get)?
                 .into_iter()
                 .map(|value| normalize(f64::from(value), f64::from(u16::MAX)))
                 .collect(),
         ),
+
         DataType::I16 => MeshAttributeComponents::F64(
             read_elements::<i16, _>(accessor, dimensions, get)?
                 .into_iter()
@@ -1093,6 +1122,7 @@ where
                 })
                 .collect(),
         ),
+
         DataType::U32 => MeshAttributeComponents::F64(
             read_elements::<u32, _>(accessor, dimensions, get)?
                 .into_iter()
@@ -1119,28 +1149,34 @@ where
 
     Ok(match dimensions {
         Dimensions::Scalar => Iter::<T>::new(accessor, get).ok_or_else(missing)?.collect(),
+
         Dimensions::Vec2 => Iter::<[T; 2]>::new(accessor, get)
             .ok_or_else(missing)?
             .flatten()
             .collect(),
+
         Dimensions::Vec3 => Iter::<[T; 3]>::new(accessor, get)
             .ok_or_else(missing)?
             .flatten()
             .collect(),
+
         Dimensions::Vec4 => Iter::<[T; 4]>::new(accessor, get)
             .ok_or_else(missing)?
             .flatten()
             .collect(),
+
         Dimensions::Mat2 => Iter::<[[T; 2]; 2]>::new(accessor, get)
             .ok_or_else(missing)?
             .flatten()
             .flatten()
             .collect(),
+
         Dimensions::Mat3 => Iter::<[[T; 3]; 3]>::new(accessor, get)
             .ok_or_else(missing)?
             .flatten()
             .flatten()
             .collect(),
+
         Dimensions::Mat4 => Iter::<[[T; 4]; 4]>::new(accessor, get)
             .ok_or_else(missing)?
             .flatten()

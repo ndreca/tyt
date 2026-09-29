@@ -192,6 +192,7 @@ fn build_object(
     // the node transform pivots about the content center.
     let (box_min, bounds) = match min_corner(&voxels) {
         Some(min) => (min, object_bounds(&voxels, min)),
+
         // An empty object seats at its content box; lacking one, it seats at
         // the build volume `vp.min` so the edit grid still contains the runtime
         // grid, and only at the world origin when it has neither.
@@ -340,6 +341,7 @@ fn edit_grid(
                 vp.min[2] as i32 - box_min[2] + origin[2],
             ],
         ),
+
         None => (bounds, origin),
     }
 }
@@ -689,6 +691,7 @@ fn build_hierarchy(
             Some(&parent_node_index) => nodes[parent_node_index]
                 .child_node_ids
                 .push(U32Id::from_u32(node_index as u32)),
+
             None => roots.push(U32Id::from_u32(node_index as u32)),
         }
     }
@@ -741,6 +744,7 @@ fn vmax_ext_from_file(
     for (object_id, data) in object_data {
         let entry = match data.and_then(|data| serde.contents_files.get(&data)) {
             Some(contents) => object_state_from_contents(contents),
+
             None => {
                 let object = main.object(object_id).expect("a loaded object is live");
                 synthesized_object_state(&ext, object)

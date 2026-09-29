@@ -52,7 +52,9 @@ impl Poll {
 
         let get = || match head.task_kind.as_str() {
             "image-to-3d" => dependencies.get_task(&api_key, &head.task_id),
+
             "retexture" => dependencies.get_texture_task(&api_key, &head.task_id),
+
             other => Err(Error::InvalidTaskFile(format!(
                 "unsupported taskKind \"{other}\""
             ))),

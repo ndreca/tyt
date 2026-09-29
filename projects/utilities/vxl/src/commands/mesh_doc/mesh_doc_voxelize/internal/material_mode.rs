@@ -23,10 +23,13 @@ impl CliValue for MaterialMode {
             MaterialMode::Auto => {
                 "Sample per-texel when the mesh carries textures, else per-primitive"
             }
+
             MaterialMode::PerPrimitive => {
                 "One material per glTF material, read from its flat PBR factors"
             }
+
             MaterialMode::PerTexel => "Sample the material maps at each voxel's surface point",
+
             MaterialMode::Flat => "Ignore the mesh's materials and paint the one `--fill-color`",
         }
     }

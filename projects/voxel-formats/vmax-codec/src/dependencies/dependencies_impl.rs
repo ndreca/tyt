@@ -70,13 +70,16 @@ impl DecompressLzfse for DependenciesImpl {
                     out.truncate(len);
                     return Ok(out);
                 }
+
                 // A full buffer may mean truncation, so grow and retry.
                 Err(LzfseError::BufferTooSmall) if capacity < ceiling => {
                     capacity = capacity.saturating_mul(2);
                 }
+
                 Err(LzfseError::BufferTooSmall) => {
                     return Err(format!("lzfse output exceeds {ceiling} bytes"));
                 }
+
                 Err(LzfseError::CompressFailed) => return Err("malformed lzfse stream".to_owned()),
             }
         }
@@ -163,9 +166,13 @@ impl DecodePng for DependenciesImpl {
             .chunks_exact(info.color_type.samples())
             .map(|cell| match cell {
                 [gray] => Ok([*gray, *gray, *gray, u8::MAX]),
+
                 [gray, alpha] => Ok([*gray, *gray, *gray, *alpha]),
+
                 [r, g, b] => Ok([*r, *g, *b, u8::MAX]),
+
                 [r, g, b, alpha] => Ok([*r, *g, *b, *alpha]),
+
                 _ => Err(format!(
                     "png pixels hold {} samples, not 1 to 4",
                     cell.len()

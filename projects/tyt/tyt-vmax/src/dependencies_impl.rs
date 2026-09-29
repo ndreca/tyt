@@ -121,6 +121,7 @@ fn block_encoding(encoding: VoxjEncoding) -> (Option<PositionEncoding>, Option<S
             Some(position_encoding(position)),
             Some(sample_encoding(sample)),
         ),
+
         VoxjEncoding::Smallest => (None, None),
     }
 }

@@ -258,6 +258,7 @@ fn fill_interior(
                 }
             }
         }
+
         None => {
             let nearest = nearest_surface_cell(grid, counts);
             for cell in 0..grid.filled.len() {

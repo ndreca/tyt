@@ -31,6 +31,7 @@ impl<T: Serialize> SerializePrefs<T> for JsonCodec {
 
                 match parsed {
                     Value::Object(map) => map,
+
                     _ => {
                         return Err(IOError::new(
                             ErrorKind::InvalidData,
@@ -39,6 +40,7 @@ impl<T: Serialize> SerializePrefs<T> for JsonCodec {
                     }
                 }
             }
+
             None => Map::new(),
         };
 

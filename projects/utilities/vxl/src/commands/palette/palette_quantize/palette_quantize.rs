@@ -41,6 +41,7 @@ impl PaletteQuantize {
             Some(name) => load_palette_quantize_profile_set(&dependencies)?
                 .get("--profile", name)?
                 .clone(),
+
             None => QuantizeProfile::default(),
         };
         let options = self.quantize.resolve(&profile)?;

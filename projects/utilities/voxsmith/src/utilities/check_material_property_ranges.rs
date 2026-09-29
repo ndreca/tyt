@@ -23,6 +23,7 @@ pub fn check_material_property_ranges<T: VoxExt>(main: &VoxMain<T>) -> Result<()
             };
             let range = match kind {
                 MaterialPropertyKind::ColorRgb | MaterialPropertyKind::ColorRgba => COLOR_RANGE,
+
                 MaterialPropertyKind::Scalar => {
                     scalar_range(name).expect("every scalar vocabulary property has a range")
                 }
@@ -42,18 +43,23 @@ pub fn check_material_property_ranges<T: VoxExt>(main: &VoxMain<T>) -> Result<()
                         VoxValuePoolValueRef::Vec3Float(components) => {
                             check_components(name, components, range)?
                         }
+
                         VoxValuePoolValueRef::Vec4Float(components) => {
                             check_components(name, components, range)?
                         }
+
                         _ => {}
                     },
+
                     MaterialPropertyKind::Scalar => match value {
                         VoxValuePoolValueRef::Float(number) => {
                             check_material_range(name, number, range)?
                         }
+
                         VoxValuePoolValueRef::Int(number) => {
                             check_material_range(name, number as f64, range)?
                         }
+
                         _ => {}
                     },
                 }

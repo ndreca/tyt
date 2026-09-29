@@ -29,18 +29,24 @@ impl CliValue for ProfileListLayout {
             ProfileListLayout::BoxHierarchy => {
                 "A box-glyph tree, one branch per origin over its profiles"
             }
+
             ProfileListLayout::BoxTables => {
                 "One box-glyph table, a column per origin over its profiles"
             }
+
             ProfileListLayout::JsonCompact => "Compact, single-line JSON",
+
             ProfileListLayout::JsonPretty => "Pretty-printed, multi-line JSON",
+
             ProfileListLayout::MdLists => {
                 "A `# profiles` heading over one section per origin, each a numbered markdown \
                  list of its profiles"
             }
+
             ProfileListLayout::MdTables => {
                 "One markdown table, a column per origin over its profiles"
             }
+
             ProfileListLayout::TextRows => "One row per origin, its profiles beside it",
         }
     }

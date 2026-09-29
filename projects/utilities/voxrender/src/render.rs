@@ -99,6 +99,7 @@ fn shade_hit(
 
     let open = match occlusion {
         RenderOcclusion::None => 1.0,
+
         RenderOcclusion::Corner => bilinear(
             &hit.face,
             corner_occlusion(object, &hit.face).map(f64::from),

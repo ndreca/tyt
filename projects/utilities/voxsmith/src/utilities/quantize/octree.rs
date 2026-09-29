@@ -53,6 +53,7 @@ pub fn octree(points: Vec<QuantizePoint>, target: usize) -> Vec<Vec<QuantizePoin
 
             current = match nodes[current].children[octant] {
                 child if child >= 0 => child as usize,
+
                 _ => {
                     let new = nodes.len();
 

@@ -107,6 +107,7 @@ impl MeshDocVoxelize {
             Some(name) => load_mesh_doc_voxelize_profile_set(&dependencies)?
                 .get("--profile", name)?
                 .clone(),
+
             None => MeshDocVoxelizeProfile::default(),
         };
         let options = self.resolve(&profile)?;

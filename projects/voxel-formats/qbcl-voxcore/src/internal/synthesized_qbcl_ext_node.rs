@@ -12,6 +12,7 @@ pub fn synthesized_qbcl_ext_node(node: &VoxHierarchyNode) -> QbclExtNode {
         [] => QbclExtNodeBody::Model {
             transform: QbclModel::DEFAULT_TRANSFORM.to_vec(),
         },
+
         [_, extras @ ..] => {
             let pivot = QbclMatrix::default().pivot;
 

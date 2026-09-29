@@ -16,17 +16,23 @@ pub fn profile_list(groups: &[ProfileListGroup], layout: ProfileListLayout) -> S
                 .with_bare_roots(true)
                 .with_value_children(true),
         ),
+
         ProfileListLayout::BoxTables => {
             build_grid(groups, None).render_box_tables(TreeGridTableShapeKind::Nested)
         }
+
         ProfileListLayout::JsonCompact => build_grid(groups, None).render_json_compact(),
+
         ProfileListLayout::JsonPretty => build_grid(groups, None).render_json_pretty(),
+
         ProfileListLayout::MdLists => {
             build_grid(groups, Some("profiles")).render_md_lists(&TreeGridMdListsOptions::default())
         }
+
         ProfileListLayout::MdTables => build_grid(groups, None).render_md_tables(
             &TreeGridTableShape::Nested(TreeGridNestedTableOptions::default()),
         ),
+
         ProfileListLayout::TextRows => {
             build_grid(groups, None).render_text_rows(&TreeGridTextRowsOptions::default())
         }

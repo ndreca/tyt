@@ -25,12 +25,15 @@ pub fn vox_doc_show<T: VoxExt>(
 ) -> String {
     match layout {
         VoxDocShowLayout::BoxTables => render_box_tables(main, object_ids, document),
+
         VoxDocShowLayout::JsonCompact => {
             build_json_grid(main, object_ids, document).render_json_compact()
         }
+
         VoxDocShowLayout::JsonPretty => {
             build_json_grid(main, object_ids, document).render_json_pretty()
         }
+
         VoxDocShowLayout::MdTables => render_md_tables(main, object_ids, document),
     }
 }
@@ -343,6 +346,7 @@ fn edit_bounds(object: &VoxObject) -> Option<(u32, u32, u32)> {
                 || size.y != build.y
                 || size.z != build.z
         }
+
         // No live voxels: a non-empty build volume is all margin.
         None => build.x != 0 || build.y != 0 || build.z != 0,
     };

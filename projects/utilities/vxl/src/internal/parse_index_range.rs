@@ -5,6 +5,7 @@ use voxsmith::utilities::IndexRange;
 pub fn parse_index_range(text: &str) -> Result<IndexRange, String> {
     let (start, end) = match text.split_once('-') {
         Some((start, end)) => (parse_index(start)?, parse_index(end)?),
+
         None => {
             let index = parse_index(text)?;
 

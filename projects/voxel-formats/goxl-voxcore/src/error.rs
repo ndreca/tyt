@@ -32,7 +32,9 @@ impl Display for Error {
         match self {
             #[cfg(feature = "codec")]
             Error::Codec(error) => error.fmt(f),
+
             Error::Invalid(message) => write!(f, "{message}"),
+
             Error::Vox(error) => error.fmt(f),
         }
     }
@@ -43,7 +45,9 @@ impl StdError for Error {
         match self {
             #[cfg(feature = "codec")]
             Error::Codec(error) => Some(error),
+
             Error::Invalid(_) => None,
+
             Error::Vox(error) => Some(error),
         }
     }

@@ -51,14 +51,17 @@ impl ToVoxj {
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         let encoding = match self.optimize {
             Some(VoxjOptimize::Size) => VoxjEncoding::Smallest,
+
             Some(VoxjOptimize::Fast) => VoxjEncoding::Fixed {
                 position: VoxjPositionEncoding::BitmapBase64,
                 sample: VoxjSampleEncoding::PackedBase64,
             },
+
             Some(VoxjOptimize::Pretty) => VoxjEncoding::Fixed {
                 position: VoxjPositionEncoding::RawJson,
                 sample: VoxjSampleEncoding::RawJson,
             },
+
             None => VoxjEncoding::Fixed {
                 position: self.position_encoding,
                 sample: self.sample_encoding,

@@ -19,9 +19,11 @@ impl CliValue for PaletteShowTableShape {
     fn help(self) -> &'static str {
         match self {
             PaletteShowTableShape::Nested => "One table per palette group, under nested headings",
+
             PaletteShowTableShape::Flat => {
                 "One table over every value collection, the cross-palette comparison view"
             }
+
             PaletteShowTableShape::Records => {
                 "One row per property under each palette's heading, component values in \
                  relative-path columns"

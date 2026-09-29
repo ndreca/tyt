@@ -72,6 +72,7 @@ impl PlacedObject {
                 scale,
                 ..TyTransformF64::IDENTITY
             },
+
             VoxelFrame::Local => TyTransformF64 {
                 position: self.world.position,
                 rotation: self.world.rotation,

@@ -48,6 +48,7 @@ fn parse_property_ref(text: &str) -> Result<PropertyRef, String> {
         Some((head, tail)) if tail.len() == 1 && tail.chars().all(|c| c.is_ascii_alphabetic()) => {
             (head, Some(VectorComponent::parse(tail)?))
         }
+
         _ => (text, None),
     };
 

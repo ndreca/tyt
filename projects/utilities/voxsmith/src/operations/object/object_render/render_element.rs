@@ -30,7 +30,9 @@ impl Display for RenderElement {
             RenderElement::LightTransform { light_id } => {
                 write!(f, "light {}'s transform", light_id.to_u32())
             }
+
             RenderElement::ViewProjection { name } => write!(f, "view {name}'s projection"),
+
             RenderElement::ViewTransform { name } => write!(f, "view {name}'s transform"),
         }
     }

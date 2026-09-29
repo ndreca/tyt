@@ -23,7 +23,9 @@ impl FromStr for Width {
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         match value {
             "terminal" => Ok(Width::Terminal),
+
             "unlimited" => Ok(Width::Unlimited),
+
             _ => value.parse::<usize>().map(Width::Columns).map_err(|_| {
                 format!("`{value}` is not a width; use terminal, unlimited, or a column count")
             }),

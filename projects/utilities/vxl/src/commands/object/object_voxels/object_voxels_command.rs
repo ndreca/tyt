@@ -26,8 +26,11 @@ impl ObjectVoxelsCommand {
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             ObjectVoxelsCommand::ObjectVoxelsFlip(flip) => flip.execute(dependencies),
+
             ObjectVoxelsCommand::ObjectVoxelsQuantize(quantize) => quantize.execute(dependencies),
+
             ObjectVoxelsCommand::ObjectVoxelsRotate(rotate) => rotate.execute(dependencies),
+
             ObjectVoxelsCommand::ObjectVoxelsTranslate(translate) => {
                 translate.execute(dependencies)
             }

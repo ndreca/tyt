@@ -112,8 +112,11 @@ fn entries_agree(value: &Value, left: usize, right: usize) -> bool {
                 .map(|component| component.to_bits())),
 
         Components::String(components) => components[range(left)] == components[range(right)],
+
         Components::U8(components) => components[range(left)] == components[range(right)],
+
         Components::U16(components) => components[range(left)] == components[range(right)],
+
         Components::U32(components) => components[range(left)] == components[range(right)],
     }
 }
@@ -129,6 +132,7 @@ fn vertex_colors(
 
     let components = match value.components() {
         Components::F32(components) if width == 3 || width == 4 => components,
+
         _ => {
             return Err(Error::mesh_record(
                 element.clone(),

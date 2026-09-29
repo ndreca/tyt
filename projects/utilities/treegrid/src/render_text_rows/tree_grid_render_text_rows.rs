@@ -20,6 +20,7 @@ impl<C: TreeGridCells> TreeGridRenderTextRows for TreeGrid<C> {
                     blocks.push(row_block(self, None, 0, id, options.width));
                 }
             }
+
             TreeGridLabelMode::Concat => {
                 let rows = self.data_paths();
                 let width = label_width(rows.iter().map(|(path, _)| path.as_str()));
@@ -27,6 +28,7 @@ impl<C: TreeGridCells> TreeGridRenderTextRows for TreeGrid<C> {
                     blocks.push(row_block(self, Some(path), width, *id, options.width));
                 }
             }
+
             TreeGridLabelMode::Header(header) => {
                 for group in self.groups() {
                     if let Some(branch) = group.branch {
@@ -76,6 +78,7 @@ fn row_block<C: TreeGridCells>(
     let segments = match width {
         // Leave room for at least one cell beside the label indent.
         Some(width) => wrap_cells(&cells, separator, width.saturating_sub(indent).max(1)),
+
         None => {
             let rendered: Vec<&str> = cells.iter().map(|cell| cell.rendered.as_str()).collect();
             vec![rendered.join(separator)]

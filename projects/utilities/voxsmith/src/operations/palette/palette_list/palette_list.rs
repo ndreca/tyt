@@ -62,10 +62,14 @@ fn render<T: VoxExt>(
     match layout {
         PaletteListLayout::BoxHierarchy => build_grid(main, palettes, fields)
             .render_box_hierarchy(&TreeGridBoxHierarchyOptions::default().with_bare_roots(true)),
+
         PaletteListLayout::BoxTables => build_records_grid(main, palettes, fields)
             .render_box_tables(TreeGridTableShapeKind::Records),
+
         PaletteListLayout::JsonCompact => build_grid(main, palettes, fields).render_json_compact(),
+
         PaletteListLayout::JsonPretty => build_grid(main, palettes, fields).render_json_pretty(),
+
         PaletteListLayout::MdTables => build_records_grid(main, palettes, fields).render_md_tables(
             &TreeGridTableShape::Records(TreeGridRecordsTableOptions::default()),
         ),

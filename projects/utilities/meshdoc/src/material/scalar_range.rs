@@ -13,16 +13,19 @@ pub fn scalar_range(key: &str) -> Option<MaterialRange> {
             max: Some(1.0),
             admits_zero: false,
         }),
+
         NORMAL_SCALE | EMISSIVE_STRENGTH | ALPHA_CUTOFF => Some(MaterialRange {
             min: 0.0,
             max: None,
             admits_zero: false,
         }),
+
         IOR => Some(MaterialRange {
             min: 1.0,
             max: None,
             admits_zero: true,
         }),
+
         _ => None,
     }
 }

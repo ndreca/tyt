@@ -57,6 +57,7 @@ impl ObjectVoxelsQuantize {
             Some(name) => load_object_voxels_quantize_profile_set(&dependencies)?
                 .get("--profile", name)?
                 .clone(),
+
             None => QuantizeProfile::default(),
         };
         let options = self.quantize.resolve(&profile)?;

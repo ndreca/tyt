@@ -30,6 +30,7 @@ fn main() {
         Command::Completion { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "meta", &mut io::stdout());
         }
+
         Command::TytMeta(meta) => {
             if let Err(e) = meta.execute(DependenciesImpl) {
                 eprintln!("error: {e}");

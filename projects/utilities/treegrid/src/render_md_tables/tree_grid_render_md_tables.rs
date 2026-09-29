@@ -19,9 +19,11 @@ impl<C: TreeGridCells> TreeGridRenderMdTables for TreeGrid<C> {
                 TreeGridTableLabelMode::Concat,
                 NonZeroU8::MIN,
             ),
+
             TreeGridTableShape::Nested(options) => {
                 (TreeGridTableShapeKind::Nested, options.label, options.level)
             }
+
             TreeGridTableShape::Records(options) => (
                 TreeGridTableShapeKind::Records,
                 TreeGridTableLabelMode::Concat,

@@ -259,8 +259,11 @@ impl<'a> Parser<'a> {
 
         match &token.kind {
             TokenKind::Number(literal) => Ok(SyntaxNode::Number(literal.clone())),
+
             TokenKind::True => Ok(SyntaxNode::Bool(true)),
+
             TokenKind::False => Ok(SyntaxNode::Bool(false)),
+
             TokenKind::StringLiteral(text) => Ok(SyntaxNode::StringLiteral(text.clone())),
 
             TokenKind::Identifier(name) | TokenKind::QuotedName(name) => {
@@ -276,6 +279,7 @@ impl<'a> Parser<'a> {
             }
 
             TokenKind::Function(function) => self.call(*function, start),
+
             _ => Err(unexpected(token, "an expression")),
         }
     }

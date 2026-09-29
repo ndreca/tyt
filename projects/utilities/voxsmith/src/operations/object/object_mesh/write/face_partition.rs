@@ -203,7 +203,9 @@ mod tests {
             Ok(partition) => Ok((0..selects.len())
                 .map(|index| partition.faces(U32Id::from_u32(index as u32)).to_vec())
                 .collect()),
+
             Err(Error::MeshRecord { element, .. }) => Err(element),
+
             Err(error) => panic!("expected a record error, got {error}"),
         }
     }

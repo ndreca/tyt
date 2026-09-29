@@ -46,10 +46,13 @@ pub fn first_cycle_node_index(
                             colour[child_index] = GREY;
                             stack.push((child_index, 0));
                         }
+
                         GREY => return Some(child_index),
+
                         _ => {}
                     }
                 }
+
                 None => {
                     colour[node_index] = BLACK;
                     stack.pop();

@@ -183,7 +183,9 @@ impl VoxExt for MVoxExt {
             MVoxExtNodeBody::Transform { .. } => {
                 node.child_node_ids.len() == 1 && node.child_object_ids.is_empty()
             }
+
             MVoxExtNodeBody::Group => node.child_object_ids.is_empty(),
+
             MVoxExtNodeBody::Shape { .. } => node.child_node_ids.is_empty(),
         };
         if !fits {
@@ -223,6 +225,7 @@ impl VoxExt for MVoxExt {
                 MVoxExtNodeBody::Shape { models } => {
                     models.iter().any(|model| model.object == object_id)
                 }
+
                 _ => false,
             })
             .map(|entry| entry.id)

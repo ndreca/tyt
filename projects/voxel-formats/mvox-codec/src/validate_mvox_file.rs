@@ -136,6 +136,7 @@ fn validate_node_refs(
                     )));
                 }
             }
+
             MVoxSceneNodeBody::Group(group) => {
                 let mut seen = HashSet::with_capacity(group.children.len());
                 for &child in &group.children {
@@ -153,6 +154,7 @@ fn validate_node_refs(
                     }
                 }
             }
+
             MVoxSceneNodeBody::Shape(shape) => {
                 for shape_model in &shape.models {
                     if shape_model.model as usize >= file.models.len() {
@@ -196,10 +198,13 @@ fn first_cycle_node(file: &MVoxFile, node_index: &HashMap<i32, usize>) -> Option
                             colour[child] = GREY;
                             stack.push((child, 0));
                         }
+
                         GREY => return Some(nodes[child].id),
+
                         _ => {}
                     }
                 }
+
                 None => {
                     colour[position] = BLACK;
                     stack.pop();

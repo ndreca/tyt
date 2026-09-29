@@ -18,6 +18,7 @@ pub fn to_gltf_bytes<D: EncodeBase64>(
                 file.loose_files.insert(uri.clone(), blob);
                 uri.clone()
             }
+
             None => format!(
                 "data:application/octet-stream;base64,{}",
                 dependencies.encode_base64(&blob)

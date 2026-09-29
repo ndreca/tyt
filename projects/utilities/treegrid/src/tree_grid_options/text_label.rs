@@ -11,10 +11,12 @@ impl TreeGridOptions {
                 self.no_header_level()?;
                 Ok(TreeGridLabelMode::None)
             }
+
             TreeGridLabelKind::Concat => {
                 self.no_header_level()?;
                 Ok(TreeGridLabelMode::Concat)
             }
+
             TreeGridLabelKind::Header => Ok(TreeGridLabelMode::Header(TreeGridHeaderOptions {
                 level: self.level(),
             })),

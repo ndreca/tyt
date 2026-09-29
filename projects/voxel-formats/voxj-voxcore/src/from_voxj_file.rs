@@ -94,20 +94,30 @@ pub fn from_voxj_file<D: DecodeBase64>(dependencies: &D, file: &VoxjFile) -> Res
 fn vox_value_pool_from_voxj_value_pool(value_pool: &VoxjValuePool) -> Result<VoxValuePool> {
     Ok(match value_pool {
         VoxjValuePool::Bool(values) => VoxValuePool::boolean(values.clone()),
+
         VoxjValuePool::Float(values) => VoxValuePool::float(values.clone())?,
+
         VoxjValuePool::Int(values) => VoxValuePool::int(values.clone())?,
+
         VoxjValuePool::Json(values) => VoxValuePool::json(
             values
                 .iter()
                 .map(vox_value_from_voxj_value)
                 .collect::<Result<_>>()?,
         ),
+
         VoxjValuePool::String(values) => VoxValuePool::string(values.clone()),
+
         VoxjValuePool::Vec2Float(values) => VoxValuePool::vec_2_float(values.clone())?,
+
         VoxjValuePool::Vec2Int(values) => VoxValuePool::vec_2_int(values.clone())?,
+
         VoxjValuePool::Vec3Float(values) => VoxValuePool::vec_3_float(values.clone())?,
+
         VoxjValuePool::Vec3Int(values) => VoxValuePool::vec_3_int(values.clone())?,
+
         VoxjValuePool::Vec4Float(values) => VoxValuePool::vec_4_float(values.clone())?,
+
         VoxjValuePool::Vec4Int(values) => VoxValuePool::vec_4_int(values.clone())?,
     })
 }
@@ -198,6 +208,7 @@ fn vox_object_from_voxj_decoded_object(
                 object.origin[2] - origin[2],
             ],
         ),
+
         None => (object.bounds, object.origin, [0, 0, 0]),
     };
     let [size_x, size_y, size_z] = bounds;

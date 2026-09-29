@@ -127,6 +127,7 @@ fn find_parent_crate(
 
     let dirs: Vec<String> = match dir {
         Some(dir) => vec![dir.to_string()],
+
         None => {
             let mut groups: Vec<String> = deps
                 .read_dir(&projects)?
@@ -166,7 +167,9 @@ fn find_parent_crate(
             "parent crate `{suffix}` not found under {}",
             projects.display()
         ))),
+
         [only] => Ok(only.clone()),
+
         many => {
             let locations: Vec<String> = many
                 .iter()
@@ -371,6 +374,7 @@ fn insert_sorted_line(
             }
             at
         }
+
         // After the last peer, or at the end when there are none.
         None => matches
             .last()
@@ -541,6 +545,7 @@ fn insert_commands_use(contents: &str, name: &str) -> String {
         .position(|entry| entry == "commands" || entry.starts_with("commands::"));
     let mut names = match slot.map(|index| entries[index].as_str()) {
         Some("commands") => vec!["self".to_string()],
+
         Some(entry) => {
             let rest = entry.trim_start_matches("commands::");
             match rest.strip_prefix('{') {
@@ -548,6 +553,7 @@ fn insert_commands_use(contents: &str, name: &str) -> String {
                 None => vec![rest.to_string()],
             }
         }
+
         None => Vec::new(),
     };
 
@@ -581,11 +587,14 @@ fn split_use_entries(inner: &str) -> Vec<String> {
     for character in inner.chars() {
         match character {
             '{' => depth += 1,
+
             '}' => depth -= 1,
+
             ',' if depth == 0 => {
                 entries.push(mem::take(&mut current));
                 continue;
             }
+
             _ => {}
         }
         current.push(character);
@@ -633,6 +642,7 @@ fn insert_into_braces(
         for character in line.chars() {
             match character {
                 '{' => depth += 1,
+
                 '}' => {
                     depth -= 1;
                     if depth == 0 {
@@ -640,6 +650,7 @@ fn insert_into_braces(
                         break 'outer;
                     }
                 }
+
                 _ => {}
             }
         }

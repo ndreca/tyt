@@ -345,26 +345,32 @@ impl Display for Error {
         // brand name, which the surrounding wording already gives.
         match self {
             Error::Ext { reason } => write!(f, "ext: {reason}"),
+
             Error::ListingCap { entries } => write!(
                 f,
                 "a listing of {entries} entries has more than a u32 id addresses"
             ),
+
             Error::UnknownFile { file_id } => {
                 write!(f, "file {} is not one of this state's", file_id.to_u32())
             }
+
             Error::UnknownImage { image_id } => {
                 write!(f, "image {} is not one of this state's", image_id.to_u32())
             }
+
             Error::UnknownTexture { texture_id } => write!(
                 f,
                 "texture {} is not one of this state's",
                 texture_id.to_u32()
             ),
+
             Error::UnknownMaterial { material_id } => write!(
                 f,
                 "material {} is not one of this state's",
                 material_id.to_u32()
             ),
+
             Error::UnknownObject { object_id } => {
                 write!(
                     f,
@@ -372,19 +378,23 @@ impl Display for Error {
                     object_id.to_u32()
                 )
             }
+
             Error::UnknownPrimitive { primitive_id } => write!(
                 f,
                 "primitive {} is not one of the object's",
                 primitive_id.to_u32()
             ),
+
             Error::UnknownHierarchyNode { node_id } => write!(
                 f,
                 "hierarchy node {} is not one of this state's",
                 node_id.to_u32()
             ),
+
             Error::IndexPastCount { index, count } => {
                 write!(f, "index {index} is at or past the listing count {count}")
             }
+
             Error::FileInUse {
                 file_id,
                 image_ids,
@@ -398,6 +408,7 @@ impl Display for Error {
                 id_u32s(material_ids),
                 id_u32s(object_ids)
             ),
+
             Error::ImageInUse {
                 image_id,
                 texture_ids,
@@ -407,6 +418,7 @@ impl Display for Error {
                 image_id.to_u32(),
                 id_u32s(texture_ids)
             ),
+
             Error::TextureInUse {
                 texture_id,
                 material_ids,
@@ -418,6 +430,7 @@ impl Display for Error {
                 id_u32s(material_ids),
                 id_u32s(object_ids)
             ),
+
             Error::MaterialInUse {
                 material_id,
                 object_ids,
@@ -427,6 +440,7 @@ impl Display for Error {
                 material_id.to_u32(),
                 id_u32s(object_ids)
             ),
+
             Error::ObjectInUse {
                 object_id,
                 node_ids,
@@ -436,6 +450,7 @@ impl Display for Error {
                 object_id.to_u32(),
                 id_u32s(node_ids)
             ),
+
             Error::HierarchyNodeInUse {
                 node_id,
                 parent_ids,
@@ -447,9 +462,11 @@ impl Display for Error {
                 id_u32s(parent_ids),
                 root
             ),
+
             Error::StreamArity { entries, vertices } => {
                 write!(f, "{entries} entries were given for {vertices} vertices")
             }
+
             Error::AttributeArity {
                 name,
                 components,
@@ -459,9 +476,11 @@ impl Display for Error {
                 "vertex attribute \"{name}\" holds {components} components, not the {expected} its \
                  width gives over the vertices"
             ),
+
             Error::DuplicateVertexAttributeName { name } => {
                 write!(f, "a vertex attribute named \"{name}\" already exists")
             }
+
             Error::CornerVertex {
                 triangle_id,
                 vertex_id,
@@ -471,54 +490,67 @@ impl Display for Error {
                 triangle_id.to_u32(),
                 vertex_id.to_u32()
             ),
+
             Error::NonFiniteVertex { vertex_id } => {
                 write!(f, "vertex {} holds a non-finite value", vertex_id.to_u32())
             }
+
             Error::EmptyFileName => write!(f, "the file has an empty name"),
+
             Error::FileNameTaken { name, file_id } => write!(
                 f,
                 "the file name \"{name}\" is already used by file {}",
                 file_id.to_u32()
             ),
+
             Error::ImageFileRef { file_id } => write!(
                 f,
                 "the image reads file {}, which is not one of this state's",
                 file_id.to_u32()
             ),
+
             Error::MalformedImage { media_type } => write!(
                 f,
                 "the image bytes do not start with the {media_type} signature"
             ),
+
             Error::MaterialFactor { name, value } => write!(
                 f,
                 "material factor \"{name}\" is {value}, outside its range"
             ),
+
             Error::DuplicatePropertyName { name } => {
                 write!(f, "a property named \"{name}\" already exists")
             }
+
             Error::NonFiniteProperty { name } => {
                 write!(f, "property \"{name}\" holds a non-finite value")
             }
+
             Error::PropertyTextureRef { name, texture_id } => write!(
                 f,
                 "property \"{name}\" references texture {}, which is not one of this state's",
                 texture_id.to_u32()
             ),
+
             Error::PropertyFileRef { name, file_id } => write!(
                 f,
                 "property \"{name}\" points at file {}, which is not one of this state's",
                 file_id.to_u32()
             ),
+
             Error::TextureImageRef { image_id } => write!(
                 f,
                 "the texture samples image {}, which is not one of this state's",
                 image_id.to_u32()
             ),
+
             Error::MaterialTextureRef { texture_id } => write!(
                 f,
                 "the material draws texture {}, which is not one of this state's",
                 texture_id.to_u32()
             ),
+
             Error::PrimitiveMaterialRef {
                 primitive_id,
                 material_id,
@@ -528,6 +560,7 @@ impl Display for Error {
                 primitive_id.to_u32(),
                 material_id.to_u32()
             ),
+
             Error::PrimitiveUvStreamRef {
                 primitive_id,
                 material_id,
@@ -540,37 +573,45 @@ impl Display for Error {
                 material_id.to_u32(),
                 uv_stream_id.to_u32()
             ),
+
             Error::InsertedDuplicateChildNode { index, child_id } => write!(
                 f,
                 "the hierarchy node at listing index {index} lists child node {} more than once",
                 child_id.to_u32()
             ),
+
             Error::InsertedDuplicateChildObject { index, object_id } => write!(
                 f,
                 "the hierarchy node at listing index {index} places object {} more than once",
                 object_id.to_u32()
             ),
+
             Error::InsertedNonFiniteTransform { index } => write!(
                 f,
                 "the hierarchy node at listing index {index} has a non-finite transform position \
                  or scale component"
             ),
+
             Error::InsertedZeroScale { index } => write!(
                 f,
                 "the hierarchy node at listing index {index} has a zero transform scale component"
             ),
+
             Error::InsertedNonUnitRotation { index } => write!(
                 f,
                 "the hierarchy node at listing index {index} has a transform rotation that is not \
                  a unit quaternion"
             ),
+
             Error::InsertedCycle { index } => write!(
                 f,
                 "the hierarchy nodes contain a cycle reaching the node at listing index {index}"
             ),
+
             Error::FileName { file_id } => {
                 write!(f, "file {} has an empty name", file_id.to_u32())
             }
+
             Error::DuplicateFileName {
                 file_id,
                 other_file_id,
@@ -580,17 +621,20 @@ impl Display for Error {
                 file_id.to_u32(),
                 other_file_id.to_u32()
             ),
+
             Error::ImageFile { image_id, file_id } => write!(
                 f,
                 "image {} reads file {}, which does not exist",
                 image_id.to_u32(),
                 file_id.to_u32()
             ),
+
             Error::ImageBytes { image_id } => write!(
                 f,
                 "image {} does not start with its media type's signature",
                 image_id.to_u32()
             ),
+
             Error::TextureImage {
                 texture_id,
                 image_id,
@@ -600,11 +644,13 @@ impl Display for Error {
                 texture_id.to_u32(),
                 image_id.to_u32()
             ),
+
             Error::MaterialFactorRange { material_id, name } => write!(
                 f,
                 "material {} factor \"{name}\" is outside its range",
                 material_id.to_u32()
             ),
+
             Error::MaterialTexture {
                 material_id,
                 texture_id,
@@ -614,6 +660,7 @@ impl Display for Error {
                 material_id.to_u32(),
                 texture_id.to_u32()
             ),
+
             Error::PrimitiveMaterial {
                 object_id,
                 primitive_id,
@@ -625,6 +672,7 @@ impl Display for Error {
                 primitive_id.to_u32(),
                 material_id.to_u32()
             ),
+
             Error::PrimitiveUvStream {
                 object_id,
                 primitive_id,
@@ -639,55 +687,65 @@ impl Display for Error {
                 material_id.to_u32(),
                 uv_stream_id.to_u32()
             ),
+
             Error::ChildNode { node_id, child_id } => write!(
                 f,
                 "hierarchy node {} lists child node {}, which does not exist",
                 node_id.to_u32(),
                 child_id.to_u32()
             ),
+
             Error::ChildObject { node_id, object_id } => write!(
                 f,
                 "hierarchy node {} places object {}, which does not exist",
                 node_id.to_u32(),
                 object_id.to_u32()
             ),
+
             Error::Root { root_id } => write!(
                 f,
                 "root references hierarchy node {}, which does not exist",
                 root_id.to_u32()
             ),
+
             Error::Cycle { node_id } => write!(
                 f,
                 "hierarchy is not acyclic: a cycle reaches node {}",
                 node_id.to_u32()
             ),
+
             Error::DuplicateChildNode { node_id, child_id } => write!(
                 f,
                 "hierarchy node {} lists child node {} more than once",
                 node_id.to_u32(),
                 child_id.to_u32()
             ),
+
             Error::DuplicateChildObject { node_id, object_id } => write!(
                 f,
                 "hierarchy node {} places object {} more than once",
                 node_id.to_u32(),
                 object_id.to_u32()
             ),
+
             Error::DuplicateRoot { root_id } => write!(
                 f,
                 "root lists hierarchy node {} more than once",
                 root_id.to_u32()
             ),
+
             Error::NonFiniteTransform { node_id } => write!(
                 f,
                 "hierarchy node {} has a non-finite transform position or scale component",
                 node_id.to_u32()
             ),
+
             Error::ZeroScale { node_id } => write!(
                 f,
                 "hierarchy node {} has a zero transform scale component",
                 node_id.to_u32()
             ),
+
             Error::NonUnitRotation { node_id } => write!(
                 f,
                 "hierarchy node {} transform rotation is not a unit quaternion",

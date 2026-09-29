@@ -40,10 +40,13 @@ pub fn parse_glb(bytes: &[u8]) -> Result<(Vec<u8>, Option<Vec<u8>>)> {
 
         match chunk_type {
             JSON_CHUNK if json.is_none() => json = Some(data.to_vec()),
+
             BIN_CHUNK if bin.is_none() => bin = Some(data.to_vec()),
+
             JSON_CHUNK | BIN_CHUNK => {
                 return Err(Error::invalid("a GLB repeats a JSON or BIN chunk"));
             }
+
             _ => {}
         }
 

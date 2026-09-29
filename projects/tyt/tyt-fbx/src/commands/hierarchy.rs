@@ -282,6 +282,7 @@ impl Builder<'_> {
             Some(parent) => self
                 .grid
                 .retain_child(parent, TreeGridLabel::bare(entry.name.as_str())),
+
             None => self
                 .grid
                 .retain_root(TreeGridLabel::bare(entry.name.as_str())),
@@ -369,6 +370,7 @@ fn pack_transforms(
             let (p, w, d) = parse_transform_args(values)?;
             Ok((OsStr::new("true"), p, w, d))
         }
+
         None => Ok((
             OsStr::new("false"),
             OsString::from("2"),
@@ -386,6 +388,7 @@ fn pack_bounds(
             let (p, w, s) = parse_bounds_args(values)?;
             Ok((OsStr::new("true"), p, w, s))
         }
+
         None => Ok((
             OsStr::new("false"),
             OsString::from("2"),
@@ -402,7 +405,9 @@ fn parse_transform_args(values: Vec<String>) -> Result<(OsString, &'static OsStr
     let rot_unit = values.get(1).map(String::as_str).unwrap_or("rad");
     let is_degrees: &'static OsStr = match rot_unit {
         "rad" => OsStr::new("false"),
+
         "deg" => OsStr::new("true"),
+
         other => {
             return Err(
                 IOError::other(format!("rot-unit must be 'rad' or 'deg', got '{other}'")).into(),
@@ -426,7 +431,9 @@ fn parse_bounds_args(values: Vec<String>) -> Result<(OsString, &'static OsStr, &
     let scale = values.get(2).map(String::as_str).unwrap_or("no-scale");
     let apply_scale: &'static OsStr = match scale {
         "no-scale" => OsStr::new("false"),
+
         "scale" => OsStr::new("true"),
+
         other => {
             return Err(IOError::other(format!(
                 "scale must be 'no-scale' or 'scale', got '{other}'"
@@ -441,7 +448,9 @@ fn parse_bounds_args(values: Vec<String>) -> Result<(OsString, &'static OsStr, &
 fn parse_space(space: &str) -> Result<&'static OsStr> {
     match space {
         "local" => Ok(OsStr::new("false")),
+
         "world" => Ok(OsStr::new("true")),
+
         other => {
             Err(IOError::other(format!("space must be 'local' or 'world', got '{other}'")).into())
         }

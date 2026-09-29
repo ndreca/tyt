@@ -33,6 +33,7 @@ impl<'a> ByteReader<'a> {
                 self.pos = end;
                 Ok(slice)
             }
+
             _ => Err(eof(format!(
                 "need {len} more bytes, only {} remain",
                 self.bytes.len() - self.pos

@@ -161,6 +161,7 @@ fn duplicate_object(main: &VoxMain<()>, object: &VoxObject) -> Result<VoxObject>
         let sampled_id = first_live.and_then(|voxel_id| object.voxel_material(voxel_id, layer_id));
         let default_material_id = match sampled_id {
             Some(material_id) => material_id,
+
             None => {
                 let palette = main
                     .palette(palette_id)

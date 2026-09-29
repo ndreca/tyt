@@ -63,6 +63,7 @@ pub fn link_nodes<T: VoxExt>(
             "linking under node \"{parent_name}\" would close a cycle, because it is a selected \
              node or below one"
         ))),
+
         result => Ok(result?),
     }
 }

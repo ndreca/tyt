@@ -40,12 +40,19 @@ impl TytFbx {
             TytFbx::CreatePointCloud(create_point_cloud) => {
                 create_point_cloud.execute(dependencies)
             }
+
             TytFbx::Extract(extract) => extract.execute(dependencies),
+
             TytFbx::Hierarchy(hierarchy) => hierarchy.execute(dependencies),
+
             TytFbx::Modify(modify) => modify.execute(dependencies),
+
             TytFbx::Reduce(reduce) => reduce.execute(dependencies),
+
             TytFbx::Rename(rename) => rename.execute(dependencies),
+
             TytFbx::Render(render) => render.execute(dependencies),
+
             TytFbx::Transform(transform) => transform.execute(dependencies),
         }
     }

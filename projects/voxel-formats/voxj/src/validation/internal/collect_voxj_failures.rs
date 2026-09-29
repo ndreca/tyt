@@ -292,6 +292,7 @@ fn check_geometry<D: DecodeBase64>(dependencies: &D, main: &VoxjMain, failures: 
         };
         let decoded = match decode_voxj_object(dependencies, object, &material_counts) {
             Ok(decoded) => decoded,
+
             Err(error) => {
                 failures.report(
                     Check::Blocks,
@@ -464,7 +465,9 @@ fn first_cycle_node_index(main: &VoxjMain) -> Option<usize> {
                         colour[child_index] = GREY;
                         stack.push((child_index, 0));
                     }
+
                     GREY => return Some(child_index),
+
                     _ => {}
                 }
             } else {

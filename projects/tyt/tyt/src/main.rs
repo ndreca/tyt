@@ -32,6 +32,7 @@ fn main() {
         Command::Completion { shell } => {
             clap_complete::generate(shell, &mut Cli::command(), "tyt", &mut io::stdout());
         }
+
         Command::Tyt(tyt) => {
             if let Err(e) = tyt.execute(DependenciesImpl) {
                 eprintln!("error: {e}");

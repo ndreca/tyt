@@ -123,6 +123,7 @@ pub fn to_gltf_file<D: EncodeBase64>(
 
         let (buffer_view, uri) = match placement(options.images, image, entry.source) {
             Placement::BufferView => (Some(blob.push_view(bytes, None)), None),
+
             Placement::DataUri => (
                 None,
                 Some(format!(
@@ -131,6 +132,7 @@ pub fn to_gltf_file<D: EncodeBase64>(
                     dependencies.encode_base64(bytes)
                 )),
             ),
+
             Placement::File(file_id) => (
                 None,
                 Some(
@@ -140,6 +142,7 @@ pub fn to_gltf_file<D: EncodeBase64>(
                         .clone(),
                 ),
             ),
+
             Placement::Loose => {
                 let name = loose_name(image, index, &mut used_names);
                 loose_files.insert(name.clone(), bytes.to_vec());
@@ -409,11 +412,17 @@ pub fn to_gltf_file<D: EncodeBase64>(
             for (_, attribute) in primitive.iter_vertex_attributes() {
                 let type_ = match attribute.width {
                     1 => Type::Scalar,
+
                     2 => Type::Vec2,
+
                     3 => Type::Vec3,
+
                     4 => Type::Vec4,
+
                     9 => Type::Mat3,
+
                     16 => Type::Mat4,
+
                     width => {
                         return Err(Error::invalid(format!(
                             "vertex attribute \"{}\" is {width} wide, which glTF has no type for",
@@ -426,7 +435,9 @@ pub fn to_gltf_file<D: EncodeBase64>(
                         f32_bytes(values.iter().map(|value| *value as f32)),
                         ComponentType::F32,
                     ),
+
                     MeshAttributeComponents::U8(values) => (values.clone(), ComponentType::U8),
+
                     MeshAttributeComponents::U16(values) => (
                         values
                             .iter()
@@ -672,11 +683,13 @@ pub fn to_gltf_file<D: EncodeBase64>(
     if !unplaced.is_empty() {
         let index = match default_scene {
             Some(index) if (index as usize) < scenes.len() => index as usize,
+
             Some(index) => {
                 return Err(Error::invalid(format!(
                     "gltf ext names default scene {index}, which the ext does not hold"
                 )));
             }
+
             None if scenes.is_empty() => {
                 scenes.push(Scene {
                     extensions: None,
@@ -687,6 +700,7 @@ pub fn to_gltf_file<D: EncodeBase64>(
                 default_scene = Some(0);
                 0
             }
+
             None => 0,
         };
 
@@ -762,11 +776,13 @@ pub fn to_gltf_file<D: EncodeBase64>(
                     values.len(),
                     Type::Vec3,
                 ),
+
                 GltfExtAnimationOutput::Rotations(values) => (
                     f32_bytes(values.iter().flatten().copied()),
                     values.len(),
                     Type::Vec4,
                 ),
+
                 GltfExtAnimationOutput::MorphTargetWeights(values) => (
                     f32_bytes(values.iter().copied()),
                     values.len(),
@@ -822,8 +838,11 @@ pub fn to_gltf_file<D: EncodeBase64>(
                         node: Index::new(node_indices[&channel.target_node_id]),
                         path: Checked::Valid(match sampler.output {
                             GltfExtAnimationOutput::Translations(_) => Property::Translation,
+
                             GltfExtAnimationOutput::Rotations(_) => Property::Rotation,
+
                             GltfExtAnimationOutput::Scales(_) => Property::Scale,
+
                             GltfExtAnimationOutput::MorphTargetWeights(_) => {
                                 Property::MorphTargetWeights
                             }
@@ -905,14 +924,19 @@ fn placement(
 ) -> Placement {
     match (storage, &image.source, source) {
         (GltfImageStorage::Embedded, _, Some(GltfExtImageSource::DataUri)) => Placement::DataUri,
+
         (GltfImageStorage::Embedded, _, _) => Placement::BufferView,
+
         (_, MeshImageSource::File(file_id), _) => Placement::File(*file_id),
+
         (GltfImageStorage::Loose, MeshImageSource::Bytes(_), _) => Placement::Loose,
+
         (
             GltfImageStorage::AsLoaded,
             MeshImageSource::Bytes(_),
             Some(GltfExtImageSource::DataUri),
         ) => Placement::DataUri,
+
         (GltfImageStorage::AsLoaded, MeshImageSource::Bytes(_), _) => Placement::BufferView,
     }
 }
@@ -1149,21 +1173,34 @@ fn property_value_to_json(
 ) -> Value {
     match value {
         MeshPropertyValue::Bool(value) => json!(value),
+
         MeshPropertyValue::Bools(values) => json!(values),
+
         MeshPropertyValue::BoolRows(rows) => json!(rows),
+
         MeshPropertyValue::Int(value) => json!(value),
+
         MeshPropertyValue::Ints(values) => json!(values),
+
         MeshPropertyValue::IntRows(rows) => json!(rows),
+
         MeshPropertyValue::Float(value) => json!(value),
+
         MeshPropertyValue::Floats(values) => json!(values),
+
         MeshPropertyValue::FloatRows(rows) => json!(rows),
+
         MeshPropertyValue::Text(value) => json!(value),
+
         MeshPropertyValue::Texts(values) => json!(values),
+
         MeshPropertyValue::TextRows(rows) => json!(rows),
+
         MeshPropertyValue::Texture(texture_ref) => json!({
             "index": texture_indices[&texture_ref.texture_id],
             "texCoord": texture_ref.uv_stream_id.to_u32(),
         }),
+
         MeshPropertyValue::File(file_id) => json!({
             "uri": state
                 .file(*file_id)

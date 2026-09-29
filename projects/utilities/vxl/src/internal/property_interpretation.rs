@@ -23,8 +23,11 @@ impl CliValue for PropertyInterpretation {
             PropertyInterpretation::Auto => {
                 "baseColor and emissiveColor as linear-color, any other property as numeric"
             }
+
             PropertyInterpretation::LinearColor => "A 3- or 4-float vector of linear light",
+
             PropertyInterpretation::Numeric => "Raw components of any float, int, or vector",
+
             PropertyInterpretation::SrgbColor => "A 3- or 4-float vector of sRGB-encoded color",
         }
     }

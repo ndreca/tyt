@@ -281,6 +281,7 @@ impl Function {
             | Function::Smoothstep => &[3],
 
             Function::Rgba => &[4],
+
             _ => &[1],
         }
     }

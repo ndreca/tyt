@@ -169,6 +169,7 @@ impl Img {
                 conv.next_image_id += 1;
                 Some(file_name)
             }
+
             None => None,
         };
 
@@ -199,6 +200,7 @@ impl Img {
                     conversation.push(user_turn);
                     conversation.push(assistant_turn);
                 }
+
                 None => {
                     let mut turns = prefix;
                     turns.push(user_turn);
@@ -206,6 +208,7 @@ impl Img {
                     conv.conversations.push(turns);
                 }
             },
+
             Append::NewConversation => {
                 let mut turns = prefix;
                 turns.push(user_turn);
@@ -457,6 +460,7 @@ fn context_turns(
         // No prior context is replayed: previous-response-id leaves it with the
         // server, and new-conversation deliberately starts fresh.
         ContinueKind::PreviousResponseId | ContinueKind::NewConversation => (Vec::new(), None),
+
         // Every prior turn is re-sent: text as-is, each generated image as a
         // blob after the assistant turn that produced it; existing blobs and
         // other image-bearing user turns carry over unchanged.
@@ -468,11 +472,13 @@ fn context_turns(
                         turns.push(text_turn(turn));
                         turns.push(image_blob(file));
                     }
+
                     _ => turns.push(turn.clone()),
                 }
             }
             (turns, None)
         }
+
         // All prior text is re-sent, plus only the final image as a blob. Pure
         // image blobs carry no text and are dropped; other turns keep their
         // text; earlier images are not re-sent.
@@ -490,6 +496,7 @@ fn context_turns(
             }
             (turns, None)
         }
+
         // Only the final image is re-sent, with no prior text to frame it as the
         // model's output, so it is fed back on the new user turn instead.
         ContinueKind::LastImageOnly => (Vec::new(), final_image_file(conversation)),
@@ -506,6 +513,7 @@ fn context_to_input(turns: &[Turn], conv_dir: &Path) -> Vec<InputMessage> {
             Some(file) => {
                 InputMessage::user_image(conv_dir.join(file), Some(turn.content.clone()), false)
             }
+
             None => InputMessage::text(turn.role, &turn.content),
         })
         .collect()

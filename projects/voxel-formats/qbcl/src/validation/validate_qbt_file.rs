@@ -13,11 +13,14 @@ pub fn validate_qbt_file(file: &QbtFile) -> Result<()> {
 fn validate_node(node: &QbtNode) -> Result<()> {
     match node {
         QbtNode::Matrix(matrix) => validate_matrix(matrix),
+
         QbtNode::Model(model) => model.children.iter().try_for_each(validate_node),
+
         QbtNode::Compound(compound) => {
             validate_matrix(&compound.matrix)?;
             compound.children.iter().try_for_each(validate_node)
         }
+
         QbtNode::Unknown(_) => Ok(()),
     }
 }

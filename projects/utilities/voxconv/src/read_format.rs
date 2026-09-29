@@ -68,16 +68,22 @@ impl ReadFormat {
         match self {
             #[cfg(feature = "goxl")]
             ReadFormat::Goxl => visitor.visit::<Goxl>(),
+
             #[cfg(feature = "mvox")]
             ReadFormat::MVox => visitor.visit::<MVox>(),
+
             #[cfg(feature = "qbcl")]
             ReadFormat::Qb => visitor.visit::<Qb>(),
+
             #[cfg(feature = "qbcl")]
             ReadFormat::Qbt => visitor.visit::<Qbt>(),
+
             #[cfg(feature = "qbcl")]
             ReadFormat::Qbcl => visitor.visit::<Qbcl>(),
+
             #[cfg(feature = "vmax")]
             ReadFormat::VMax => visitor.visit::<VMax>(),
+
             #[cfg(feature = "voxj")]
             ReadFormat::Voxj => visitor.visit::<Voxj>(),
         }

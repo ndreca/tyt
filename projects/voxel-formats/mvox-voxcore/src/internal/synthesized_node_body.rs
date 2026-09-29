@@ -17,7 +17,9 @@ pub fn synthesized_node_body(kind: SceneNodeKind, node: &VoxHierarchyNode) -> MV
                 extra: Vec::new(),
             }],
         },
+
         SceneNodeKind::Group => MVoxExtNodeBody::Group,
+
         SceneNodeKind::Shape => MVoxExtNodeBody::Shape {
             models: node
                 .child_object_ids

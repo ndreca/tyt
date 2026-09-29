@@ -184,6 +184,7 @@ fn voxj_value_pool_from_vox_value_pool(value_pool: &VoxValuePool) -> VoxjValuePo
                 .iter_values()
                 .map(|(_, value)| match value {
                     VoxValuePoolValueRef::String(text) => text.to_owned(),
+
                     other => {
                         unreachable!("a string value pool yields string values, not {other:?}")
                     }
@@ -196,6 +197,7 @@ fn voxj_value_pool_from_vox_value_pool(value_pool: &VoxValuePool) -> VoxjValuePo
                 .iter_values()
                 .map(|(_, value)| match value {
                     VoxValuePoolValueRef::Vec2Float(components) => *components,
+
                     other => unreachable!(
                         "a vec-2-float value pool yields vec-2-float values, not {other:?}"
                     ),
@@ -208,6 +210,7 @@ fn voxj_value_pool_from_vox_value_pool(value_pool: &VoxValuePool) -> VoxjValuePo
                 .iter_values()
                 .map(|(_, value)| match value {
                     VoxValuePoolValueRef::Vec2Int(components) => *components,
+
                     other => unreachable!(
                         "a vec-2-int value pool yields vec-2-int values, not {other:?}"
                     ),
@@ -220,6 +223,7 @@ fn voxj_value_pool_from_vox_value_pool(value_pool: &VoxValuePool) -> VoxjValuePo
                 .iter_values()
                 .map(|(_, value)| match value {
                     VoxValuePoolValueRef::Vec3Float(components) => *components,
+
                     other => unreachable!(
                         "a vec-3-float value pool yields vec-3-float values, not {other:?}"
                     ),
@@ -232,6 +236,7 @@ fn voxj_value_pool_from_vox_value_pool(value_pool: &VoxValuePool) -> VoxjValuePo
                 .iter_values()
                 .map(|(_, value)| match value {
                     VoxValuePoolValueRef::Vec3Int(components) => *components,
+
                     other => unreachable!(
                         "a vec-3-int value pool yields vec-3-int values, not {other:?}"
                     ),
@@ -244,6 +249,7 @@ fn voxj_value_pool_from_vox_value_pool(value_pool: &VoxValuePool) -> VoxjValuePo
                 .iter_values()
                 .map(|(_, value)| match value {
                     VoxValuePoolValueRef::Vec4Float(components) => *components,
+
                     other => unreachable!(
                         "a vec-4-float value pool yields vec-4-float values, not {other:?}"
                     ),
@@ -256,6 +262,7 @@ fn voxj_value_pool_from_vox_value_pool(value_pool: &VoxValuePool) -> VoxjValuePo
                 .iter_values()
                 .map(|(_, value)| match value {
                     VoxValuePoolValueRef::Vec4Int(components) => *components,
+
                     other => unreachable!(
                         "a vec-4-int value pool yields vec-4-int values, not {other:?}"
                     ),

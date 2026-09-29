@@ -259,7 +259,9 @@ fn plan_file(
             plan.renames
                 .push((suffix_order(suffix), entry.to_path_buf(), new_path));
         }
+
         Some(_) => {}
+
         None => plan.removals.push(entry.to_path_buf()),
     }
 }

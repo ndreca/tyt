@@ -23,8 +23,11 @@ impl CliValue for PaletteShowPresentation {
             PaletteShowPresentation::Auto => {
                 "A swatch beside the text for a whole color, else bare text"
             }
+
             PaletteShowPresentation::Swatch => "Swatches alone, with no value text",
+
             PaletteShowPresentation::SwatchValue => "Each swatch followed by its value text",
+
             PaletteShowPresentation::Value => "Value text alone, one per line",
         }
     }

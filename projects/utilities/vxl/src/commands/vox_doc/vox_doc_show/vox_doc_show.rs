@@ -48,6 +48,7 @@ impl VoxDocShow {
 
                 Some(voxj_version_from_bytes(&dependencies, &file.bytes)?)
             }
+
             _ => None,
         };
 

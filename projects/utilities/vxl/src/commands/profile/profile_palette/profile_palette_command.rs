@@ -22,6 +22,7 @@ impl ProfilePaletteCommand {
             ProfilePaletteCommand::ProfilePaletteQuantize(quantize) => {
                 quantize.execute(dependencies)
             }
+
             ProfilePaletteCommand::ProfilePaletteShow(show) => show.execute(dependencies),
         }
     }
