@@ -1,6 +1,8 @@
 use crate::{
     NamedCliValue, PositiveF64,
-    commands::{NonNegativeF64, PositionTransformEntry, RotationTransformEntry, SrgbColor},
+    commands::{
+        LightKind, NonNegativeF64, PositionTransformEntry, RotationTransformEntry, SrgbColor,
+    },
 };
 use serde::Deserialize;
 use voxsmith::operations::object::RenderShadow;
@@ -51,4 +53,15 @@ pub enum LightEntry {
         /// Mirrors `--light-strength`.
         strength: Option<NonNegativeF64>,
     },
+}
+
+impl LightEntry {
+    /// The light's kind.
+    pub(crate) fn kind(&self) -> LightKind {
+        match self {
+            LightEntry::Directional { .. } => LightKind::Directional,
+            LightEntry::Point { .. } => LightKind::Point,
+            LightEntry::Hemisphere { .. } => LightKind::Hemisphere,
+        }
+    }
 }

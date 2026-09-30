@@ -1,11 +1,18 @@
 use serde::Deserialize;
 use std::str::FromStr;
-use ty_math::TySrgbU8;
+use ty_math::{TyLinSrgbF64, TySrgbU8};
 
 /// An sRGB color parsed from a `#RRGGBB` hex.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
 #[serde(try_from = "String")]
 pub struct SrgbColor(pub(crate) TySrgbU8);
+
+impl SrgbColor {
+    /// The color in linear light.
+    pub(crate) fn to_linear(self) -> TyLinSrgbF64 {
+        self.0.into_format::<f64>().into_linear()
+    }
+}
 
 impl FromStr for SrgbColor {
     type Err = String;
@@ -56,5 +63,13 @@ mod tests {
             SrgbColor(TySrgbU8::new(255, 128, 0))
         );
         assert!(serde_json::from_str::<SrgbColor>(r#""red""#).is_err());
+    }
+
+    #[test]
+    fn linear_decodes_the_transfer() {
+        let linear = SrgbColor(TySrgbU8::new(0, 128, 255)).to_linear();
+        assert_eq!(linear.red, 0.0);
+        assert!((linear.green - 0.2158605).abs() < 1e-6);
+        assert_eq!(linear.blue, 1.0);
     }
 }

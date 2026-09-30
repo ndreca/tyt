@@ -133,10 +133,12 @@ resample plan has one.
       3. A zero image side
       4. A `select` matching nothing
       5. A run with no view
-- [ ] **S10. vxl command.** Add `object render` under `commands/object` with
+- [x] **S10. vxl command.** Add `object render` under `commands/object` with
       the `flags`, `profile`, `record`, and `run` layout of `object mesh`. It
-      flattens the `ObjectSelection` group. The output defaults to the input
-      stem with `.png`. Several views write `<stem>-<view>.png`. The record
+      flattens the `ObjectSelection` group. The views show inline in the
+      terminal, or `--to png` writes them beside the input as `<stem>.png`,
+      several views as `<stem>-<view>.png`, the stem the input's or
+      `--file-stem`. The record
       builder turns a `<light-index>` into a `U32Id<BRenderLight>` and a view
       name into a `U32Id<BRenderView>`. `--print-camera` prints each rendered
       view's resolved pose as its `--view-frame <name> world`,

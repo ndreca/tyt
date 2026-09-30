@@ -1,6 +1,7 @@
 use crate::commands::SrgbColor;
 use serde::Deserialize;
 use std::str::FromStr;
+use ty_math::TySrgbU8;
 
 /// What fills the pixels no ray hits.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
@@ -11,6 +12,16 @@ pub enum Background {
 
     /// A `#RRGGBB` color.
     Color(SrgbColor),
+}
+
+impl Background {
+    /// The color under the misses, or `None` to leave them transparent.
+    pub(crate) fn color(self) -> Option<TySrgbU8> {
+        match self {
+            Background::Transparent => None,
+            Background::Color(color) => Some(color.0),
+        }
+    }
 }
 
 impl FromStr for Background {

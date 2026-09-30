@@ -1,6 +1,12 @@
 use crate::{
-    DirectoryEntry, ListDir, ReadFile, ResolvePrefsPaths, TerminalColumns, WriteFile, WriteStdout,
+    DirectoryEntry, DisplayImage, ListDir, ReadFile, ResolvePrefsPaths, TerminalColumns, WriteFile,
+    WriteStdout,
 };
+use crossterm::{
+    event::{poll, read},
+    terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled},
+};
+use image::{DynamicImage, RgbaImage};
 #[cfg(unix)]
 use libc::{STDOUT_FILENO, TIOCGWINSZ, ioctl, winsize};
 use meshconv::{
@@ -12,18 +18,20 @@ use meshconv::{
 use std::mem;
 use std::{
     fs,
-    io::{self, Result as IOResult, Write},
+    io::{self, Error as IOError, IsTerminal, Result as IOResult, Write},
     path::Path,
+    time::Duration,
 };
 use ty_preferences::{
     Dependencies as PreferencesDependencies, DependenciesImpl as PreferencesDependenciesImpl,
     PrefsPaths, resolve_prefs_paths,
 };
+use viuer::{Config, print};
 use voxconv::{DependenciesImpl as VoxconvDependenciesImpl, ForwardDependencies};
 
 /// The dependencies over std's filesystem and standard output, with the
 /// voxel codecs forwarded to voxconv's impl, the mesh codecs to meshconv's,
-/// and the config reads to ty-preferences'.
+/// the config reads to ty-preferences', and inline images to viuer.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct DependenciesImpl;
 
@@ -140,4 +148,73 @@ impl TerminalColumns for DependenciesImpl {
     fn terminal_columns(&self) -> Option<usize> {
         None
     }
+}
+
+impl DisplayImage for DependenciesImpl {
+    /// Probes for a graphics protocol only when standard input and output
+    /// are both a terminal, because the probe reads its reply from the
+    /// terminal in raw mode. A piped run prints half blocks unprobed.
+    fn display_image(&self, width: u32, height: u32, rgba: &[u8]) -> IOResult<()> {
+        let image = DynamicImage::ImageRgba8(
+            RgbaImage::from_raw(width, height, rgba.to_vec()).expect("the samples fill the image"),
+        );
+
+        let interactive = io::stdout().is_terminal() && io::stdin().is_terminal();
+
+        let config = display_config(interactive);
+
+        let show = || print(&image, &config).map(|_| ()).map_err(IOError::other);
+
+        if interactive {
+            with_capability_probe_guard(show)
+        } else {
+            show()
+        }
+    }
+}
+
+/// The viuer config for an inline image: anchored at the cursor over the
+/// terminal's background, probing for the Kitty and iTerm2 protocols only
+/// under `probe`.
+fn display_config(probe: bool) -> Config {
+    // No Windows terminal supports the Kitty graphics or iTerm2 inline-image
+    // protocols, but viuer still probes for them by writing escape sequences
+    // and blocking on the reply, which Windows Terminal never sends.
+    let probe = probe && !cfg!(windows);
+
+    Config {
+        absolute_offset: false,
+        transparent: true,
+        use_kitty: probe,
+        use_iterm: probe,
+        ..Default::default()
+    }
+}
+
+/// Runs `print`, which writes terminal graphics escape sequences, in raw
+/// mode, so the capability-probe replies are not echoed as visible garbage.
+/// Because viuer toggles raw mode itself, raw mode is re-asserted afterwards
+/// and straggling reply bytes are drained before the original mode returns.
+fn with_capability_probe_guard<T>(print: impl FnOnce() -> IOResult<T>) -> IOResult<T> {
+    let was_raw = is_raw_mode_enabled()?;
+    enable_raw_mode()?;
+
+    let result = print();
+
+    let drained = enable_raw_mode().and_then(|()| drain_replies());
+    let restored = if was_raw { Ok(()) } else { disable_raw_mode() };
+
+    let value = result?;
+    drained?;
+    restored?;
+
+    Ok(value)
+}
+
+fn drain_replies() -> IOResult<()> {
+    while poll(Duration::from_millis(50))? {
+        read()?;
+    }
+
+    Ok(())
 }

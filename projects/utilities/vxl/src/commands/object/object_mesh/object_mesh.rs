@@ -5,6 +5,7 @@ use crate::{
         ExtraEntry, MaterialTable, MeshProfile, MeshRun, PrimitiveTable, ProgramBuilder,
         ProgramFlag, ProgramFlags, SlotEntry, load_mesh_profile_set, parse_texture_shape,
     },
+    flag_occurrences, parse_flag_index, parse_flag_value,
 };
 use branded_id::U32Id;
 use clap::{ArgAction, Parser};
@@ -1025,33 +1026,6 @@ fn push_attribute(
     )
 }
 
-/// Each occurrence of a repeatable flag taking `N` tokens, which clap's
-/// `num_args` guarantees `values` holds whole.
-fn flag_occurrences<const N: usize>(values: &[String]) -> impl Iterator<Item = &[String; N]> {
-    let (occurrences, remainder) = values.as_chunks::<N>();
-
-    assert!(
-        remainder.is_empty(),
-        "clap's num_args guarantees whole occurrences"
-    );
-
-    occurrences.iter()
-}
-
-/// Parses an index token of `flag`, a `u32` counted from `0`.
-fn parse_flag_index(flag: &str, text: &str) -> Result<u32> {
-    text.parse::<u32>().map_err(|_| {
-        Error::usage(format!(
-            "{flag} takes an index counted from 0, not `{text}`"
-        ))
-    })
-}
-
-/// Parses a named token of `flag`, listing the accepted names on failure.
-fn parse_flag_value<T: CliValue>(flag: &str, text: &str) -> Result<T> {
-    T::parse(text).map_err(|reason| Error::usage(format!("{flag}: {reason}")))
-}
-
 /// The profiles `names`, which `origin` lists, stacked into one profile to
 /// apply whole. Lists merge by position and the longest sets the stack's
 /// count. An element two members both set errors. The stack carries no
@@ -1760,9 +1734,8 @@ mod tests {
             object::object_mesh::object_mesh::{
                 apply_profile_files, apply_profile_materials, apply_profile_mesh_extras,
                 apply_profile_primitives, check_expression, declare_profile_primitives,
-                extra_write, fill_file_template, parse_flag_index, parse_uv_list, push_file_write,
-                push_unique, require_file_name, resolve_gltf_container, select_mesh_objects,
-                stack_profiles,
+                extra_write, fill_file_template, parse_uv_list, push_file_write, push_unique,
+                require_file_name, resolve_gltf_container, select_mesh_objects, stack_profiles,
             },
         },
         owned_names, profile_set_from_json, try_parse_object_selection,
@@ -2688,14 +2661,6 @@ mod tests {
         );
         assert_eq!(extras[1].0, "meta");
         assert_eq!(extras[1].1, ExtraForm::Json);
-    }
-
-    #[test]
-    fn parses_a_count_from_zero_and_rejects_the_rest() {
-        assert_eq!(parse_flag_index("--flag", "0").unwrap(), 0);
-        assert_eq!(parse_flag_index("--flag", "12").unwrap(), 12);
-        assert!(parse_flag_index("--flag", "-1").is_err());
-        assert!(parse_flag_index("--flag", "one").is_err());
     }
 
     #[test]

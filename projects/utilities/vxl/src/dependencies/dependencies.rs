@@ -1,4 +1,6 @@
-use crate::{ListDir, ReadFile, ResolvePrefsPaths, TerminalColumns, WriteFile, WriteStdout};
+use crate::{
+    DisplayImage, ListDir, ReadFile, ResolvePrefsPaths, TerminalColumns, WriteFile, WriteStdout,
+};
 use meshconv::{
     Dependencies as MeshconvDependencies, ListDir as MeshListDir, ReadFile as MeshReadFile,
     WriteFile as MeshWriteFile,
@@ -18,6 +20,7 @@ pub trait Dependencies:
     + WriteFile
     + WriteStdout
     + TerminalColumns
+    + DisplayImage
     + ResolvePrefsPaths
     + VoxconvDependencies
     + MeshconvDependencies
@@ -34,6 +37,7 @@ impl<
         + WriteFile
         + WriteStdout
         + TerminalColumns
+        + DisplayImage
         + ResolvePrefsPaths
         + VoxconvDependencies
         + MeshconvDependencies

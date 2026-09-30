@@ -187,11 +187,14 @@ The chain is `vxl` over `voxsmith` over `voxrender` over `voxsurface` over
    orbit at the distance, or orthographic scale, that fits the bounding
    sphere of that diagonal into the shorter image axis with a small margin.
    A sphere fits regardless of orientation, so every fitted view of one
-   subject sits at one distance. Each view writes one PNG. With several
-   views, the view name joins the output stem with a hyphen, as `object mesh`
-   joins object names. `--print-camera` prints a view's resolved pose as a
-   `world` transform with a `quaternion` rotation. The output pastes back as
-   a flag or a profile entry.
+   subject sits at one distance. The views show inline in the terminal one
+   below another, or under `--to png` each writes one PNG beside the input,
+   named by the input's stem or `--file-stem`. With several views, the
+   view name joins the stem with a hyphen, as `object mesh` joins object
+   names.
+   `--print-camera` prints a view's resolved pose as a `world` transform
+   with a `quaternion` rotation. The output pastes back as a flag or a
+   profile entry.
 8. **Output.** Linear light, the Khronos PBR Neutral tonemap, sRGB transfer,
    8-bit RGBA. The background is transparent by default. PBR Neutral keeps
    base colors true until highlights compress. A voxel palette is what a
@@ -521,7 +524,8 @@ The checklist covers phase 1:
    granularities, over `voxsurface`'s occlusion
 7. The profile schema with its built-ins and mirroring flags
 8. The voxsmith operation with PNG output
-9. The vxl command over the object selectors, with `--print-camera`
+9. The vxl command over the object selectors, printing to the terminal by
+   default, with `--print-camera`
 10. Golden-image tests over a fixture set
 11. The three-shadow renders over real assets
 

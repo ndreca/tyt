@@ -1,5 +1,7 @@
 use crate::PositiveF64;
 use serde::Deserialize;
+use ty_math::TyVector3F64;
+use voxsmith::operations::object::PositionTransform;
 
 /// A profile's point light transform. Its `kind` takes a `--light-frame`
 /// value or `orbit`.
@@ -26,4 +28,33 @@ pub enum PositionTransformEntry {
 
         distance: PositiveF64,
     },
+}
+
+impl PositionTransformEntry {
+    /// The transform in voxsmith's shape.
+    pub(crate) fn to_transform(self) -> PositionTransform {
+        match self {
+            PositionTransformEntry::World { position } => PositionTransform::World {
+                position: TyVector3F64::from_array(position),
+            },
+
+            PositionTransformEntry::Subject { position } => PositionTransform::Subject {
+                position: TyVector3F64::from_array(position),
+            },
+
+            PositionTransformEntry::Camera { position } => PositionTransform::Camera {
+                position: TyVector3F64::from_array(position),
+            },
+
+            PositionTransformEntry::Orbit {
+                azimuth,
+                elevation,
+                distance,
+            } => PositionTransform::Orbit {
+                azimuth,
+                elevation,
+                distance: distance.0,
+            },
+        }
+    }
 }

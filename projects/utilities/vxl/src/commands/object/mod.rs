@@ -9,6 +9,7 @@ mod object_duplicate;
 mod object_link;
 mod object_mesh;
 mod object_remove;
+mod object_render;
 mod object_reorder;
 mod object_set;
 mod object_trim;
@@ -24,6 +25,7 @@ pub use object_duplicate::*;
 pub use object_link::*;
 pub use object_mesh::*;
 pub use object_remove::*;
+pub use object_render::*;
 pub use object_reorder::*;
 pub use object_set::*;
 pub use object_trim::*;
@@ -34,7 +36,4 @@ pub use object_voxels::*;
 // Internal API
 
 mod internal;
-mod object_render;
-
 pub(crate) use internal::*;
-pub(crate) use object_render::*;

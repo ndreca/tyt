@@ -231,3 +231,51 @@ they land.
 - voxsmith's `Error` gains a `Render` variant wrapping voxrender's behind
   the `render` feature. A scene construction failure reports voxrender's
   message.
+
+## S10. vxl command
+
+- The command always loads the profile set, because a run that sets no
+  view takes `hero`'s and one that sets no rig takes `studio`'s, and both
+  read from the cascade so a config can override them.
+- `RenderProfileStack` replaces the stacking function. `--profile` lands a
+  profile whole, `--views-from` its views, and `--lights-from` its rig, in
+  any order, because the claims catch a collision whichever flag lands
+  first. The default view and rig land through the same stack after the
+  flags, so they never collide with what a flag set.
+- A view's transform is one element. `--view-orbit` sets it whole, and
+  `--view-frame`, `--view-position`, and a rotation flag set it together.
+  Any of the three claims the element, so a posed view with a part missing
+  errors instead of falling back to the profile's transform.
+- `--light` declares the rig the way `--primitive` declares the mesh's
+  primitives: an index with its kind, numbered from `0` with no gaps, and
+  any occurrence replaces the profile's rig whole. Without one the profile's
+  rig stands, and the index flags fill its lights.
+- A light's kind decides which flags apply to it. A flag its kind never
+  reads errors instead of landing in a field the render ignores.
+- The Euler flags take degrees. A profile entry can set `rad`.
+- A look-at flag takes its target, so `0 0 0` is the frame's origin that a
+  profile entry reaches by omitting `target`.
+- The default shadow granularity lives in `LightElements::finish`, the one
+  place a light with no granularity reads it. S12 sets it.
+- Views come out in name order because the table is a map keyed by name,
+  so the view ids are stable across runs however the flags are ordered.
+- `flag_occurrences`, `parse_flag_index`, and `parse_flag_value` moved from
+  the mesh command into the crate's `internal` module, their second caller
+  being this command.
+- The command shows each view inline through viuer, the crate `tyt fbx
+  render` uses: the Kitty or iTerm2 graphics protocol where the terminal
+  answers the probe, ANSI half blocks elsewhere, and no probe at all off a
+  terminal. `--to png` writes the views beside the input instead, named
+  by the input's stem or `--file-stem`, the mesh command's name for the
+  stem its templates fill. The user wanted the preview as the default
+  because a look should cost no file, the graphics protocols because
+  half blocks are coarse, the flag over an output path because a typed
+  name misled (with several views no file carried it), and the kind as
+  an enum over a bool so a third destination can join. vxl binds viuer
+  in its
+  `DependenciesImpl` behind a `DisplayImage` trait rather than through
+  tyt-injection, so it takes on none of the tyt crates.
+- Several views show one below another with a blank line between. A
+  composite grid in the style of tyt's `display_images_in_grid` was tried
+  and dropped: the user's terminal placed the larger image and drew
+  nothing, and the user preferred a vertical strip.
