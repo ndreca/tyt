@@ -204,3 +204,30 @@ they land.
   re-exports, so vxl still speaks voxsmith only.
 - The mirroring flags land with the `object render` command in S10
   because a flag without a command has no parser to test.
+
+## S9. voxsmith operation
+
+- `render` returns one `RenderedView` per view id, the image beside the
+  view resolved to world space. A caller prints the pose back as a `world`
+  transform. Resolving it again would repeat the subject query.
+- The image is voxrender's `RenderOutput`, 8-bit sRGB with straight alpha
+  and the background composited in. `encode_render_png` beside `render`
+  encodes one through `EncodePng` with the sRGB transfer stamped. A caller
+  that shows the image in a terminal needs the pixels, and one that writes
+  a file needs the bytes, so `render` stops at the pixels.
+- A view's `select` narrows the subject to the rendered objects its globs
+  match. The globs go through `select_objects`, the command line's object
+  selection, so a node path selects its subtree. Every placement of a matched
+  object joins the subject. A `select` that matches no rendered object
+  errors on the view.
+- The scene flattens once. Because each view retains its resolved view and
+  lights, renders, and releases them, a `camera`-frame light resolves
+  against the view it lights and no light carries over.
+- `RenderRecord` colors are linear `TyLinSrgbF64`, the contract's form. The
+  caller converts its sRGB hex before the record leaves it.
+- The image and voxel size checks sit on the record elements `Image` and
+  `VoxelSize`, and a run with no view errors on `Views`, as the mesh
+  operation reports its primitive table.
+- voxsmith's `Error` gains a `Render` variant wrapping voxrender's behind
+  the `render` feature. A scene construction failure reports voxrender's
+  message.

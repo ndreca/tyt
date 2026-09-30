@@ -1,21 +1,30 @@
 // Public API
 
+mod encode_render_png;
 mod fit_or_fixed;
 mod pose_transform;
 mod position_transform;
-mod render_element;
+mod record;
+mod render;
+mod rendered_view;
 mod rotation;
 mod rotation_transform;
 mod view_projection;
 
+pub use encode_render_png::*;
 pub use fit_or_fixed::*;
 pub use pose_transform::*;
 pub use position_transform::*;
-pub use render_element::*;
+pub use record::*;
+pub use render::*;
+pub use rendered_view::*;
 pub use rotation::*;
 pub use rotation_transform::*;
 pub use view_projection::*;
-pub use voxrender::{BRenderLight, BRenderView, RenderOcclusion, RenderShadow};
+pub use voxrender::{
+    BRenderLight, BRenderView, RenderOcclusion, RenderOutput, RenderProjection, RenderShadow,
+    RenderView,
+};
 
 // Internal API
 

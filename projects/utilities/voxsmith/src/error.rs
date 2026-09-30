@@ -11,6 +11,8 @@ use std::{
 #[cfg(feature = "_treegrid")]
 use treegrid::TreeGridError;
 use voxcore::Error as VoxError;
+#[cfg(feature = "render")]
+use voxrender::Error as RenderError;
 
 /// An error from voxsmith.
 #[derive(Debug)]
@@ -47,6 +49,10 @@ pub enum Error {
         /// What went wrong with it.
         reason: String,
     },
+
+    /// A voxrender scene construction, mutation, or render was rejected.
+    #[cfg(feature = "render")]
+    Render(RenderError),
 
     /// An image of the mesh document could not be decoded.
     #[cfg(feature = "mesh_doc")]
@@ -85,6 +91,9 @@ impl Display for Error {
             #[cfg(feature = "render")]
             Error::RenderRecord { element, reason } => write!(f, "{element} {reason}"),
 
+            #[cfg(feature = "render")]
+            Error::Render(error) => error.fmt(f),
+
             #[cfg(feature = "mesh_doc")]
             Error::DecodeImage(message) => write!(f, "could not decode image: {message}"),
 
@@ -114,6 +123,9 @@ impl StdError for Error {
             #[cfg(feature = "render")]
             Error::RenderRecord { .. } => None,
 
+            #[cfg(feature = "render")]
+            Error::Render(error) => Some(error),
+
             #[cfg(feature = "mesh_doc")]
             Error::DecodeImage(_) => None,
 
@@ -134,6 +146,13 @@ impl From<VoxError> for Error {
 impl From<MeshError> for Error {
     fn from(error: MeshError) -> Self {
         Error::Mesh(error)
+    }
+}
+
+#[cfg(feature = "render")]
+impl From<RenderError> for Error {
+    fn from(error: RenderError) -> Self {
+        Error::Render(error)
     }
 }
 

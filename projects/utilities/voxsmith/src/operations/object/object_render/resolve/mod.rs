@@ -1,6 +1,3 @@
-// Nothing reads these until the render operation lands.
-#![allow(dead_code, unused_imports)]
-
 // Internal API
 
 mod look_rotation;

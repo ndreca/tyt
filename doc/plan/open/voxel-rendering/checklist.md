@@ -118,16 +118,16 @@ resample plan has one.
          the four rotation flags, `--light-orbit`, `--light-shadow`,
          `--light-color`, `--light-strength`, `--light-range`,
          `--light-sky`, and `--light-ground`
-- [ ] **S9. voxsmith operation.** Add `object_render` under
+- [x] **S9. voxsmith operation.** Add `object_render` under
       `operations/object` behind a `render` feature that pulls `voxrender`
       in. `RenderRecord` carries the image elements,
       `views: IdVec<BRenderView, ViewRecord>` with each view's name, and
       `lights: IdVec<BRenderLight, LightRecord>`. Its transforms stay in
-      their configured shapes. `render` takes the dependencies, the
-      `VoxMain`, the selected object ids, and the record. It flattens,
-      resolves, calls `voxrender` once per view, encodes each PNG through
-      `EncodePng` with the sRGB transfer stamped, and returns the PNG bytes
-      per view id. These error:
+      their configured shapes. `render` takes the `VoxMain`, the selected
+      object ids, and the record. It flattens, resolves, calls `voxrender`
+      once per view, and returns the image per view id beside the resolved
+      view. `encode_render_png` encodes an image through `EncodePng` with
+      the sRGB transfer stamped. These error:
       1. An empty selection
       2. A duplicate or unknown object
       3. A zero image side

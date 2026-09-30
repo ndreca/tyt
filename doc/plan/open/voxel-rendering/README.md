@@ -87,7 +87,8 @@ The chain is `vxl` over `voxsmith` over `voxrender` over `voxsurface` over
       only at that crate's upload boundary.
 3. voxsmith gains an `object_render` operation under its `object` group. It
    selects the objects, resolves every transform against the scene, calls
-   `voxrender` once per view, and encodes each PNG through its existing
+   `voxrender` once per view, and returns each view's image beside its
+   resolved view. `encode_render_png` encodes an image through the existing
    injected encoder. Flags and profiles lower into one plain record that vxl
    hands over, the seam the mesh plan settled on. The record carries branded
    ids, never list positions. Its transforms are the configured shapes. vxl
