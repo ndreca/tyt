@@ -65,15 +65,18 @@ impl<'a> Swatches<'a> {
                 Some(&swatch_id) => swatch_id,
 
                 None => {
-                    let swatch_id = U32Id::from_u32(keys.len() as u32);
-                    keys.push(key.clone());
+                    let swatch_id = U32Id::try_from(keys.push(key.clone()))
+                        .expect("swatches number at most the entries, whose ids fit u32");
+
                     swatch_by_key.insert(key, swatch_id);
+
                     swatch_id
                 }
             };
 
-            let entry_id = U32Id::from_u32(voxel_swatch_ids.len() as u32);
-            voxel_swatch_ids.push(swatch_id);
+            let entry_id = U32Id::try_from(voxel_swatch_ids.push(swatch_id))
+                .expect("entries number at most the live voxels, whose ids fit u32");
+
             voxel_entry_ids.insert(voxel_id, entry_id);
         }
 

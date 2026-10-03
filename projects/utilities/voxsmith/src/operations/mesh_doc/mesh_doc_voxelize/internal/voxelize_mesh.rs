@@ -7,7 +7,7 @@ use crate::{
     },
     utilities::{check_material_property_ranges, check_material_range},
 };
-use branded_id::{IteratorExt, U32Id};
+use branded_id::{IdVec, IteratorExt, U32Id};
 use meshdoc::{
     BMeshObject,
     material::{COLOR_RANGE, MaterialRange, scalar_range},
@@ -493,20 +493,22 @@ fn value_pool_column<T, K: Eq + Hash>(
     get: impl Fn(&VoxelMaterial) -> T,
     key: impl Fn(&T) -> K,
 ) -> ValuePoolColumn<T> {
-    let mut values = Vec::new();
+    let mut values = IdVec::default();
     let mut lookup: HashMap<K, U32Id<BVoxValuePoolValue>> = HashMap::new();
     let value_ids = materials
         .iter()
         .map(|material| {
             let value = get(material);
             *lookup.entry(key(&value)).or_insert_with(|| {
-                let value_id = U32Id::from_u32(values.len() as u32);
-                values.push(value);
-                value_id
+                U32Id::try_from(values.push(value))
+                    .expect("values number at most the grid's cells, whose voxel ids fit u32")
             })
         })
         .collect();
-    ValuePoolColumn { values, value_ids }
+    ValuePoolColumn {
+        values: values.into_vec(),
+        value_ids,
+    }
 }
 
 /// A float value pool over `values`, checked against the range the vocabulary
