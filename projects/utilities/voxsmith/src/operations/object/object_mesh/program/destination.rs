@@ -5,7 +5,7 @@ use crate::{
         MeshElement, MeshRecord, SlotProperty, SlotSource,
     },
 };
-use branded_id::ext::IteratorExt;
+use branded_id::IteratorExt;
 use vox_value_language::{CheckedProgram, Expression, check_expression, parse_expression};
 
 /// A record element holding an expression the run writes somewhere.

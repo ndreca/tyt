@@ -703,7 +703,7 @@ fn representative_point(cluster: &[QuantizePoint]) -> QuantizePoint {
 #[cfg(test)]
 mod tests {
     use crate::utilities::{QuantizePoint, quantize::choose_quantize_plan::allocate_slots};
-    use branded_id::ext::IteratorExt;
+    use branded_id::IteratorExt;
     use ty_math::TyVector4F64;
 
     /// A partition of one point per population.

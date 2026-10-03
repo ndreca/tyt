@@ -152,7 +152,7 @@ mod tests {
             QuantizeOptions, ReductionMethod,
         },
     };
-    use branded_id::{IdRange, U32Id, ext::IteratorExt};
+    use branded_id::{IdRange, IteratorExt, U32Id};
     use std::{iter, num::NonZeroUsize};
     use ty_math::{TyLinSrgbaF64, TySrgbaU8, TyVector3U32};
     use voxcore::{

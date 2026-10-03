@@ -3,8 +3,7 @@ use crate::{
     VoxValuePoolValues,
 };
 use branded_id::{
-    U32Id,
-    ext::IteratorExt,
+    IteratorExt, U32Id,
     soa::{IdList, IdRemap, IdStruct},
 };
 

@@ -2,7 +2,7 @@ use crate::{
     BMeshMaterial, BMeshTriangle, BMeshUvStream, BMeshVertex, BMeshVertexAttribute, Error,
     MeshTriangle, MeshVertexAttribute, Result,
 };
-use branded_id::{IdSlice, IdVec, U32Id, ext::IteratorExt};
+use branded_id::{IdSlice, IdVec, IteratorExt, U32Id};
 use ty_math::{TyLinSrgbaF64, TyVector2F64, TyVector3F64, TyVector4F64};
 
 /// One drawable piece of a [`MeshObject`](crate::MeshObject), in meters on

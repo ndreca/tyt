@@ -6,7 +6,7 @@ use crate::{
     },
     utilities::select_objects,
 };
-use branded_id::{IdVec, U32Id, ext::IteratorExt};
+use branded_id::{IdVec, IteratorExt, U32Id};
 use std::collections::HashSet;
 use ty_math::{TyAngleUnit, TyBoundsF64, TyPoseF64};
 use voxcore::{BVoxObject, Error as VoxError, VoxExt, VoxMain};

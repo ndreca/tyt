@@ -1,5 +1,5 @@
 use crate::{Error, GoxlVoxMain, Result, goxl_ext_from_file};
-use branded_id::{U32Id, ext::IteratorExt};
+use branded_id::{IteratorExt, U32Id};
 use goxl::{GoxlBlock, GoxlFile};
 use std::collections::{HashMap, HashSet};
 use ty_math::{TySrgbaU8, TyTransformF64, TyVector3U32};

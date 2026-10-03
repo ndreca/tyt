@@ -3,7 +3,7 @@ use crate::{
     MVoxExtNodeBody, MVoxExtShapeModel, MVoxExtUnknownChunk, MVoxVoxMain, PALETTE_COLORS, Result,
     transform_from_frames,
 };
-use branded_id::{U32Id, ext::IteratorExt};
+use branded_id::{IteratorExt, U32Id};
 use mvox::{
     MVoxCamera, MVoxFile, MVoxFrame, MVoxLayer, MVoxMaterial, MVoxMaterialType, MVoxModel,
     MVoxSceneNode, MVoxSceneNodeBody,

@@ -4,7 +4,7 @@ use crate::{
     MeshImageSource, MeshMaterial, MeshObject, MeshPrimitive, MeshProperty, MeshState, MeshTexture,
     Result, TakenExt, first_cycle_node_index,
 };
-use branded_id::{IdVec, U32Id, ext::RangeExt, soa::IdRemap};
+use branded_id::{IdVec, RangeExt, U32Id, soa::IdRemap};
 use std::collections::{HashMap, HashSet};
 
 /// The in-memory state of a mesh model.

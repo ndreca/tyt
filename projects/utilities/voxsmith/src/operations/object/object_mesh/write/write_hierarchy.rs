@@ -1,5 +1,5 @@
 use crate::{Result, utilities::placing_nodes};
-use branded_id::{U32Id, ext::IteratorExt};
+use branded_id::{IteratorExt, U32Id};
 use meshdoc::{BMeshHierarchyNode, BMeshObject, MeshHierarchyNode, MeshMain};
 use std::collections::{HashMap, HashSet};
 use ty_math::TyTransformF64;

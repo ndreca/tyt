@@ -7,7 +7,7 @@ use crate::{
         write_files, write_hierarchy, write_materials, write_primitive,
     },
 };
-use branded_id::{U32Id, ext::IteratorExt};
+use branded_id::{IteratorExt, U32Id};
 use meshdoc::{BMeshObject, MeshMain, MeshObject};
 use std::collections::{HashMap, HashSet};
 use voxcore::{Error as VoxError, VoxExt, VoxMain, VoxObject};

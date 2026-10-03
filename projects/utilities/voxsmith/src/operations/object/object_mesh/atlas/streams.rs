@@ -5,7 +5,7 @@ use crate::{
         SlotProperty, SlotSource, table_index,
     },
 };
-use branded_id::{IdVec, U32Id, ext::IteratorExt};
+use branded_id::{IdVec, IteratorExt, U32Id};
 use meshdoc::{BMeshMaterial, BMeshPrimitive, BMeshUvStream};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 

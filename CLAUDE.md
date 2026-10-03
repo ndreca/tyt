@@ -19,6 +19,7 @@ cargo check
 - Code bodies name items through `use` imports, never fully-qualified paths
 - Import types/traits/enums as leaf items, with aliases to avoid collisions (e.g., `Error as IOError`, `Result as StdResult`, `Error as StdError`)
 - Import modules for free functions and keep the module prefix in calls (e.g., `use std::{env, fs, io, process};` then `fs::read()`, `env::temp_dir()`, `io::stdout()`, `process::exit(1)`)
+- No preludes. A glob `use` appears only in a parent's `pub use module::*;` re-exports and in test modules. A crate's root re-exports its extension traits for callers to import as leaf items
 - Prefer `#[derive(Default)]` over manual `impl Default` when all field defaults match the type's inherent default
 - A blank line separates each top-level item in a file and each member of a struct, enum, trait, or `impl` (fields, variants, methods, associated types and consts); `use` lines and `mod` declarations stay grouped
 - A blank line separates every arm of a `match` in which any arm spans more than one line; a match whose arms are all one line stays compact

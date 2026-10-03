@@ -1,5 +1,5 @@
 use crate::{Domain, Error, Groupings, Result};
-use branded_id::ext::IteratorExt;
+use branded_id::IteratorExt;
 
 /// The entry count of every domain, fixed by the groupings.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

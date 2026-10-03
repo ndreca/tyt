@@ -76,7 +76,7 @@ fn longest_axis(point_box: &[QuantizePoint]) -> (usize, f64) {
 #[cfg(test)]
 mod tests {
     use crate::utilities::{QuantizePoint, median_cut};
-    use branded_id::ext::IteratorExt;
+    use branded_id::IteratorExt;
     use ty_math::TyVector4F64;
 
     /// One box of 1D points at `values`, material ids in order.

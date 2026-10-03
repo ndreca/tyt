@@ -1,5 +1,5 @@
 use crate::{BRenderMaterial, Error, Result};
-use branded_id::{IdVec, U32Id, ext::IteratorExt};
+use branded_id::{IdVec, IteratorExt, U32Id};
 use ty_math::TyVector3U32;
 use voxcore::{BVoxVoxel, VoxObject};
 use voxsurface::SurfaceGrid;

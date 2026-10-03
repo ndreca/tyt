@@ -7,7 +7,7 @@ use crate::{
     },
     utilities::{check_material_property_ranges, check_material_range},
 };
-use branded_id::{U32Id, ext::IteratorExt};
+use branded_id::{IteratorExt, U32Id};
 use meshdoc::{
     BMeshObject,
     material::{COLOR_RANGE, MaterialRange, scalar_range},

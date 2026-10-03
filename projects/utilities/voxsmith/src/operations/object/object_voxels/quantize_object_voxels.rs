@@ -2,7 +2,7 @@ use crate::{
     Error, Result,
     utilities::{IdSelector, QuantizeOptions, apply_quantize_plan, choose_quantize_plan},
 };
-use branded_id::{U32Id, ext::RangeInclusiveExt};
+use branded_id::{RangeInclusiveExt, U32Id};
 use voxcore::{BVoxLayer, BVoxObject, BVoxPalette, VoxExt, VoxMain};
 
 /// Quantizes the layers `layer_indices` picks on each of `object_ids` so each

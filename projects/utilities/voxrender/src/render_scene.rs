@@ -2,7 +2,7 @@ use crate::{
     BRenderLight, BRenderMaterial, BRenderPlacement, BRenderView, Error, RenderLight,
     RenderMaterial, RenderObject, RenderPlacement, RenderProjection, RenderView, Result,
 };
-use branded_id::{IdVec, U32Id, UsizeId, ext::IteratorExt, soa::IdList};
+use branded_id::{IdVec, IteratorExt, U32Id, UsizeId, soa::IdList};
 use std::{
     collections::{HashMap, HashSet, hash_map::Entry},
     f64::consts::{FRAC_PI_2, PI},

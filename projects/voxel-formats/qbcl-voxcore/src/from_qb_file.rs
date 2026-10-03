@@ -1,5 +1,5 @@
 use crate::{Error, QbVoxMain, Result, color_floats, qb_ext_from_file, translation};
-use branded_id::{U32Id, ext::IteratorExt};
+use branded_id::{IteratorExt, U32Id};
 use qbcl::qb::{QbFile, QbMatrix};
 use std::collections::{HashMap, HashSet};
 use ty_math::TyVector3U32;

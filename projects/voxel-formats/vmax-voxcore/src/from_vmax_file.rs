@@ -3,7 +3,7 @@ use crate::{
     VMaxExtMaterialDispersion, VMaxExtNode, VMaxExtObjectState, VMaxExtPalette, VMaxVoxMain,
     decode_axis_angle, synthesized_object_state, vm_coefficient_to_pbr_factor,
 };
-use branded_id::{U32Id, ext::IteratorExt};
+use branded_id::{IteratorExt, U32Id};
 use std::collections::{BTreeMap, HashMap};
 use ty_math::{TySrgbaU8, TyTransformF64, TyVector3F64, TyVector3I32, TyVector3U32};
 use vmax::{

@@ -87,7 +87,7 @@ impl<TBrand> PartialEq for IdSelector<TBrand> {
 #[cfg(test)]
 mod tests {
     use crate::utilities::IdSelector;
-    use branded_id::{U32Id, ext::RangeInclusiveExt};
+    use branded_id::{RangeInclusiveExt, U32Id};
 
     struct BEntry;
 

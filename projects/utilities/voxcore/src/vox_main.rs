@@ -4,7 +4,7 @@ use crate::{
     VoxExt, VoxGcRemap, VoxHierarchyNode, VoxObject, VoxPalette, VoxState, VoxValue, VoxValuePool,
     check_node_transform, first_cycle_node_index,
 };
-use branded_id::{IdVec, U32Id, ext::RangeExt, soa::IdRemap};
+use branded_id::{IdVec, RangeExt, U32Id, soa::IdRemap};
 use std::{
     collections::{HashMap, HashSet},
     mem,

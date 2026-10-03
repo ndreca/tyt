@@ -2,7 +2,7 @@ use crate::{
     VMaxExtMaterial, VMaxExtNode, VMaxExtObjectState, VMaxExtPalette, place_object,
     synthesized_node, synthesized_object_state,
 };
-use branded_id::{IdRange, U32Id, ext::IteratorExt};
+use branded_id::{IdRange, IteratorExt, U32Id};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::{

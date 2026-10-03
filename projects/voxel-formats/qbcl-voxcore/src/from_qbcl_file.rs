@@ -2,7 +2,7 @@ use crate::{
     Error, QbclExtNode, QbclExtNodeBody, QbclVoxMain, Result, color_floats, qbcl_ext_from_file,
     translation,
 };
-use branded_id::{U32Id, ext::IteratorExt};
+use branded_id::{IteratorExt, U32Id};
 use qbcl::qbcl::{QbclFile, QbclMatrix, QbclNode, QbclNodeBody};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use ty_math::{TyTransformF64, TyVector3U32};

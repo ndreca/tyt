@@ -2,7 +2,7 @@ use crate::{
     Result,
     utilities::{IdSelector, NodePath, is_node_path_match, node_paths},
 };
-use branded_id::{U32Id, ext::RangeInclusiveExt};
+use branded_id::{RangeInclusiveExt, U32Id};
 use pathspec::GitIgnoreRegex;
 use voxcore::{BVoxHierarchyNode, Error as VoxError, VoxExt, VoxMain};
 

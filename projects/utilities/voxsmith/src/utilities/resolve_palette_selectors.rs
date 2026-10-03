@@ -1,5 +1,5 @@
 use crate::{Result, utilities::IdSelector};
-use branded_id::{U32Id, ext::RangeInclusiveExt};
+use branded_id::{RangeInclusiveExt, U32Id};
 use voxcore::{BVoxPalette, Error as VoxError, VoxExt, VoxMain};
 
 /// The ids of the palettes `selectors` select in `main`, in palette order and

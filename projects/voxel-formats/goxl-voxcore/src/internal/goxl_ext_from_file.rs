@@ -2,7 +2,7 @@ use crate::{
     GoxlExt, GoxlExtCamera, GoxlExtImage, GoxlExtLight, GoxlExtMaterial, GoxlExtPreview,
     GoxlExtUnknownChunk, layer_provenance,
 };
-use branded_id::ext::IteratorExt;
+use branded_id::IteratorExt;
 use goxl::{GoxlCamera, GoxlFile, GoxlLight, GoxlMaterial};
 
 /// The ext of a read of `file`: everything but the blocks, with one layer
