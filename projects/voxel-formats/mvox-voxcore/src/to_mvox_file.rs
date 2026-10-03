@@ -1344,7 +1344,7 @@ mod tests {
         let floats_id = main.retain_value_pool(VoxValuePool::float(vec![0.5]).unwrap());
 
         let property_id = main
-            .retain_property(
+            .retain_property_filled(
                 palette_id,
                 BASE_COLOR.to_owned(),
                 floats_id,
@@ -1374,7 +1374,7 @@ mod tests {
 
         let palette_id = U32Id::<BVoxPalette>::from_u32(0);
 
-        main.retain_layer(object_id(0), palette_id, material_id(0))
+        main.retain_layer_filled(object_id(0), palette_id, material_id(0))
             .unwrap();
 
         let error = to_mvox_file(&main).unwrap_err();

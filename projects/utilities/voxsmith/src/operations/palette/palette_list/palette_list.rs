@@ -229,18 +229,10 @@ mod tests {
             main.retain_value_pool(VoxValuePool::float(vec![0.0, 1.0]).unwrap());
 
         let mut zero = VoxPalette::default();
-        zero.retain_property(
-            "baseColor".to_owned(),
-            colors_value_pool_id,
-            U32Id::from_u32(0),
-        )
-        .unwrap();
-        zero.retain_property(
-            "metallic".to_owned(),
-            metallic_value_pool_id,
-            U32Id::from_u32(0),
-        )
-        .unwrap();
+        zero.retain_property("baseColor".to_owned(), colors_value_pool_id)
+            .unwrap();
+        zero.retain_property("metallic".to_owned(), metallic_value_pool_id)
+            .unwrap();
         let zero_material_id = zero
             .retain_material(vec![value_id(0), value_id(0)])
             .unwrap();
@@ -249,28 +241,20 @@ mod tests {
         let zero_palette_id = main.retain_palette(zero).unwrap();
 
         let mut one = VoxPalette::default();
-        one.retain_property(
-            "baseColor".to_owned(),
-            colors_value_pool_id,
-            U32Id::from_u32(0),
-        )
-        .unwrap();
-        one.retain_property(
-            "emissiveStrength".to_owned(),
-            metallic_value_pool_id,
-            U32Id::from_u32(0),
-        )
-        .unwrap();
+        one.retain_property("baseColor".to_owned(), colors_value_pool_id)
+            .unwrap();
+        one.retain_property("emissiveStrength".to_owned(), metallic_value_pool_id)
+            .unwrap();
         let one_material_id = one.retain_material(vec![value_id(2), value_id(1)]).unwrap();
         let one_palette_id = main.retain_palette(one).unwrap();
 
         let mut a = VoxObject::new("a".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
-        a.retain_layer(zero_palette_id, zero_material_id);
+        a.retain_layer_filled(zero_palette_id, zero_material_id);
         main.retain_object(a).unwrap();
 
         let mut b = VoxObject::new("b".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
-        b.retain_layer(zero_palette_id, zero_material_id);
-        b.retain_layer(one_palette_id, one_material_id);
+        b.retain_layer_filled(zero_palette_id, zero_material_id);
+        b.retain_layer_filled(one_palette_id, one_material_id);
         main.retain_object(b).unwrap();
 
         main
@@ -447,11 +431,7 @@ mod tests {
             main.retain_value_pool(VoxValuePool::vec_4_float(vec![[1.0, 1.0, 1.0, 1.0]]).unwrap());
         let mut palette = VoxPalette::default();
         palette
-            .retain_property(
-                "baseColor".to_owned(),
-                colors_value_pool_id,
-                U32Id::from_u32(0),
-            )
+            .retain_property("baseColor".to_owned(), colors_value_pool_id)
             .unwrap();
         palette.retain_material(vec![value_id(0)]).unwrap();
         main.retain_palette(palette).unwrap();
@@ -481,11 +461,7 @@ mod tests {
             main.retain_value_pool(VoxValuePool::vec_4_float(vec![[1.0, 1.0, 1.0, 1.0]]).unwrap());
         let mut palette = VoxPalette::default();
         palette
-            .retain_property(
-                "baseColor".to_owned(),
-                colors_value_pool_id,
-                U32Id::from_u32(0),
-            )
+            .retain_property("baseColor".to_owned(), colors_value_pool_id)
             .unwrap();
         palette.retain_material(vec![value_id(0)]).unwrap();
         main.retain_palette(palette).unwrap();

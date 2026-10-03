@@ -239,7 +239,7 @@ fn tiles(object: &VoxObject, world: TyVector3I32) -> Result<Vec<([i32; 3], VoxOb
             // A layer's default material only backs empty cells, so the first
             // cut voxel's sample serves.
             for (index, &(_, palette_id)) in layers.iter().enumerate() {
-                tile.retain_layer(palette_id, cells[0].samples[index]);
+                tile.retain_layer_filled(palette_id, cells[0].samples[index]);
             }
             for cell in &cells {
                 let voxel_id = tile
@@ -294,7 +294,7 @@ mod tests {
         );
         let mut palette = VoxPalette::default();
         palette
-            .retain_property(BASE_COLOR.to_owned(), value_pool_id, U32Id::from_u32(0))
+            .retain_property(BASE_COLOR.to_owned(), value_pool_id)
             .unwrap();
         for value_id in IdRange::from_len(4) {
             palette
@@ -307,7 +307,7 @@ mod tests {
         // Object 0: a red then a green voxel along x.
         let mut wide = VoxObject::new(String::new(), TyVector3U32::new(2, 1, 1))
             .expect("a 2x1x1 grid is within the dense limit");
-        wide.retain_layer(palette_id, material_id(0));
+        wide.retain_layer(palette_id).unwrap();
         for (x, material_index) in [(0u32, 1u32), (1, 2)] {
             let voxel_id = wide
                 .voxel_id(TyVector3U32::new(x, 0, 0))
@@ -320,7 +320,7 @@ mod tests {
         // Object 1: a single blue voxel.
         let mut unit = VoxObject::new(String::new(), TyVector3U32::new(1, 1, 1))
             .expect("a 1x1x1 grid is within the dense limit");
-        unit.retain_layer(palette_id, material_id(0));
+        unit.retain_layer(palette_id).unwrap();
         let voxel_id = unit
             .voxel_id(TyVector3U32::new(0, 0, 0))
             .expect("a position within the grid");
@@ -533,7 +533,7 @@ mod tests {
         let mut palette = VoxPalette::default();
 
         palette
-            .retain_property(BASE_COLOR.to_owned(), value_pool_id, U32Id::from_u32(0))
+            .retain_property(BASE_COLOR.to_owned(), value_pool_id)
             .unwrap();
 
         palette.retain_material(vec![U32Id::from_u32(0)]).unwrap();
@@ -544,7 +544,7 @@ mod tests {
         // ends land at world x 10 and 29, in two tiles.
         let mut wide = VoxObject::new("wide".to_owned(), TyVector3U32::new(20, 1, 1)).unwrap();
 
-        wide.retain_layer(palette_id, U32Id::<BVoxMaterial>::from_u32(0));
+        wide.retain_layer(palette_id).unwrap();
 
         for x in [0, 19] {
             let voxel_id = wide.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap();
@@ -632,10 +632,9 @@ mod tests {
 
         let mut loose = VoxObject::new("loose".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
 
-        loose.retain_layer(
-            U32Id::<BVoxPalette>::from_u32(0),
-            U32Id::<BVoxMaterial>::from_u32(0),
-        );
+        loose
+            .retain_layer(U32Id::<BVoxPalette>::from_u32(0))
+            .unwrap();
 
         let voxel_id = loose.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap();
 

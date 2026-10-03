@@ -155,6 +155,14 @@ pub enum Error {
     /// A property was given a name the palette already uses.
     DuplicatePropertyName { name: String },
 
+    /// A property retained without a default value would leave the palette's
+    /// materials without a value for it.
+    PropertyWithoutDefault { materials: usize },
+
+    /// A layer retained without a default material would leave the object's
+    /// live voxels without a sample in it.
+    LayerWithoutDefault { live_voxels: usize },
+
     /// An inserted palette's property names a value pool that is not one of the
     /// state's.
     PropertyValuePoolRef {
@@ -486,6 +494,22 @@ impl Display for Error {
 
             Error::DuplicatePropertyName { name } => {
                 write!(f, "a property named \"{name}\" already exists")
+            }
+
+            Error::PropertyWithoutDefault { materials } => {
+                write!(
+                    f,
+                    "the palette has {materials} materials, which a property needs a default \
+                     value to fill"
+                )
+            }
+
+            Error::LayerWithoutDefault { live_voxels } => {
+                write!(
+                    f,
+                    "the object has {live_voxels} live voxels, which a layer needs a default \
+                     material to fill"
+                )
             }
 
             Error::PropertyValuePoolRef {

@@ -1672,7 +1672,7 @@ mod tests {
         let mut main = from_vmax_file(&sample()).unwrap();
         let palette_id = U32Id::<BVoxPalette>::from_u32(0);
         let mut object = VoxObject::new(String::new(), TyVector3U32::splat(1)).unwrap();
-        object.retain_layer(palette_id, U32Id::<BVoxMaterial>::from_u32(0));
+        object.retain_layer(palette_id).unwrap();
         let voxel_id = object.voxel_id(TyVector3U32::splat(0)).unwrap();
         object
             .retain_voxel(voxel_id, &[U32Id::<BVoxMaterial>::from_u32(0)])
@@ -1743,7 +1743,7 @@ mod tests {
         let mut main = from_vmax_file(&sample()).unwrap();
         let palette_id = U32Id::<BVoxPalette>::from_u32(0);
         let mut object = VoxObject::new(String::new(), TyVector3U32::splat(1)).unwrap();
-        object.retain_layer(palette_id, U32Id::<BVoxMaterial>::from_u32(0));
+        object.retain_layer(palette_id).unwrap();
         object
             .retain_voxel(U32Id::from_u32(0), &[U32Id::<BVoxMaterial>::from_u32(0)])
             .unwrap();
@@ -1772,7 +1772,7 @@ mod tests {
         let mut main = from_vmax_file(&sample()).unwrap();
         let palette_id = U32Id::<BVoxPalette>::from_u32(0);
         let mut object = VoxObject::new(String::new(), TyVector3U32::splat(1)).unwrap();
-        object.retain_layer(palette_id, U32Id::<BVoxMaterial>::from_u32(0));
+        object.retain_layer(palette_id).unwrap();
         object
             .retain_voxel(U32Id::from_u32(0), &[U32Id::<BVoxMaterial>::from_u32(0)])
             .unwrap();

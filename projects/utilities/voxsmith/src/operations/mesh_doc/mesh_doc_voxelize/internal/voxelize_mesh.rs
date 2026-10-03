@@ -127,7 +127,7 @@ pub fn voxelize_mesh(
         let mut object = VoxObject::new(name, counts).map_err(|_| grid_too_large(counts))?;
 
         object.set_origin(space.min_cell());
-        object.retain_layer(palette_id, default_material_id);
+        object.retain_layer_filled(palette_id, default_material_id);
 
         for (voxel_id, sample_id) in samples.iter().enumerate_ids() {
             if let Some(material_id) = sample_id {
@@ -341,8 +341,7 @@ fn build_palette(
     let ior = f64_value_pool(&distinct, |material| material.ior);
     let transmission = f64_value_pool(&distinct, |material| material.transmission);
 
-    // Register the value pools and add each property. All properties precede
-    // any material, so no material carries a back-fill placeholder value id.
+    // Register the value pools and add each property.
     let scalars = |values, key| property_value_pool(values, key, out_of_range);
     let base_color_value_pool_id =
         main.retain_value_pool(VoxValuePool::vec_4_float(base_color.values)?);
@@ -360,56 +359,31 @@ fn build_palette(
 
     let mut palette = VoxPalette::default();
     palette
-        .retain_property(
-            BASE_COLOR.to_owned(),
-            base_color_value_pool_id,
-            U32Id::from_u32(0),
-        )
+        .retain_property(BASE_COLOR.to_owned(), base_color_value_pool_id)
         .expect("the property names are distinct");
     palette
-        .retain_property(
-            METALLIC.to_owned(),
-            metallic_value_pool_id,
-            U32Id::from_u32(0),
-        )
+        .retain_property(METALLIC.to_owned(), metallic_value_pool_id)
         .expect("the property names are distinct");
     palette
-        .retain_property(
-            ROUGHNESS.to_owned(),
-            roughness_value_pool_id,
-            U32Id::from_u32(0),
-        )
+        .retain_property(ROUGHNESS.to_owned(), roughness_value_pool_id)
         .expect("the property names are distinct");
     palette
-        .retain_property(
-            EMISSIVE_COLOR.to_owned(),
-            emissive_color_value_pool_id,
-            U32Id::from_u32(0),
-        )
+        .retain_property(EMISSIVE_COLOR.to_owned(), emissive_color_value_pool_id)
         .expect("the property names are distinct");
     palette
         .retain_property(
             EMISSIVE_STRENGTH.to_owned(),
             emissive_strength_value_pool_id,
-            U32Id::from_u32(0),
         )
         .expect("the property names are distinct");
     palette
-        .retain_property(
-            OCCLUSION_STRENGTH.to_owned(),
-            occlusion_value_pool_id,
-            U32Id::from_u32(0),
-        )
+        .retain_property(OCCLUSION_STRENGTH.to_owned(), occlusion_value_pool_id)
         .expect("the property names are distinct");
     palette
-        .retain_property(IOR.to_owned(), ior_value_pool_id, U32Id::from_u32(0))
+        .retain_property(IOR.to_owned(), ior_value_pool_id)
         .expect("the property names are distinct");
     palette
-        .retain_property(
-            TRANSMISSION.to_owned(),
-            transmission_value_pool_id,
-            U32Id::from_u32(0),
-        )
+        .retain_property(TRANSMISSION.to_owned(), transmission_value_pool_id)
         .expect("the property names are distinct");
 
     // One material per distinct mesh material, its value ids in property

@@ -241,11 +241,7 @@ fn build_palette(main: &mut VoxMain<()>, file: &MVoxFile) -> Result<VoxPalette> 
         .expect("byte-derived components are finite and the palette is non-empty"),
     );
     palette
-        .retain_property(
-            BASE_COLOR.to_owned(),
-            color_value_pool_id,
-            U32Id::from_u32(0),
-        )
+        .retain_property(BASE_COLOR.to_owned(), color_value_pool_id)
         .expect("the property names are distinct");
 
     // The scalars are custom MagicaVoxel attributes, so the glTF vocabulary
@@ -274,7 +270,7 @@ fn build_palette(main: &mut VoxMain<()>, file: &MVoxFile) -> Result<VoxPalette> 
         let (distinct_types, type_indices) = intern(&types, |token| token.clone());
         let type_value_pool_id = main.retain_value_pool(VoxValuePool::string(distinct_types));
         palette
-            .retain_property("type".to_owned(), type_value_pool_id, U32Id::from_u32(0))
+            .retain_property("type".to_owned(), type_value_pool_id)
             .expect("the property names are distinct");
         attribute_indices.push(type_indices);
 
@@ -298,7 +294,7 @@ fn build_palette(main: &mut VoxMain<()>, file: &MVoxFile) -> Result<VoxPalette> 
                     .expect("the scalars are finite and every palette cell yields one"),
             );
             palette
-                .retain_property(name.to_owned(), value_pool_id, U32Id::from_u32(0))
+                .retain_property(name.to_owned(), value_pool_id)
                 .expect("the property names are distinct");
             attribute_indices.push(indices);
         }
@@ -349,8 +345,10 @@ fn build_object(model: &MVoxModel, palette_id: U32Id<BVoxPalette>) -> Result<Vox
             ))
         })?;
 
-    // The single layer is the color index; live voxels overwrite material 0.
-    object.retain_layer(palette_id, U32Id::<BVoxMaterial>::from_u32(0));
+    // The single layer is the color index.
+    object
+        .retain_layer(palette_id)
+        .expect("a new object has no live voxels");
 
     for voxel in &model.voxels {
         let position = TyVector3U32::new(voxel.x as u32, voxel.y as u32, voxel.z as u32);

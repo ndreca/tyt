@@ -719,7 +719,7 @@ mod tests {
         let mut palette = VoxPalette::default();
 
         palette
-            .retain_property("v".to_owned(), value_pool_id, U32Id::from_u32(0))
+            .retain_property("v".to_owned(), value_pool_id)
             .unwrap();
 
         let m0_id = palette.retain_material(vec![U32Id::from_u32(0)]).unwrap();

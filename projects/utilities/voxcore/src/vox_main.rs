@@ -460,13 +460,37 @@ impl<T: VoxExt> VoxMain<T> {
     }
 
     /// Retains a layer referencing `palette_id` to object `object_id`, after
+    /// its existing layers, and returns the layer's id. Errors, changing
+    /// nothing, if:
+    ///
+    /// 1. `object_id` is not one of this state's
+    /// 2. `palette_id` is not one of this state's
+    /// 3. the object has live voxels, which need
+    ///    [`retain_layer_filled`](Self::retain_layer_filled)
+    pub fn retain_layer(
+        &mut self,
+        object_id: U32Id<BVoxObject>,
+        palette_id: U32Id<BVoxPalette>,
+    ) -> Result<U32Id<BVoxLayer>> {
+        let Some(object) = self.state.objects.get_mut(object_id) else {
+            return Err(Error::UnknownObject { object_id });
+        };
+
+        if !self.state.palettes.ids().is_retained(palette_id) {
+            return Err(Error::UnknownPalette { palette_id });
+        }
+
+        object.retain_layer(palette_id)
+    }
+
+    /// Retains a layer referencing `palette_id` to object `object_id`, after
     /// its existing layers, back-filling every voxel with `default_material_id`
     /// and returning the layer's id. Errors, changing nothing, if:
     ///
     /// 1. `object_id` is not one of this state's
     /// 2. `palette_id` is not one of this state's
     /// 3. `default_material_id` is not one of `palette_id`'s materials
-    pub fn retain_layer(
+    pub fn retain_layer_filled(
         &mut self,
         object_id: U32Id<BVoxObject>,
         palette_id: U32Id<BVoxPalette>,
@@ -486,7 +510,7 @@ impl<T: VoxExt> VoxMain<T> {
             });
         }
 
-        Ok(object.retain_layer(palette_id, default_material_id))
+        Ok(object.retain_layer_filled(palette_id, default_material_id))
     }
 
     /// Releases layer `layer_id` from object `object_id`, dropping its
@@ -998,6 +1022,32 @@ impl<T: VoxExt> VoxMain<T> {
     }
 
     /// Retains a property named `name` on `value_pool_id` to palette
+    /// `palette_id` and returns the property's id. Errors, changing nothing,
+    /// if:
+    ///
+    /// 1. `palette_id` is not one of this state's
+    /// 2. `value_pool_id` is not one of this state's
+    /// 3. the palette already has a property named `name`
+    /// 4. the palette has materials, which need
+    ///    [`retain_property_filled`](Self::retain_property_filled)
+    pub fn retain_property(
+        &mut self,
+        palette_id: U32Id<BVoxPalette>,
+        name: String,
+        value_pool_id: U32Id<BVoxValuePool>,
+    ) -> Result<U32Id<BVoxProperty>> {
+        let Some(palette) = self.state.palettes.get_mut(palette_id) else {
+            return Err(Error::UnknownPalette { palette_id });
+        };
+
+        if !self.state.value_pools.ids().is_retained(value_pool_id) {
+            return Err(Error::UnknownValuePool { value_pool_id });
+        }
+
+        palette.retain_property(name, value_pool_id)
+    }
+
+    /// Retains a property named `name` on `value_pool_id` to palette
     /// `palette_id`, back-filling its existing materials with
     /// `default_value_id`, and returns the property's id. Errors, changing
     /// nothing, if:
@@ -1006,7 +1056,7 @@ impl<T: VoxExt> VoxMain<T> {
     /// 2. `value_pool_id` is not one of this state's
     /// 3. `default_value_id` is not one of `value_pool_id`'s values
     /// 4. the palette already has a property named `name`
-    pub fn retain_property(
+    pub fn retain_property_filled(
         &mut self,
         palette_id: U32Id<BVoxPalette>,
         name: String,
@@ -1027,7 +1077,7 @@ impl<T: VoxExt> VoxMain<T> {
             });
         }
 
-        palette.retain_property(name, value_pool_id, default_value_id)
+        palette.retain_property_filled(name, value_pool_id, default_value_id)
     }
 
     /// Releases property `property_id` from palette `palette_id`. Errors,
@@ -1617,7 +1667,7 @@ mod tests {
     fn two_material_palette(value_pool_id: U32Id<BVoxValuePool>) -> VoxPalette {
         let mut palette = VoxPalette::default();
         palette
-            .retain_property("v".to_owned(), value_pool_id, value_id(0))
+            .retain_property("v".to_owned(), value_pool_id)
             .unwrap();
 
         palette.retain_material(vec![value_id(0)]).unwrap();
@@ -1633,7 +1683,7 @@ mod tests {
     ) -> (VoxPalette, U32Id<BVoxMaterial>) {
         let mut palette = VoxPalette::default();
         palette
-            .retain_property("v".to_owned(), value_pool_id, value_id(0))
+            .retain_property("v".to_owned(), value_pool_id)
             .unwrap();
 
         let material_id = palette.retain_material(vec![value_id(index)]).unwrap();
@@ -1657,7 +1707,7 @@ mod tests {
 
         let mut palette = VoxPalette::default();
         let property_id = palette
-            .retain_property("baseColor".to_owned(), colors_id, value_id(0))
+            .retain_property("baseColor".to_owned(), colors_id)
             .unwrap();
 
         let green_id = palette.retain_material(vec![value_id(1)]).unwrap();
@@ -1697,17 +1747,13 @@ mod tests {
 
         // Palette a draws id 0, palette b draws id 2, and id 1 is unused.
         let mut a = VoxPalette::default();
-        let a_property_id = a
-            .retain_property("v".to_owned(), ints_id, value_id(0))
-            .unwrap();
+        let a_property_id = a.retain_property("v".to_owned(), ints_id).unwrap();
 
         let a_material_id = a.retain_material(vec![value_id(0)]).unwrap();
         let a_id = main.retain_palette(a).unwrap();
 
         let mut b = VoxPalette::default();
-        let b_property_id = b
-            .retain_property("v".to_owned(), ints_id, value_id(0))
-            .unwrap();
+        let b_property_id = b.retain_property("v".to_owned(), ints_id).unwrap();
 
         let b_material_id = b.retain_material(vec![value_id(2)]).unwrap();
         let b_id = main.retain_palette(b).unwrap();
@@ -1755,7 +1801,7 @@ mod tests {
 
         let mut a = VoxPalette::default();
         let a_property_id = a
-            .retain_property("baseColor".to_owned(), colors_id, value_id(0))
+            .retain_property("baseColor".to_owned(), colors_id)
             .unwrap();
 
         let a_blue_id = a.retain_material(vec![value_id(2)]).unwrap();
@@ -1764,7 +1810,7 @@ mod tests {
 
         let mut b = VoxPalette::default();
         let b_property_id = b
-            .retain_property("baseColor".to_owned(), colors_id, value_id(0))
+            .retain_property("baseColor".to_owned(), colors_id)
             .unwrap();
 
         let b_green_id = b.retain_material(vec![value_id(1)]).unwrap();
@@ -1953,7 +1999,7 @@ mod tests {
         let live_palette_id = main.retain_palette(palette).unwrap();
 
         let mut object = unit_object("o");
-        object.retain_layer(live_palette_id, second_id);
+        object.retain_layer_filled(live_palette_id, second_id);
         main.retain_object(object).unwrap();
         assert_eq!(main.validate(), Ok(()));
     }
@@ -1979,7 +2025,7 @@ mod tests {
         let mut object = unit_object("o");
 
         // Reference palette id 0, but the main has no palettes.
-        let layer_id = object.retain_layer(palette_id(0), material_id(0));
+        let layer_id = object.retain_layer_filled(palette_id(0), material_id(0));
 
         assert_eq!(
             main.retain_object(object),
@@ -2003,7 +2049,7 @@ mod tests {
         // The layer back-fills the live voxel with material 9, beyond the
         // palette's one material.
         let mut object = unit_object("o");
-        let layer_id = object.retain_layer(live_palette_id, material_id(9));
+        let layer_id = object.retain_layer_filled(live_palette_id, material_id(9));
 
         assert_eq!(
             main.retain_object(object),
@@ -2235,7 +2281,7 @@ mod tests {
             .retain_palette(two_material_palette(value_pool_id))
             .unwrap();
         let mut object = VoxObject::new("a".to_owned(), TyVector3U32::new(2, 1, 1)).unwrap();
-        object.retain_layer(palette_id, material_id(0));
+        object.retain_layer(palette_id).unwrap();
         object.retain_voxel(voxel_id(1), &[material_id(1)]).unwrap();
         let object_id = main.retain_object(object).unwrap();
 
@@ -2327,11 +2373,11 @@ mod tests {
         let palette_b_id = main.retain_palette(palette).unwrap();
 
         let mut a = unit_object("a");
-        a.retain_layer(palette_a_id, material_a_id);
+        a.retain_layer_filled(palette_a_id, material_a_id);
         let object_a_id = main.retain_object(a).unwrap();
 
         let mut b = unit_object("b");
-        b.retain_layer(palette_b_id, material_b_id);
+        b.retain_layer_filled(palette_b_id, material_b_id);
         let live_voxel_id = b.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap();
         b.retain_voxel(live_voxel_id, &[material_b_id]).unwrap();
         let object_b_id = main.retain_object(b).unwrap();
@@ -2488,16 +2534,14 @@ mod tests {
         let mut main = VoxMain::default();
         let ints_id = int_value_pool_id(&mut main, vec![0, 1]);
         let mut palette = VoxPalette::default();
-        palette
-            .retain_property("v".to_owned(), ints_id, value_id(0))
-            .unwrap();
+        palette.retain_property("v".to_owned(), ints_id).unwrap();
 
         let keep_id = palette.retain_material(vec![value_id(0)]).unwrap();
         let drop_id = palette.retain_material(vec![value_id(1)]).unwrap();
         let live_palette_id = main.retain_palette(palette).unwrap();
 
         let mut object = unit_object("o");
-        let layer_id = object.retain_layer(live_palette_id, keep_id);
+        let layer_id = object.retain_layer_filled(live_palette_id, keep_id);
         let live_voxel_id = object.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap();
         object.retain_voxel(live_voxel_id, &[drop_id]).unwrap();
         let object_id = main.retain_object(object).unwrap();
@@ -2552,9 +2596,7 @@ mod tests {
         let mut main = VoxMain::default();
         let ints_id = int_value_pool_id(&mut main, vec![0, 1, 2, 3]);
         let mut palette = VoxPalette::default();
-        palette
-            .retain_property("v".to_owned(), ints_id, value_id(0))
-            .unwrap();
+        palette.retain_property("v".to_owned(), ints_id).unwrap();
 
         let material_ids: Vec<_> = IdRange::from_len(4)
             .map(|value_id| palette.retain_material(vec![value_id]).unwrap())
@@ -2564,7 +2606,7 @@ mod tests {
 
         // A four-voxel row, one voxel per material.
         let mut object = VoxObject::new("o".to_owned(), TyVector3U32::new(4, 1, 1)).unwrap();
-        let layer_id = object.retain_layer(live_palette_id, material_ids[0]);
+        let layer_id = object.retain_layer_filled(live_palette_id, material_ids[0]);
         let voxel_ids: Vec<_> = (0..4)
             .map(|x| object.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap())
             .collect();
@@ -2647,9 +2689,7 @@ mod tests {
         let mut main = VoxMain::default();
         let ints_id = int_value_pool_id(&mut main, vec![0, 1, 2]);
         let mut palette = VoxPalette::default();
-        palette
-            .retain_property("v".to_owned(), ints_id, value_id(0))
-            .unwrap();
+        palette.retain_property("v".to_owned(), ints_id).unwrap();
 
         let first_id = palette.retain_material(vec![value_id(0)]).unwrap();
         let _second_id = palette.retain_material(vec![value_id(1)]).unwrap();
@@ -2657,7 +2697,7 @@ mod tests {
         let live_palette_id = main.retain_palette(palette).unwrap();
 
         let mut object = unit_object("o");
-        let layer_id = object.retain_layer(live_palette_id, first_id);
+        let layer_id = object.retain_layer_filled(live_palette_id, first_id);
         let live_voxel_id = object.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap();
         // The voxel samples the highest id.
         object.retain_voxel(live_voxel_id, &[third_id]).unwrap();
@@ -2758,11 +2798,11 @@ mod tests {
 
         let mut palette = VoxPalette::default();
         let color_id = palette
-            .retain_property("baseColor".to_owned(), colors_id, value_id(0))
+            .retain_property("baseColor".to_owned(), colors_id)
             .unwrap();
 
         let metal_id = palette
-            .retain_property("metallic".to_owned(), metallic_id, value_id(0))
+            .retain_property("metallic".to_owned(), metallic_id)
             .unwrap();
 
         let matte_red_id = palette
@@ -2779,8 +2819,8 @@ mod tests {
 
         // Two layers on the same palette; each voxel samples one material per
         // layer.
-        let base_id = object.retain_layer(live_palette_id, matte_red_id);
-        let overlay_id = object.retain_layer(live_palette_id, matte_red_id);
+        let base_id = object.retain_layer_filled(live_palette_id, matte_red_id);
+        let overlay_id = object.retain_layer_filled(live_palette_id, matte_red_id);
         let v0_id = object.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap();
         let v1_id = object.voxel_id(TyVector3U32::new(1, 0, 0)).unwrap();
         object
@@ -2845,7 +2885,7 @@ mod tests {
         // The property references value-pool id 0, but the main holds no value
         // pools.
         let property_id = palette
-            .retain_property("baseColor".to_owned(), value_pool_id(0), value_id(0))
+            .retain_property("baseColor".to_owned(), value_pool_id(0))
             .unwrap();
 
         palette.retain_material(vec![value_id(0)]).unwrap();
@@ -2866,9 +2906,7 @@ mod tests {
         let mut main = VoxMain::default();
         let ints_id = int_value_pool_id(&mut main, vec![0, 1]);
         let mut palette = VoxPalette::default();
-        let property_id = palette
-            .retain_property("v".to_owned(), ints_id, value_id(0))
-            .unwrap();
+        let property_id = palette.retain_property("v".to_owned(), ints_id).unwrap();
 
         // The value pool holds two values, but this material draws value id 2.
         let material_id = palette.retain_material(vec![value_id(2)]).unwrap();
@@ -2888,9 +2926,7 @@ mod tests {
         let mut main = VoxMain::default();
         let ints_id = int_value_pool_id(&mut main, vec![10, 20]);
         let mut palette = VoxPalette::default();
-        let property_id = palette
-            .retain_property("v".to_owned(), ints_id, value_id(0))
-            .unwrap();
+        let property_id = palette.retain_property("v".to_owned(), ints_id).unwrap();
 
         let live_material_id = palette.retain_material(vec![value_id(1)]).unwrap();
         let live_palette_id = main.retain_palette(palette).unwrap();
@@ -2964,10 +3000,10 @@ mod tests {
         // Two of the four layers draw `a_id`, so both must be released before
         // the palette.
         let mut object = VoxObject::new("o".to_owned(), TyVector3U32::new(2, 1, 1)).unwrap();
-        let on_a_first_id = object.retain_layer(a_id, material_id(0));
-        let on_b_id = object.retain_layer(b_id, material_id(0));
-        let on_a_second_id = object.retain_layer(a_id, material_id(0));
-        let on_c_id = object.retain_layer(c_id, material_id(0));
+        let on_a_first_id = object.retain_layer(a_id).unwrap();
+        let on_b_id = object.retain_layer(b_id).unwrap();
+        let on_a_second_id = object.retain_layer(a_id).unwrap();
+        let on_c_id = object.retain_layer(c_id).unwrap();
 
         // Each layer samples a different material per voxel, so a layer release
         // that drops the wrong sample column shows up below.
@@ -3177,9 +3213,7 @@ mod tests {
         let a_id = main.retain_palette(a).unwrap();
 
         let mut b = VoxPalette::default();
-        let b_property_id = b
-            .retain_property("v".to_owned(), ints_id, value_id(0))
-            .unwrap();
+        let b_property_id = b.retain_property("v".to_owned(), ints_id).unwrap();
 
         let b_doomed_id = b.retain_material(vec![value_id(0)]).unwrap();
         let b_last_id = b.retain_material(vec![value_id(2)]).unwrap();
@@ -3387,9 +3421,7 @@ mod tests {
         let mut main = VoxMain::default();
         let ints_id = int_value_pool_id(&mut main, vec![1, 2]);
         let mut palette = VoxPalette::default();
-        let property_id = palette
-            .retain_property("v".to_owned(), ints_id, value_id(0))
-            .unwrap();
+        let property_id = palette.retain_property("v".to_owned(), ints_id).unwrap();
 
         let one_id = palette.retain_material(vec![value_id(0)]).unwrap();
         let two_id = palette.retain_material(vec![value_id(1)]).unwrap();
@@ -3463,11 +3495,11 @@ mod tests {
         let mut palette = VoxPalette::default();
         // Both properties come before the material, so neither is back-filled.
         let first_id = palette
-            .retain_property("first".to_owned(), first_value_pool_id, value_id(0))
+            .retain_property("first".to_owned(), first_value_pool_id)
             .unwrap();
 
         let second_id = palette
-            .retain_property("second".to_owned(), second_value_pool_id, value_id(0))
+            .retain_property("second".to_owned(), second_value_pool_id)
             .unwrap();
 
         let live_material_id = palette
@@ -3569,9 +3601,9 @@ mod tests {
         let palette_id = main.retain_palette(two_material_palette(ints_id)).unwrap();
         let object_id = main.retain_object(unit_object("o")).unwrap();
 
-        // retain_layer back-fills the live voxel with the default material.
+        // retain_layer_filled back-fills the live voxel with the default material.
         let base_id = main
-            .retain_layer(object_id, palette_id, material_id(0))
+            .retain_layer_filled(object_id, palette_id, material_id(0))
             .unwrap();
 
         assert_eq!(
@@ -3604,7 +3636,7 @@ mod tests {
 
         // The remaining methods address the object by id.
         let overlay_id = main
-            .retain_layer(object_id, palette_id, material_id(1))
+            .retain_layer_filled(object_id, palette_id, material_id(1))
             .unwrap();
 
         main.move_layer(object_id, overlay_id, 0).unwrap();
@@ -3642,21 +3674,21 @@ mod tests {
 
         let ghost_id = U32Id::<BVoxObject>::from_u32(9);
         assert_eq!(
-            main.retain_layer(ghost_id, live_palette_id, material_id(0)),
+            main.retain_layer(ghost_id, live_palette_id),
             Err(Error::UnknownObject {
                 object_id: ghost_id
             })
         );
 
         assert_eq!(
-            main.retain_layer(object_id, palette_id(9), material_id(0)),
+            main.retain_layer(object_id, palette_id(9)),
             Err(Error::UnknownPalette {
                 palette_id: palette_id(9)
             })
         );
 
         assert_eq!(
-            main.retain_layer(object_id, live_palette_id, material_id(9)),
+            main.retain_layer_filled(object_id, live_palette_id, material_id(9)),
             Err(Error::UnknownMaterial {
                 material_id: material_id(9)
             })
@@ -3696,9 +3728,9 @@ mod tests {
 
         let palette_id = main.retain_palette(palette).unwrap();
 
-        // retain_property back-fills the existing material with the default.
+        // retain_property_filled back-fills the existing material with the default.
         let tag_id = main
-            .retain_property(palette_id, "tag".to_owned(), ints_id, value_id(1))
+            .retain_property_filled(palette_id, "tag".to_owned(), ints_id, value_id(1))
             .unwrap();
 
         assert_eq!(
@@ -3734,28 +3766,28 @@ mod tests {
 
         let ghost_id = U32Id::<BVoxPalette>::from_u32(9);
         assert_eq!(
-            main.retain_property(ghost_id, "tag".to_owned(), ints_id, value_id(0)),
+            main.retain_property(ghost_id, "tag".to_owned(), ints_id),
             Err(Error::UnknownPalette {
                 palette_id: ghost_id
             })
         );
 
         assert_eq!(
-            main.retain_property(palette_id, "tag".to_owned(), value_pool_id(9), value_id(0)),
+            main.retain_property(palette_id, "tag".to_owned(), value_pool_id(9)),
             Err(Error::UnknownValuePool {
                 value_pool_id: value_pool_id(9)
             })
         );
 
         assert_eq!(
-            main.retain_property(palette_id, "tag".to_owned(), ints_id, value_id(9)),
+            main.retain_property_filled(palette_id, "tag".to_owned(), ints_id, value_id(9)),
             Err(Error::UnknownValuePoolValue {
                 value_id: value_id(9)
             })
         );
 
         assert_eq!(
-            main.retain_property(palette_id, "v".to_owned(), ints_id, value_id(0)),
+            main.retain_property(palette_id, "v".to_owned(), ints_id),
             Err(Error::DuplicatePropertyName {
                 name: "v".to_owned()
             })
@@ -3901,7 +3933,7 @@ mod tests {
         let live_palette_id = main.retain_palette(two_material_palette(ints_id)).unwrap();
         let object_id = main.retain_object(unit_object("o")).unwrap();
         let layer_id = main
-            .retain_layer(object_id, live_palette_id, material_id(0))
+            .retain_layer_filled(object_id, live_palette_id, material_id(0))
             .unwrap();
 
         let live_node_id = main
@@ -3924,7 +3956,7 @@ mod tests {
 
         assert_rejects_unchanged(&mut main, |s| {
             let mut bad = unit_object("bad");
-            bad.retain_layer(palette_id(9), material_id(0));
+            bad.retain_layer_filled(palette_id(9), material_id(0));
             s.retain_object(bad)
         });
 
@@ -3962,12 +3994,10 @@ mod tests {
         assert_rejects_unchanged(&mut main, |s| s.reorder_value_pool(ints_id, &[value_id(0)]));
 
         // Object edits.
-        assert_rejects_unchanged(&mut main, |s| {
-            s.retain_layer(object_id, palette_id(9), material_id(0))
-        });
+        assert_rejects_unchanged(&mut main, |s| s.retain_layer(object_id, palette_id(9)));
 
         assert_rejects_unchanged(&mut main, |s| {
-            s.retain_layer(object_id, live_palette_id, material_id(9))
+            s.retain_layer_filled(object_id, live_palette_id, material_id(9))
         });
 
         assert_rejects_unchanged(&mut main, |s| {
@@ -3993,11 +4023,11 @@ mod tests {
 
         // Palette edits.
         assert_rejects_unchanged(&mut main, |s| {
-            s.retain_property(live_palette_id, "v".to_owned(), ints_id, value_id(0))
+            s.retain_property(live_palette_id, "v".to_owned(), ints_id)
         });
 
         assert_rejects_unchanged(&mut main, |s| {
-            s.retain_property(live_palette_id, "w".to_owned(), ints_id, value_id(9))
+            s.retain_property_filled(live_palette_id, "w".to_owned(), ints_id, value_id(9))
         });
 
         assert_rejects_unchanged(&mut main, |s| {
@@ -4099,7 +4129,7 @@ mod tests {
             1 => {
                 let mut palette = VoxPalette::default();
                 for index in 0..rng.below(3) {
-                    let _ = palette.retain_property(
+                    let _ = palette.retain_property_filled(
                         format!("p{index}"),
                         wild_value_pool_id,
                         wild_value_id,
@@ -4120,7 +4150,7 @@ mod tests {
                 let bounds = TyVector3U32::new(1 + rng.below(2) as u32, 1 + rng.below(2) as u32, 1);
                 let mut object = VoxObject::new(String::new(), bounds).unwrap();
                 if rng.below(2) == 0 {
-                    object.retain_layer(wild_palette_id, wild_material_id);
+                    object.retain_layer_filled(wild_palette_id, wild_material_id);
                 }
 
                 let sample_ids: Vec<_> = (0..object.layer_count())
@@ -4169,7 +4199,7 @@ mod tests {
             }
 
             7 => {
-                let _ = main.retain_layer(wild_object_id, wild_palette_id, wild_material_id);
+                let _ = main.retain_layer_filled(wild_object_id, wild_palette_id, wild_material_id);
             }
 
             8 => {
@@ -4202,7 +4232,7 @@ mod tests {
             }
 
             12 => {
-                let _ = main.retain_property(
+                let _ = main.retain_property_filled(
                     wild_palette_id,
                     format!("p{}", rng.below(4)),
                     wild_value_pool_id,

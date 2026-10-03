@@ -88,7 +88,7 @@ mod tests {
         let mut palette = VoxPalette::default();
         for &(name, _) in entries {
             palette
-                .retain_property(name.to_owned(), value_pool_id, value_id(0))
+                .retain_property(name.to_owned(), value_pool_id)
                 .unwrap();
         }
 
@@ -104,7 +104,7 @@ mod tests {
     fn object_over(palette_ids: &[U32Id<BVoxPalette>]) -> VoxObject {
         let mut object = VoxObject::new("o".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
         for &palette_id in palette_ids {
-            object.retain_layer(palette_id, U32Id::from_u32(0));
+            object.retain_layer(palette_id).unwrap();
         }
 
         let voxel_id = object.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap();
@@ -197,7 +197,7 @@ mod tests {
         let value_pool_id = int_value_pool_id(&mut state, vec![10, 20, 30]);
         let mut palette = VoxPalette::default();
         palette
-            .retain_property("v".to_owned(), value_pool_id, value_id(0))
+            .retain_property("v".to_owned(), value_pool_id)
             .unwrap();
 
         let keep_id = palette.retain_material(vec![value_id(0)]).unwrap();
@@ -207,7 +207,7 @@ mod tests {
         state.release_material(palette_id, doomed_id).unwrap();
 
         let mut object = VoxObject::new("o".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
-        object.retain_layer(palette_id, sparse_id);
+        object.retain_layer_filled(palette_id, sparse_id);
         let voxel_id = object.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap();
         object.retain_voxel(voxel_id, &[sparse_id]).unwrap();
 
@@ -235,7 +235,7 @@ mod tests {
     fn a_layer_over_an_unknown_palette_errors() {
         let state: VoxMain = VoxMain::default();
         let mut object = VoxObject::new("o".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
-        let layer_id = object.retain_layer(U32Id::from_u32(9), U32Id::from_u32(0));
+        let layer_id = object.retain_layer(U32Id::from_u32(9)).unwrap();
 
         assert_eq!(
             state.effective_palette(&object).unwrap_err(),

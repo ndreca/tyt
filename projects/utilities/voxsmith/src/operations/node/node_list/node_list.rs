@@ -1299,11 +1299,7 @@ mod tests {
             main.retain_value_pool(VoxValuePool::vec_4_float(vec![[0.0, 0.0, 0.0, 1.0]]).unwrap());
         let mut palette = VoxPalette::default();
         palette
-            .retain_property(
-                "baseColor".to_owned(),
-                colors_value_pool_id,
-                U32Id::from_u32(0),
-            )
+            .retain_property("baseColor".to_owned(), colors_value_pool_id)
             .unwrap();
         let mut material_ids = Vec::new();
 
@@ -1324,8 +1320,8 @@ mod tests {
         let (second_palette_id, second_material_ids) = retain_palette_with_materials(&mut main, 3);
 
         let mut body = VoxObject::new("body".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
-        body.retain_layer(first_palette_id, first_material_ids[0]);
-        body.retain_layer(second_palette_id, second_material_ids[0]);
+        body.retain_layer_filled(first_palette_id, first_material_ids[0]);
+        body.retain_layer_filled(second_palette_id, second_material_ids[0]);
         let body_id = main.retain_object(body).unwrap();
 
         let root_id = main

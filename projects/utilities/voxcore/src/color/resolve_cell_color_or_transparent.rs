@@ -28,7 +28,7 @@ mod tests {
         let palette_id = state.retain_palette(palette).unwrap();
 
         let mut object = VoxObject::new("o".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
-        object.retain_layer(palette_id, U32Id::from_u32(0));
+        object.retain_layer(palette_id).unwrap();
         let voxel_id = object.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap();
         object
             .retain_voxel(voxel_id, &[U32Id::from_u32(0)])

@@ -248,8 +248,9 @@ fn build_object(
     let palette = object_palette(serde, object, &voxels, main)?;
     palette_provenance.insert(palette.palette_id, palette.provenance);
 
-    // Back-fill the layer with material 0; the live voxels overwrite theirs.
-    vox_object.retain_layer(palette.palette_id, U32Id::<BVoxMaterial>::from_u32(0));
+    vox_object
+        .retain_layer(palette.palette_id)
+        .expect("a new object has no live voxels");
 
     for voxel in &voxels {
         // Shift the voxel from its model position into the build volume; an
@@ -396,11 +397,7 @@ fn object_palette(
             .collect(),
     )?);
     palette
-        .retain_property(
-            BASE_COLOR.to_owned(),
-            color_value_pool_id,
-            U32Id::from_u32(0),
-        )
+        .retain_property(BASE_COLOR.to_owned(), color_value_pool_id)
         .expect("the property names are distinct");
     color_axis.push(true);
 
@@ -419,11 +416,7 @@ fn object_palette(
                 .collect(),
         )?;
         palette
-            .retain_property(
-                METALLIC.to_owned(),
-                metallic_value_pool_id,
-                U32Id::from_u32(0),
-            )
+            .retain_property(METALLIC.to_owned(), metallic_value_pool_id)
             .expect("the property names are distinct");
         color_axis.push(false);
         let roughness_value_pool_id = float_value_pool(
@@ -434,11 +427,7 @@ fn object_palette(
                 .collect(),
         )?;
         palette
-            .retain_property(
-                ROUGHNESS.to_owned(),
-                roughness_value_pool_id,
-                U32Id::from_u32(0),
-            )
+            .retain_property(ROUGHNESS.to_owned(), roughness_value_pool_id)
             .expect("the property names are distinct");
         color_axis.push(false);
         // Voxel Max glows in the voxel's own base color, so an emissive
@@ -457,22 +446,14 @@ fn object_palette(
                     .collect(),
             )?);
             palette
-                .retain_property(
-                    EMISSIVE_COLOR.to_owned(),
-                    emissive_color_value_pool_id,
-                    U32Id::from_u32(0),
-                )
+                .retain_property(EMISSIVE_COLOR.to_owned(), emissive_color_value_pool_id)
                 .expect("the property names are distinct");
             color_axis.push(true);
         }
         let emissive_value_pool_id =
             float_value_pool(main, materials.iter().map(|m| m.sic).collect())?;
         palette
-            .retain_property(
-                EMISSIVE_STRENGTH.to_owned(),
-                emissive_value_pool_id,
-                U32Id::from_u32(0),
-            )
+            .retain_property(EMISSIVE_STRENGTH.to_owned(), emissive_value_pool_id)
             .expect("the property names are distinct");
         color_axis.push(false);
 
@@ -489,27 +470,19 @@ fn object_palette(
                     .collect(),
             )?;
             palette
-                .retain_property(IOR.to_owned(), ior_value_pool_id, U32Id::from_u32(0))
+                .retain_property(IOR.to_owned(), ior_value_pool_id)
                 .expect("the property names are distinct");
             color_axis.push(false);
             let transmission_value_pool_id =
                 float_value_pool(main, dispersion(&materials, |d| d.transmission))?;
             palette
-                .retain_property(
-                    TRANSMISSION.to_owned(),
-                    transmission_value_pool_id,
-                    U32Id::from_u32(0),
-                )
+                .retain_property(TRANSMISSION.to_owned(), transmission_value_pool_id)
                 .expect("the property names are distinct");
             color_axis.push(false);
             let absorption_value_pool_id =
                 float_value_pool(main, dispersion(&materials, |d| d.absorption))?;
             palette
-                .retain_property(
-                    ABSORPTION.to_owned(),
-                    absorption_value_pool_id,
-                    U32Id::from_u32(0),
-                )
+                .retain_property(ABSORPTION.to_owned(), absorption_value_pool_id)
                 .expect("the property names are distinct");
             color_axis.push(false);
         }
@@ -518,11 +491,7 @@ fn object_palette(
             materials.iter().map(|m| m.sh).collect(),
         ));
         palette
-            .retain_property(
-                SHADOWS.to_owned(),
-                shadows_value_pool_id,
-                U32Id::from_u32(0),
-            )
+            .retain_property(SHADOWS.to_owned(), shadows_value_pool_id)
             .expect("the property names are distinct");
         color_axis.push(false);
     }

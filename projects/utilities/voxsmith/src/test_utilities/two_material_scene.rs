@@ -20,7 +20,7 @@ pub fn two_material_scene(
     let mut palette = VoxPalette::default();
 
     palette
-        .retain_property("baseColor".to_owned(), value_pool_id, U32Id::from_u32(0))
+        .retain_property("baseColor".to_owned(), value_pool_id)
         .unwrap();
 
     for value_id in IdRange::from_len(2) {
@@ -33,7 +33,7 @@ pub fn two_material_scene(
 
     object.set_origin(origin);
 
-    object.retain_layer(palette_id, U32Id::from_u32(0));
+    object.retain_layer(palette_id).unwrap();
 
     for &(position, material) in cells {
         let voxel_id = object.voxel_id(position).unwrap();

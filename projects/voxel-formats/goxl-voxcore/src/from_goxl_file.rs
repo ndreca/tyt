@@ -78,7 +78,7 @@ fn build_palette(
 
     let mut palette = VoxPalette::default();
     palette
-        .retain_property(BASE_COLOR.to_owned(), value_pool_id, U32Id::from_u32(0))
+        .retain_property(BASE_COLOR.to_owned(), value_pool_id)
         .expect("the property names are distinct");
     let mut material_ids = HashMap::with_capacity(order.len());
     for (value_id, color) in order.iter().enumerate_ids() {
@@ -102,8 +102,10 @@ fn build_object(
     let mut object = VoxObject::new(String::new(), TyVector3U32::new(size, size, size))
         .expect("a 16-cubed block fits the dense grid");
 
-    // The single layer is the color; solid voxels overwrite material 0.
-    object.retain_layer(palette_id, U32Id::<BVoxMaterial>::from_u32(0));
+    // The single layer is the color.
+    object
+        .retain_layer(palette_id)
+        .expect("a new object has no live voxels");
 
     for z in 0..size {
         for y in 0..size {

@@ -21,7 +21,7 @@ mod tests {
     use goxl_codec::DependenciesImpl;
     use ty_math::{TySrgbaU8, TyVector3U32};
     use voxcore::{
-        BVoxMaterial, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette, VoxValuePool,
+        VoxHierarchyNode, VoxMain, VoxObject, VoxPalette, VoxValuePool,
         color::lin_srgba_f64_from_srgba_u8, material::BASE_COLOR,
     };
 
@@ -33,13 +33,13 @@ mod tests {
             main.retain_value_pool(VoxValuePool::vec_4_float(vec![color.into()]).unwrap());
         let mut palette = VoxPalette::default();
         palette
-            .retain_property(BASE_COLOR.to_owned(), value_pool_id, U32Id::from_u32(0))
+            .retain_property(BASE_COLOR.to_owned(), value_pool_id)
             .unwrap();
         let material_id = palette.retain_material(vec![U32Id::from_u32(0)]).unwrap();
         let palette_id = main.retain_palette(palette).unwrap();
 
         let mut object = VoxObject::new("o".to_owned(), TyVector3U32::splat(1)).unwrap();
-        object.retain_layer(palette_id, U32Id::<BVoxMaterial>::from_u32(0));
+        object.retain_layer(palette_id).unwrap();
         let voxel_id = object.voxel_id(TyVector3U32::splat(0)).unwrap();
         object.retain_voxel(voxel_id, &[material_id]).unwrap();
         let object_id = main.retain_object(object).unwrap();

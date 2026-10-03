@@ -263,7 +263,7 @@ mod tests {
         for (name, value_pool) in properties {
             let value_pool_id = main.retain_value_pool(value_pool);
             palette
-                .retain_property(name.to_owned(), value_pool_id, value_id(0))
+                .retain_property(name.to_owned(), value_pool_id)
                 .unwrap();
         }
         let material_ids: Vec<_> = rows
@@ -279,7 +279,7 @@ mod tests {
         let mut object =
             VoxObject::new("o".to_owned(), TyVector3U32::new(count as u32, 1, 1)).unwrap();
         let palette_id = main.retain_palette(palette).unwrap();
-        object.retain_layer(palette_id, material_ids[0]);
+        object.retain_layer_filled(palette_id, material_ids[0]);
 
         let placements = material_ids
             .iter()
@@ -353,7 +353,7 @@ mod tests {
 
         let mut palette = VoxPalette::default();
         palette
-            .retain_property(BASE_COLOR.to_owned(), base_value_pool_id, value_id(0))
+            .retain_property(BASE_COLOR.to_owned(), base_value_pool_id)
             .unwrap();
         let material_ids: Vec<_> = IdRange::from_len(colors.len())
             .map(|value_id| palette.retain_material(vec![value_id]).unwrap())
@@ -361,7 +361,7 @@ mod tests {
 
         let mut object = VoxObject::new("o".to_owned(), bounds).unwrap();
         let palette_id = main.retain_palette(palette).unwrap();
-        object.retain_layer(palette_id, material_ids[0]);
+        object.retain_layer_filled(palette_id, material_ids[0]);
 
         for &(position, color_index) in voxels {
             let voxel_id = object.voxel_id(position).unwrap();
@@ -687,7 +687,7 @@ mod tests {
             main.retain_value_pool(VoxValuePool::float(vec![0.0, 1.0, 2.0, 3.0]).unwrap());
         let mut other = VoxPalette::default();
         other
-            .retain_property("tag".to_owned(), tag_value_pool_id, value_id(0))
+            .retain_property("tag".to_owned(), tag_value_pool_id)
             .unwrap();
         other.retain_material(vec![value_id(0)]).unwrap();
         main.retain_palette(other).unwrap();
@@ -722,15 +722,11 @@ mod tests {
 
         let mut glow_palette = VoxPalette::default();
         glow_palette
-            .retain_property(
-                "emissiveStrength".to_owned(),
-                strength_value_pool_id,
-                value_id(0),
-            )
+            .retain_property("emissiveStrength".to_owned(), strength_value_pool_id)
             .unwrap();
         glow_palette.retain_material(vec![value_id(0)]).unwrap();
         let glow_palette_id = main.retain_palette(glow_palette).unwrap();
-        main.retain_layer(object_id, glow_palette_id, U32Id::from_u32(0))
+        main.retain_layer_filled(object_id, glow_palette_id, U32Id::from_u32(0))
             .unwrap();
 
         let dithered = QuantizeOptions {

@@ -39,16 +39,13 @@ let red_value_id = U32Id::from_u32(0);
 
 A `VoxPalette` binds each named property to a value pool. Each material
 picks one value id per property. The `material` module fixes the shared
-metallic-roughness names, such as `BASE_COLOR` for `baseColor`.
+metallic-roughness names, such as `BASE_COLOR` for `baseColor`. A palette
+that already has materials takes `retain_property_filled`, which gives them a
+default value.
 
 ```rust
 let palette_id = main.retain_palette(VoxPalette::default())?;
-main.retain_property(
-    palette_id,
-    BASE_COLOR.to_owned(),
-    colors_id,
-    red_value_id,
-)?;
+main.retain_property(palette_id, BASE_COLOR.to_owned(), colors_id)?;
 let red_id = main.retain_material(palette_id, vec![red_value_id])?;
 ```
 
@@ -59,7 +56,8 @@ frame: Y-up, right-handed, with +Z toward the viewer. Each layer references a
 palette. Each live voxel samples one material per layer. Layers
 override back to front: a property reads through the last layer whose palette
 supplies it. Every cell has a voxel id, which `voxel_id` looks up from a
-position.
+position. An object that already has live voxels takes `retain_layer_filled`,
+which gives them a default material.
 
 ```rust
 let cube = VoxObject::new("cube".to_owned(), TyVector3U32::new(2, 2, 2))?;
@@ -67,7 +65,7 @@ let corner = TyVector3U32::new(0, 0, 0);
 let corner_id = cube.voxel_id(corner).expect("inside the grid");
 
 let cube_id = main.retain_object(cube)?;
-main.retain_layer(cube_id, palette_id, red_id)?;
+main.retain_layer(cube_id, palette_id)?;
 main.retain_voxel(cube_id, corner_id, &[red_id])?;
 ```
 

@@ -73,16 +73,15 @@ mod tests {
     use crate::face_mask;
     use branded_id::U32Id;
     use ty_math::TyVector3U32;
-    use voxcore::{BVoxMaterial, BVoxPalette, VoxObject};
+    use voxcore::{BVoxPalette, VoxObject};
 
     /// A `3x3x3` object with the listed cells live.
     fn object(live: &[[u32; 3]]) -> VoxObject {
         let mut object = VoxObject::new(String::new(), TyVector3U32::new(3, 3, 3)).unwrap();
 
-        object.retain_layer(
-            U32Id::<BVoxPalette>::from_u32(0),
-            U32Id::<BVoxMaterial>::from_u32(0),
-        );
+        object
+            .retain_layer(U32Id::<BVoxPalette>::from_u32(0))
+            .unwrap();
 
         for &[x, y, z] in live {
             let voxel_id = object.voxel_id(TyVector3U32::new(x, y, z)).unwrap();

@@ -286,10 +286,10 @@ mod tests {
 
         let mut palette = VoxPalette::default();
         palette
-            .retain_property(BASE_COLOR.to_owned(), colors, U32Id::from_u32(0))
+            .retain_property(BASE_COLOR.to_owned(), colors)
             .unwrap();
         palette
-            .retain_property(METALLIC.to_owned(), metals, U32Id::from_u32(0))
+            .retain_property(METALLIC.to_owned(), metals)
             .unwrap();
         palette
             .retain_material(vec![U32Id::from_u32(0), U32Id::from_u32(0)])
@@ -303,7 +303,7 @@ mod tests {
     /// The bar painted with the two materials of `palette_id`, one per voxel.
     fn painted_bar(palette_id: U32Id<BVoxPalette>) -> VoxObject {
         let mut object = bar();
-        object.retain_layer(palette_id, U32Id::from_u32(0));
+        object.retain_layer_filled(palette_id, U32Id::from_u32(0));
         for x in 0..2 {
             let voxel_id = object.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap();
             object.release_voxel(voxel_id).unwrap();
@@ -842,10 +842,10 @@ mod tests {
         let metals = main.retain_value_pool(VoxValuePool::float(vec![1.0, 0.0]).unwrap());
         let mut palette = VoxPalette::default();
         palette
-            .retain_property(BASE_COLOR.to_owned(), colors, U32Id::from_u32(0))
+            .retain_property(BASE_COLOR.to_owned(), colors)
             .unwrap();
         palette
-            .retain_property(METALLIC.to_owned(), metals, U32Id::from_u32(0))
+            .retain_property(METALLIC.to_owned(), metals)
             .unwrap();
         for (color, metal) in [(0, 0), (1, 1), (2, 1)] {
             palette
@@ -854,7 +854,7 @@ mod tests {
         }
         let palette_id = main.retain_palette(palette).unwrap();
         let mut object = VoxObject::new("bar".to_owned(), TyVector3U32::new(3, 1, 1)).unwrap();
-        object.retain_layer(palette_id, U32Id::from_u32(0));
+        object.retain_layer(palette_id).unwrap();
         for x in 0..3 {
             let voxel_id = object.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap();
             object
@@ -1169,7 +1169,7 @@ mod tests {
         let palette_id = paint(&mut main);
         let object_id = main.retain_object(painted_bar(palette_id)).unwrap();
         let tags = main.retain_value_pool(VoxValuePool::int(vec![-1]).unwrap());
-        main.retain_property(palette_id, "tag".to_owned(), tags, U32Id::from_u32(0))
+        main.retain_property_filled(palette_id, "tag".to_owned(), tags, U32Id::from_u32(0))
             .unwrap();
 
         let mut unread = record(Method::Greedy);

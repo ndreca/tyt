@@ -186,7 +186,7 @@ mod tests {
         );
         let mut palette = VoxPalette::default();
         palette
-            .retain_property(name.to_owned(), value_pool_id, U32Id::from_u32(0))
+            .retain_property(name.to_owned(), value_pool_id)
             .unwrap();
         let material_ids: Vec<_> = IdRange::from_len(colors.len())
             .map(|value_id| palette.retain_material(vec![value_id]).unwrap())
@@ -205,7 +205,7 @@ mod tests {
         let mut object =
             VoxObject::new("o".to_owned(), TyVector3U32::new(count as u32, 1, 1)).unwrap();
         for (palette_id, samples) in layers {
-            object.retain_layer(*palette_id, samples[0]);
+            object.retain_layer_filled(*palette_id, samples[0]);
         }
         for (index, voxel_id) in IdRange::from_len(count).enumerate() {
             let row: Vec<_> = layers.iter().map(|(_, samples)| samples[index]).collect();

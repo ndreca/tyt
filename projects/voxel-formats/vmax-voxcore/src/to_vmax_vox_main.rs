@@ -154,13 +154,13 @@ mod tests {
         let value_pool_id = main.retain_value_pool(VoxValuePool::float(vec![0.5]).unwrap());
         let mut palette = VoxPalette::default();
         palette
-            .retain_property(BASE_COLOR.to_owned(), value_pool_id, U32Id::from_u32(0))
+            .retain_property(BASE_COLOR.to_owned(), value_pool_id)
             .unwrap();
         let material_id = palette.retain_material(vec![U32Id::from_u32(0)]).unwrap();
         let palette_id = main.retain_palette(palette).unwrap();
 
         let mut object = VoxObject::new("o".to_owned(), TyVector3U32::splat(1)).unwrap();
-        object.retain_layer(palette_id, material_id);
+        object.retain_layer_filled(palette_id, material_id);
         object
             .retain_voxel(U32Id::from_u32(0), &[material_id])
             .unwrap();
@@ -193,11 +193,11 @@ mod tests {
 
         let mut palette = VoxPalette::default();
         palette
-            .retain_property(BASE_COLOR.to_owned(), colors_id, U32Id::from_u32(0))
+            .retain_property(BASE_COLOR.to_owned(), colors_id)
             .unwrap();
 
         palette
-            .retain_property(SHADOWS.to_owned(), floats_id, U32Id::from_u32(0))
+            .retain_property(SHADOWS.to_owned(), floats_id)
             .unwrap();
 
         let material_id = palette
@@ -207,7 +207,7 @@ mod tests {
         let palette_id = main.retain_palette(palette).unwrap();
 
         let mut object = VoxObject::new("o".to_owned(), TyVector3U32::splat(1)).unwrap();
-        object.retain_layer(palette_id, material_id);
+        object.retain_layer_filled(palette_id, material_id);
         object
             .retain_voxel(U32Id::from_u32(0), &[material_id])
             .unwrap();
@@ -242,18 +242,10 @@ mod tests {
         );
         let mut palette = VoxPalette::default();
         palette
-            .retain_property(
-                "baseColor".to_owned(),
-                color_value_pool_id,
-                U32Id::from_u32(0),
-            )
+            .retain_property("baseColor".to_owned(), color_value_pool_id)
             .unwrap();
         palette
-            .retain_property(
-                "metallic".to_owned(),
-                metallic_value_pool_id,
-                U32Id::from_u32(0),
-            )
+            .retain_property("metallic".to_owned(), metallic_value_pool_id)
             .unwrap();
         for value_id in IdRange::from_len(9) {
             palette
@@ -262,7 +254,7 @@ mod tests {
         }
         let palette_id = main.retain_palette(palette).unwrap();
         let mut object = VoxObject::new(String::new(), TyVector3U32::new(9, 1, 1)).unwrap();
-        object.retain_layer(palette_id, U32Id::<BVoxMaterial>::from_u32(0));
+        object.retain_layer(palette_id).unwrap();
         for index in 0..9u32 {
             let voxel_id = object.voxel_id(TyVector3U32::new(index, 0, 0)).unwrap();
             object
@@ -295,11 +287,7 @@ mod tests {
             main.retain_value_pool(VoxValuePool::float(vec![0.0, 1.0]).unwrap());
         let mut material_palette = VoxPalette::default();
         material_palette
-            .retain_property(
-                "metallic".to_owned(),
-                metallic_value_pool_id,
-                U32Id::from_u32(0),
-            )
+            .retain_property("metallic".to_owned(), metallic_value_pool_id)
             .unwrap();
         for value_id in IdRange::from_len(2) {
             material_palette.retain_material(vec![value_id]).unwrap();
@@ -308,8 +296,8 @@ mod tests {
 
         let material_id = |index: u32| U32Id::<BVoxMaterial>::from_u32(index);
         let mut object = VoxObject::new(String::new(), TyVector3U32::new(1, 1, 1)).unwrap();
-        object.retain_layer(color_palette_id, material_id(0));
-        object.retain_layer(material_palette_id, material_id(0));
+        object.retain_layer(color_palette_id).unwrap();
+        object.retain_layer(material_palette_id).unwrap();
         let voxel_id = object.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap();
         object
             .retain_voxel(voxel_id, &[material_id(1), material_id(1)])
@@ -338,11 +326,7 @@ mod tests {
             main.retain_value_pool(VoxValuePool::float(vec![0.5]).unwrap());
         let mut palette = VoxPalette::default();
         palette
-            .retain_property(
-                "metallic".to_owned(),
-                metallic_value_pool_id,
-                U32Id::from_u32(0),
-            )
+            .retain_property("metallic".to_owned(), metallic_value_pool_id)
             .unwrap();
         palette.retain_material(vec![U32Id::from_u32(0)]).unwrap();
         let palette_id = main.retain_palette(palette).unwrap();
@@ -382,7 +366,7 @@ mod tests {
         // Object 0: a red (material 0) then a green (material 1) voxel along x.
         let mut wide = VoxObject::new(String::new(), TyVector3U32::new(2, 1, 1))
             .expect("a 2x1x1 grid is within the dense limit");
-        wide.retain_layer(palette_id, material_id(0));
+        wide.retain_layer(palette_id).unwrap();
         for (x, material_index) in [(0u32, 0u32), (1, 1)] {
             let voxel_id = wide
                 .voxel_id(TyVector3U32::new(x, 0, 0))
@@ -395,7 +379,7 @@ mod tests {
         // Object 1: a single blue (material 2) voxel.
         let mut unit = VoxObject::new(String::new(), TyVector3U32::new(1, 1, 1))
             .expect("a 1x1x1 grid is within the dense limit");
-        unit.retain_layer(palette_id, material_id(0));
+        unit.retain_layer(palette_id).unwrap();
         let voxel_id = unit
             .voxel_id(TyVector3U32::new(0, 0, 0))
             .expect("a position within the grid");
@@ -612,7 +596,7 @@ mod tests {
         for material_index in [0u32, 1] {
             let mut object = VoxObject::new(String::new(), TyVector3U32::new(1, 1, 1))
                 .expect("a 1x1x1 grid is within the dense limit");
-            object.retain_layer(palette_id, material_id(0));
+            object.retain_layer(palette_id).unwrap();
             let voxel_id = object
                 .voxel_id(TyVector3U32::new(0, 0, 0))
                 .expect("a position within the grid");
@@ -670,7 +654,7 @@ mod tests {
         );
         let mut palette = VoxPalette::default();
         palette
-            .retain_property("baseColor".to_owned(), value_pool_id, U32Id::from_u32(0))
+            .retain_property("baseColor".to_owned(), value_pool_id)
             .unwrap();
         for value_id in IdRange::from_len(hexes.len()) {
             palette
@@ -688,7 +672,7 @@ mod tests {
         voxels: &[([u32; 3], u32)],
     ) -> VoxObject {
         let mut object = VoxObject::new(String::new(), bounds).expect("within the dense limit");
-        object.retain_layer(palette_id, U32Id::<BVoxMaterial>::from_u32(0));
+        object.retain_layer(palette_id).unwrap();
         for &([x, y, z], material_index) in voxels {
             let voxel_id = object
                 .voxel_id(TyVector3U32::new(x, y, z))
@@ -1300,33 +1284,29 @@ mod tests {
             let shadows = main.retain_value_pool(VoxValuePool::boolean(vec![true]));
             let mut palette = VoxPalette::default();
             palette
-                .retain_property("baseColor".to_owned(), color, U32Id::from_u32(0))
+                .retain_property("baseColor".to_owned(), color)
                 .unwrap();
             palette
-                .retain_property("metallic".to_owned(), metallic, U32Id::from_u32(0))
+                .retain_property("metallic".to_owned(), metallic)
                 .unwrap();
             palette
-                .retain_property("roughness".to_owned(), roughness, U32Id::from_u32(0))
+                .retain_property("roughness".to_owned(), roughness)
                 .unwrap();
             palette
-                .retain_property(
-                    "emissiveColor".to_owned(),
-                    emissive_color,
-                    U32Id::from_u32(0),
-                )
+                .retain_property("emissiveColor".to_owned(), emissive_color)
                 .unwrap();
             palette
-                .retain_property("emissiveStrength".to_owned(), emissive, U32Id::from_u32(0))
+                .retain_property("emissiveStrength".to_owned(), emissive)
                 .unwrap();
             palette
-                .retain_property("shadows".to_owned(), shadows, U32Id::from_u32(0))
+                .retain_property("shadows".to_owned(), shadows)
                 .unwrap();
             palette
                 .retain_material(vec![U32Id::from_u32(0); 6])
                 .unwrap();
             let palette_id = main.retain_palette(palette).unwrap();
             let mut object = VoxObject::new(String::new(), TyVector3U32::new(1, 1, 1)).unwrap();
-            object.retain_layer(palette_id, U32Id::<BVoxMaterial>::from_u32(0));
+            object.retain_layer(palette_id).unwrap();
             let voxel_id = object.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap();
             object
                 .retain_voxel(voxel_id, &[U32Id::<BVoxMaterial>::from_u32(0)])
@@ -1399,24 +1379,20 @@ mod tests {
         let strength = main.retain_value_pool(VoxValuePool::float(vec![strength]).unwrap());
         let mut palette = VoxPalette::default();
         palette
-            .retain_property("baseColor".to_owned(), color, U32Id::from_u32(0))
+            .retain_property("baseColor".to_owned(), color)
             .unwrap();
         palette
-            .retain_property(
-                "emissiveColor".to_owned(),
-                emissive_color,
-                U32Id::from_u32(0),
-            )
+            .retain_property("emissiveColor".to_owned(), emissive_color)
             .unwrap();
         palette
-            .retain_property("emissiveStrength".to_owned(), strength, U32Id::from_u32(0))
+            .retain_property("emissiveStrength".to_owned(), strength)
             .unwrap();
         palette
             .retain_material(vec![U32Id::from_u32(0); 3])
             .unwrap();
         let palette_id = main.retain_palette(palette).unwrap();
         let mut object = VoxObject::new(String::new(), TyVector3U32::new(1, 1, 1)).unwrap();
-        object.retain_layer(palette_id, U32Id::<BVoxMaterial>::from_u32(0));
+        object.retain_layer(palette_id).unwrap();
         let voxel_id = object.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap();
         object
             .retain_voxel(voxel_id, &[U32Id::<BVoxMaterial>::from_u32(0)])

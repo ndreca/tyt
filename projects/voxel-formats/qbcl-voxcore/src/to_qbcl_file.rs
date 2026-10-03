@@ -313,8 +313,7 @@ mod tests {
     };
     use ty_math::{TyTransformF64, TyVector3F64, TyVector3U32};
     use voxcore::{
-        BVoxHierarchyNode, BVoxMaterial, BVoxObject, BVoxPalette, Error as VoxError,
-        VoxHierarchyNode, VoxObject,
+        BVoxHierarchyNode, BVoxObject, BVoxPalette, Error as VoxError, VoxHierarchyNode, VoxObject,
     };
 
     /// The mask of a voxel nothing covers.
@@ -462,10 +461,9 @@ mod tests {
     /// Retains a one-voxel object of the sample's second color.
     fn retain_added_object(main: &mut QbclVoxMain) -> U32Id<BVoxObject> {
         let mut object = VoxObject::new("added".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
-        object.retain_layer(
-            U32Id::<BVoxPalette>::from_u32(0),
-            U32Id::<BVoxMaterial>::from_u32(0),
-        );
+        object
+            .retain_layer(U32Id::<BVoxPalette>::from_u32(0))
+            .unwrap();
         let voxel_id = object.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap();
         object
             .retain_voxel(voxel_id, &[U32Id::from_u32(1)])

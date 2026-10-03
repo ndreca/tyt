@@ -156,9 +156,7 @@ mod tests {
     use branded_id::U32Id;
     use qbcl::qb::{QbColorFormat, QbFile, QbMatrix, QbVoxel, QbZAxisOrientation};
     use ty_math::{TyTransformF64, TyVector3F64, TyVector3U32};
-    use voxcore::{
-        BVoxHierarchyNode, BVoxMaterial, BVoxObject, BVoxPalette, VoxHierarchyNode, VoxObject,
-    };
+    use voxcore::{BVoxHierarchyNode, BVoxObject, BVoxPalette, VoxHierarchyNode, VoxObject};
 
     /// A solid voxel whose visibility byte is `mask`.
     fn masked(r: u8, g: u8, b: u8, mask: u8) -> QbVoxel {
@@ -230,10 +228,9 @@ mod tests {
     /// node named `placed` at a fractional translation.
     fn retain_placed_object(main: &mut QbVoxMain) {
         let mut object = VoxObject::new("added".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
-        object.retain_layer(
-            U32Id::<BVoxPalette>::from_u32(0),
-            U32Id::<BVoxMaterial>::from_u32(0),
-        );
+        object
+            .retain_layer(U32Id::<BVoxPalette>::from_u32(0))
+            .unwrap();
         let voxel_id = object.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap();
         object
             .retain_voxel(voxel_id, &[U32Id::from_u32(1)])

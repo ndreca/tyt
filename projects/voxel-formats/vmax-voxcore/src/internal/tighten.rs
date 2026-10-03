@@ -1,6 +1,5 @@
-use branded_id::U32Id;
 use ty_math::{TyVector3I32, TyVector3U32};
-use voxcore::{BVoxMaterial, VoxObject};
+use voxcore::VoxObject;
 
 /// Re-bases a build-volume object to the tight extent of its live voxels,
 /// returning the tight object and the original build volume as
@@ -30,12 +29,11 @@ pub fn tighten(object: &VoxObject) -> (VoxObject, (TyVector3U32, TyVector3I32)) 
     (tight, build_volume)
 }
 
-/// Mirrors `from`'s layers onto `to`, back-filling every voxel with material
-/// `0`. The filler is overwritten when a voxel is re-lived and is never read
-/// for an empty voxel, so a uniform filler suffices.
+/// Mirrors `from`'s layers onto `to`, which has no live voxels yet.
 fn copy_layers(from: &VoxObject, to: &mut VoxObject) {
     for (_, palette_id) in from.iter_layers() {
-        to.retain_layer(palette_id, U32Id::<BVoxMaterial>::from_u32(0));
+        to.retain_layer(palette_id)
+            .expect("a new object has no live voxels");
     }
 }
 

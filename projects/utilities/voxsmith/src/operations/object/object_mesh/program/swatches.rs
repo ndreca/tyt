@@ -164,17 +164,15 @@ mod tests {
         let overrides = main.retain_value_pool(VoxValuePool::float(vec![0.25, 0.75]).unwrap());
 
         let mut base = VoxPalette::default();
-        base.retain_property(BASE_COLOR.to_owned(), colors, value_id(0))
-            .unwrap();
-        base.retain_property(METALLIC.to_owned(), metals, value_id(0))
-            .unwrap();
+        base.retain_property(BASE_COLOR.to_owned(), colors).unwrap();
+        base.retain_property(METALLIC.to_owned(), metals).unwrap();
         base.retain_material(vec![value_id(0), value_id(0)])
             .unwrap();
         base.retain_material(vec![value_id(1), value_id(1)])
             .unwrap();
 
         let mut over = VoxPalette::default();
-        over.retain_property(METALLIC.to_owned(), overrides, value_id(0))
+        over.retain_property(METALLIC.to_owned(), overrides)
             .unwrap();
         over.retain_material(vec![value_id(0)]).unwrap();
         over.retain_material(vec![value_id(1)]).unwrap();
@@ -191,7 +189,7 @@ mod tests {
         let mut object = VoxObject::new("bar".to_owned(), TyVector3U32::new(3, 1, 1)).unwrap();
 
         for &palette_id in palette_ids {
-            object.retain_layer(palette_id, U32Id::from_u32(0));
+            object.retain_layer(palette_id).unwrap();
         }
 
         for (x, samples) in (0..).zip(materials) {

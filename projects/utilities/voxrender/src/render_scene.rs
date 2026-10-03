@@ -1326,10 +1326,10 @@ mod tests {
 
         let mut palette = VoxPalette::default();
         palette
-            .retain_property(BASE_COLOR.to_owned(), colors, U32Id::from_u32(0))
+            .retain_property(BASE_COLOR.to_owned(), colors)
             .unwrap();
         palette
-            .retain_property(METALLIC.to_owned(), metals, U32Id::from_u32(0))
+            .retain_property(METALLIC.to_owned(), metals)
             .unwrap();
         for value_id in IdRange::from_len(2) {
             palette
@@ -1340,7 +1340,7 @@ mod tests {
 
         let mut bar = VoxObject::new("bar".to_owned(), TyVector3U32::new(2, 1, 1)).unwrap();
         bar.set_origin(TyVector3I32::new(1, 0, 0));
-        bar.retain_layer(palette_id, U32Id::from_u32(0));
+        bar.retain_layer(palette_id).unwrap();
         for x in 0..2 {
             let voxel_id = bar.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap();
             bar.retain_voxel(voxel_id, &[U32Id::from_u32(x)]).unwrap();
@@ -1348,7 +1348,7 @@ mod tests {
         let bar_id = main.retain_object(bar).unwrap();
 
         let mut lone = VoxObject::new("lone".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
-        lone.retain_layer(palette_id, U32Id::from_u32(0));
+        lone.retain_layer(palette_id).unwrap();
         lone.retain_voxel(U32Id::from_u32(0), &[U32Id::from_u32(1)])
             .unwrap();
         let lone_id = main.retain_object(lone).unwrap();
@@ -1495,14 +1495,12 @@ mod tests {
         let ints = main.retain_value_pool(VoxValuePool::int(vec![1]).unwrap());
 
         let mut palette = VoxPalette::default();
-        palette
-            .retain_property(METALLIC.to_owned(), ints, U32Id::from_u32(0))
-            .unwrap();
+        palette.retain_property(METALLIC.to_owned(), ints).unwrap();
         palette.retain_material(vec![U32Id::from_u32(0)]).unwrap();
         let palette_id = main.retain_palette(palette).unwrap();
 
         let mut object = VoxObject::new("o".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
-        object.retain_layer(palette_id, U32Id::from_u32(0));
+        object.retain_layer(palette_id).unwrap();
         object
             .retain_voxel(U32Id::from_u32(0), &[U32Id::from_u32(0)])
             .unwrap();

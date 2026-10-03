@@ -141,9 +141,6 @@ fn vox_palette_from_voxj_palette(palette: &VoxjPalette) -> Result<VoxPalette> {
         out.retain_property(
             property.name.clone(),
             wire_id(property.value_pool, "value pool")?,
-            // The back-fill for materials the palette already holds. The loop
-            // below adds every material, each carrying its own value ids.
-            U32Id::from_u32(0),
         )
         .map_err(|_| {
             Error::Invalid(format!(
@@ -226,10 +223,6 @@ fn vox_object_from_voxj_decoded_object(
 
     out.set_origin(TyVector3I32::from_array(origin));
 
-    // Back-fill material 0 as each layer's placeholder; live voxels overwrite
-    // their cells below.
-    let filler = U32Id::<BVoxMaterial>::from_u32(0);
-
     for &palette_index in &object.layers {
         // A layer index past the id space would wrap onto a real palette.
         let Ok(index) = u32::try_from(palette_index) else {
@@ -240,7 +233,8 @@ fn vox_object_from_voxj_decoded_object(
             )));
         };
 
-        out.retain_layer(U32Id::<BVoxPalette>::from_u32(index), filler);
+        out.retain_layer(U32Id::<BVoxPalette>::from_u32(index))
+            .expect("a new object has no live voxels");
     }
 
     if object.samples.len() != object.positions.len() {

@@ -424,10 +424,10 @@ mod tests {
 
         let mut palette = VoxPalette::default();
         palette
-            .retain_property(BASE_COLOR.to_owned(), colors, U32Id::from_u32(0))
+            .retain_property(BASE_COLOR.to_owned(), colors)
             .unwrap();
         palette
-            .retain_property(METALLIC.to_owned(), metals, U32Id::from_u32(0))
+            .retain_property(METALLIC.to_owned(), metals)
             .unwrap();
         palette
             .retain_material(vec![U32Id::from_u32(0), U32Id::from_u32(0)])
@@ -438,7 +438,7 @@ mod tests {
         let palette_id = main.retain_palette(palette).unwrap();
 
         let mut object = VoxObject::new("bar".to_owned(), TyVector3U32::new(2, 1, 1)).unwrap();
-        object.retain_layer(palette_id, U32Id::from_u32(0));
+        object.retain_layer(palette_id).unwrap();
         for x in 0..2 {
             let voxel_id = object.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap();
             object

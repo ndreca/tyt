@@ -140,7 +140,7 @@ mod tests {
 
         let mut palette = VoxPalette::default();
         palette
-            .retain_property("baseColor".to_owned(), value_pool_id, U32Id::from_u32(0))
+            .retain_property("baseColor".to_owned(), value_pool_id)
             .unwrap();
         palette.retain_material(vec![U32Id::from_u32(0)]).unwrap();
 
@@ -151,7 +151,7 @@ mod tests {
     /// `palette_index`.
     fn object(main: &mut VoxMain, name: &str, palette_index: u32) {
         let mut object = VoxObject::new(name.to_owned(), TyVector3U32::splat(1)).unwrap();
-        object.retain_layer(U32Id::from_u32(palette_index), U32Id::from_u32(0));
+        object.retain_layer(U32Id::from_u32(palette_index)).unwrap();
         object
             .retain_voxel(U32Id::from_u32(0), &[U32Id::from_u32(0)])
             .unwrap();
