@@ -47,8 +47,8 @@ pub fn from_vmax_file(serde: &VMaxFile) -> Result<VMaxVoxMain> {
     // collapse to a single object placed by several nodes.
     let mut object_transforms: Vec<TyTransformF64> = Vec::new();
     let mut object_data: Vec<(U32Id<BVoxObject>, Option<String>)> = Vec::new();
-    let mut object_ids: Vec<usize> = Vec::new();
-    let mut instances: HashMap<InstanceKey, usize> = HashMap::new();
+    let mut object_ids: Vec<U32Id<BVoxObject>> = Vec::new();
+    let mut instances: HashMap<InstanceKey, U32Id<BVoxObject>> = HashMap::new();
     for object in &scene.objects {
         let key = InstanceKey::of(object);
         if let Some(&existing) = key.as_ref().and_then(|key| instances.get(key)) {
@@ -67,9 +67,9 @@ pub fn from_vmax_file(serde: &VMaxFile) -> Result<VMaxVoxMain> {
         let object_id = main.retain_object(vox_object.zup_to_yup())?;
         object_data.push((object_id, data));
         object_transforms.push(transform.zup_to_yup());
-        object_ids.push(object_id.to_u32() as usize);
+        object_ids.push(object_id);
         if let Some(key) = key {
-            instances.insert(key, object_id.to_u32() as usize);
+            instances.insert(key, object_id);
         }
     }
 
@@ -658,7 +658,7 @@ fn vmax_ext_material(material: &VMaxMaterial) -> VMaxExtMaterial {
 fn build_hierarchy(
     scene: &VMaxSceneJsonFile,
     object_transforms: &[TyTransformF64],
-    object_ids: &[usize],
+    object_ids: &[U32Id<BVoxObject>],
 ) -> (Vec<VoxHierarchyNode>, Vec<U32Id<BVoxHierarchyNode>>) {
     let mut nodes: Vec<VoxHierarchyNode> = Vec::new();
     let mut node_index_of_id: HashMap<&str, usize> = HashMap::new();
@@ -680,7 +680,7 @@ fn build_hierarchy(
         nodes.push(VoxHierarchyNode {
             name: object.name.clone(),
             child_node_ids: Vec::new(),
-            child_object_ids: vec![U32Id::<BVoxObject>::from_u32(object_ids[index] as u32)],
+            child_object_ids: vec![object_ids[index]],
             transform: object_transforms[index],
         });
     }

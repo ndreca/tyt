@@ -330,14 +330,31 @@ impl VoxExt for MVoxExt {
         }
 
         if let Some(index_map) = &mut self.index_map {
-            let mut relabeled: Vec<Option<u8>> = index_map
-                .iter()
-                .map(|&old| {
-                    material_remap
-                        .new_id(U32Id::<BVoxMaterial>::from_u32(old as u32))
-                        .map(|new_id| new_id.to_u32() as u8)
-                })
-                .collect();
+            let mut relabeled: Vec<Option<u8>> = Vec::with_capacity(index_map.len());
+
+            for &old in index_map.iter() {
+                let old_id = U32Id::<BVoxMaterial>::from_u32(u32::from(old));
+
+                let Some(new_id) = material_remap.new_id(old_id) else {
+                    relabeled.push(None);
+
+                    continue;
+                };
+
+                // A material recycled to the end of the order relabels past
+                // its old id. With more than 256 materials, that id can pass
+                // 255.
+                let Ok(new) = u8::try_from(new_id.to_u32()) else {
+                    return Err(Error::Ext {
+                        reason: format!(
+                            "gc relabels index-map material {old_id} to {new_id}, past the 256 \
+                             entries an mvox index map holds"
+                        ),
+                    });
+                };
+
+                relabeled.push(Some(new));
+            }
             let taken: Vec<bool> = (0..=u8::MAX)
                 .map(|index| relabeled.contains(&Some(index)))
                 .collect();

@@ -3,7 +3,7 @@ use crate::{
     MVoxExtNodeBody, MVoxExtShapeModel, MVoxExtUnknownChunk, MVoxVoxMain, PALETTE_COLORS, Result,
     transform_from_frames,
 };
-use branded_id::{IteratorExt, U32Id};
+use branded_id::{IdVec, IteratorExt, U32Id};
 use mvox::{
     MVoxCamera, MVoxFile, MVoxFrame, MVoxLayer, MVoxMaterial, MVoxMaterialType, MVoxModel,
     MVoxSceneNode, MVoxSceneNodeBody,
@@ -375,14 +375,22 @@ fn build_object(model: &MVoxModel, palette_id: U32Id<BVoxPalette>) -> Result<Vox
 /// roots. A transform node places its single child, a group its children, and a
 /// shape the objects for its models. The links are deduplicated to satisfy
 /// voxcore's per-node uniqueness rule; the exact lists ride in the ext. Roots
-/// are the nodes no other node lists as a child. Errors on a duplicate node id
-/// or a dangling child reference.
+/// are the nodes no other node lists as a child. Errors on more scene nodes
+/// than the id space holds, a duplicate node id, or a dangling child reference.
 fn build_hierarchy(
     file: &MVoxFile,
 ) -> Result<(Vec<VoxHierarchyNode>, Vec<U32Id<BVoxHierarchyNode>>)> {
-    let mut position_of_id: HashMap<i32, usize> = HashMap::with_capacity(file.scene_nodes.len());
-    for (position, node) in file.scene_nodes.iter().enumerate() {
-        if position_of_id.insert(node.id, position).is_some() {
+    if u32::try_from(file.scene_nodes.len()).is_err() {
+        return Err(Error::invalid(format!(
+            "the file holds {} scene nodes, past the hierarchy node id space",
+            file.scene_nodes.len()
+        )));
+    }
+
+    let mut node_id_of: HashMap<i32, U32Id<BVoxHierarchyNode>> =
+        HashMap::with_capacity(file.scene_nodes.len());
+    for (node_id, node) in file.scene_nodes.iter().enumerate_ids() {
+        if node_id_of.insert(node.id, node_id).is_some() {
             return Err(Error::invalid(format!(
                 "scene node id {} is declared more than once",
                 node.id
@@ -391,17 +399,18 @@ fn build_hierarchy(
     }
 
     let mut nodes = Vec::with_capacity(file.scene_nodes.len());
-    let mut referenced = vec![false; file.scene_nodes.len()];
+    let mut referenced: IdVec<BVoxHierarchyNode, bool> =
+        IdVec::from(vec![false; file.scene_nodes.len()]);
 
     for node in &file.scene_nodes {
         let name = node.attributes.name.clone().unwrap_or_default();
         let vox_node = match &node.body {
             MVoxSceneNodeBody::Transform(transform) => {
-                let child_index = resolve(&position_of_id, transform.child)?;
-                referenced[child_index] = true;
+                let child_id = resolve(&node_id_of, transform.child)?;
+                referenced[child_id.to_usize_id()] = true;
                 VoxHierarchyNode {
                     name,
-                    child_node_ids: vec![U32Id::from_u32(child_index as u32)],
+                    child_node_ids: vec![child_id],
                     child_object_ids: Vec::new(),
                     transform: transform_from_frames(&transform.frames),
                 }
@@ -411,10 +420,10 @@ fn build_hierarchy(
                 let mut child_node_ids = Vec::with_capacity(group.children.len());
                 let mut seen = HashSet::new();
                 for &child_id in &group.children {
-                    let child_index = resolve(&position_of_id, child_id)?;
-                    referenced[child_index] = true;
-                    if seen.insert(child_index) {
-                        child_node_ids.push(U32Id::from_u32(child_index as u32));
+                    let child_node_id = resolve(&node_id_of, child_id)?;
+                    referenced[child_node_id.to_usize_id()] = true;
+                    if seen.insert(child_node_id) {
+                        child_node_ids.push(child_node_id);
                     }
                 }
                 VoxHierarchyNode {
@@ -454,9 +463,13 @@ fn build_hierarchy(
     Ok((nodes, roots))
 }
 
-/// The position of the scene node with id `id`, or an error if none has it.
-fn resolve(position_of_id: &HashMap<i32, usize>, id: i32) -> Result<usize> {
-    position_of_id.get(&id).copied().ok_or_else(|| {
+/// The hierarchy node id of the scene node with id `id`, or an error if none
+/// has it.
+fn resolve(
+    node_id_of: &HashMap<i32, U32Id<BVoxHierarchyNode>>,
+    id: i32,
+) -> Result<U32Id<BVoxHierarchyNode>> {
+    node_id_of.get(&id).copied().ok_or_else(|| {
         Error::invalid(format!(
             "scene node references node {id}, which does not exist"
         ))

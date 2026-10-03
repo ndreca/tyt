@@ -1127,6 +1127,43 @@ mod tests {
         assert_eq!(sorted, (0..=255).collect::<Vec<u8>>());
     }
 
+    /// In a 257-material palette, `gc` relabels a material recycled to the end
+    /// to 256, which no index-map byte holds. `gc` errors instead of wrapping
+    /// it onto another color.
+    #[test]
+    fn gc_refuses_to_relabel_an_index_map_material_past_255() {
+        let mut file = materials_file();
+
+        file.index_map = Some(array::from_fn(|i| i as u8));
+
+        let mut main = from_mvox_file(&file).unwrap();
+
+        let palette_id = U32Id::<BVoxPalette>::from_u32(0);
+
+        let palette = main.palette(palette_id).unwrap();
+
+        let value_ids: Vec<_> = palette
+            .iter_properties()
+            .map(|(property_id, _)| palette.value_id(material_id(0), property_id).unwrap())
+            .collect();
+
+        main.retain_material(palette_id, value_ids.clone()).unwrap();
+
+        main.release_material(palette_id, material_id(4)).unwrap();
+
+        main.retain_material(palette_id, value_ids).unwrap();
+
+        let Err(error) = main.gc() else {
+            panic!("gc relabeled an index-map material past 255");
+        };
+
+        assert_eq!(
+            error.to_string(),
+            "ext: gc relabels index-map material 4 to 256, past the 256 entries an mvox index map \
+             holds"
+        );
+    }
+
     /// An ext out of step with the hierarchy is malformed, so the writer
     /// errors instead of drawing what the state does not place.
     #[test]

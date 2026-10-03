@@ -74,8 +74,8 @@ pub fn from_voxj_file<D: DecodeBase64>(dependencies: &D, file: &VoxjFile) -> Res
             .runtime_state
             .root_nodes
             .iter()
-            .map(|&index| U32Id::from_u32(index as u32))
-            .collect(),
+            .map(|&index| wire_id(index, "root node"))
+            .collect::<Result<_>>()?,
     )?;
 
     let slots = match &voxj_main.ext {
@@ -130,8 +130,9 @@ fn vox_value_pool_from_voxj_value_pool(value_pool: &VoxjValuePool) -> Result<Vox
 /// material, a value-index per property.
 ///
 /// Errors on a duplicate property name, a row whose length disagrees with the
-/// properties, or a value-index past the id space. Value-pool-reference and
-/// value-id ranges are checked when the palette is inserted by
+/// properties, or a value-pool reference or value-index past the id space.
+/// Value-pool-reference and value-id ranges are checked when the palette is
+/// inserted by
 /// [`VoxMain::retain_palette`](voxcore::VoxMain::retain_palette).
 fn vox_palette_from_voxj_palette(palette: &VoxjPalette) -> Result<VoxPalette> {
     let mut out = VoxPalette::default();
@@ -139,7 +140,7 @@ fn vox_palette_from_voxj_palette(palette: &VoxjPalette) -> Result<VoxPalette> {
     for property in &palette.properties {
         out.retain_property(
             property.name.clone(),
-            U32Id::from_u32(property.value_pool as u32),
+            wire_id(property.value_pool, "value pool")?,
             // The back-fill for materials the palette already holds. The loop
             // below adds every material, each carrying its own value ids.
             U32Id::from_u32(0),
@@ -286,6 +287,18 @@ fn vox_object_from_voxj_decoded_object(
     Ok(out)
 }
 
+/// The id that wire index `index` references. Errors when `index` is past the
+/// id space. A cast would wrap such an index onto a real entry.
+fn wire_id<TBrand>(index: usize, what: &str) -> Result<U32Id<TBrand>> {
+    let Ok(id) = u32::try_from(index) else {
+        return Err(Error::Invalid(format!(
+            "{what} index {index} is past the id space"
+        )));
+    };
+
+    Ok(U32Id::from_u32(id))
+}
+
 /// The `[x, y, z]` point as a grid position, or `None` if any axis is negative
 /// or reaches `bounds`.
 fn in_bounds(p: [i64; 3], bounds: [u32; 3]) -> Option<TyVector3U32> {
@@ -299,8 +312,9 @@ fn in_bounds(p: [i64; 3], bounds: [u32; 3]) -> Option<TyVector3U32> {
 /// [`VoxMain::retain_hierarchy_nodes`](voxcore::VoxMain::retain_hierarchy_nodes),
 /// not here.
 ///
-/// Errors on a degenerate transform: non-finite position, non-finite or zero
-/// scale, or a non-finite / zero rotation.
+/// Errors on a child index past the id space or a degenerate transform. A
+/// degenerate transform has a non-finite position, a non-finite or zero scale,
+/// or a non-finite or zero rotation.
 fn vox_hierarchy_node_from_voxj_hierarchy_node(
     node: &VoxjHierarchyNode,
 ) -> Result<VoxHierarchyNode> {
@@ -309,13 +323,13 @@ fn vox_hierarchy_node_from_voxj_hierarchy_node(
         child_node_ids: node
             .child_nodes
             .iter()
-            .map(|&index| U32Id::from_u32(index as u32))
-            .collect(),
+            .map(|&index| wire_id(index, "child node"))
+            .collect::<Result<_>>()?,
         child_object_ids: node
             .child_objects
             .iter()
-            .map(|&index| U32Id::from_u32(index as u32))
-            .collect(),
+            .map(|&index| wire_id(index, "child object"))
+            .collect::<Result<_>>()?,
         transform: vox_transform_from_voxj_transform(&node.transform)?,
     })
 }
@@ -766,6 +780,43 @@ mod tests {
         file.main.runtime_state.objects[1].voxel_positions =
             VoxjPositionBlock::RawJson(vec![[9, 0, 0], [1, 0, 0]]);
         assert!(from_voxj_file(&DependenciesImpl, &file).is_err());
+    }
+
+    #[test]
+    fn rejects_a_root_index_that_would_wrap_onto_a_node() {
+        let mut file = sample_file();
+        file.main.runtime_state.root_nodes[0] += 1 << 32;
+
+        let error = from_voxj_file(&DependenciesImpl, &file).unwrap_err();
+
+        assert!(error.to_string().contains("past the id space"), "{error}");
+    }
+
+    #[test]
+    fn rejects_a_child_object_index_that_would_wrap_onto_an_object() {
+        let mut file = sample_file();
+        let node = file
+            .main
+            .runtime_state
+            .nodes
+            .iter_mut()
+            .find(|node| !node.child_objects.is_empty())
+            .unwrap();
+        node.child_objects[0] += 1 << 32;
+
+        let error = from_voxj_file(&DependenciesImpl, &file).unwrap_err();
+
+        assert!(error.to_string().contains("past the id space"), "{error}");
+    }
+
+    #[test]
+    fn rejects_a_value_pool_reference_that_would_wrap_onto_a_pool() {
+        let mut file = sample_file();
+        file.main.runtime_state.palettes[0].properties[0].value_pool += 1 << 32;
+
+        let error = from_voxj_file(&DependenciesImpl, &file).unwrap_err();
+
+        assert!(error.to_string().contains("past the id space"), "{error}");
     }
 
     #[test]
