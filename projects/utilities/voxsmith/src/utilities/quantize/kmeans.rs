@@ -16,7 +16,7 @@ pub fn kmeans(points: Vec<QuantizePoint>, target: usize) -> Vec<Vec<QuantizePoin
         .max_by(|a, b| {
             a.population
                 .cmp(&b.population)
-                .then_with(|| b.material_id.to_u32().cmp(&a.material_id.to_u32()))
+                .then_with(|| b.material_id.cmp(&a.material_id))
         })
         .expect("kmeans is given at least one point");
 

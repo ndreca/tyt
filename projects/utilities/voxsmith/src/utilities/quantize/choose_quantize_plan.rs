@@ -695,7 +695,7 @@ fn representative_point(cluster: &[QuantizePoint]) -> QuantizePoint {
         .max_by(|a, b| {
             a.population
                 .cmp(&b.population)
-                .then_with(|| b.material_id.to_u32().cmp(&a.material_id.to_u32()))
+                .then_with(|| b.material_id.cmp(&a.material_id))
         })
         .expect("a cluster holds at least one point")
 }

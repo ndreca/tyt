@@ -31,7 +31,7 @@ pub fn apply_quantize_plan<T: VoxExt>(
             .expect("a quantized layer is one of its object's");
 
         // Floyd-Steinberg's sparse per-voxel error; ordered needs no buffer.
-        let mut errors: HashMap<u32, TyVector4F64> = HashMap::new();
+        let mut errors: HashMap<TyVector3U32, TyVector4F64> = HashMap::new();
 
         // Every snap reads the layer as it was, so gather the whole layer's
         // rewritten rows before retaining any.
@@ -52,10 +52,9 @@ pub fn apply_quantize_plan<T: VoxExt>(
                         .expect("a live voxel is within the grid");
 
                     let offset = match dither {
-                        Dither::FloydSteinberg => errors
-                            .get(&voxel_id.to_u32())
-                            .copied()
-                            .unwrap_or(TyVector4F64::ZERO),
+                        Dither::FloydSteinberg => {
+                            errors.get(&position).copied().unwrap_or(TyVector4F64::ZERO)
+                        }
 
                         Dither::None => unreachable!("an undithered snap takes the plan's"),
 
@@ -117,7 +116,7 @@ fn nearest_representative(
                 .length_squared()
                 .partial_cmp(&(coords - b.coords).length_squared())
                 .unwrap_or(Ordering::Equal)
-                .then_with(|| a.material_id.to_u32().cmp(&b.material_id.to_u32()))
+                .then_with(|| a.material_id.cmp(&b.material_id))
         })
         .expect("a partition keeps at least one representative")
 }
@@ -125,26 +124,28 @@ fn nearest_representative(
 /// Pushes `error` to the three raster-forward neighbors. Floyd-Steinberg has
 /// no 3D kernel, so these weights are this engine's own.
 fn diffuse_error(
-    errors: &mut HashMap<u32, TyVector4F64>,
+    errors: &mut HashMap<TyVector3U32, TyVector4F64>,
     bounds: TyVector3U32,
     position: TyVector3U32,
     error: TyVector4F64,
 ) {
-    // Voxel id is the raster index x*Y*Z + y*Z + z, so a forward neighbor's id
-    // shifts by one plane, row, or cell.
-    let plane = bounds.y * bounds.z;
-    let voxel_id = position.x * plane + position.y * bounds.z + position.z;
+    let mut push = |neighbor: TyVector3U32, weight: f64| {
+        let slot = errors.entry(neighbor).or_insert(TyVector4F64::ZERO);
 
-    let mut push = |carry: bool, neighbor_id: u32, weight: f64| {
-        if carry {
-            let slot = errors.entry(neighbor_id).or_insert(TyVector4F64::ZERO);
-            *slot += error * weight;
-        }
+        *slot += error * weight;
     };
 
-    push(position.z + 1 < bounds.z, voxel_id + 1, 3.0 / 8.0);
-    push(position.y + 1 < bounds.y, voxel_id + bounds.z, 3.0 / 8.0);
-    push(position.x + 1 < bounds.x, voxel_id + plane, 2.0 / 8.0);
+    if position.z + 1 < bounds.z {
+        push(position + TyVector3U32::Z, 3.0 / 8.0);
+    }
+
+    if position.y + 1 < bounds.y {
+        push(position + TyVector3U32::Y, 3.0 / 8.0);
+    }
+
+    if position.x + 1 < bounds.x {
+        push(position + TyVector3U32::X, 2.0 / 8.0);
+    }
 }
 
 /// Each representative's distance to the nearest other representative of its

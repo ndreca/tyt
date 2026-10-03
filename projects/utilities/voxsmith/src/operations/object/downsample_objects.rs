@@ -129,7 +129,7 @@ fn block_sources(
 
                 let winner = tally
                     .into_values()
-                    .max_by_key(|&(count, first_id)| (count, Reverse(first_id.to_u32())))
+                    .max_by_key(|&(count, first_id)| (count, Reverse(first_id)))
                     .filter(|_| kept)
                     .map(|(_, first_id)| {
                         object

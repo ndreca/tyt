@@ -83,7 +83,7 @@ pub fn to_vmax_file(main: &VMaxVoxMain, options: &VMaxWriteOptions) -> Result<VM
 
     // A group's content box is derived from its subtree, the same box for every
     // path to a shared node, so it is memoized by node id.
-    let mut box_memo: HashMap<u32, ([f64; 3], [f64; 3])> = HashMap::new();
+    let mut box_memo: HashMap<U32Id<BVoxHierarchyNode>, ([f64; 3], [f64; 3])> = HashMap::new();
 
     for placement in &placements {
         let node = placement.node;
@@ -300,9 +300,9 @@ fn node_rotation(ext_node: &VMaxExtNode, transform: &TyTransformF64) -> [f64; 4]
 fn subtree_box_local<T: VoxExt>(
     main: &VoxMain<T>,
     node_id: U32Id<BVoxHierarchyNode>,
-    memo: &mut HashMap<u32, ([f64; 3], [f64; 3])>,
+    memo: &mut HashMap<U32Id<BVoxHierarchyNode>, ([f64; 3], [f64; 3])>,
 ) -> ([f64; 3], [f64; 3]) {
-    if let Some(&box_local) = memo.get(&node_id.to_u32()) {
+    if let Some(&box_local) = memo.get(&node_id) {
         return box_local;
     }
     let node = main
@@ -339,7 +339,7 @@ fn subtree_box_local<T: VoxExt>(
             (max[2] - min[2]) / 2.0,
         ],
     );
-    memo.insert(node_id.to_u32(), box_local);
+    memo.insert(node_id, box_local);
     box_local
 }
 
@@ -996,11 +996,10 @@ fn colorless_plan() -> PalettePlan {
 
 /// The filename suffix for an object: empty for object 0, then its numeric id.
 fn object_file_suffix(object_id: U32Id<BVoxObject>) -> String {
-    let index = object_id.to_u32();
-    if index == 0 {
+    if object_id == U32Id::MIN {
         String::new()
     } else {
-        index.to_string()
+        object_id.to_string()
     }
 }
 
