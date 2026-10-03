@@ -2,7 +2,7 @@ use crate::{
     Error, MVoxExt, MVoxExtFrame, MVoxExtNode, MVoxExtNodeBody, MVoxVoxMain, PALETTE_COLORS,
     Result, transform_from_frames,
 };
-use branded_id::U32Id;
+use branded_id::{SliceExt, U32Id};
 use mvox::{
     MVoxCamera, MVoxColor, MVoxDict, MVoxFile, MVoxFrame, MVoxGroupNode, MVoxLayer, MVoxMaterial,
     MVoxMaterialType, MVoxModel, MVoxNodeAttributes, MVoxPalette, MVoxRenderObject, MVoxRotation,
@@ -460,15 +460,13 @@ fn scene_node_body(
             let placed: HashSet<U32Id<BVoxObject>> =
                 node.child_object_ids.iter().copied().collect();
             if drawn != placed {
-                let drawn: Vec<u32> = models.iter().map(|model| model.object.to_u32()).collect();
-                let placed: Vec<u32> = node
-                    .child_object_ids
-                    .iter()
-                    .map(|object_id| object_id.to_u32())
-                    .collect();
+                let drawn: Vec<U32Id<BVoxObject>> =
+                    models.iter().map(|model| model.object).collect();
                 return Err(Error::Invalid(format!(
-                    "mvox shape entry of hierarchy node {node_id} draws objects {drawn:?} but the \
-                     node places {placed:?}"
+                    "mvox shape entry of hierarchy node {node_id} draws objects {} but the node \
+                     places {}",
+                    drawn.display_ids(),
+                    node.child_object_ids.display_ids()
                 )));
             }
             Ok(MVoxSceneNodeBody::Shape(MVoxShapeNode {

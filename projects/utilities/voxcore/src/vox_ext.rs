@@ -247,7 +247,7 @@ mod tests {
         BVoxHierarchyNode, BVoxMaterial, BVoxObject, BVoxPalette, BVoxVoxel, Error, Result, VoxExt,
         VoxGcRemap, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette, VoxState, VoxValuePool,
     };
-    use branded_id::{IdRange, U32Id};
+    use branded_id::{IdRange, SliceExt, U32Id};
     use std::collections::{HashMap, HashSet};
     use ty_math::{TyTransformF64, TyVector3F64, TyVector3I32, TyVector3U32};
 
@@ -310,19 +310,12 @@ mod tests {
             old_child_object_ids: &[U32Id<BVoxObject>],
         ) -> Result<()> {
             let node = state.hierarchy_node(node_id).unwrap();
-            let bare = |ids: &[U32Id<BVoxHierarchyNode>]| -> Vec<u32> {
-                ids.iter().map(|id| id.to_u32()).collect()
-            };
-            let bare_objects = |ids: &[U32Id<BVoxObject>]| -> Vec<u32> {
-                ids.iter().map(|id| id.to_u32()).collect()
-            };
             self.0.push(format!(
-                "node children {} {:?} {:?} to {:?} {:?}",
-                node_id,
-                bare(old_child_node_ids),
-                bare_objects(old_child_object_ids),
-                bare(&node.child_node_ids),
-                bare_objects(&node.child_object_ids)
+                "node children {node_id} {} {} to {} {}",
+                old_child_node_ids.display_ids(),
+                old_child_object_ids.display_ids(),
+                node.child_node_ids.display_ids(),
+                node.child_object_ids.display_ids()
             ));
             Ok(())
         }
@@ -332,13 +325,10 @@ mod tests {
             state: &VoxState,
             old_root_ids: &[U32Id<BVoxHierarchyNode>],
         ) -> Result<()> {
-            let bare = |ids: &[U32Id<BVoxHierarchyNode>]| -> Vec<u32> {
-                ids.iter().map(|id| id.to_u32()).collect()
-            };
             self.0.push(format!(
-                "roots {:?} to {:?}",
-                bare(old_root_ids),
-                bare(state.root_hierarchy_node_ids())
+                "roots {} to {}",
+                old_root_ids.display_ids(),
+                state.root_hierarchy_node_ids().display_ids()
             ));
             Ok(())
         }
@@ -430,9 +420,9 @@ mod tests {
             old_voxel_ids: &[U32Id<BVoxVoxel>],
         ) -> Result<()> {
             let bounds = state.object(object_id).unwrap().bounds();
-            let old_ids: Vec<u32> = old_voxel_ids.iter().map(|id| id.to_u32()).collect();
+            let old_ids = old_voxel_ids.display_ids();
             self.0.push(format!(
-                "voxels resampled {object_id} {old_bounds} to {bounds} from {old_ids:?}"
+                "voxels resampled {object_id} {old_bounds} to {bounds} from {old_ids}"
             ));
             Ok(())
         }
@@ -472,9 +462,9 @@ mod tests {
             palette_id: U32Id<BVoxPalette>,
             material_ids: &[U32Id<BVoxMaterial>],
         ) -> Result<()> {
-            let ids: Vec<u32> = material_ids.iter().map(|id| id.to_u32()).collect();
+            let ids = material_ids.display_ids();
             self.0
-                .push(format!("materials released {palette_id} {ids:?}"));
+                .push(format!("materials released {palette_id} {ids}"));
             Ok(())
         }
 

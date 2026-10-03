@@ -1,5 +1,5 @@
 use crate::{Error, GoxlExtLayer, GoxlVoxMain, Result};
-use branded_id::U32Id;
+use branded_id::{SliceExt, U32Id};
 use goxl::{
     GoxlBlock, GoxlCamera, GoxlDict, GoxlFile, GoxlImage, GoxlLayer, GoxlLayerBlock, GoxlLight,
     GoxlMaterial, GoxlPreview, GoxlShape, GoxlUnknownChunk, GoxlVoxel,
@@ -174,10 +174,10 @@ fn build_layers(main: &GoxlVoxMain) -> Result<Vec<GoxlLayer>> {
         let stamped = distinct(layer.placements.iter().map(|placement| placement.object_id));
         if stamped != node.child_object_ids {
             return Err(Error::invalid(format!(
-                "goxl ext layer for node {} stamps objects {:?} but the node places {:?}",
+                "goxl ext layer for node {} stamps objects {} but the node places {}",
                 node_id,
-                bare_ids(&stamped),
-                bare_ids(&node.child_object_ids)
+                stamped.display_ids(),
+                node.child_object_ids.display_ids()
             )));
         }
         if layer.base_id != 0 && !ids.contains(&layer.base_id) {
@@ -196,11 +196,6 @@ fn build_layers(main: &GoxlVoxMain) -> Result<Vec<GoxlLayer>> {
 fn distinct(values: impl Iterator<Item = U32Id<BVoxObject>>) -> Vec<U32Id<BVoxObject>> {
     let mut seen = HashSet::new();
     values.filter(|value| seen.insert(*value)).collect()
-}
-
-/// `ids` as their bare `u32`s, for an error message.
-fn bare_ids(ids: &[U32Id<BVoxObject>]) -> Vec<u32> {
-    ids.iter().map(|id| id.to_u32()).collect()
 }
 
 /// Rebuilds one layer from its node and ext provenance: the node's name, the

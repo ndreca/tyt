@@ -2,7 +2,7 @@ use crate::{
     GoxlExtCamera, GoxlExtImage, GoxlExtLayer, GoxlExtLight, GoxlExtMaterial, GoxlExtPlacement,
     GoxlExtPreview, GoxlExtUnknownChunk, next_layer_id, synthesized_layer,
 };
-use branded_id::U32Id;
+use branded_id::{SliceExt, U32Id};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -178,20 +178,21 @@ impl VoxExt for GoxlExt {
             });
         };
 
-        let clone_node_ids: Vec<u32> = self
+        let clone_node_ids: Vec<U32Id<BVoxHierarchyNode>> = self
             .layers
             .iter()
             .filter(|&(&other_id, other)| {
                 other_id != node_id && layer.id != 0 && other.base_id == layer.id
             })
-            .map(|(other_id, _)| other_id.to_u32())
+            .map(|(&other_id, _)| other_id)
             .collect();
         if !clone_node_ids.is_empty() {
             return Err(VoxError::Ext {
                 reason: format!(
-                    "node {} is goxl layer id {}, which the layers of nodes {clone_node_ids:?} \
-                     clone; release the clones first",
-                    node_id, layer.id
+                    "node {node_id} is goxl layer id {}, which the layers of nodes {} clone; \
+                     release the clones first",
+                    layer.id,
+                    clone_node_ids.display_ids()
                 ),
             });
         }

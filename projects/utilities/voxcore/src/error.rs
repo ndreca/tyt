@@ -2,7 +2,7 @@ use crate::{
     BVoxHierarchyNode, BVoxLayer, BVoxMaterial, BVoxObject, BVoxPalette, BVoxProperty,
     BVoxValuePool, BVoxValuePoolValue, BVoxVoxel, VoxObject,
 };
-use branded_id::U32Id;
+use branded_id::{SliceExt, U32Id};
 use std::{
     error::Error as StdError,
     fmt::{Display, Formatter, Result as FmtResult},
@@ -413,9 +413,9 @@ impl Display for Error {
                 object_ids,
             } => write!(
                 f,
-                "material {} is still sampled by objects {:?}",
+                "material {} is still sampled by objects {}",
                 material_id,
-                id_u32s(object_ids)
+                object_ids.display_ids()
             ),
 
             Error::ValuePoolValueInUse {
@@ -423,9 +423,9 @@ impl Display for Error {
                 palette_ids,
             } => write!(
                 f,
-                "value {} is still drawn by palettes {:?}",
+                "value {} is still drawn by palettes {}",
                 value_id,
-                id_u32s(palette_ids)
+                palette_ids.display_ids()
             ),
 
             Error::PaletteInUse {
@@ -433,9 +433,9 @@ impl Display for Error {
                 object_ids,
             } => write!(
                 f,
-                "palette {} is still referenced by objects {:?}",
+                "palette {} is still referenced by objects {}",
                 palette_id,
-                id_u32s(object_ids)
+                object_ids.display_ids()
             ),
 
             Error::ValuePoolInUse {
@@ -443,9 +443,9 @@ impl Display for Error {
                 palette_ids,
             } => write!(
                 f,
-                "value pool {} is still referenced by palettes {:?}",
+                "value pool {} is still referenced by palettes {}",
                 value_pool_id,
-                id_u32s(palette_ids)
+                palette_ids.display_ids()
             ),
 
             Error::ObjectInUse {
@@ -453,9 +453,9 @@ impl Display for Error {
                 node_ids,
             } => write!(
                 f,
-                "object {} is still placed by hierarchy nodes {:?}",
+                "object {} is still placed by hierarchy nodes {}",
                 object_id,
-                id_u32s(node_ids)
+                node_ids.display_ids()
             ),
 
             Error::HierarchyNodeInUse {
@@ -464,9 +464,9 @@ impl Display for Error {
                 root,
             } => write!(
                 f,
-                "hierarchy node {} is still referenced: parents {:?}, root {}",
+                "hierarchy node {} is still referenced: parents {}, root {}",
                 node_id,
-                id_u32s(parent_ids),
+                parent_ids.display_ids(),
                 root
             ),
 
@@ -658,8 +658,3 @@ impl Display for Error {
 }
 
 impl StdError for Error {}
-
-/// The ids' bare `u32`s, for the in-use referrer listings.
-fn id_u32s<Brand>(ids: &[U32Id<Brand>]) -> Vec<u32> {
-    ids.iter().map(|id| id.to_u32()).collect()
-}

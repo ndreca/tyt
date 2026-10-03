@@ -2,7 +2,7 @@ use crate::{
     BMeshFile, BMeshHierarchyNode, BMeshImage, BMeshMaterial, BMeshObject, BMeshPrimitive,
     BMeshTexture, BMeshTriangle, BMeshUvStream, BMeshVertex, MeshImageMediaType,
 };
-use branded_id::U32Id;
+use branded_id::{SliceExt, U32Id};
 use std::{
     error::Error as StdError,
     fmt::{Display, Formatter, Result as FmtResult},
@@ -390,11 +390,11 @@ impl Display for Error {
                 object_ids,
             } => write!(
                 f,
-                "file {} is still referenced: images {:?}, materials {:?}, objects {:?}",
+                "file {} is still referenced: images {}, materials {}, objects {}",
                 file_id,
-                id_u32s(image_ids),
-                id_u32s(material_ids),
-                id_u32s(object_ids)
+                image_ids.display_ids(),
+                material_ids.display_ids(),
+                object_ids.display_ids()
             ),
 
             Error::ImageInUse {
@@ -402,9 +402,9 @@ impl Display for Error {
                 texture_ids,
             } => write!(
                 f,
-                "image {} is still sampled by textures {:?}",
+                "image {} is still sampled by textures {}",
                 image_id,
-                id_u32s(texture_ids)
+                texture_ids.display_ids()
             ),
 
             Error::TextureInUse {
@@ -413,10 +413,10 @@ impl Display for Error {
                 object_ids,
             } => write!(
                 f,
-                "texture {} is still referenced: materials {:?}, objects {:?}",
+                "texture {} is still referenced: materials {}, objects {}",
                 texture_id,
-                id_u32s(material_ids),
-                id_u32s(object_ids)
+                material_ids.display_ids(),
+                object_ids.display_ids()
             ),
 
             Error::MaterialInUse {
@@ -424,9 +424,9 @@ impl Display for Error {
                 object_ids,
             } => write!(
                 f,
-                "material {} is still drawn by primitives of objects {:?}",
+                "material {} is still drawn by primitives of objects {}",
                 material_id,
-                id_u32s(object_ids)
+                object_ids.display_ids()
             ),
 
             Error::ObjectInUse {
@@ -434,9 +434,9 @@ impl Display for Error {
                 node_ids,
             } => write!(
                 f,
-                "object {} is still placed by hierarchy nodes {:?}",
+                "object {} is still placed by hierarchy nodes {}",
                 object_id,
-                id_u32s(node_ids)
+                node_ids.display_ids()
             ),
 
             Error::HierarchyNodeInUse {
@@ -445,9 +445,9 @@ impl Display for Error {
                 root,
             } => write!(
                 f,
-                "hierarchy node {} is still referenced: parents {:?}, root {}",
+                "hierarchy node {} is still referenced: parents {}, root {}",
                 node_id,
-                id_u32s(parent_ids),
+                parent_ids.display_ids(),
                 root
             ),
 
@@ -704,8 +704,3 @@ impl Display for Error {
 }
 
 impl StdError for Error {}
-
-/// The ids' bare `u32`s, for the in-use referrer listings.
-fn id_u32s<Brand>(ids: &[U32Id<Brand>]) -> Vec<u32> {
-    ids.iter().map(|id| id.to_u32()).collect()
-}
