@@ -2,6 +2,7 @@ use crate::{
     Dependencies, ParentSelection, RequiredSelection, Result, VoxelInput, VoxjOutput, edit_document,
 };
 use clap::Parser;
+use voxcore::BVoxHierarchyNode;
 use voxsmith::operations::node::unlink_nodes;
 
 /// Removes nodes from a parent node's children, or from the roots. A node left
@@ -16,7 +17,7 @@ pub struct NodeUnlink {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxHierarchyNode>,
 
     #[command(flatten)]
     parent: ParentSelection,

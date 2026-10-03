@@ -2,6 +2,7 @@ use crate::{
     Dependencies, ParentSelection, RequiredSelection, Result, VoxelInput, VoxjOutput, edit_document,
 };
 use clap::Parser;
+use voxcore::BVoxObject;
 use voxsmith::operations::object::link_objects;
 
 /// Places objects under one more parent node. Errors when the parent already
@@ -16,7 +17,7 @@ pub struct ObjectLink {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxObject>,
 
     #[command(flatten)]
     parent: ParentSelection,

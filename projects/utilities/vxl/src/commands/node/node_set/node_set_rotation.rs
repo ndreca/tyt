@@ -4,6 +4,7 @@ use crate::{
 };
 use clap::{ArgAction, ArgGroup, Parser};
 use ty_math::{TyAngleUnit, TyQuaternionExt, TyQuaternionF64};
+use voxcore::BVoxHierarchyNode;
 use voxsmith::operations::node::set_node_rotations;
 
 /// Sets nodes' rotations from Euler angles or a quaternion.
@@ -20,7 +21,7 @@ pub struct NodeSetRotation {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxHierarchyNode>,
 
     /// Euler angles about the fixed x, y, then z axes, as
     /// `node list --show-transforms` prints them.

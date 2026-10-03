@@ -2,6 +2,7 @@ use crate::{
     Dependencies, RequiredSelection, Result, VoxelInput, VoxjOutput, edit_document, vector3_i32,
 };
 use clap::{ArgAction, Parser};
+use voxcore::BVoxObject;
 use voxsmith::Error as VoxsmithError;
 
 /// Moves objects' grids, and their voxels with them, relative to the placing
@@ -16,7 +17,7 @@ pub struct ObjectSetOrigin {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxObject>,
 
     /// The grid's new min corner relative to the placing node.
     #[arg(

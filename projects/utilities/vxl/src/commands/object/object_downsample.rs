@@ -3,6 +3,7 @@ use crate::{
     commands::parse_resample_factor, edit_document,
 };
 use clap::Parser;
+use voxcore::BVoxObject;
 use voxsmith::operations::object::{KeepRule, ResampleFactor, downsample_objects};
 
 /// Merges objects' voxels into blocks of a factor per axis: a `10 x 10 x 10`
@@ -19,7 +20,7 @@ pub struct ObjectDownsample {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxObject>,
 
     /// How many voxels per axis merge into one, at least 2.
     #[arg(value_name = "factor", long, value_parser = parse_resample_factor)]

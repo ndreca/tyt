@@ -1,15 +1,15 @@
 use crate::{
     Error, Result,
     operations::palette::{
-        PaletteRef, PaletteShowLabel, PaletteShowLayout, PaletteShowOptions,
-        PaletteShowPresentation, PaletteShowReading, PaletteShowTableShape, PropertyRef,
-        PropertySelector, palette_show::StoredColor,
+        PaletteShowLabel, PaletteShowLayout, PaletteShowOptions, PaletteShowPresentation,
+        PaletteShowReading, PaletteShowTableShape, PropertyRef, PropertySelector,
+        palette_show::StoredColor,
     },
-    utilities::{VectorComponent, property_names},
+    utilities::{VectorComponent, property_names, resolve_palette_selectors},
 };
 use branded_id::U32Id;
 use serde_json::{Value, json};
-use std::result::Result as StdResult;
+use std::{result::Result as StdResult, slice};
 use treegrid::{
     BTreeGridNode, TreeGrid, TreeGridCellFormat, TreeGridError, TreeGridJsonValue,
     TreeGridJsonValueCells, TreeGridLabel, TreeGridLabelKind, TreeGridOptions,
@@ -18,8 +18,8 @@ use treegrid::{
     TreeGridTableShapeKind,
 };
 use voxcore::{
-    BVoxValuePoolValue, VoxExt, VoxMain, VoxPalette, VoxValue, VoxValueColumn, VoxValuePool,
-    VoxValuePoolValues, material::MaterialPropertyKind,
+    BVoxPalette, BVoxValuePoolValue, VoxExt, VoxMain, VoxPalette, VoxValue, VoxValueColumn,
+    VoxValuePool, VoxValuePoolValues, material::MaterialPropertyKind,
 };
 
 /// Renders the value collections `selectors` name in `main`, each a
@@ -41,8 +41,8 @@ pub fn palette_show<T: VoxExt>(
 
 /// One resolved value collection: a property's values down one palette.
 struct ValueCollection {
-    /// The resolved palette index, even when the selector used `*`.
-    palette_index: usize,
+    /// The resolved palette id, even when the selector used `*`.
+    palette_id: U32Id<BVoxPalette>,
 
     /// The property key, without any component.
     key: String,
@@ -77,47 +77,34 @@ enum ColorReading {
 
 /// Resolves the selectors against the document's palettes into value
 /// collections in render order: selector order, then palette order, then
-/// property order. A `*` palette or `*` property expands to one value
-/// collection per match; a named palette or property that is absent is an
-/// error, while a `*` palette quietly skips a palette that lacks a named
-/// property.
+/// property order. A selected palette or a `*` property expands to one value
+/// collection per match. A named palette the document lacks or an absent named
+/// property is an error, while a `*` palette quietly skips a palette that
+/// lacks a named property.
 fn resolve_value_collections<T: VoxExt>(
     main: &VoxMain<T>,
     selectors: &[PropertySelector],
 ) -> Result<Vec<ValueCollection>> {
-    let palettes: Vec<&VoxPalette> = main.iter_palettes().map(|(_, palette)| palette).collect();
     let mut value_collections = Vec::new();
-    for selector in selectors {
-        match selector.palette {
-            PaletteRef::All => {
-                for (palette_index, palette) in palettes.iter().enumerate() {
-                    value_collections.extend(expand_property(
-                        main,
-                        palette_index,
-                        palette,
-                        selector,
-                        true,
-                    )?);
-                }
-            }
 
-            PaletteRef::Index(palette_index) => {
-                let palette = palettes.get(palette_index).ok_or_else(|| {
-                    Error::invalid(format!(
-                        "palette index {palette_index} is out of range; the document has {} palette(s)",
-                        palettes.len()
-                    ))
-                })?;
-                value_collections.extend(expand_property(
-                    main,
-                    palette_index,
-                    palette,
-                    selector,
-                    false,
-                )?);
-            }
+    for selector in selectors {
+        let palette_ids = resolve_palette_selectors(main, slice::from_ref(&selector.palette))?;
+
+        for palette_id in palette_ids {
+            let palette = main
+                .palette(palette_id)
+                .expect("a resolved palette is one of the main's");
+
+            value_collections.extend(expand_property(
+                main,
+                palette_id,
+                palette,
+                selector,
+                selector.palette.is_all(),
+            )?);
         }
     }
+
     Ok(value_collections)
 }
 
@@ -126,7 +113,7 @@ fn resolve_value_collections<T: VoxExt>(
 /// property it lacks instead of erroring.
 fn expand_property<T: VoxExt>(
     main: &VoxMain<T>,
-    palette_index: usize,
+    palette_id: U32Id<BVoxPalette>,
     palette: &VoxPalette,
     selector: &PropertySelector,
     palette_is_wild: bool,
@@ -137,7 +124,7 @@ fn expand_property<T: VoxExt>(
             .map(|name| {
                 build_value_collection(
                     main,
-                    palette_index,
+                    palette_id,
                     palette,
                     name,
                     None,
@@ -153,13 +140,13 @@ fn expand_property<T: VoxExt>(
                     return Ok(Vec::new());
                 }
                 return Err(Error::invalid(format!(
-                    "palette {palette_index} has no property `{key}`; available properties: {}",
+                    "palette {palette_id} has no property `{key}`; available properties: {}",
                     available_keys(palette)
                 )));
             }
             Ok(vec![build_value_collection(
                 main,
-                palette_index,
+                palette_id,
                 palette,
                 key,
                 *component,
@@ -173,7 +160,7 @@ fn expand_property<T: VoxExt>(
 /// Builds one value collection from a property the caller verified present.
 fn build_value_collection<T: VoxExt>(
     main: &VoxMain<T>,
-    palette_index: usize,
+    palette_id: U32Id<BVoxPalette>,
     palette: &VoxPalette,
     key: &str,
     component: Option<VectorComponent>,
@@ -229,7 +216,7 @@ fn build_value_collection<T: VoxExt>(
     let samples = samples(key, value_pool, &value_ids, reading, component)?;
 
     Ok(ValueCollection {
-        palette_index,
+        palette_id,
         key: key.to_string(),
         component,
         presentation,
@@ -657,19 +644,16 @@ fn available_keys(palette: &VoxPalette) -> String {
 /// order in every layout.
 fn build_grid(value_collections: Vec<ValueCollection>) -> TreeGrid<TreeGridJsonValueCells> {
     let mut grid = TreeGrid::with_cells(TreeGridJsonValueCells);
-    let mut palette_node: Option<(usize, U32Id<BTreeGridNode>)> = None;
+    let mut palette_node: Option<(U32Id<BVoxPalette>, U32Id<BTreeGridNode>)> = None;
     let mut property_node: Option<(String, U32Id<BTreeGridNode>)> = None;
     for value_collection in value_collections {
         let palette_node_id = match palette_node {
-            Some((palette_index, node_id)) if palette_index == value_collection.palette_index => {
-                node_id
-            }
+            Some((palette_id, node_id)) if palette_id == value_collection.palette_id => node_id,
 
             _ => {
-                let node_id = grid.retain_root(TreeGridLabel::bare(
-                    value_collection.palette_index.to_string(),
-                ));
-                palette_node = Some((value_collection.palette_index, node_id));
+                let node_id =
+                    grid.retain_root(TreeGridLabel::bare(value_collection.palette_id.to_string()));
+                palette_node = Some((value_collection.palette_id, node_id));
                 property_node = None;
                 node_id
             }
@@ -792,17 +776,19 @@ fn resolve_options<T>(resolved: StdResult<T, TreeGridError>) -> Result<T> {
 mod tests {
     use crate::{
         operations::palette::{
-            PaletteRef, PaletteShowLabel, PaletteShowLayout, PaletteShowOptions,
-            PaletteShowPresentation, PaletteShowReading, PaletteShowTableShape, PropertyRef,
-            PropertySelector, palette_show, palette_show::palette_show::resolve_value_collections,
+            PaletteShowLabel, PaletteShowLayout, PaletteShowOptions, PaletteShowPresentation,
+            PaletteShowReading, PaletteShowTableShape, PropertyRef, PropertySelector, palette_show,
+            palette_show::palette_show::resolve_value_collections,
         },
-        utilities::VectorComponent,
+        utilities::{IdSelector, VectorComponent},
     };
     use branded_id::U32Id;
     use serde_json::Value;
     use std::num::NonZeroU8;
     use ty_math::TySrgbaU8;
-    use voxcore::{BVoxValuePool, BVoxValuePoolValue, VoxMain, VoxPalette, VoxValue, VoxValuePool};
+    use voxcore::{
+        BVoxPalette, BVoxValuePool, BVoxValuePoolValue, VoxMain, VoxPalette, VoxValue, VoxValuePool,
+    };
 
     /// The branded value id `index`.
     fn value_id(index: usize) -> U32Id<BVoxValuePoolValue> {
@@ -880,9 +866,15 @@ mod tests {
             .iter()
             .map(
                 |&(palette, property, presentation, reading)| PropertySelector {
-                    palette: match palette {
-                        "*" => PaletteRef::All,
-                        index => PaletteRef::Index(index.parse().unwrap()),
+                    palette: match palette.split_once('-') {
+                        _ if palette == "*" => IdSelector::all(),
+
+                        Some((start, end)) => {
+                            IdSelector::range(start.parse().unwrap()..=end.parse().unwrap())
+                                .unwrap()
+                        }
+
+                        None => IdSelector::id(palette.parse().unwrap()),
                     },
                     property: match property {
                         "*" => PropertyRef::All,
@@ -1462,19 +1454,65 @@ mod tests {
         let value_collections =
             resolve_value_collections(&main, &selectors(&[("*", "metallic", "value", "auto")]))
                 .unwrap();
-        let labels: Vec<(usize, &str)> = value_collections
+        let labels: Vec<(U32Id<BVoxPalette>, &str)> = value_collections
             .iter()
-            .map(|c| (c.palette_index, c.key.as_str()))
+            .map(|c| (c.palette_id, c.key.as_str()))
             .collect();
-        assert_eq!(labels, [(0, "metallic")]);
+        assert_eq!(labels, [(U32Id::from_u32(0), "metallic")]);
     }
 
     #[test]
-    fn named_palette_out_of_range_is_an_error() {
+    fn a_named_palette_the_document_lacks_is_an_error() {
         let main = sample_main();
         assert!(
             resolve_value_collections(&main, &selectors(&[("5", "baseColor", "value", "auto")]))
                 .is_err()
+        );
+    }
+
+    #[test]
+    fn a_palette_range_selects_each_palette_in_it() {
+        let main = sample_main();
+
+        let value_collections =
+            resolve_value_collections(&main, &selectors(&[("0-1", "baseColor", "value", "auto")]))
+                .unwrap();
+
+        let labels: Vec<(U32Id<BVoxPalette>, &str)> = value_collections
+            .iter()
+            .map(|c| (c.palette_id, c.key.as_str()))
+            .collect();
+
+        assert_eq!(
+            labels,
+            [
+                (U32Id::from_u32(0), "baseColor"),
+                (U32Id::from_u32(1), "baseColor")
+            ]
+        );
+    }
+
+    #[test]
+    fn a_palette_range_errors_on_a_palette_lacking_a_named_property_or_the_document() {
+        let main = sample_main();
+
+        assert_eq!(
+            resolve_value_collections(&main, &selectors(&[("0-1", "metallic", "value", "auto")]))
+                .err()
+                .unwrap()
+                .to_string(),
+            resolve_value_collections(&main, &selectors(&[("1", "metallic", "value", "auto")]))
+                .err()
+                .unwrap()
+                .to_string()
+        );
+
+        assert_eq!(
+            resolve_value_collections(&main, &selectors(&[("1-2", "baseColor", "value", "auto")]))
+                .err()
+                .unwrap()
+                .to_string(),
+            "palette 2 is not one of this state's"
         );
     }
 

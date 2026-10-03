@@ -3,6 +3,7 @@ use crate::{
     parse_finite_f64, vector3_f64,
 };
 use clap::{ArgAction, Parser};
+use voxcore::BVoxHierarchyNode;
 use voxsmith::operations::node::set_node_positions;
 
 /// Sets nodes' positions relative to their parents.
@@ -16,7 +17,7 @@ pub struct NodeSetPosition {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxHierarchyNode>,
 
     /// The node's new position.
     #[arg(

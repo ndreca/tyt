@@ -1,5 +1,6 @@
 use crate::{Dependencies, RequiredSelection, Result, VoxelInput, VoxjOutput, edit_document};
 use clap::Parser;
+use voxcore::BVoxObject;
 use voxsmith::Error as VoxsmithError;
 
 /// Moves one object to a position in the object list.
@@ -13,7 +14,7 @@ pub struct ObjectReorder {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxObject>,
 
     /// The position to move the object to, in the object list that
     /// `--select-index` counts.

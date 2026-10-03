@@ -1,5 +1,6 @@
 use crate::{Dependencies, RequiredSelection, Result, VoxelInput, VoxjOutput, edit_document};
 use clap::Parser;
+use voxcore::BVoxHierarchyNode;
 use voxsmith::Error as VoxsmithError;
 
 /// Renames one node.
@@ -13,7 +14,7 @@ pub struct NodeSetName {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxHierarchyNode>,
 
     /// The node's new name.
     #[arg(value_name = "name", long)]

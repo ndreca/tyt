@@ -3,6 +3,7 @@ use crate::{
     commands::parse_resample_factor, edit_document,
 };
 use clap::Parser;
+use voxcore::BVoxObject;
 use voxsmith::operations::object::{ResampleFactor, upsample_objects};
 
 /// Splits each voxel of the objects into a block of a factor per axis: a
@@ -19,7 +20,7 @@ pub struct ObjectUpsample {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxObject>,
 
     /// How many voxels each voxel becomes per axis, at least 2.
     #[arg(value_name = "factor", long, value_parser = parse_resample_factor)]

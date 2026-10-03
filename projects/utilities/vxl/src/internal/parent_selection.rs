@@ -1,8 +1,8 @@
-use crate::{Error, Result, parse_index_range};
+use crate::{Error, Result, parse_id_selector};
 use branded_id::U32Id;
 use clap::Args;
 use voxcore::{BVoxHierarchyNode, VoxExt, VoxMain};
-use voxsmith::utilities::{IndexRange, select_nodes};
+use voxsmith::utilities::{IdSelector, select_nodes};
 
 /// The `--select-parent` / `--select-parent-index` selectors, which pick the
 /// parent end of an edge.
@@ -14,10 +14,14 @@ pub struct ParentSelection {
     #[arg(value_name = "select-parent", long)]
     select_parent: Vec<String>,
 
-    /// Choose the parent node by index into the node list, an integer or an
-    /// `a-b` range. Repeatable; unions with `--select-parent`.
-    #[arg(value_name = "select-parent-index", long, value_parser = parse_index_range)]
-    select_parent_index: Vec<IndexRange>,
+    /// Choose the parent node by id: an integer, an `a-b` range, or `*` for
+    /// every node. Repeatable; unions with `--select-parent`.
+    #[arg(
+        value_name = "select-parent-index",
+        long,
+        value_parser = parse_id_selector::<BVoxHierarchyNode>
+    )]
+    select_parent_index: Vec<IdSelector<BVoxHierarchyNode>>,
 }
 
 impl ParentSelection {

@@ -57,11 +57,11 @@ program reads it. A bool wider than vec1 has no pool kind and errors on write.
 `palette edit`, `palette quantize`, and `palette remap` share one `--index`
 rule.
 
-1. `--index` takes a palette index `#`, an inclusive range `a-b`, or `*` for
+1. `--index` takes a palette id `#`, an inclusive id range `a-b`, or `*` for
    every palette. The flag repeats, and the union of its values selects each
    palette once
 2. `--index` defaults to `*`
-3. An index or range past the palette count errors
+3. A named palette id the document lacks errors
 4. Each command acts on every selected palette in palette order.
    `palette quantize` reduces each palette to `--max-materials` separately.
    `palette remap` snaps each palette onto the target

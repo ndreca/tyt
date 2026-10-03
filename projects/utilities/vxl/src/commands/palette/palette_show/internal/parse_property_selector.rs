@@ -1,14 +1,14 @@
-use crate::CliValue;
+use crate::{CliValue, parse_id_selector};
 use voxsmith::{
     operations::palette::{
-        PaletteRef, PaletteShowPresentation, PaletteShowReading, PropertyRef, PropertySelector,
+        PaletteShowPresentation, PaletteShowReading, PropertyRef, PropertySelector,
     },
     utilities::VectorComponent,
 };
 
 /// Parses one `--property <palette> <property> <presentation> <reading>`
-/// selector for `palette show` from its four fields. `*` matches every palette
-/// or property.
+/// selector for `palette show` from its four fields. The palette field takes
+/// an id, an `a-b` range, or `*`. `*` matches every palette or property.
 pub fn parse_property_selector(
     palette: &str,
     property: &str,
@@ -16,23 +16,11 @@ pub fn parse_property_selector(
     reading: &str,
 ) -> Result<PropertySelector, String> {
     Ok(PropertySelector {
-        palette: parse_palette_ref(palette)?,
+        palette: parse_id_selector(palette)?,
         property: parse_property_ref(property)?,
         presentation: PaletteShowPresentation::parse(presentation)?,
         reading: PaletteShowReading::parse(reading)?,
     })
-}
-
-/// Parses the palette field of a `--property` selector: `*` for every
-/// palette, else a non-negative index.
-fn parse_palette_ref(text: &str) -> Result<PaletteRef, String> {
-    if text == "*" {
-        return Ok(PaletteRef::All);
-    }
-
-    text.parse::<usize>()
-        .map(PaletteRef::Index)
-        .map_err(|_| format!("`{text}` is not a palette index or `*`"))
 }
 
 /// Parses the property field of a `--property` selector: `*` for every
@@ -65,23 +53,20 @@ fn parse_property_ref(text: &str) -> Result<PropertyRef, String> {
 #[cfg(test)]
 mod tests {
     use crate::commands::{
-        palette::palette_show::internal::parse_property_selector::{
-            parse_palette_ref, parse_property_ref,
-        },
+        palette::palette_show::internal::parse_property_selector::parse_property_ref,
         parse_property_selector,
     };
+    use branded_id::U32Id;
     use voxsmith::{
-        operations::palette::{
-            PaletteRef, PaletteShowPresentation, PaletteShowReading, PropertyRef,
-        },
-        utilities::VectorComponent,
+        operations::palette::{PaletteShowPresentation, PaletteShowReading, PropertyRef},
+        utilities::{IdSelector, VectorComponent},
     };
 
     #[test]
     fn parses_a_full_selector() {
         let selector = parse_property_selector("0", "rgba.a", "value", "srgb-hex").unwrap();
 
-        assert_eq!(selector.palette, PaletteRef::Index(0));
+        assert_eq!(selector.palette, IdSelector::id(U32Id::from_u32(0)));
         assert_eq!(
             selector.property,
             PropertyRef::Key {
@@ -97,8 +82,18 @@ mod tests {
     fn parses_stars() {
         let selector = parse_property_selector("*", "*", "swatch", "auto").unwrap();
 
-        assert_eq!(selector.palette, PaletteRef::All);
+        assert_eq!(selector.palette, IdSelector::all());
         assert_eq!(selector.property, PropertyRef::All);
+    }
+
+    #[test]
+    fn parses_a_palette_range() {
+        let selector = parse_property_selector("1-3", "*", "value", "auto").unwrap();
+
+        assert_eq!(
+            selector.palette,
+            IdSelector::range(U32Id::from_u32(1)..=U32Id::from_u32(3)).unwrap()
+        );
     }
 
     #[test]
@@ -112,17 +107,9 @@ mod tests {
     }
 
     #[test]
-    fn parses_a_star_and_an_index() {
-        assert_eq!(parse_palette_ref("*").unwrap(), PaletteRef::All);
-        assert_eq!(parse_palette_ref("0").unwrap(), PaletteRef::Index(0));
-        assert_eq!(parse_palette_ref("12").unwrap(), PaletteRef::Index(12));
-    }
-
-    #[test]
-    fn rejects_a_non_index() {
-        assert!(parse_palette_ref("a").is_err());
-        assert!(parse_palette_ref("-1").is_err());
-        assert!(parse_palette_ref("").is_err());
+    fn rejects_a_bad_palette() {
+        assert!(parse_property_selector("a", "rgba", "value", "auto").is_err());
+        assert!(parse_property_selector("3-1", "rgba", "value", "auto").is_err());
     }
 
     #[test]

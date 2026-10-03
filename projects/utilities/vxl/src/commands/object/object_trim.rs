@@ -1,5 +1,6 @@
 use crate::{Dependencies, RequiredSelection, Result, VoxelInput, VoxjOutput, edit_document};
 use clap::Parser;
+use voxcore::BVoxObject;
 use voxsmith::operations::object::trim_objects;
 
 /// Shrinks objects to their live voxels without moving a voxel in the scene.
@@ -13,7 +14,7 @@ pub struct ObjectTrim {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxObject>,
 }
 
 impl ObjectTrim {

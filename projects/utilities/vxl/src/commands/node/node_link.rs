@@ -2,6 +2,7 @@ use crate::{
     Dependencies, ParentSelection, RequiredSelection, Result, VoxelInput, VoxjOutput, edit_document,
 };
 use clap::Parser;
+use voxcore::BVoxHierarchyNode;
 use voxsmith::operations::node::link_nodes;
 
 /// Places nodes under one more parent node, or in the roots. Errors when the
@@ -16,7 +17,7 @@ pub struct NodeLink {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxHierarchyNode>,
 
     #[command(flatten)]
     parent: ParentSelection,

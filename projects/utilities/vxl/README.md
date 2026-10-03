@@ -7,8 +7,8 @@ A command-line tool for working with voxels.
 The `object`, `node`, and `palette quantize` commands edit a document. Each
 reads any format voxconv reads and writes Voxel JSON beside the input by default.
 `object mesh` writes a mesh instead. `node list` only prints the scene graph.
-`--select` takes a hierarchy-path glob. `--select-index` takes an index or a
-range. Both repeat and pick what the command acts on. `--select-parent` and
+`--select` takes a hierarchy-path glob. `--select-index` takes an id, an `a-b`
+range, or `*`. Both repeat and pick what the command acts on. `--select-parent` and
 `--select-parent-index` pick the one node at the parent end of an edge.
 
 ```sh

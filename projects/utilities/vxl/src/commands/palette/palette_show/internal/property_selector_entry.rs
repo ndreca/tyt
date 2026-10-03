@@ -38,11 +38,10 @@ impl TryFrom<PropertySelectorRepr> for PropertySelectorEntry {
 #[cfg(test)]
 mod tests {
     use crate::commands::PropertySelectorEntry;
+    use branded_id::U32Id;
     use voxsmith::{
-        operations::palette::{
-            PaletteRef, PaletteShowPresentation, PaletteShowReading, PropertyRef,
-        },
-        utilities::VectorComponent,
+        operations::palette::{PaletteShowPresentation, PaletteShowReading, PropertyRef},
+        utilities::{IdSelector, VectorComponent},
     };
 
     /// The entry `json` reads into, or its error.
@@ -54,7 +53,7 @@ mod tests {
     fn a_bare_property_defaults_the_other_fields() {
         let PropertySelectorEntry(selector) = read(r#"{ "property": "baseColor" }"#).unwrap();
 
-        assert_eq!(selector.palette, PaletteRef::All);
+        assert_eq!(selector.palette, IdSelector::all());
         assert_eq!(
             selector.property,
             PropertyRef::Key {
@@ -73,7 +72,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(selector.palette, PaletteRef::Index(0));
+        assert_eq!(selector.palette, IdSelector::id(U32Id::from_u32(0)));
         assert_eq!(
             selector.property,
             PropertyRef::Key {

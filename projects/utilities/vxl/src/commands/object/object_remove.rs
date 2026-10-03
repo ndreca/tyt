@@ -1,5 +1,6 @@
 use crate::{Dependencies, RequiredSelection, Result, VoxelInput, VoxjOutput, edit_document};
 use clap::Parser;
+use voxcore::BVoxObject;
 use voxsmith::operations::object::remove_objects;
 
 /// Removes objects, then each node the removal left childless.
@@ -13,7 +14,7 @@ pub struct ObjectRemove {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxObject>,
 }
 
 impl ObjectRemove {

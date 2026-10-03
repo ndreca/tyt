@@ -234,8 +234,8 @@ object and errors in a mesh holding several. See
 19. `--select-index <index>`
     - Repeatable: yes
 
-    Chooses objects by position, an integer or an `a-b` range. Unions with
-    `--select`.
+    Chooses objects by id: an integer, an `a-b` range, or `*` for every
+    object. An id the document lacks errors. Unions with `--select`.
 
 20. `--split-files`
     - Default: off

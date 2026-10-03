@@ -38,11 +38,14 @@ The design is in the [README](README.md). Check steps off as they land.
       append domain-checks like `checked`. Add a cell setter on `VoxPalette`
       beside `value_id` (`vox_palette.rs`). `VoxMain` wraps them as
       `retain_value_pool_value` and `set_material_value`.
-- [ ] **S4. Palette selection.** Add a voxsmith `PaletteSelector` holding `*`
-      or an `IndexRange` (`utilities/index_range.rs`). Add a
-      `resolve_palette_selectors` returning palette ids in palette order. vxl
-      parses the selector with a `parse_palette_selector` beside
-      `parse_index_range` (`internal/parse_index_range.rs`). `quantize_palette`
+- [x] **S4. Palette selection.** Replace `IndexRange` and palette show's
+      `PaletteRef` with one voxsmith `IdSelector<TBrand>`
+      (`utilities/id_selector.rs`) holding `*`, one id, or an inclusive id
+      range. vxl parses every selector flag with `parse_id_selector`
+      (`internal/parse_id_selector.rs`), and `RequiredSelection` takes the
+      entry brand. Selectors match ids, and a named id the document lacks
+      errors. Add a `resolve_palette_selectors` returning palette ids in
+      palette order. `quantize_palette`
       (`operations/palette/quantize_palette.rs`) takes the resolved ids. It
       errors on a palette no live voxel samples before
       `release_unsampled_materials` runs. `PaletteQuantize::index`

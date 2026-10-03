@@ -8,7 +8,7 @@ use std::{
     path::PathBuf,
 };
 use voxconv::{ReadFormat, load};
-use voxcore::VoxMain;
+use voxcore::{BVoxObject, VoxMain};
 use voxsmith::operations::object::add_objects;
 
 /// Copies objects from another document. `--select` and `--select-index`
@@ -34,7 +34,7 @@ pub struct ObjectAdd {
     source_from: Option<ReadFormat>,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxObject>,
 
     #[command(flatten)]
     parent: ParentSelection,

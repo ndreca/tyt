@@ -1,8 +1,8 @@
-use crate::{Error, Result, parse_index_range};
+use crate::{Error, Result, parse_id_selector};
 use branded_id::U32Id;
 use clap::Args;
 use voxcore::{BVoxObject, VoxExt, VoxMain};
-use voxsmith::utilities::{IndexRange, select_objects};
+use voxsmith::utilities::{IdSelector, select_objects};
 
 /// The `--select` / `--select-index` object selectors, shared by every command
 /// that narrows its work to some of a document's objects.
@@ -14,10 +14,10 @@ pub struct ObjectSelection {
     #[arg(value_name = "select", long)]
     select: Vec<String>,
 
-    /// Choose objects by index, an integer or an `a-b` range. Repeatable;
-    /// unions with `--select`.
-    #[arg(value_name = "select-index", long, value_parser = parse_index_range)]
-    select_index: Vec<IndexRange>,
+    /// Choose objects by id: an integer, an `a-b` range, or `*` for every
+    /// object. Repeatable; unions with `--select`.
+    #[arg(value_name = "select-index", long, value_parser = parse_id_selector::<BVoxObject>)]
+    select_index: Vec<IdSelector<BVoxObject>>,
 }
 
 impl ObjectSelection {
@@ -27,8 +27,8 @@ impl ObjectSelection {
     }
 
     /// The ids of the objects the selectors match in `main`, in document
-    /// order. A selector that matches nothing is a usage error, so a stray
-    /// glob or index is caught.
+    /// order. An id the document lacks errors, and a selection that matches
+    /// nothing is a usage error, so a stray glob is caught.
     pub fn resolve<T: VoxExt>(&self, main: &VoxMain<T>) -> Result<Vec<U32Id<BVoxObject>>> {
         let object_ids = select_objects(main, &self.select, &self.select_index)?;
 

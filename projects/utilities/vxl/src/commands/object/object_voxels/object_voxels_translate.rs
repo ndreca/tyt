@@ -2,6 +2,7 @@ use crate::{
     Dependencies, RequiredSelection, Result, VoxelInput, VoxjOutput, edit_document, vector3_i32,
 };
 use clap::{ArgAction, Parser};
+use voxcore::BVoxObject;
 use voxsmith::operations::object::translate_object_voxels;
 
 /// Moves objects' voxels within their grids. Errors when a voxel would leave
@@ -16,7 +17,7 @@ pub struct ObjectVoxelsTranslate {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxObject>,
 
     /// How far to move each voxel, in voxels.
     #[arg(

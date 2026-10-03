@@ -1,12 +1,17 @@
 use crate::{
     Dependencies, QuantizeArgs, QuantizeProfile, Result, VoxelInput, VoxjOutput,
-    commands::load_palette_quantize_profile_set, edit_document,
+    commands::load_palette_quantize_profile_set, edit_document, parse_id_selector,
 };
 use clap::Parser;
-use voxsmith::operations::palette::quantize_palette;
+use voxcore::BVoxPalette;
+use voxsmith::{
+    operations::palette::quantize_palette,
+    utilities::{IdSelector, resolve_palette_selectors},
+};
 
-/// Reduces a palette to at most `--max-materials` materials and snaps every
-/// layer referencing it. Materials no voxel samples drop, and the rest compact.
+/// Reduces each selected palette to at most `--max-materials` materials and
+/// snaps every layer referencing it. Materials no voxel samples drop, and the
+/// rest compact. A selected palette no live voxel samples errors.
 /// `object voxels quantize` reduces what objects sample without changing the
 /// palette.
 #[derive(Clone, Debug, Parser)]
@@ -18,9 +23,15 @@ pub struct PaletteQuantize {
     #[command(flatten)]
     output: VoxjOutput,
 
-    /// Which palette to quantize.
-    #[arg(value_name = "index", long, default_value_t = 0)]
-    index: usize,
+    /// Which palettes to quantize: an id, an `a-b` range, or `*` for every
+    /// palette. Repeatable; the union selects each palette once.
+    #[arg(
+        value_name = "palettes",
+        long,
+        value_parser = parse_id_selector::<BVoxPalette>,
+        default_value = "*"
+    )]
+    index: Vec<IdSelector<BVoxPalette>>,
 
     /// Applies saved quantize flags. A flag given here overrides the element
     /// it mirrors. The profiles come from every
@@ -47,7 +58,9 @@ impl PaletteQuantize {
         let options = self.quantize.resolve(&profile)?;
 
         edit_document(&dependencies, &self.input, self.output, |main| {
-            Ok(quantize_palette(main, self.index, &options)?)
+            let palette_ids = resolve_palette_selectors(main, &self.index)?;
+
+            Ok(quantize_palette(main, &palette_ids, &options)?)
         })
     }
 }
@@ -55,17 +68,26 @@ impl PaletteQuantize {
 #[cfg(test)]
 mod tests {
     use crate::commands::PaletteQuantize;
+    use branded_id::U32Id;
     use clap::Parser;
+    use voxsmith::utilities::IdSelector;
 
     #[test]
-    fn index_defaults_to_the_first_palette() {
+    fn index_defaults_to_every_palette_and_repeats() {
         let parse = |args: &[&str]| {
             let mut argv = vec!["quantize", "scene.voxj", "--max-materials", "16"];
             argv.extend_from_slice(args);
             PaletteQuantize::try_parse_from(argv).unwrap()
         };
 
-        assert_eq!(parse(&[]).index, 0);
-        assert_eq!(parse(&["--index", "2"]).index, 2);
+        assert_eq!(parse(&[]).index, [IdSelector::all()]);
+
+        assert_eq!(
+            parse(&["--index", "2", "--index", "0-1"]).index,
+            [
+                IdSelector::id(U32Id::from_u32(2)),
+                IdSelector::range(U32Id::from_u32(0)..=U32Id::from_u32(1)).unwrap(),
+            ]
+        );
     }
 }

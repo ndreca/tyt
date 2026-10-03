@@ -1,7 +1,7 @@
 use crate::{
     Error, Result,
     operations::palette::{PaletteListFields, PaletteListLayout},
-    utilities::{IndexRange, property_names},
+    utilities::{IdSelector, property_names},
 };
 use branded_id::U32Id;
 use treegrid::{
@@ -15,14 +15,14 @@ use voxcore::{BVoxPalette, VoxExt, VoxMain, VoxPalette};
 /// A selected palette paired with its id, the working unit the renderers walk.
 type Entry<'a> = (U32Id<BVoxPalette>, &'a VoxPalette);
 
-/// Renders a per-palette overview of `main`: each palette's index and, when
+/// Renders a per-palette overview of `main`: each palette's id and, when
 /// enabled by `fields`, its property keys, material count, and referencing
-/// objects. `filters` narrows the palettes to those whose index any range
-/// contains, every palette when empty; filters that match no palette are an
-/// error, so a stray index is caught.
+/// objects. `filters` narrows the palettes to those whose id any filter
+/// selects, every palette when empty; filters that match no palette are an
+/// error, so a stray id is caught.
 pub fn palette_list<T: VoxExt>(
     main: &VoxMain<T>,
-    filters: &[IndexRange],
+    filters: &[IdSelector<BVoxPalette>],
     fields: PaletteListFields,
     layout: PaletteListLayout,
 ) -> Result<String> {
@@ -31,19 +31,16 @@ pub fn palette_list<T: VoxExt>(
     Ok(render(main, &palettes, fields, layout))
 }
 
-/// The palettes to list: every palette whose index matches any of `filters`, in
-/// index order, or every palette when `filters` is empty.
+/// The palettes to list: every palette whose id matches any of `filters`, in
+/// palette order, or every palette when `filters` is empty.
 fn select_palettes<'a, T: VoxExt>(
     main: &'a VoxMain<T>,
-    filters: &[IndexRange],
+    filters: &[IdSelector<BVoxPalette>],
 ) -> Result<Vec<Entry<'a>>> {
     let selected: Vec<Entry> = main
         .iter_palettes()
-        .filter(|(palette_id, _)| {
-            filters.is_empty()
-                || filters
-                    .iter()
-                    .any(|filter| filter.contains(palette_id.to_u32() as usize))
+        .filter(|&(palette_id, _)| {
+            filters.is_empty() || filters.iter().any(|filter| filter.contains(palette_id))
         })
         .collect();
     if !filters.is_empty() && selected.is_empty() {
@@ -202,16 +199,21 @@ fn referencing_names<T: VoxExt>(main: &VoxMain<T>, palette_id: U32Id<BVoxPalette
 mod tests {
     use crate::{
         operations::palette::{PaletteListFields, PaletteListLayout, palette_list},
-        utilities::IndexRange,
+        utilities::IdSelector,
     };
     use branded_id::U32Id;
     use serde_json::Value;
     use ty_math::TyVector3U32;
-    use voxcore::{BVoxValuePoolValue, VoxMain, VoxObject, VoxPalette, VoxValuePool};
+    use voxcore::{BVoxPalette, BVoxValuePoolValue, VoxMain, VoxObject, VoxPalette, VoxValuePool};
 
     /// The branded value id `index`.
     fn value_id(index: usize) -> U32Id<BVoxValuePoolValue> {
         U32Id::from_u32(index as u32)
+    }
+
+    /// The branded palette id `index`.
+    fn palette_id(index: u32) -> U32Id<BVoxPalette> {
+        U32Id::from_u32(index)
     }
 
     /// Every field enabled, the bare-`palette list` default.
@@ -426,7 +428,7 @@ mod tests {
     #[test]
     fn a_filter_lists_only_the_matching_palettes() {
         let main = shared_main();
-        let filters = [IndexRange::new(1, 1).unwrap()];
+        let filters = [IdSelector::id(palette_id(1))];
         let output =
             palette_list(&main, &filters, all_fields(), PaletteListLayout::MdTables).unwrap();
         assert_eq!(
@@ -442,7 +444,7 @@ mod tests {
     #[test]
     fn a_range_filter_unions_its_indices() {
         let main = shared_main();
-        let filters = [IndexRange::new(0, 5).unwrap()];
+        let filters = [IdSelector::range(palette_id(0)..=palette_id(5)).unwrap()];
         let output =
             palette_list(&main, &filters, all_fields(), PaletteListLayout::MdTables).unwrap();
         assert!(output.contains("\n| 0     |"));
@@ -452,7 +454,7 @@ mod tests {
     #[test]
     fn a_filter_matching_no_palette_errors() {
         let main = shared_main();
-        let filters = [IndexRange::new(9, 9).unwrap()];
+        let filters = [IdSelector::id(palette_id(9))];
         assert!(palette_list(&main, &filters, all_fields(), PaletteListLayout::MdTables).is_err());
     }
 

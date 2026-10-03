@@ -1,27 +1,28 @@
-use crate::{Error, Result, parse_index_range};
+use crate::{Error, Result, parse_id_selector};
 use branded_id::U32Id;
 use clap::Args;
+use std::fmt;
 use voxcore::{BVoxHierarchyNode, BVoxObject, VoxExt, VoxMain};
-use voxsmith::utilities::{IndexRange, select_nodes, select_objects};
+use voxsmith::utilities::{IdSelector, select_nodes, select_objects};
 
 /// The `--select` / `--select-index` selectors of an edit command, which
-/// requires at least one.
-#[derive(Clone, Debug, Args)]
+/// requires at least one. `TBrand` is the kind of entry the command selects.
+#[derive(Args)]
 #[group(required = true, multiple = true)]
-pub struct RequiredSelection {
+pub struct RequiredSelection<TBrand: Send + Sync + 'static> {
     /// Choose by hierarchy-path glob. An object command takes every object at
     /// or under a matched path, and a node command takes the matched node
     /// alone. Repeatable; unions with `--select-index`.
     #[arg(value_name = "select", long)]
     select: Vec<String>,
 
-    /// Choose by index, an integer or an `a-b` range, into the object list or,
-    /// for a node command, the node list. Repeatable; unions with `--select`.
-    #[arg(value_name = "select-index", long, value_parser = parse_index_range)]
-    select_index: Vec<IndexRange>,
+    /// Choose by object id or, for a node command, node id: an integer, an
+    /// `a-b` range, or `*` for every one. Repeatable; unions with `--select`.
+    #[arg(value_name = "select-index", long, value_parser = parse_id_selector::<TBrand>)]
+    select_index: Vec<IdSelector<TBrand>>,
 }
 
-impl RequiredSelection {
+impl RequiredSelection<BVoxObject> {
     /// The ids of the objects the selectors match in `main`, in document
     /// order. Errors when they match nothing.
     pub fn resolve_objects<T: VoxExt>(&self, main: &VoxMain<T>) -> Result<Vec<U32Id<BVoxObject>>> {
@@ -51,7 +52,9 @@ impl RequiredSelection {
 
         Ok(object_id)
     }
+}
 
+impl RequiredSelection<BVoxHierarchyNode> {
     /// The ids of the nodes the selectors match in `main`, in document order.
     /// Errors when they match nothing.
     pub fn resolve_nodes<T: VoxExt>(
@@ -89,29 +92,64 @@ impl RequiredSelection {
     }
 }
 
+impl<TBrand: Send + Sync + 'static> Clone for RequiredSelection<TBrand> {
+    fn clone(&self) -> Self {
+        Self {
+            select: self.select.clone(),
+            select_index: self.select_index.clone(),
+        }
+    }
+}
+
+impl<TBrand: Send + Sync + 'static> fmt::Debug for RequiredSelection<TBrand> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("RequiredSelection")
+            .field("select", &self.select)
+            .field("select_index", &self.select_index)
+            .finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::RequiredSelection;
     use clap::Parser;
     use ty_math::TyVector3U32;
-    use voxcore::{VoxHierarchyNode, VoxMain, VoxObject};
+    use voxcore::{BVoxHierarchyNode, BVoxObject, VoxHierarchyNode, VoxMain, VoxObject};
 
     #[derive(Debug, Parser)]
-    struct Cli {
+    struct ObjectCli {
         #[command(flatten)]
-        selection: RequiredSelection,
+        selection: RequiredSelection<BVoxObject>,
     }
 
-    fn selection(args: &[&str]) -> RequiredSelection {
+    #[derive(Debug, Parser)]
+    struct NodeCli {
+        #[command(flatten)]
+        selection: RequiredSelection<BVoxHierarchyNode>,
+    }
+
+    fn argv<'a>(args: &[&'a str]) -> Vec<&'a str> {
         let mut argv = vec!["cli"];
+
         argv.extend_from_slice(args);
-        Cli::try_parse_from(argv).unwrap().selection
+
+        argv
+    }
+
+    fn object_selection(args: &[&str]) -> RequiredSelection<BVoxObject> {
+        ObjectCli::try_parse_from(argv(args)).unwrap().selection
+    }
+
+    fn node_selection(args: &[&str]) -> RequiredSelection<BVoxHierarchyNode> {
+        NodeCli::try_parse_from(argv(args)).unwrap().selection
     }
 
     #[test]
     fn a_selector_is_required() {
-        assert!(Cli::try_parse_from(["cli"]).is_err());
-        assert!(Cli::try_parse_from(["cli", "--select", "a", "--select-index", "0"]).is_ok());
+        assert!(ObjectCli::try_parse_from(["cli"]).is_err());
+        assert!(ObjectCli::try_parse_from(["cli", "--select", "a", "--select-index", "0"]).is_ok());
+        assert!(ObjectCli::try_parse_from(["cli", "--select-index", "*"]).is_ok());
     }
 
     #[test]
@@ -126,17 +164,17 @@ mod tests {
         main.retain_hierarchy_node(node).unwrap();
 
         assert!(
-            selection(&["--select", "door"])
+            object_selection(&["--select", "door"])
                 .resolve_objects(&main)
                 .is_err()
         );
         assert!(
-            selection(&["--select", "wall"])
+            node_selection(&["--select", "wall"])
                 .resolve_nodes(&main)
                 .is_err()
         );
         assert_eq!(
-            selection(&["--select", "door"])
+            node_selection(&["--select", "door"])
                 .resolve_nodes(&main)
                 .unwrap()
                 .len(),
@@ -155,12 +193,12 @@ mod tests {
         }
 
         assert!(
-            selection(&["--select", "a"])
+            object_selection(&["--select", "a"])
                 .resolve_one_object(&main)
                 .is_ok()
         );
         assert!(
-            selection(&["--select-index", "0-1"])
+            object_selection(&["--select-index", "0-1"])
                 .resolve_one_object(&main)
                 .is_err()
         );
@@ -180,12 +218,12 @@ mod tests {
         }
 
         assert!(
-            selection(&["--select", "b"])
+            node_selection(&["--select", "b"])
                 .resolve_one_node(&main)
                 .is_ok()
         );
         assert!(
-            selection(&["--select-index", "0-1"])
+            node_selection(&["--select-index", "*"])
                 .resolve_one_node(&main)
                 .is_err()
         );

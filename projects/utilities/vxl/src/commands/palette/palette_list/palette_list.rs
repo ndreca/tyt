@@ -1,10 +1,10 @@
-use crate::{Dependencies, Result, VoxelInput, cli_value_parser, parse_index_range};
+use crate::{Dependencies, Result, VoxelInput, cli_value_parser, parse_id_selector};
 use clap::{ArgAction, Parser};
 use voxconv::load;
-use voxcore::VoxMain;
+use voxcore::{BVoxPalette, VoxMain};
 use voxsmith::{
     operations::palette::{PaletteListFields, PaletteListLayout, palette_list},
-    utilities::IndexRange,
+    utilities::IdSelector,
 };
 
 /// Lists every palette in a document, one row apiece.
@@ -14,10 +14,11 @@ pub struct PaletteList {
     #[command(flatten)]
     input: VoxelInput,
 
-    /// Palette-index filters, each a single index `1` or an inclusive range
-    /// `1-5`, unioned over all values. Given none, every palette is listed.
-    #[arg(value_name = "filter", value_parser = parse_index_range)]
-    filters: Vec<IndexRange>,
+    /// Palette-id filters, each a single id `1`, an inclusive range `1-5`, or
+    /// `*` for every palette, unioned over all values. Given none, every
+    /// palette is listed.
+    #[arg(value_name = "filter", value_parser = parse_id_selector::<BVoxPalette>)]
+    filters: Vec<IdSelector<BVoxPalette>>,
 
     /// How to lay out the listing.
     #[arg(

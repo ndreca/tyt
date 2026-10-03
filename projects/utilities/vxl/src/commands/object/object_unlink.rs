@@ -2,6 +2,7 @@ use crate::{
     Dependencies, ParentSelection, RequiredSelection, Result, VoxelInput, VoxjOutput, edit_document,
 };
 use clap::Parser;
+use voxcore::BVoxObject;
 use voxsmith::operations::object::unlink_objects;
 
 /// Removes objects from one parent node, leaving an object with no parents
@@ -16,7 +17,7 @@ pub struct ObjectUnlink {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxObject>,
 
     #[command(flatten)]
     parent: ParentSelection,

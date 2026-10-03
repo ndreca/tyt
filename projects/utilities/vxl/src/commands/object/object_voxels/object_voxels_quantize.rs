@@ -1,9 +1,10 @@
 use crate::{
     Dependencies, ObjectSelection, QuantizeArgs, QuantizeProfile, Result, VoxelInput, VoxjOutput,
-    commands::load_object_voxels_quantize_profile_set, edit_document, parse_index_range,
+    commands::load_object_voxels_quantize_profile_set, edit_document, parse_id_selector,
 };
 use clap::{ArgAction, Parser};
-use voxsmith::{operations::object::quantize_object_voxels, utilities::IndexRange};
+use voxcore::BVoxLayer;
+use voxsmith::{operations::object::quantize_object_voxels, utilities::IdSelector};
 
 /// Rewrites objects' voxel samples so each quantized layer samples at most
 /// `--max-materials` materials of its palette. Palettes and value pools stay
@@ -20,11 +21,12 @@ pub struct ObjectVoxelsQuantize {
     #[command(flatten)]
     selection: ObjectSelection,
 
-    /// Quantize the layers at an index into each selected object's `layers`,
-    /// an integer or an `a-b` range. Repeatable. Without it, every layer whose
-    /// palette binds `--property` is quantized.
-    #[arg(value_name = "layer-index", long, value_parser = parse_index_range)]
-    layer_index: Vec<IndexRange>,
+    /// Quantize each selected object's layers by id: an integer, an `a-b`
+    /// range, or `*` for every layer. Repeatable. A named layer an object lacks
+    /// errors. Without it, every layer whose palette binds `--property` is
+    /// quantized.
+    #[arg(value_name = "layer-index", long, value_parser = parse_id_selector::<BVoxLayer>)]
+    layer_index: Vec<IdSelector<BVoxLayer>>,
 
     /// Cluster every selected layer on one palette together, where otherwise
     /// each object clusters apart.

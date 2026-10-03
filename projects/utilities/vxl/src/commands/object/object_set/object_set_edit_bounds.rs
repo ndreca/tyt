@@ -2,6 +2,7 @@ use crate::{
     Dependencies, RequiredSelection, Result, VoxelInput, VoxjOutput, edit_document, vector3_i32,
 };
 use clap::{ArgAction, Parser};
+use voxcore::BVoxObject;
 use voxsmith::operations::object::set_edit_bounds;
 
 /// Sets objects' build volumes to a node-local box without moving a voxel in
@@ -16,7 +17,7 @@ pub struct ObjectSetEditBounds {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxObject>,
 
     /// The box's min corner, as `node list --show-edit-bounds` prints it.
     #[arg(

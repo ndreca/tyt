@@ -1,5 +1,6 @@
 use crate::{Dependencies, RequiredSelection, Result, VoxelInput, VoxjOutput, edit_document};
 use clap::Parser;
+use voxcore::BVoxHierarchyNode;
 use voxsmith::operations::node::remove_nodes;
 
 /// Removes nodes, then each descendant node and object left with no parent.
@@ -13,7 +14,7 @@ pub struct NodeRemove {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxHierarchyNode>,
 }
 
 impl NodeRemove {

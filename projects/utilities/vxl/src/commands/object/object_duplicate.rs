@@ -2,6 +2,7 @@ use crate::{
     Dependencies, ParentSelection, RequiredSelection, Result, VoxelInput, VoxjOutput, edit_document,
 };
 use clap::Parser;
+use voxcore::BVoxObject;
 use voxsmith::operations::object::duplicate_objects;
 
 /// Appends a copy of each object with the original's name and palettes. Every
@@ -17,7 +18,7 @@ pub struct ObjectDuplicate {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxObject>,
 
     #[command(flatten)]
     parent: ParentSelection,

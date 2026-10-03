@@ -4,22 +4,24 @@
 
 mod check_material_property_ranges;
 mod check_material_range;
-mod index_range;
+mod id_selector;
 mod order_palette_colors;
 mod placing_nodes;
 mod property_names;
 mod quantize;
+mod resolve_palette_selectors;
 mod select_nodes;
 mod select_objects;
 mod vector_component;
 
 pub use check_material_property_ranges::*;
 pub use check_material_range::*;
-pub use index_range::*;
+pub use id_selector::*;
 pub use order_palette_colors::*;
 pub use placing_nodes::*;
 pub use property_names::*;
 pub use quantize::*;
+pub use resolve_palette_selectors::*;
 pub use select_nodes::*;
 pub use select_objects::*;
 pub use vector_component::*;

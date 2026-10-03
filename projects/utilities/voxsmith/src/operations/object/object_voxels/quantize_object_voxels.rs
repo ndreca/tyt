@@ -1,8 +1,8 @@
 use crate::{
     Error, Result,
-    utilities::{IndexRange, QuantizeOptions, apply_quantize_plan, choose_quantize_plan},
+    utilities::{IdSelector, QuantizeOptions, apply_quantize_plan, choose_quantize_plan},
 };
-use branded_id::U32Id;
+use branded_id::{U32Id, ext::RangeInclusiveExt};
 use voxcore::{BVoxLayer, BVoxObject, BVoxPalette, VoxExt, VoxMain};
 
 /// Quantizes the layers `layer_indices` picks on each of `object_ids` so each
@@ -12,7 +12,7 @@ use voxcore::{BVoxLayer, BVoxObject, BVoxPalette, VoxExt, VoxMain};
 pub fn quantize_object_voxels<T: VoxExt>(
     main: &mut VoxMain<T>,
     object_ids: &[U32Id<BVoxObject>],
-    layer_indices: &[IndexRange],
+    layer_indices: &[IdSelector<BVoxLayer>],
     shared: bool,
     options: &QuantizeOptions,
 ) -> Result<()> {
@@ -25,50 +25,45 @@ pub fn quantize_object_voxels<T: VoxExt>(
         let object = main
             .object(object_id)
             .expect("a selected object is one of the main's");
-        let object_index = main
-            .iter_objects()
-            .position(|(listed_object_id, _)| listed_object_id == object_id)
-            .expect("a selected object is one of the main's");
-
-        let layers: Vec<_> = object.iter_layers().collect();
 
         let mut picked = Vec::new();
         if layer_indices.is_empty() {
-            for &(layer_id, palette_id) in &layers {
+            for (layer_id, palette_id) in object.iter_layers() {
                 if binds_property(main, palette_id, name) {
                     picked.push((layer_id, palette_id));
                 }
             }
         } else {
-            for (layer_index, &(layer_id, palette_id)) in layers.iter().enumerate() {
+            for selector in layer_indices {
+                let Some(range) = selector.as_range() else {
+                    continue;
+                };
+
+                for layer_id in range.clone().into_id_range() {
+                    if object.layer_palette_id(layer_id).is_none() {
+                        return Err(Error::invalid(format!(
+                            "object {object_id} has no layer {layer_id}"
+                        )));
+                    }
+                }
+            }
+
+            for (layer_id, palette_id) in object.iter_layers() {
                 if !layer_indices
                     .iter()
-                    .any(|range| range.contains(layer_index))
+                    .any(|selector| selector.contains(layer_id))
                 {
                     continue;
                 }
 
                 if !binds_property(main, palette_id, name) {
-                    let palette_index = palette_index(main, palette_id);
                     return Err(Error::invalid(format!(
-                        "layer {layer_index} of object {object_index} references palette \
-                         {palette_index}, which has no property `{name}`"
+                        "layer {layer_id} of object {object_id} references palette {palette_id}, \
+                         which has no property `{name}`"
                     )));
                 }
 
                 picked.push((layer_id, palette_id));
-            }
-
-            let last_index = layer_indices
-                .iter()
-                .map(|range| range.end())
-                .max()
-                .expect("layer indices are non-empty");
-            if last_index >= layers.len() {
-                return Err(Error::invalid(format!(
-                    "object {object_index} has no layer {last_index}; it has {} layer(s)",
-                    layers.len()
-                )));
             }
         }
 
@@ -139,27 +134,22 @@ fn binds_property<T: VoxExt>(
         .is_some()
 }
 
-/// The listing index of `palette_id`.
-fn palette_index<T: VoxExt>(main: &VoxMain<T>, palette_id: U32Id<BVoxPalette>) -> usize {
-    main.iter_palettes()
-        .position(|(listed_palette_id, _)| listed_palette_id == palette_id)
-        .expect("a layer references a live palette")
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{
         operations::object::quantize_object_voxels,
         utilities::{
-            Dither, IndexRange, PartitionProperties, PropertyInterpretation, QuantizeOptions,
+            Dither, IdSelector, PartitionProperties, PropertyInterpretation, QuantizeOptions,
             ReductionMethod,
         },
     };
     use branded_id::{IdRange, U32Id};
     use std::num::NonZeroUsize;
+    use std::ops::RangeInclusive;
     use ty_math::TyVector3U32;
     use voxcore::{
-        BVoxMaterial, BVoxObject, BVoxPalette, VoxMain, VoxObject, VoxPalette, VoxValuePool,
+        BVoxLayer, BVoxMaterial, BVoxObject, BVoxPalette, VoxMain, VoxObject, VoxPalette,
+        VoxValuePool,
         material::{BASE_COLOR, ROUGHNESS},
     };
 
@@ -240,6 +230,19 @@ mod tests {
             .collect()
     }
 
+    /// The ids of object `object_id`'s layers, in layer order.
+    fn layer_ids(main: &VoxMain, object_id: U32Id<BVoxObject>) -> Vec<U32Id<BVoxLayer>> {
+        main.object(object_id)
+            .unwrap()
+            .iter_layers()
+            .map(|(layer_id, _)| layer_id)
+            .collect()
+    }
+
+    fn range(range: RangeInclusive<U32Id<BVoxLayer>>) -> IdSelector<BVoxLayer> {
+        IdSelector::range(range).unwrap()
+    }
+
     const RED: [f64; 3] = [1.0, 0.0, 0.0];
 
     const NEAR_RED: [f64; 3] = [0.98, 0.0, 0.0];
@@ -304,7 +307,7 @@ mod tests {
             ],
         );
 
-        let second_layer = [IndexRange::new(1, 1).unwrap()];
+        let second_layer = [IdSelector::id(layer_ids(&main, object_id)[1])];
         quantize_object_voxels(&mut main, &[object_id], &second_layer, false, &options(1)).unwrap();
         assert_eq!(samples(&main, object_id, 0), [b[0], b[1]]);
         assert_eq!(samples(&main, object_id, 1), [t[0], t[0]]);
@@ -330,10 +333,12 @@ mod tests {
         assert_eq!(samples(&main, object_id, 0), [b[0], b[0]]);
         assert_eq!(samples(&main, object_id, 1), [o[0], o[1]]);
 
+        let layer_ids = layer_ids(&main, object_id);
+
         let error = quantize_object_voxels(
             &mut main,
             &[object_id],
-            &[IndexRange::new(0, 1).unwrap()],
+            &[range(layer_ids[0]..=layer_ids[1])],
             false,
             &options(1),
         )
@@ -348,18 +353,17 @@ mod tests {
     fn errors_on_a_missing_layer_or_an_unbound_property() {
         let (mut main, [first, _], _) = two_objects();
 
+        let layer_ids = layer_ids(&main, first);
+
         let error = quantize_object_voxels(
             &mut main,
             &[first],
-            &[IndexRange::new(0, 2).unwrap()],
+            &[range(layer_ids[0]..=U32Id::from_u32(2))],
             false,
             &options(1),
         )
         .unwrap_err();
-        assert_eq!(
-            error.to_string(),
-            "object 0 has no layer 2; it has 1 layer(s)"
-        );
+        assert_eq!(error.to_string(), "object 0 has no layer 1");
 
         let roughness = QuantizeOptions {
             property: ROUGHNESS.to_owned(),

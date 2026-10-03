@@ -3,6 +3,7 @@ use crate::{
     parse_finite_f64, vector3_f64,
 };
 use clap::{ArgAction, Parser};
+use voxcore::BVoxHierarchyNode;
 use voxsmith::operations::node::set_node_scales;
 
 /// Sets nodes' scales. A negative component mirrors that axis.
@@ -16,7 +17,7 @@ pub struct NodeSetScale {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxHierarchyNode>,
 
     /// The node's new scale. No component may be zero.
     #[arg(

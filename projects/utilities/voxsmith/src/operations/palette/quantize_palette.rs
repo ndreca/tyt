@@ -4,47 +4,76 @@ use crate::{
 };
 use branded_id::U32Id;
 use std::collections::HashSet;
-use voxcore::{BVoxLayer, BVoxObject, BVoxPalette, VoxExt, VoxMain};
+use voxcore::{BVoxLayer, BVoxObject, BVoxPalette, Error as VoxError, VoxExt, VoxMain};
 
-/// Quantizes palette `palette_index` of `main` to at most
-/// `options.max_materials` materials, snapping every layer referencing it. The
-/// materials no voxel samples afterward drop along with the values only they
-/// held.
+/// Quantizes each palette of `palette_ids` to at most `options.max_materials`
+/// materials, snapping every layer referencing it. The materials no voxel
+/// samples afterward drop along with the values only they held. Errors,
+/// changing nothing, when an id is not one of the main's or no live voxel
+/// samples a palette.
 pub fn quantize_palette<T: VoxExt>(
     main: &mut VoxMain<T>,
-    palette_index: usize,
+    palette_ids: &[U32Id<BVoxPalette>],
     options: &QuantizeOptions,
 ) -> Result<()> {
-    let palette_id = main
-        .iter_palettes()
-        .nth(palette_index)
-        .map(|(palette_id, _)| palette_id)
-        .ok_or_else(|| {
-            Error::invalid(format!(
-                "palette index {palette_index} is out of range; the document has {} palette(s)",
-                main.palette_count()
-            ))
-        })?;
+    let mut palette_layers = Vec::with_capacity(palette_ids.len());
 
-    let layers: Vec<_> = main
-        .iter_objects()
+    for &palette_id in palette_ids {
+        if main.palette(palette_id).is_none() {
+            return Err(VoxError::UnknownPalette { palette_id }.into());
+        }
+
+        let layers = referencing_layers(main, palette_id);
+
+        if !is_sampled(main, &layers) {
+            return Err(Error::invalid(format!(
+                "no live voxel samples palette {palette_id}"
+            )));
+        }
+
+        palette_layers.push((palette_id, layers));
+    }
+
+    for (palette_id, layers) in palette_layers {
+        if let Some(plan) = choose_quantize_plan(main, palette_id, &layers, options)? {
+            apply_quantize_plan(main, &plan, &layers, options.dither)?;
+        }
+
+        release_unsampled_materials(main, palette_id, &layers)?;
+    }
+
+    main.gc()?;
+
+    Ok(())
+}
+
+/// The layers referencing `palette_id`, with their objects.
+fn referencing_layers<T: VoxExt>(
+    main: &VoxMain<T>,
+    palette_id: U32Id<BVoxPalette>,
+) -> Vec<(U32Id<BVoxObject>, U32Id<BVoxLayer>)> {
+    main.iter_objects()
         .flat_map(|(object_id, object)| {
             object
                 .iter_layers()
                 .filter(|&(_, layer_palette_id)| layer_palette_id == palette_id)
                 .map(move |(layer_id, _)| (object_id, layer_id))
         })
-        .collect();
+        .collect()
+}
 
-    if let Some(plan) = choose_quantize_plan(main, palette_id, &layers, options)? {
-        apply_quantize_plan(main, &plan, &layers, options.dither)?;
-    }
-
-    release_unsampled_materials(main, palette_id, &layers)?;
-
-    main.gc()?;
-
-    Ok(())
+/// Whether a live voxel samples one of `layers`. Every live voxel samples a
+/// material in each of its object's layers.
+fn is_sampled<T: VoxExt>(
+    main: &VoxMain<T>,
+    layers: &[(U32Id<BVoxObject>, U32Id<BVoxLayer>)],
+) -> bool {
+    layers.iter().any(|&(object_id, _)| {
+        main.object(object_id)
+            .expect("a referencing layer's object is one of the main's")
+            .live_count()
+            > 0
+    })
 }
 
 /// Releases the materials of `palette_id` no live voxel of `layers` samples,
@@ -218,6 +247,18 @@ mod tests {
     ) -> (VoxMain, U32Id<BVoxPalette>, U32Id<BVoxObject>) {
         let mut main = VoxMain::default();
 
+        let (palette_id, object_id) = retain_rows(&mut main, properties, rows, repeats);
+
+        (main, palette_id, object_id)
+    }
+
+    /// Retains the palette and object [`main_with_rows`] builds into `main`.
+    fn retain_rows(
+        main: &mut VoxMain,
+        properties: Vec<(&str, VoxValuePool)>,
+        rows: &[Vec<usize>],
+        repeats: &[usize],
+    ) -> (U32Id<BVoxPalette>, U32Id<BVoxObject>) {
         let mut palette = VoxPalette::default();
         for (name, value_pool) in properties {
             let value_pool_id = main.retain_value_pool(value_pool);
@@ -251,7 +292,7 @@ mod tests {
             object.retain_voxel(voxel_id, &[material_id]).unwrap();
         }
         let object_id = main.retain_object(object).unwrap();
-        (main, palette_id, object_id)
+        (palette_id, object_id)
     }
 
     /// One object over a palette of `#RRGGBBAA` `colors`, each material with a
@@ -260,7 +301,21 @@ mod tests {
         colors: &[&str],
         repeats: &[usize],
     ) -> (VoxMain, U32Id<BVoxPalette>, U32Id<BVoxObject>) {
-        main_with_rows(
+        let mut main = VoxMain::default();
+
+        let (palette_id, object_id) = retain_colors(&mut main, colors, repeats);
+
+        (main, palette_id, object_id)
+    }
+
+    /// Retains the palette and object [`main_with_colors`] builds into `main`.
+    fn retain_colors(
+        main: &mut VoxMain,
+        colors: &[&str],
+        repeats: &[usize],
+    ) -> (U32Id<BVoxPalette>, U32Id<BVoxObject>) {
+        retain_rows(
+            main,
             vec![
                 (
                     BASE_COLOR,
@@ -370,15 +425,21 @@ mod tests {
         panic!("no palette carries {name}");
     }
 
-    /// The error message quantizing the first palette under `options` gives.
-    fn error_of(main: &mut VoxMain, options: &QuantizeOptions) -> String {
-        quantize_palette(main, 0, options).unwrap_err().to_string()
+    /// The error message quantizing `palette_id` under `options` gives.
+    fn error_of(
+        main: &mut VoxMain,
+        palette_id: U32Id<BVoxPalette>,
+        options: &QuantizeOptions,
+    ) -> String {
+        quantize_palette(main, &[palette_id], options)
+            .unwrap_err()
+            .to_string()
     }
 
     #[test]
     fn leaves_a_palette_within_the_cap_unchanged() {
         let (mut main, palette_id, _) = main_with_colors(&["#FF0000FF", "#00FF00FF"], &[]);
-        quantize_palette(&mut main, 0, &options(5)).unwrap();
+        quantize_palette(&mut main, &[palette_id], &options(5)).unwrap();
         assert_eq!(material_count(&main, palette_id), 2);
     }
 
@@ -388,7 +449,7 @@ mod tests {
         // second red, whose whole material (tag 1) survives.
         let (mut main, palette_id, object_id) =
             main_with_colors(&["#FE0000FF", "#FF0000FF", "#0000FFFF"], &[0, 3, 0]);
-        quantize_palette(&mut main, 0, &options(2)).unwrap();
+        quantize_palette(&mut main, &[palette_id], &options(2)).unwrap();
         assert_eq!(main.validate(), Ok(()));
         assert_eq!(colors(&main, palette_id), ["#0000FFFF", "#FF0000FF"]);
 
@@ -416,7 +477,7 @@ mod tests {
                 main_with_colors(&["#FF0000FF", "#00FF00FF", "#0000FFFF", "#FFFF00FF"], &[]);
             quantize_palette(
                 &mut main,
-                0,
+                &[palette_id],
                 &QuantizeOptions {
                     method,
                     ..options(2)
@@ -436,7 +497,7 @@ mod tests {
             dither: Dither::FloydSteinberg,
             ..options(5)
         };
-        quantize_palette(&mut main, 0, &dithered).unwrap();
+        quantize_palette(&mut main, &[palette_id], &dithered).unwrap();
         assert_eq!(material_count(&main, palette_id), 2);
 
         for dither in [Dither::FloydSteinberg, Dither::Ordered] {
@@ -444,7 +505,7 @@ mod tests {
                 main_with_colors(&["#FF0000FF", "#00FF00FF", "#0000FFFF"], &[]);
             quantize_palette(
                 &mut main,
-                0,
+                &[palette_id],
                 &QuantizeOptions {
                     dither,
                     ..options(2)
@@ -465,7 +526,7 @@ mod tests {
                 space: Some(space),
                 ..options(2)
             };
-            quantize_palette(&mut main, 0, &spaced).unwrap();
+            quantize_palette(&mut main, &[palette_id], &spaced).unwrap();
             assert_eq!(material_count(&main, palette_id), 2, "space {space:?}");
             assert_eq!(main.validate(), Ok(()), "space {space:?}");
         }
@@ -501,7 +562,7 @@ mod tests {
             dither: Dither::Ordered,
             ..options(2)
         };
-        quantize_palette(&mut main, 0, &ordered).unwrap();
+        quantize_palette(&mut main, &[palette_id], &ordered).unwrap();
         assert_eq!(material_count(&main, palette_id), 2);
         assert_eq!(main.validate(), Ok(()));
 
@@ -543,7 +604,7 @@ mod tests {
             dither: Dither::Ordered,
             ..options(2)
         };
-        quantize_palette(&mut main, 0, &ordered).unwrap();
+        quantize_palette(&mut main, &[palette_id], &ordered).unwrap();
 
         for &(position, color_index) in &voxels {
             if color_index == 1 {
@@ -581,7 +642,7 @@ mod tests {
             dither: Dither::FloydSteinberg,
             ..options(2)
         };
-        quantize_palette(&mut main, 0, &diffused).unwrap();
+        quantize_palette(&mut main, &[palette_id], &diffused).unwrap();
         assert_eq!(material_count(&main, palette_id), 2);
         assert_eq!(main.validate(), Ok(()));
 
@@ -602,7 +663,7 @@ mod tests {
     fn drops_the_merged_away_values() {
         let (mut main, palette_id, _) =
             main_with_colors(&["#FE0000FF", "#FF0000FF", "#0000FFFF"], &[0, 3, 0]);
-        quantize_palette(&mut main, 0, &options(2)).unwrap();
+        quantize_palette(&mut main, &[palette_id], &options(2)).unwrap();
 
         assert_eq!(value_pool_len(&main, BASE_COLOR), 2);
         assert_eq!(value_pool_len(&main, "tag"), 2);
@@ -631,7 +692,7 @@ mod tests {
         other.retain_material(vec![value_id(0)]).unwrap();
         main.retain_palette(other).unwrap();
 
-        quantize_palette(&mut main, 0, &options(2)).unwrap();
+        quantize_palette(&mut main, &[palette_id], &options(2)).unwrap();
 
         assert_eq!(main.value_pool(tag_value_pool_id).unwrap().len(), 3);
         assert_eq!(main.value_pool(spare_value_pool_id).unwrap().len(), 4);
@@ -646,7 +707,7 @@ mod tests {
         let voxel_id = object.voxel_id(TyVector3U32::new(2, 0, 0)).unwrap();
         main.release_voxel(object_id, voxel_id).unwrap();
 
-        quantize_palette(&mut main, 0, &options(5)).unwrap();
+        quantize_palette(&mut main, &[palette_id], &options(5)).unwrap();
         assert_eq!(colors(&main, palette_id), ["#00FF00FF", "#FF0000FF"]);
         assert_eq!(value_pool_len(&main, BASE_COLOR), 2);
         assert_eq!(main.validate(), Ok(()));
@@ -676,7 +737,7 @@ mod tests {
             dither: Dither::FloydSteinberg,
             ..options(2)
         };
-        quantize_palette(&mut main, 0, &dithered).unwrap();
+        quantize_palette(&mut main, &[palette_id], &dithered).unwrap();
 
         assert_eq!(material_count(&main, palette_id), 2);
         assert_eq!(main.validate(), Ok(()));
@@ -690,7 +751,7 @@ mod tests {
         // the opaque red and blue merge instead.
         let (mut main, palette_id, _) =
             main_with_colors(&["#FF0000FF", "#FF000080", "#0000FFFF"], &[1, 0, 0]);
-        quantize_palette(&mut main, 0, &options(2)).unwrap();
+        quantize_palette(&mut main, &[palette_id], &options(2)).unwrap();
         assert_eq!(colors(&main, palette_id), ["#FF000080", "#FF0000FF"]);
 
         // Ignoring alpha, the reds merge and so do the blues.
@@ -702,15 +763,16 @@ mod tests {
             alpha: Some(AlphaMode::Ignore),
             ..options(2)
         };
-        quantize_palette(&mut main, 0, &ignored).unwrap();
+        quantize_palette(&mut main, &[palette_id], &ignored).unwrap();
         assert_eq!(colors(&main, palette_id), ["#0000FFFF", "#FF0000FF"]);
     }
 
     #[test]
     fn errors_when_alpha_partitions_outnumber_the_cap() {
-        let (mut main, _, _) = main_with_colors(&["#FF0000FF", "#FF000080", "#FF000040"], &[]);
+        let (mut main, palette_id, _) =
+            main_with_colors(&["#FF0000FF", "#FF000080", "#FF000040"], &[]);
         assert_eq!(
-            error_of(&mut main, &options(2)),
+            error_of(&mut main, palette_id, &options(2)),
             "the partitions split palette 0's sampled materials into 3 groups, more than the \
              2 material(s) allowed"
         );
@@ -726,7 +788,7 @@ mod tests {
             alpha: Some(AlphaMode::Distance),
             ..options(2)
         };
-        quantize_palette(&mut main, 0, &distance).unwrap();
+        quantize_palette(&mut main, &[palette_id], &distance).unwrap();
         assert_eq!(colors(&main, palette_id), ["#FF000010", "#FF0000FF"]);
     }
 
@@ -752,7 +814,7 @@ mod tests {
         let rows = [vec![0, 0], vec![1, 1], vec![2, 1]];
 
         let (mut main, palette_id, _) = main_with_rows(properties(), &rows, &[1, 0, 0]);
-        quantize_palette(&mut main, 0, &options(2)).unwrap();
+        quantize_palette(&mut main, &[palette_id], &options(2)).unwrap();
         assert_eq!(colors(&main, palette_id), ["#0000FFFF", "#FF0000FF"]);
 
         let (mut main, palette_id, _) = main_with_rows(properties(), &rows, &[0, 0, 1]);
@@ -760,7 +822,7 @@ mod tests {
             partition: PartitionProperties::Named(vec![METALLIC.to_owned()]),
             ..options(2)
         };
-        quantize_palette(&mut main, 0, &partitioned).unwrap();
+        quantize_palette(&mut main, &[palette_id], &partitioned).unwrap();
         assert_eq!(colors(&main, palette_id), ["#0000FFFF", "#FF0000FF"]);
         let metallic: Vec<_> = main
             .palette(palette_id)
@@ -782,13 +844,14 @@ mod tests {
     #[test]
     fn partitioning_on_every_property_errors_past_the_cap() {
         // Each material's distinct tag makes it a partition of its own.
-        let (mut main, _, _) = main_with_colors(&["#FF0000FF", "#FE0000FF", "#0000FFFF"], &[]);
+        let (mut main, palette_id, _) =
+            main_with_colors(&["#FF0000FF", "#FE0000FF", "#0000FFFF"], &[]);
         let everything = QuantizeOptions {
             partition: PartitionProperties::All,
             ..options(2)
         };
         assert_eq!(
-            error_of(&mut main, &everything),
+            error_of(&mut main, palette_id, &everything),
             "the partitions split palette 0's sampled materials into 3 groups, more than the \
              2 material(s) allowed"
         );
@@ -818,7 +881,7 @@ mod tests {
                 partition: PartitionProperties::Named(vec![METALLIC.to_owned()]),
                 ..options(2)
             };
-            quantize_palette(&mut main, 0, &partitioned).unwrap();
+            quantize_palette(&mut main, &[palette_id], &partitioned).unwrap();
             let mut metallic: Vec<_> = main
                 .palette(palette_id)
                 .unwrap()
@@ -854,7 +917,7 @@ mod tests {
             property: ROUGHNESS.to_owned(),
             ..options(2)
         };
-        quantize_palette(&mut main, 0, &roughness).unwrap();
+        quantize_palette(&mut main, &[palette_id], &roughness).unwrap();
         let values: Vec<_> = main
             .palette(palette_id)
             .unwrap()
@@ -874,7 +937,7 @@ mod tests {
 
     #[test]
     fn errors_when_options_do_not_fit_the_property() {
-        let (mut main, _, _) = main_with_rows(
+        let (mut main, palette_id, _) = main_with_rows(
             vec![
                 (
                     BASE_COLOR,
@@ -956,18 +1019,83 @@ mod tests {
         ];
 
         for (options, message) in cases {
-            assert_eq!(error_of(&mut main, &options), message);
+            assert_eq!(error_of(&mut main, palette_id, &options), message);
         }
     }
 
     #[test]
-    fn errors_on_an_index_past_the_palettes() {
-        let (mut main, _, _) = main_with_colors(&["#FF0000FF"], &[]);
+    fn quantizes_each_palette_separately_and_leaves_the_rest() {
+        let (mut main, first_id, _) =
+            main_with_colors(&["#FF0000FF", "#FE0000FF", "#0000FFFF"], &[]);
+
+        let (second_id, _) =
+            retain_colors(&mut main, &["#00FF00FF", "#00FE00FF", "#FFFF00FF"], &[]);
+
+        let (third_id, _) = retain_colors(&mut main, &["#FF00FFFF", "#FE00FFFF", "#00FFFFFF"], &[]);
+
+        quantize_palette(&mut main, &[first_id, second_id], &options(2)).unwrap();
+
+        assert_eq!(material_count(&main, first_id), 2);
+
+        assert_eq!(material_count(&main, second_id), 2);
+
+        assert_eq!(material_count(&main, third_id), 3);
+
+        assert_eq!(main.validate(), Ok(()));
+    }
+
+    #[test]
+    fn errors_on_an_unknown_palette() {
+        let (mut main, palette_id, _) = main_with_colors(&["#FF0000FF"], &[]);
+
+        let released_id = main.retain_palette(VoxPalette::default()).unwrap();
+
+        main.release_palette(released_id).unwrap();
+
         assert_eq!(
-            quantize_palette(&mut main, 1, &options(1))
+            quantize_palette(&mut main, &[palette_id, released_id], &options(1))
                 .unwrap_err()
                 .to_string(),
-            "palette index 1 is out of range; the document has 1 palette(s)"
+            "palette 1 is not one of this state's"
         );
+    }
+
+    #[test]
+    fn errors_on_an_unsampled_palette_changing_nothing() {
+        let (mut main, palette_id, _) =
+            main_with_colors(&["#FF0000FF", "#FE0000FF", "#0000FFFF"], &[]);
+
+        let unreferenced_id = main.retain_palette(VoxPalette::default()).unwrap();
+
+        assert_eq!(
+            quantize_palette(&mut main, &[palette_id, unreferenced_id], &options(1))
+                .unwrap_err()
+                .to_string(),
+            "no live voxel samples palette 1"
+        );
+
+        assert_eq!(material_count(&main, palette_id), 3);
+
+        let (emptied_id, emptied_object_id) =
+            retain_colors(&mut main, &["#00FF00FF", "#0000FFFF"], &[]);
+
+        let voxel_ids: Vec<_> = main
+            .object(emptied_object_id)
+            .unwrap()
+            .iter_live()
+            .collect();
+
+        for voxel_id in voxel_ids {
+            main.release_voxel(emptied_object_id, voxel_id).unwrap();
+        }
+
+        assert_eq!(
+            quantize_palette(&mut main, &[palette_id, emptied_id], &options(1))
+                .unwrap_err()
+                .to_string(),
+            "no live voxel samples palette 2"
+        );
+
+        assert_eq!(material_count(&main, palette_id), 3);
     }
 }

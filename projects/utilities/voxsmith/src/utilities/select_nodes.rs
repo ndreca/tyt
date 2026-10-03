@@ -1,25 +1,37 @@
 use crate::{
     Result,
-    utilities::{IndexRange, NodePath, is_node_path_match, node_paths},
+    utilities::{IdSelector, NodePath, is_node_path_match, node_paths},
 };
-use branded_id::U32Id;
+use branded_id::{U32Id, ext::RangeInclusiveExt};
 use pathspec::GitIgnoreRegex;
-use voxcore::{BVoxHierarchyNode, VoxExt, VoxMain};
+use voxcore::{BVoxHierarchyNode, Error as VoxError, VoxExt, VoxMain};
 
 type NodeId = U32Id<BVoxHierarchyNode>;
 
 /// Resolves node selectors against `main` to the matching hierarchy node ids,
-/// in document order and deduplicated. An index selector counts the node
-/// list. A path glob matches hierarchy paths with the gitignore engine. A
-/// match selects that node alone, and an excluded node blocks every node below
-/// it. A node reached through several parents matches when any of its paths
+/// in document order and deduplicated. An id selector picks nodes by id and
+/// errors on an id `main` lacks. A path glob matches hierarchy paths with the
+/// gitignore engine. A match selects that node alone, and an excluded node
+/// blocks every node below it. A node reached through several parents matches when any of its paths
 /// does. With neither selector every node matches. The caller decides how many
 /// matches are acceptable.
 pub fn select_nodes<T: VoxExt>(
     main: &VoxMain<T>,
     select: &[String],
-    select_index: &[IndexRange],
+    select_index: &[IdSelector<BVoxHierarchyNode>],
 ) -> Result<Vec<U32Id<BVoxHierarchyNode>>> {
+    for selector in select_index {
+        let Some(range) = selector.as_range() else {
+            continue;
+        };
+
+        for node_id in range.clone().into_id_range() {
+            if main.hierarchy_node(node_id).is_none() {
+                return Err(VoxError::UnknownHierarchyNode { node_id }.into());
+            }
+        }
+    }
+
     let node_ids: Vec<NodeId> = main
         .iter_hierarchy_nodes()
         .map(|(node_id, _)| node_id)
@@ -29,11 +41,12 @@ pub fn select_nodes<T: VoxExt>(
         return Ok(node_ids);
     }
 
-    let mut chosen: Vec<bool> = (0..node_ids.len())
-        .map(|node_index| {
+    let mut chosen: Vec<bool> = node_ids
+        .iter()
+        .map(|&node_id| {
             select_index
                 .iter()
-                .any(|selector| selector.contains(node_index))
+                .any(|selector| selector.contains(node_id))
         })
         .collect();
 
@@ -64,7 +77,7 @@ pub fn select_nodes<T: VoxExt>(
 #[cfg(test)]
 mod tests {
     use crate::utilities::{
-        IndexRange,
+        IdSelector,
         select_nodes::{NodeId, select_nodes},
     };
     use voxcore::{VoxHierarchyNode, VoxMain};
@@ -81,10 +94,6 @@ mod tests {
 
     fn globs(patterns: &[&str]) -> Vec<String> {
         patterns.iter().map(|pattern| pattern.to_string()).collect()
-    }
-
-    fn index(index: usize) -> IndexRange {
-        IndexRange::new(index, index).unwrap()
     }
 
     /// `house` holds `door`, which holds `knob`. `garage` also holds `door`.
@@ -109,10 +118,29 @@ mod tests {
     }
 
     #[test]
-    fn select_index_counts_the_node_list() {
+    fn select_index_picks_by_id() {
         let (main, [_, door_id, ..]) = scene();
 
-        assert_eq!(select_nodes(&main, &[], &[index(1)]).unwrap(), [door_id]);
+        assert_eq!(
+            select_nodes(&main, &[], &[IdSelector::id(door_id)]).unwrap(),
+            [door_id]
+        );
+    }
+
+    #[test]
+    fn select_index_errors_on_an_id_the_main_lacks() {
+        let (mut main, [knob_id, ..]) = scene();
+
+        let loose_id = node_id(&mut main, "loose", vec![]);
+
+        main.release_hierarchy_node(loose_id).unwrap();
+
+        let range = IdSelector::range(knob_id..=loose_id).unwrap();
+
+        assert_eq!(
+            select_nodes(&main, &[], &[range]).unwrap_err().to_string(),
+            "hierarchy node 4 is not one of this state's"
+        );
     }
 
     #[test]
@@ -163,7 +191,7 @@ mod tests {
         let (main, [knob_id, door_id, ..]) = scene();
 
         assert_eq!(
-            select_nodes(&main, &globs(&["knob", "door"]), &[index(0)]).unwrap(),
+            select_nodes(&main, &globs(&["knob", "door"]), &[IdSelector::id(knob_id)]).unwrap(),
             [knob_id, door_id]
         );
     }

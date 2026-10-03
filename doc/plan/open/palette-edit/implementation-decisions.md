@@ -59,3 +59,25 @@ they land.
 - A rejected value has no id yet, so the two new errors carry none:
   `RetainedValueKind` and `MalformedRetainedValue`.
 - An appended value can reuse a released id. It still lists last.
+
+## S4. Palette selection
+
+- One `IdSelector<TBrand>` in voxsmith's `utilities` replaces `IndexRange`,
+  palette show's `PaletteRef`, and the planned `PaletteSelector`. It holds `*`,
+  one id, or an inclusive id range, and never a reversed range.
+- vxl parses every selector flag with `parse_id_selector`: `--select-index`,
+  `--select-parent-index`, `--layer-index`, the `palette list` filters, the
+  `palette show` palette field, and `palette quantize --index`. Each takes `*`.
+- Selectors match ids. A loaded document's ids match its listing positions.
+- `resolve_palette_selectors` returns palette ids in palette order. No
+  selectors select nothing. vxl supplies `*` with clap's `default_value`, so
+  the help shows the default.
+- A named id the document lacks errors, whatever the entry kind. Palette,
+  object, and node ids error with voxcore's `UnknownPalette`, `UnknownObject`,
+  and `UnknownHierarchyNode`. A layer id errors with its object's id. Palette
+  show resolves through `resolve_palette_selectors`.
+- `quantize_palette` checks every id and every palette's sampling before it
+  changes anything, then runs `gc` once after the last palette. Quantizing one
+  palette never changes another's sampling.
+- A palette counts as sampled when an object with a live voxel has a layer
+  referencing it, since every live voxel samples each of its object's layers.

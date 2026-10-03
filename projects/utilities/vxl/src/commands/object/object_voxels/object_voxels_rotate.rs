@@ -4,6 +4,7 @@ use crate::{
 };
 use clap::Parser;
 use ty_math::TyAxis3;
+use voxcore::BVoxObject;
 use voxsmith::operations::object::{QuarterTurns, rotate_object_voxels};
 
 /// Turns objects' voxels about the grid's center in quarter turns that follow
@@ -19,7 +20,7 @@ pub struct ObjectVoxelsRotate {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxObject>,
 
     /// The grid axis to turn about.
     #[arg(value_name = "axis", long, value_parser = cli_value_parser::<TyAxis3>())]

@@ -1,5 +1,6 @@
 use crate::{Dependencies, RequiredSelection, Result, VoxelInput, VoxjOutput, edit_document};
 use clap::Parser;
+use voxcore::BVoxObject;
 use voxsmith::Error as VoxsmithError;
 
 /// Renames one object.
@@ -13,7 +14,7 @@ pub struct ObjectSetName {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxObject>,
 
     /// The object's new name.
     #[arg(value_name = "name", long)]

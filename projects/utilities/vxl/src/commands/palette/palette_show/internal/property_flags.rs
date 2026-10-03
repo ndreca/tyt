@@ -40,7 +40,8 @@ impl Args for PropertyFlags {
                     .action(ArgAction::Append)
                     .help(
                         "A selector naming a value collection, four fields: `<palette> \
-                         <property> <presentation> <reading>`. The palette is an index or `*`; \
+                         <property> <presentation> <reading>`. The palette is an id, an `a-b` \
+                         range, or `*`; \
                          the property a key with an optional `.r`/`.g`/`.b`/`.a` or \
                          `.x`/`.y`/`.z`/`.w` component, or `*`; the presentation one of `auto`, \
                          `swatch`, `swatch-value`, `value`; the reading one of `auto`, \

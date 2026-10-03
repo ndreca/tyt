@@ -4,6 +4,7 @@ use crate::{
 };
 use clap::Parser;
 use ty_math::TyAxis3;
+use voxcore::BVoxObject;
 use voxsmith::operations::object::flip_object_voxels;
 
 /// Mirrors objects' voxels in place along one grid axis.
@@ -17,7 +18,7 @@ pub struct ObjectVoxelsFlip {
     output: VoxjOutput,
 
     #[command(flatten)]
-    selection: RequiredSelection,
+    selection: RequiredSelection<BVoxObject>,
 
     /// The grid axis to mirror along.
     #[arg(value_name = "axis", long, value_parser = cli_value_parser::<TyAxis3>())]

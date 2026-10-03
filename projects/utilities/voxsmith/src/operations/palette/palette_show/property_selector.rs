@@ -1,6 +1,8 @@
-use crate::operations::palette::{
-    PaletteRef, PaletteShowPresentation, PaletteShowReading, PropertyRef,
+use crate::{
+    operations::palette::{PaletteShowPresentation, PaletteShowReading, PropertyRef},
+    utilities::IdSelector,
 };
+use voxcore::BVoxPalette;
 
 /// A selector naming one or more value collections for
 /// [`palette_show`](crate::operations::palette::palette_show()): a property's
@@ -8,8 +10,8 @@ use crate::operations::palette::{
 /// property of every palette under the `Auto` presentation and reading.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct PropertySelector {
-    /// Which palette, one index or every palette.
-    pub palette: PaletteRef,
+    /// Which palettes, by id.
+    pub palette: IdSelector<BVoxPalette>,
 
     /// Which property, one key with an optional vector component or every
     /// property.
