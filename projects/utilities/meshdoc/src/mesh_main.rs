@@ -377,7 +377,7 @@ impl<T: MeshExt> MeshMain<T> {
     ///    the parents first and drop it from the roots with
     ///    [`set_root_hierarchy_node_ids`](Self::set_root_hierarchy_node_ids)
     pub fn release_hierarchy_node(&mut self, id: U32Id<BMeshHierarchyNode>) -> Result<()> {
-        if !self.state.hierarchy_nodes.ids().is_retained(id) {
+        if !self.state.hierarchy_nodes.is_retained(id) {
             return Err(Error::UnknownHierarchyNode { node_id: id });
         }
 
@@ -423,7 +423,7 @@ impl<T: MeshExt> MeshMain<T> {
         id: U32Id<BMeshHierarchyNode>,
         node: MeshHierarchyNode,
     ) -> Result<()> {
-        if !self.state.hierarchy_nodes.ids().is_retained(id) {
+        if !self.state.hierarchy_nodes.is_retained(id) {
             return Err(Error::UnknownHierarchyNode { node_id: id });
         }
 
@@ -470,7 +470,7 @@ impl<T: MeshExt> MeshMain<T> {
     /// 2. an image still reads it, or a material or object property still
     ///    points at it; release or repoint those first
     pub fn release_file(&mut self, id: U32Id<BMeshFile>) -> Result<()> {
-        if !self.state.files.ids().is_retained(id) {
+        if !self.state.files.is_retained(id) {
             return Err(Error::UnknownFile { file_id: id });
         }
 
@@ -516,7 +516,7 @@ impl<T: MeshExt> MeshMain<T> {
     /// nothing, if `id` is not one of this state's files or `index` is at or
     /// past [`file_count`](Self::file_count).
     pub fn move_file(&mut self, id: U32Id<BMeshFile>, index: usize) -> Result<()> {
-        if !self.state.files.ids().is_retained(id) {
+        if !self.state.files.is_retained(id) {
             return Err(Error::UnknownFile { file_id: id });
         }
 
@@ -539,7 +539,7 @@ impl<T: MeshExt> MeshMain<T> {
     /// 3. an image reading it would no longer start with its media type's
     ///    signature
     pub fn set_file(&mut self, id: U32Id<BMeshFile>, file: MeshFile) -> Result<()> {
-        if !self.state.files.ids().is_retained(id) {
+        if !self.state.files.is_retained(id) {
             return Err(Error::UnknownFile { file_id: id });
         }
 
@@ -575,7 +575,7 @@ impl<T: MeshExt> MeshMain<T> {
     /// 1. `id` is not one of this state's images
     /// 2. a texture still samples it; release those textures first
     pub fn release_image(&mut self, id: U32Id<BMeshImage>) -> Result<()> {
-        if !self.state.images.ids().is_retained(id) {
+        if !self.state.images.is_retained(id) {
             return Err(Error::UnknownImage { image_id: id });
         }
 
@@ -607,7 +607,7 @@ impl<T: MeshExt> MeshMain<T> {
     /// nothing, if `id` is not one of this state's images or `index` is at
     /// or past [`image_count`](Self::image_count).
     pub fn move_image(&mut self, id: U32Id<BMeshImage>, index: usize) -> Result<()> {
-        if !self.state.images.ids().is_retained(id) {
+        if !self.state.images.is_retained(id) {
             return Err(Error::UnknownImage { image_id: id });
         }
 
@@ -627,7 +627,7 @@ impl<T: MeshExt> MeshMain<T> {
     /// state's images or `image` fails a [`retain_image`](Self::retain_image)
     /// check.
     pub fn set_image(&mut self, id: U32Id<BMeshImage>, image: MeshImage) -> Result<()> {
-        if !self.state.images.ids().is_retained(id) {
+        if !self.state.images.is_retained(id) {
             return Err(Error::UnknownImage { image_id: id });
         }
 
@@ -668,7 +668,7 @@ impl<T: MeshExt> MeshMain<T> {
     /// 2. a material still draws it, or an object property still references
     ///    it; release or replace those first
     pub fn release_texture(&mut self, id: U32Id<BMeshTexture>) -> Result<()> {
-        if !self.state.textures.ids().is_retained(id) {
+        if !self.state.textures.is_retained(id) {
             return Err(Error::UnknownTexture { texture_id: id });
         }
 
@@ -715,7 +715,7 @@ impl<T: MeshExt> MeshMain<T> {
     /// nothing, if `id` is not one of this state's textures or `index` is at
     /// or past [`texture_count`](Self::texture_count).
     pub fn move_texture(&mut self, id: U32Id<BMeshTexture>, index: usize) -> Result<()> {
-        if !self.state.textures.ids().is_retained(id) {
+        if !self.state.textures.is_retained(id) {
             return Err(Error::UnknownTexture { texture_id: id });
         }
 
@@ -735,7 +735,7 @@ impl<T: MeshExt> MeshMain<T> {
     /// this state's textures or `texture` samples an image that is not one
     /// of this state's.
     pub fn set_texture(&mut self, id: U32Id<BMeshTexture>, texture: MeshTexture) -> Result<()> {
-        if !self.state.textures.ids().is_retained(id) {
+        if !self.state.textures.is_retained(id) {
             return Err(Error::UnknownTexture { texture_id: id });
         }
 
@@ -779,7 +779,7 @@ impl<T: MeshExt> MeshMain<T> {
     /// 2. a primitive still draws with it; repoint those primitives first
     ///    with [`set_primitive_material_id`](Self::set_primitive_material_id)
     pub fn release_material(&mut self, id: U32Id<BMeshMaterial>) -> Result<()> {
-        if !self.state.materials.ids().is_retained(id) {
+        if !self.state.materials.is_retained(id) {
             return Err(Error::UnknownMaterial { material_id: id });
         }
 
@@ -815,7 +815,7 @@ impl<T: MeshExt> MeshMain<T> {
     /// changing nothing, if `id` is not one of this state's materials or
     /// `index` is at or past [`material_count`](Self::material_count).
     pub fn move_material(&mut self, id: U32Id<BMeshMaterial>, index: usize) -> Result<()> {
-        if !self.state.materials.ids().is_retained(id) {
+        if !self.state.materials.is_retained(id) {
             return Err(Error::UnknownMaterial { material_id: id });
         }
 
@@ -838,7 +838,7 @@ impl<T: MeshExt> MeshMain<T> {
     /// 3. a primitive drawing with it does not carry a UV stream one of
     ///    `material`'s textures samples
     pub fn set_material(&mut self, id: U32Id<BMeshMaterial>, material: MeshMaterial) -> Result<()> {
-        if !self.state.materials.ids().is_retained(id) {
+        if !self.state.materials.is_retained(id) {
             return Err(Error::UnknownMaterial { material_id: id });
         }
 
@@ -905,7 +905,7 @@ impl<T: MeshExt> MeshMain<T> {
     /// 1. `id` is not one of this state's objects
     /// 2. a hierarchy node still places it; release those nodes first
     pub fn release_object(&mut self, id: U32Id<BMeshObject>) -> Result<()> {
-        if !self.state.objects.ids().is_retained(id) {
+        if !self.state.objects.is_retained(id) {
             return Err(Error::UnknownObject { object_id: id });
         }
 
@@ -937,7 +937,7 @@ impl<T: MeshExt> MeshMain<T> {
     /// nothing, if `id` is not one of this state's objects or `index` is at
     /// or past [`object_count`](Self::object_count).
     pub fn move_object(&mut self, id: U32Id<BMeshObject>, index: usize) -> Result<()> {
-        if !self.state.objects.ids().is_retained(id) {
+        if !self.state.objects.is_retained(id) {
             return Err(Error::UnknownObject { object_id: id });
         }
 
@@ -976,7 +976,7 @@ impl<T: MeshExt> MeshMain<T> {
         object_id: U32Id<BMeshObject>,
         properties: Vec<MeshProperty>,
     ) -> Result<()> {
-        if !self.state.objects.ids().is_retained(object_id) {
+        if !self.state.objects.is_retained(object_id) {
             return Err(Error::UnknownObject { object_id });
         }
 

@@ -102,7 +102,7 @@ impl VoxPalette {
 
     /// Whether `id` is one of this palette's materials.
     pub fn contains_material(&self, id: U32Id<BVoxMaterial>) -> bool {
-        self.materials.ids().is_retained(id)
+        self.materials.is_retained(id)
     }
 
     /// Material ids in listing order; read value ids with
@@ -229,7 +229,7 @@ impl VoxPalette {
     /// changing nothing, if `id` is not one of this palette's properties or
     /// `index` is at or past [`property_count`](Self::property_count).
     pub fn move_property(&mut self, id: U32Id<BVoxProperty>, index: usize) -> Result<()> {
-        if !self.properties.ids().is_retained(id) {
+        if !self.properties.is_retained(id) {
             return Err(Error::UnknownProperty { property_id: id });
         }
 

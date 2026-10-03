@@ -169,7 +169,7 @@ impl RenderScene {
     /// Releases material `id`. Errors, changing nothing, if `id` is not one
     /// of the scene's or a voxel still samples it.
     pub fn release_material(&mut self, id: U32Id<BRenderMaterial>) -> Result<()> {
-        if !self.materials.ids().is_retained(id) {
+        if !self.materials.is_retained(id) {
             return Err(Error::UnknownMaterial { material_id: id });
         }
 
@@ -219,7 +219,7 @@ impl RenderScene {
         }
 
         for (voxel_id, material_id) in object.iter_live() {
-            if !self.materials.ids().is_retained(material_id) {
+            if !self.materials.is_retained(material_id) {
                 return Err(Error::VoxelMaterialRef {
                     voxel_id,
                     material_id,
@@ -277,7 +277,7 @@ impl RenderScene {
         }
 
         if let Some(material_id) = material_id
-            && !self.materials.ids().is_retained(material_id)
+            && !self.materials.is_retained(material_id)
         {
             return Err(Error::UnknownMaterial { material_id });
         }

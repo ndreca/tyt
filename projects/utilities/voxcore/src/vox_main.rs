@@ -476,7 +476,7 @@ impl<T: VoxExt> VoxMain<T> {
             return Err(Error::UnknownObject { object_id });
         };
 
-        if !self.state.palettes.ids().is_retained(palette_id) {
+        if !self.state.palettes.is_retained(palette_id) {
             return Err(Error::UnknownPalette { palette_id });
         }
 
@@ -839,7 +839,7 @@ impl<T: VoxExt> VoxMain<T> {
     /// nothing, if `id` is not one of this state's objects or `index` is at or
     /// past [`object_count`](Self::object_count).
     pub fn move_object(&mut self, id: U32Id<BVoxObject>, index: usize) -> Result<()> {
-        let Some(old_index) = self.state.objects.ids().index_of(id) else {
+        let Some(old_index) = self.state.objects.index_of(id) else {
             return Err(Error::UnknownObject { object_id: id });
         };
 
@@ -1040,7 +1040,7 @@ impl<T: VoxExt> VoxMain<T> {
             return Err(Error::UnknownPalette { palette_id });
         };
 
-        if !self.state.value_pools.ids().is_retained(value_pool_id) {
+        if !self.state.value_pools.is_retained(value_pool_id) {
             return Err(Error::UnknownValuePool { value_pool_id });
         }
 

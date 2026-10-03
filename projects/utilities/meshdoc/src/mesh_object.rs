@@ -153,7 +153,7 @@ impl MeshObject {
     /// changing nothing, if `id` is not one of this object's or `index` is
     /// at or past [`primitive_count`](Self::primitive_count).
     pub fn move_primitive(&mut self, id: U32Id<BMeshPrimitive>, index: usize) -> Result<()> {
-        if !self.primitives.ids().is_retained(id) {
+        if !self.primitives.is_retained(id) {
             return Err(Error::UnknownPrimitive { primitive_id: id });
         }
 
