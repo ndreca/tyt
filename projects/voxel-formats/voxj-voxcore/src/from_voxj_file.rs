@@ -1,7 +1,7 @@
 use crate::{
     Error, Result, VoxjVoxExt, VoxjVoxMain, vox_map_from_voxj_map, vox_value_from_voxj_value,
 };
-use branded_id::{U32Id, ext::U32Ext};
+use branded_id::U32Id;
 use ty_math::{TyQuaternionF64, TyTransformF64, TyVector3F64, TyVector3I32, TyVector3U32};
 use voxcore::{
     BVoxMaterial, BVoxPalette, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette, VoxValuePool,
@@ -159,7 +159,7 @@ fn vox_palette_from_voxj_palette(palette: &VoxjPalette) -> Result<VoxPalette> {
                 // A wire index past the id space would wrap onto a real value
                 // and bind the material to a value the file never named.
                 u32::try_from(value_index)
-                    .map(U32Ext::to_u32_id)
+                    .map(U32Id::from_u32)
                     .map_err(|_| {
                         Error::Invalid(format!(
                             "palette material {index} names value-index {value_index}, past the \
@@ -189,9 +189,10 @@ fn vox_palette_from_voxj_palette(palette: &VoxjPalette) -> Result<VoxPalette> {
 /// `edit` is `None`, the build volume equals the tight grid.
 ///
 /// Each `layers` entry becomes a layer over that palette. A decoded sample row
-/// holds one material index per layer. Errors on an oversized grid, a position
-/// outside the grid, or ragged sample rows. Cross-references are checked on
-/// insert by [`VoxMain::retain_object`](voxcore::VoxMain::retain_object).
+/// holds one material index per layer. Errors on an oversized grid, a layer
+/// index past the palette-index space, a position outside the grid, or ragged
+/// sample rows. Cross-references are checked on insert by
+/// [`VoxMain::retain_object`](voxcore::VoxMain::retain_object).
 fn vox_object_from_voxj_decoded_object(
     object: &VoxjDecodedObject,
     edit: Option<([u32; 3], [i32; 3])>,
@@ -226,9 +227,19 @@ fn vox_object_from_voxj_decoded_object(
 
     // Back-fill material 0 as each layer's placeholder; live voxels overwrite
     // their cells below.
-    let filler = 0u32.to_u32_id::<BVoxMaterial>();
+    let filler = U32Id::<BVoxMaterial>::from_u32(0);
+
     for &palette_index in &object.layers {
-        out.retain_layer((palette_index as u32).to_u32_id::<BVoxPalette>(), filler);
+        // A layer index past the id space would wrap onto a real palette.
+        let Ok(index) = u32::try_from(palette_index) else {
+            return Err(Error::invalid(format!(
+                "object \"{}\" layer references palette {palette_index}, past the palette-index \
+                 space",
+                object.name
+            )));
+        };
+
+        out.retain_layer(U32Id::<BVoxPalette>::from_u32(index), filler);
     }
 
     if object.samples.len() != object.positions.len() {
@@ -265,10 +276,8 @@ fn vox_object_from_voxj_decoded_object(
             )));
         }
 
-        let material_ids: Vec<U32Id<BVoxMaterial>> = row
-            .iter()
-            .map(|&material_index| material_index.to_u32_id::<BVoxMaterial>())
-            .collect();
+        let material_ids: Vec<U32Id<BVoxMaterial>> =
+            row.iter().copied().map(U32Id::from_u32).collect();
 
         out.retain_voxel(voxel_id, &material_ids)
             .expect("the row has one material per layer");
@@ -369,7 +378,8 @@ mod tests {
     use crate::{
         EditStateMode, VoxjVoxExt, VoxjVoxMain, VoxjWriteOptions, from_voxj_file,
         from_voxj_file::{
-            vox_hierarchy_node_from_voxj_hierarchy_node, vox_palette_from_voxj_palette,
+            vox_hierarchy_node_from_voxj_hierarchy_node, vox_object_from_voxj_decoded_object,
+            vox_palette_from_voxj_palette,
         },
         to_voxj_file, vox_map_from_voxj_map,
     };
@@ -379,7 +389,7 @@ mod tests {
         VoxjEditObject, VoxjEditState, VoxjFile, VoxjHierarchyNode, VoxjMain, VoxjMap,
         VoxjMapEntry, VoxjObject, VoxjPalette, VoxjPositionBlock, VoxjProperty, VoxjRuntimeState,
         VoxjSampleBlock, VoxjTransform, VoxjValue, VoxjValuePool,
-        objects::{decode_voxj_object, voxj_palette_material_counts},
+        objects::{VoxjDecodedObject, decode_voxj_object, voxj_palette_material_counts},
     };
     use voxj_codec::DependenciesImpl;
 
@@ -1037,6 +1047,19 @@ mod tests {
             materials: vec![vec![1usize << 32]],
         };
         assert!(vox_palette_from_voxj_palette(&palette).is_err());
+    }
+
+    #[test]
+    fn rejects_a_layer_index_past_the_id_space() {
+        // A `usize` index past `u32` would wrap onto a real palette.
+        let object = VoxjDecodedObject {
+            name: "o".to_owned(),
+            layers: vec![1usize << 32],
+            bounds: [1, 1, 1],
+            ..Default::default()
+        };
+
+        assert!(vox_object_from_voxj_decoded_object(&object, None).is_err());
     }
 
     #[test]
