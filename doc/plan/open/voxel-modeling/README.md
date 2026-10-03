@@ -1,0 +1,233 @@
+# Voxel modeling plan
+
+Status: **open**, drafted 2026-09-30. Nothing is built yet. The
+[checklist](checklist.md) tracks both phases, and S1 waits on the
+[open questions](#open-questions).
+
+## Goal
+
+Claude Code builds a voxel model from a prompt such as "make a voxel chair with
+oak and ornate jewels in the top". Claude writes a short TypeScript program
+describing the model's shapes and materials, voxelizes the program into a voxj
+document, and renders the document. Claude reads the renders and revises the
+program until the model matches the prompt. Every step runs through `vxl`, so a
+person can run the same loop by hand.
+
+## The loop
+
+1. **Author.** Claude writes a model file against the builder library.
+2. **Voxelize.** `vxl sdf-doc build` records the model as an `.sdfj` document.
+   `vxl sdf-doc voxelize` samples the document into voxj and prints a report.
+3. **Review.** `vxl object render` draws the review views as PNGs. Claude reads
+   the PNGs beside the report.
+4. **Revise.** Claude edits the model file and runs the loop again.
+
+```sh
+vxl sdf-doc build chair.ts
+vxl sdf-doc voxelize chair.sdfj
+  --voxel-size 0.025
+  --report
+vxl object render chair.voxj
+  --profile review
+  --to png
+```
+
+The review step decides the quality more than the authoring language does
+because spatial reasoning is Claude's weak point. [Review](#review) covers what
+the loop hands back.
+
+## Reference
+
+Two pages specify the pipeline:
+
+1. The [modeling API](reference/modeling-api.md) lists every call a model file
+   can make, with its signature and its effect in a line or two. It stands alone
+   as the context an agent loads before writing a model.
+2. [Model evaluation](reference/model-evaluation.md) sets exactly what each call
+   computes, for the implementations to follow.
+
+## Shapes
+
+A shape is a signed distance function: negative inside, positive outside, and
+zero on the surface. A voxel lies inside a shape when the function at the
+voxel's center reads zero or less. Voxelizing reads only the sign, so a shape
+needs no exact distance: smooth blends, twists, and noise displacement all work.
+Where the distance is exact, a shell or an offset reads the distance to measure
+thickness.
+
+Coordinates count meters. A model holds no voxel size because sampling stays a
+separate step: `vxl sdf-doc voxelize` takes the voxel size or a resolution from
+its flags. A box with corners on multiples of the voxel size fills exactly the
+cells between them. Models live at 16 to 64 voxels across, where a sphere of
+radius 2 voxels comes out as a stepped plus sign and boxes aligned to the grid
+carry most of the form.
+
+## Steps
+
+A model holds an ordered list of steps over one grid. A later step wins wherever
+two steps reach the same cell. An edit usually changes or appends one line
+because the list reads in building order: the blocking out first, then the
+detail. Each step carries a name that the report and errors use.
+
+## Materials
+
+A material holds voxj properties as key/value pairs. voxj's glTF vocabulary
+gives the named properties, and any other name adds a custom property. A step
+takes a library material, a custom material, or a pattern. A pattern picks one
+material per cell and never blends colors. The palette then stays small. A
+library name means one look in every model. The library ships in vxl. A
+`.vxlconfig` can add or replace names through the cascade.
+
+A pattern reads coordinates in the frame its shape was built in, and grain
+therefore runs along each leg however the leg turns. Painting belongs in the
+model because a finished voxel remembers neither its step nor its frame. The
+palette the model writes feeds `vxl object mesh` and `vxl object render` with no
+extra step.
+
+## Output
+
+`vxl sdf-doc voxelize` writes one voxj document beside the `.sdfj` by default. A
+model without parts writes one object under one root node. The model's
+`[0, 0, 0]` lands on the root node, and a chair built centered on x and z with
+its feet at `y = 0` stands on its pivot. The root node's scale carries the voxel
+size, and the placed document therefore measures meters.
+
+A model can group its steps into parts, and nested parts form a hierarchy. Each
+part writes its own object under a node at its pivot, and turning the node turns
+the part about its joint. `--select` can then pick a part by its path. Every
+step still runs over one grid. A cell belongs to the part whose step last filled
+it, and no cell lands in two objects. `--flatten` merges the parts back into one
+object with the same cells.
+
+## Review
+
+`vxl sdf-doc voxelize --report` prints a report because Claude reads numbers
+more reliably than pixels. Each step takes one line with the cells the step
+wrote, the cells it keeps, and how many kept cells show. The step's size in
+cells and bounds in meters follow. The report also splits the model into
+face-connected pieces. A buried jewel, a floating leg, and a hand detached from
+its arm all show up in the report before any render.
+
+The renders come from a built-in `review` render profile: orthographic `front`,
+`right`, and `top` views for checking proportions, and the perspective `hero`
+view for the look. A contact sheet tiling the views into one PNG would save
+three image reads per pass. The sheet waits in the
+[rendering follow-ups](../voxel-rendering-followups/README.md#waiting-for-a-reason),
+and this loop gives it a reason.
+
+```sh
+# chair-front.png, chair-right.png, chair-top.png, and chair-hero.png
+vxl object render chair.voxj
+  --profile review
+  --to png
+```
+
+## Skill
+
+A skill teaches Claude the loop because nothing else tells Claude the builder
+exists. vxl prints the skill as one `SKILL.md`:
+
+```sh
+mkdir -p .claude/skills/voxel-modeling
+vxl integration print-skill voxel-modeling > .claude/skills/voxel-modeling/SKILL.md
+```
+
+`SKILL.md` holds the workflow, then the modeling API with its example model. One
+file loses nothing because Claude reads the whole API every pass. A skill under
+`~/.claude/skills/` serves every project. `SKILL.md` records the vxl version
+that printed it. Upgrading vxl takes a reprint.
+
+`vxl integration` gathers the commands that print a file for another tool.
+`vxl integration print-completions <shell>` takes over from `vxl completion`.
+Every other binary in the workspace follows. `--help` lists the shells and
+skills each command takes.
+
+The skill walks Claude through the workflow: pick a voxel size, write real sizes
+in meters, block out with boxes, voxelize at the chosen size, review, fix the
+proportions, then detail and paint. At 2.5 cm per voxel, a seat 45 cm up sits 18
+voxels up. The skill also says what each pass checks in the report and the
+renders. The skill chains the three commands into one line because a pass that
+skips the build voxelizes a stale `.sdfj`.
+
+## Phases
+
+1. **Pipeline.** A TypeScript builder records the model as an `.sdfj` document,
+   and vxl does the rest in Rust. `vxl sdf-doc build` runs the builder under
+   Node, Bun, or Deno. vxl embeds the builder, so an installed vxl needs no
+   checkout. `vxl sdf-doc voxelize` checks the document and samples it through a
+   voxsmith operation that follows model evaluation. The library, the `review`
+   profile, and the skill ship inside vxl. A trial of about ten prompts then
+   records which shapes and patterns Claude reaches for and where the loop
+   fails. The prompts run from a chair and a lantern to a treasure chest, a
+   sword, and a tree.
+2. **Follow-ups.** The trials set the second phase: the operators and patterns
+   Claude lacked, richer coloring, changes to the `.sdfj` format, and the
+   contact sheet.
+
+## Decisions
+
+1. Shapes are signed distance functions sampled at voxel centers. Only the sign
+   decides a voxel.
+2. Combinators build shapes. An ordered list of steps applies the shapes to the
+   grid, and the later step wins.
+3. Claude writes TypeScript against a typed builder and never raw per-voxel
+   loops. `set` covers the single voxel a shape cannot place. TypeScript gives
+   the model variables, functions, and loops. Node 24, Bun, and Deno all run
+   TypeScript with no build step.
+4. The operator set stays closed, with no custom per-voxel code in the model. A
+   closed set keeps the output vetted and lets vxl evaluate every operator in
+   Rust.
+5. Patterns pick among materials and never blend colors.
+6. The API splits across two pages. The modeling API serves the agent writing a
+   model, and model evaluation serves the implementations. The agent loads only
+   the first.
+7. Mesh CSG stays out. Building a `.glb` for `vxl mesh-doc voxelize` works today
+   but cannot write per-voxel patterns and loses detail through the mesh.
+8. The builder only records. A model's calls become an `.sdfj` document, which
+   vxl checks and samples in Rust. Everything past the TypeScript lives once.
+   The sampling reuses `mesh-doc voxelize`'s sizing, profiles, and encoding.
+9. The loop uses only vxl. `vxl sdf-doc build` wraps the JavaScript runtime a
+   flag or profile picks and assumes the runtime is installed.
+10. A model holds signed distance functions in meters and no voxel size.
+    Sampling stays separate. `vxl sdf-doc voxelize` follows
+    `vxl mesh-doc voxelize`: the output path, the sizing flags with their
+    defaults, `--fill-mode`, the encoding flags, and profiles in `.vxlconfig`.
+    The lattice anchors at the origin. The root node's scale holds the voxel
+    size. `set`, `coat`, `speckle`, the `cells` border, and the pattern lengths
+    a model leaves out count cells at any size.
+11. Parts label cells on one grid and hold no grids of their own. A cell belongs
+    to the part whose step last filled it. Flattening a model therefore gives
+    the same cells as splitting it.
+12. A material holds voxj properties as key/value pairs. The glTF vocabulary
+    gives the eight named properties, and every palette binds all eight. A
+    material leaving one out takes glTF's default, except that `metallic`
+    takes 0. Any other name adds a custom property of the kind its value takes.
+13. The report prints plain text for an agent to read. Every number sits beside
+    its label, with bounds in the meters a model writes. JSON would double each
+    pass's tokens, and a table's header would hold the labels away from the
+    values.
+14. vxl ships the skill and prints it to stdout. The caller picks where the
+    skill lands. The printed skill teaches the API of the vxl that printed it.
+15. In every binary of the workspace, `integration` gathers the commands that
+    print a file for another tool. `integration print-completions` takes over
+    from `completion`. `vxl integration print-skill` prints the skill.
+
+## Open questions
+
+Each holds a proposed answer to confirm before S1.
+
+1. **Crate layout.** Proposed: the SDF crates follow the voxel and mesh
+   families. The family keeps that structure while `.sdfj` is its one format.
+   The crates stay thin because voxsmith does the work. The five names are free
+   on crates.io.
+   1. `sdfcore` at `projects/utilities/sdfcore` holds a model's state as tables
+      indexed by branded ids
+   2. `sdfj` at `projects/sdf-formats/sdfj` holds the `.sdfj` types.
+      `sdfj-codec` reads and writes `.sdfj` documents over those types.
+      `sdfj-sdfcore` converts between a document and the sdfcore state
+   3. `sdfconv` at `projects/utilities/sdfconv` reads and writes SDF formats
+      through the sdfcore state
+   4. voxsmith evaluates and samples the sdfcore state under a new `sdf_doc`
+      feature beside `mesh_doc`
+   5. vxl holds and embeds the builder's `.ts` files, the skill's workflow, and
+      the modeling API
