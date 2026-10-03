@@ -35,7 +35,7 @@ pub fn mesh<D: EncodePng, T: VoxExt>(
         if !seen.insert(target.object_id) {
             return Err(Error::invalid(format!(
                 "object {} is listed twice",
-                target.object_id.to_u32()
+                target.object_id
             )));
         }
 

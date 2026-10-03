@@ -67,10 +67,7 @@ impl VoxExt for QbclExt {
             .is_some()
         {
             return Err(VoxError::Ext {
-                reason: format!(
-                    "qbcl ext already has an entry for node {}",
-                    node_id.to_u32()
-                ),
+                reason: format!("qbcl ext already has an entry for node {node_id}"),
             });
         }
         Ok(())
@@ -83,7 +80,7 @@ impl VoxExt for QbclExt {
     ) -> VoxResult<()> {
         if self.nodes.remove(&node_id).is_none() {
             return Err(VoxError::Ext {
-                reason: format!("qbcl ext has no entry for node {}", node_id.to_u32()),
+                reason: format!("qbcl ext has no entry for node {node_id}"),
             });
         }
         Ok(())

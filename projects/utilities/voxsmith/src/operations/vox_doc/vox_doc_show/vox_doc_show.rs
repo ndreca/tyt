@@ -107,7 +107,7 @@ fn build_records_grid<T: VoxExt>(
     for (palette_id, palette) in main.iter_palettes() {
         let row_id = grid.retain_child(
             palettes_root_id,
-            TreeGridLabel::bare(palette_id.to_u32().to_string()),
+            TreeGridLabel::bare(palette_id.to_string()),
         );
         retain_cell(
             &mut grid,
@@ -125,10 +125,7 @@ fn build_records_grid<T: VoxExt>(
 
     let objects_root_id = grid.retain_root(TreeGridLabel::bare("objects"));
     for (object_id, object) in objects(main, object_ids) {
-        let row_id = grid.retain_child(
-            objects_root_id,
-            TreeGridLabel::bare(object_id.to_u32().to_string()),
-        );
+        let row_id = grid.retain_child(objects_root_id, TreeGridLabel::bare(object_id.to_string()));
         let origin = object.origin();
         let edit = match edit_bounds(object) {
             Some(edit) => dimensions(edit),
@@ -208,7 +205,7 @@ fn build_json_grid<T: VoxExt>(
     for (palette_id, palette) in main.iter_palettes() {
         let branch_id = grid.retain_child(
             palettes_root_id,
-            TreeGridLabel::bare(palette_id.to_u32().to_string()),
+            TreeGridLabel::bare(palette_id.to_string()),
         );
         let properties_id = grid.retain_child(branch_id, TreeGridLabel::bare("properties"));
         for name in property_names(palette) {
@@ -224,10 +221,8 @@ fn build_json_grid<T: VoxExt>(
 
     let objects_root_id = grid.retain_root(TreeGridLabel::bare("objects"));
     for (object_id, object) in objects(main, object_ids) {
-        let branch_id = grid.retain_child(
-            objects_root_id,
-            TreeGridLabel::bare(object_id.to_u32().to_string()),
-        );
+        let branch_id =
+            grid.retain_child(objects_root_id, TreeGridLabel::bare(object_id.to_string()));
         let bounds = content_bounds(object);
         let origin = object.origin();
         retain_field(

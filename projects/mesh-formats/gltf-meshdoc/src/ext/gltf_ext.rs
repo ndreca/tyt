@@ -174,8 +174,7 @@ impl MeshExt for GltfExt {
     ) -> MeshResult<()> {
         if self.nodes.remove(&node_id).is_none() {
             return Err(ext_error(format!(
-                "gltf ext has no node entry for node {}",
-                node_id.to_u32()
+                "gltf ext has no node entry for node {node_id}"
             )));
         }
 
@@ -228,8 +227,7 @@ impl MeshExt for GltfExt {
     ) -> MeshResult<()> {
         if self.meshes.remove(&object_id).is_none() {
             return Err(ext_error(format!(
-                "gltf ext has no mesh entry for object {}",
-                object_id.to_u32()
+                "gltf ext has no mesh entry for object {object_id}"
             )));
         }
         Ok(())
@@ -243,8 +241,7 @@ impl MeshExt for GltfExt {
     ) -> MeshResult<()> {
         let Some(mesh) = self.meshes.get_mut(&object_id) else {
             return Err(ext_error(format!(
-                "gltf ext has no mesh entry for object {}",
-                object_id.to_u32()
+                "gltf ext has no mesh entry for object {object_id}"
             )));
         };
 
@@ -266,9 +263,7 @@ impl MeshExt for GltfExt {
 
         if removed.is_none() {
             return Err(ext_error(format!(
-                "gltf ext has no primitive entry for object {} primitive {}",
-                object_id.to_u32(),
-                primitive_id.to_u32()
+                "gltf ext has no primitive entry for object {object_id} primitive {primitive_id}"
             )));
         }
         Ok(())
@@ -291,8 +286,7 @@ impl MeshExt for GltfExt {
     ) -> MeshResult<()> {
         if self.materials.remove(&material_id).is_none() {
             return Err(ext_error(format!(
-                "gltf ext has no material entry for material {}",
-                material_id.to_u32()
+                "gltf ext has no material entry for material {material_id}"
             )));
         }
         Ok(())
@@ -321,8 +315,7 @@ impl MeshExt for GltfExt {
     ) -> MeshResult<()> {
         if self.textures.remove(&texture_id).is_none() {
             return Err(ext_error(format!(
-                "gltf ext has no texture entry for texture {}",
-                texture_id.to_u32()
+                "gltf ext has no texture entry for texture {texture_id}"
             )));
         }
         Ok(())
@@ -344,8 +337,7 @@ impl MeshExt for GltfExt {
     ) -> MeshResult<()> {
         if self.images.remove(&image_id).is_none() {
             return Err(ext_error(format!(
-                "gltf ext has no image entry for image {}",
-                image_id.to_u32()
+                "gltf ext has no image entry for image {image_id}"
             )));
         }
         Ok(())
@@ -360,7 +352,7 @@ impl MeshExt for GltfExt {
         let mut meshes = BTreeMap::new();
         for (&old_object_id, mesh) in &self.meshes {
             let Some(object_id) = remap.objects.new_id(old_object_id) else {
-                return Err(gc_error("object", old_object_id.to_u32()));
+                return Err(gc_error("object", old_object_id));
             };
 
             let mut mesh = mesh.clone();
@@ -376,7 +368,7 @@ impl MeshExt for GltfExt {
             remap
                 .hierarchy_nodes
                 .new_id(old_id)
-                .ok_or_else(|| gc_error("node", old_id.to_u32()))
+                .ok_or_else(|| gc_error("node", old_id))
         };
 
         for scene in &mut self.scenes {
@@ -420,7 +412,7 @@ fn rekey<Brand, V: Clone>(
 
     for (&old_id, entry) in entries {
         let Some(id) = remap.new_id(old_id) else {
-            return Err(gc_error(what, old_id.to_u32()));
+            return Err(gc_error(what, old_id));
         };
 
         rekeyed.insert(id, entry.clone());
@@ -430,7 +422,7 @@ fn rekey<Brand, V: Clone>(
 }
 
 /// The error for an entry whose entity a gc released.
-fn gc_error(what: &str, id: u32) -> MeshError {
+fn gc_error<Brand>(what: &str, id: U32Id<Brand>) -> MeshError {
     ext_error(format!(
         "gc released {what} {id}, which still has a gltf ext entry"
     ))

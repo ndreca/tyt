@@ -111,10 +111,7 @@ pub fn to_gltf_file<D: EncodeBase64>(
     let mut used_names: HashSet<String> = loose_files.keys().cloned().collect();
     for (index, (image_id, image)) in main.iter_images().enumerate() {
         let entry = ext.images.get(&image_id).ok_or_else(|| {
-            Error::invalid(format!(
-                "gltf ext has no image entry for image {}",
-                image_id.to_u32()
-            ))
+            Error::invalid(format!("gltf ext has no image entry for image {image_id}"))
         })?;
 
         let bytes = main
@@ -165,8 +162,7 @@ pub fn to_gltf_file<D: EncodeBase64>(
     for (texture_id, texture) in main.iter_textures() {
         let entry = ext.textures.get(&texture_id).ok_or_else(|| {
             Error::invalid(format!(
-                "gltf ext has no texture entry for texture {}",
-                texture_id.to_u32()
+                "gltf ext has no texture entry for texture {texture_id}"
             ))
         })?;
 
@@ -226,8 +222,7 @@ pub fn to_gltf_file<D: EncodeBase64>(
     for (material_id, material) in main.iter_materials() {
         let entry = ext.materials.get(&material_id).ok_or_else(|| {
             Error::invalid(format!(
-                "gltf ext has no material entry for material {}",
-                material_id.to_u32()
+                "gltf ext has no material entry for material {material_id}"
             ))
         })?;
 
@@ -337,10 +332,7 @@ pub fn to_gltf_file<D: EncodeBase64>(
 
     for (object_id, object) in main.iter_objects() {
         let entry = ext.meshes.get(&object_id).ok_or_else(|| {
-            Error::invalid(format!(
-                "gltf ext has no mesh entry for object {}",
-                object_id.to_u32()
-            ))
+            Error::invalid(format!("gltf ext has no mesh entry for object {object_id}"))
         })?;
 
         let mut primitives = Vec::new();
@@ -348,9 +340,8 @@ pub fn to_gltf_file<D: EncodeBase64>(
         for (primitive_id, primitive) in object.iter_primitives() {
             let primitive_entry = entry.primitives.get(&primitive_id).ok_or_else(|| {
                 Error::invalid(format!(
-                    "gltf ext has no primitive entry for object {} primitive {}",
-                    object_id.to_u32(),
-                    primitive_id.to_u32()
+                    "gltf ext has no primitive entry for object {object_id} primitive \
+                     {primitive_id}"
                 ))
             })?;
 
@@ -584,18 +575,14 @@ pub fn to_gltf_file<D: EncodeBase64>(
 
     for (node_id, node) in main.iter_hierarchy_nodes() {
         let entry = ext.nodes.get(&node_id).ok_or_else(|| {
-            Error::invalid(format!(
-                "gltf ext has no node entry for node {}",
-                node_id.to_u32()
-            ))
+            Error::invalid(format!("gltf ext has no node entry for node {node_id}"))
         })?;
 
         if let Some(camera) = entry.camera
             && camera as usize >= ext.cameras.len()
         {
             return Err(Error::invalid(format!(
-                "gltf ext node {} names camera {camera}, which the ext does not hold",
-                node_id.to_u32()
+                "gltf ext node {node_id} names camera {camera}, which the ext does not hold"
             )));
         }
 
@@ -603,8 +590,7 @@ pub fn to_gltf_file<D: EncodeBase64>(
             && skin as usize >= ext.skins.len()
         {
             return Err(Error::invalid(format!(
-                "gltf ext node {} names skin {skin}, which the ext does not hold",
-                node_id.to_u32()
+                "gltf ext node {node_id} names skin {skin}, which the ext does not hold"
             )));
         }
 
@@ -640,7 +626,7 @@ pub fn to_gltf_file<D: EncodeBase64>(
         if mesh_ids.len() > 0 {
             return Err(Error::invalid(format!(
                 "node {} places {} objects, and a glTF node holds one mesh",
-                node_id.to_u32(),
+                node_id,
                 node.child_object_ids.len()
             )));
         }

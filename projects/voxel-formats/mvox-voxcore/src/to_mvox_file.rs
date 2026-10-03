@@ -148,8 +148,8 @@ fn check_palette(state: &VoxState) -> Result<Option<U32Id<BVoxPalette>>> {
         .find(|material_id| material_id.to_u32() as usize >= PALETTE_COLORS)
     {
         return Err(Error::Invalid(format!(
-            "material {} has no slot in the {PALETTE_COLORS} colors a MagicaVoxel palette holds",
-            material_id.to_u32()
+            "material {material_id} has no slot in the {PALETTE_COLORS} colors a MagicaVoxel \
+             palette holds"
         )));
     }
 
@@ -245,8 +245,7 @@ fn build_materials(
         .find(|material_id| !listed.contains(material_id))
     {
         return Err(Error::Invalid(format!(
-            "mvox ext keeps material {} but the palette does not hold it",
-            material_id.to_u32()
+            "mvox ext keeps material {material_id} but the palette does not hold it"
         )));
     }
 
@@ -359,8 +358,7 @@ fn build_scene_nodes(state: &VoxState, ext: &MVoxExt) -> Result<Vec<MVoxSceneNod
     for (node_id, node) in state.iter_hierarchy_nodes() {
         let Some(entry) = ext.scene_nodes.get(&node_id) else {
             return Err(Error::Invalid(format!(
-                "hierarchy node {} has no mvox scene node",
-                node_id.to_u32()
+                "hierarchy node {node_id} has no mvox scene node"
             )));
         };
         if !scene_ids.insert(entry.id) {
@@ -408,7 +406,6 @@ fn scene_node_body(
     entry_by_node: &HashMap<U32Id<BVoxHierarchyNode>, &MVoxExtNode>,
     index_by_object: &HashMap<U32Id<BVoxObject>, u32>,
 ) -> Result<MVoxSceneNodeBody> {
-    let id = node_id.to_u32();
     let child_entry = |child_id: &U32Id<BVoxHierarchyNode>| {
         *entry_by_node
             .get(child_id)
@@ -419,18 +416,18 @@ fn scene_node_body(
         MVoxExtNodeBody::Transform { layer, frames } => {
             let [child_id] = node.child_node_ids.as_slice() else {
                 return Err(Error::Invalid(format!(
-                    "hierarchy node {id} is a transform but places {} child nodes, not one",
+                    "hierarchy node {node_id} is a transform but places {} child nodes, not one",
                     node.child_node_ids.len()
                 )));
             };
             if !node.child_object_ids.is_empty() {
                 return Err(Error::Invalid(format!(
-                    "hierarchy node {id} is a transform but places objects"
+                    "hierarchy node {node_id} is a transform but places objects"
                 )));
             }
             let child = child_entry(child_id);
             let frames: Vec<MVoxFrame> = frames.iter().map(frame_from_provenance).collect();
-            check_frame(id, node, &frames)?;
+            check_frame(node_id, node, &frames)?;
             Ok(MVoxSceneNodeBody::Transform(MVoxTransformNode {
                 child: child.id,
                 layer: *layer,
@@ -441,7 +438,7 @@ fn scene_node_body(
         MVoxExtNodeBody::Group => {
             if !node.child_object_ids.is_empty() {
                 return Err(Error::Invalid(format!(
-                    "hierarchy node {id} is a group but places objects"
+                    "hierarchy node {node_id} is a group but places objects"
                 )));
             }
             let children = node
@@ -455,7 +452,7 @@ fn scene_node_body(
         MVoxExtNodeBody::Shape { models } => {
             if !node.child_node_ids.is_empty() {
                 return Err(Error::Invalid(format!(
-                    "hierarchy node {id} is a shape but places child nodes"
+                    "hierarchy node {node_id} is a shape but places child nodes"
                 )));
             }
             let drawn: HashSet<U32Id<BVoxObject>> =
@@ -470,8 +467,8 @@ fn scene_node_body(
                     .map(|object_id| object_id.to_u32())
                     .collect();
                 return Err(Error::Invalid(format!(
-                    "mvox shape entry of hierarchy node {id} draws objects {drawn:?} but the node \
-                     places {placed:?}"
+                    "mvox shape entry of hierarchy node {node_id} draws objects {drawn:?} but the \
+                     node places {placed:?}"
                 )));
             }
             Ok(MVoxSceneNodeBody::Shape(MVoxShapeNode {
@@ -489,9 +486,13 @@ fn scene_node_body(
 }
 
 /// Errors when `frames` no longer projects to the transform of hierarchy node
-/// `id`, which is `node`: the node moved, turned, or scaled after the load
+/// `node_id`, which is `node`: the node moved, turned, or scaled after the load
 /// and its frames did not follow.
-fn check_frame(id: u32, node: &VoxHierarchyNode, frames: &[MVoxFrame]) -> Result<()> {
+fn check_frame(
+    node_id: U32Id<BVoxHierarchyNode>,
+    node: &VoxHierarchyNode,
+    frames: &[MVoxFrame],
+) -> Result<()> {
     let projected = transform_from_frames(frames);
     let transform = &node.transform;
     let agrees = projected.position == transform.position
@@ -504,7 +505,7 @@ fn check_frame(id: u32, node: &VoxHierarchyNode, frames: &[MVoxFrame]) -> Result
     }
 
     Err(Error::Invalid(format!(
-        "hierarchy node {id} has transform {transform:?} but its mvox frames project to \
+        "hierarchy node {node_id} has transform {transform:?} but its mvox frames project to \
          {projected:?}; edit the ext frames along with the node"
     )))
 }

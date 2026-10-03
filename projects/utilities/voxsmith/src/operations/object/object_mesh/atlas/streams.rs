@@ -198,10 +198,7 @@ impl Streams {
             {
                 return Err(Error::mesh_record(
                     MeshElement::PrimitiveMaterial { primitive_id },
-                    format!(
-                        "draws material {}, which the material table does not hold",
-                        material_id.to_u32()
-                    ),
+                    format!("draws material {material_id}, which the material table does not hold"),
                 ));
             }
 
@@ -217,8 +214,7 @@ impl Streams {
                                 return Err(Error::mesh_record(
                                     element,
                                     format!(
-                                        "omits `{bake}`, which material {} bakes at",
-                                        material_id.to_u32()
+                                        "omits `{bake}`, which material {material_id} bakes at"
                                     ),
                                 ));
                             }
@@ -276,11 +272,10 @@ impl Streams {
                             return Err(Error::mesh_record(
                                 MeshElement::PrimitiveUvStreams { primitive_id },
                                 format!(
-                                    "writes the `{bake}` stream material {} bakes at as stream \
-                                     {at}, where primitive {} writes it as stream {position}, \
-                                     so the material's textures cannot name one stream",
-                                    material_id.to_u32(),
-                                    first_primitive_id.to_u32()
+                                    "writes the `{bake}` stream material {material_id} bakes at as \
+                                     stream {at}, where primitive {first_primitive_id} writes it \
+                                     as stream {position}, so the material's textures cannot name \
+                                     one stream"
                                 ),
                             ));
                         }
@@ -321,11 +316,9 @@ impl Streams {
                         return Err(Error::mesh_record(
                             element,
                             format!(
-                                "bakes at `{bake}`, which primitive {} writes as stream {at}, \
-                                 where primitive {} writes it as stream {position}, so the \
-                                 image cannot name one stream",
-                                primitive_id.to_u32(),
-                                first_primitive_id.to_u32()
+                                "bakes at `{bake}`, which primitive {primitive_id} writes as \
+                                 stream {at}, where primitive {first_primitive_id} writes it as \
+                                 stream {position}, so the image cannot name one stream"
                             ),
                         ));
                     }

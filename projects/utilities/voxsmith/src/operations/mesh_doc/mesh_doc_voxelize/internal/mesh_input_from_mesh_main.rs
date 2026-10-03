@@ -203,8 +203,7 @@ impl<'a, D: DecodeImage> Walk<'a, '_, D> {
             .map_err(|reason| {
                 Error::DecodeImage(format!(
                     "image {} ({}): {reason}",
-                    texture.image_id.to_u32(),
-                    source.media_type
+                    texture.image_id, source.media_type
                 ))
             })?;
 

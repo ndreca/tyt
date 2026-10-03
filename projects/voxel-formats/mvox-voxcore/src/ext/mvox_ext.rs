@@ -249,9 +249,8 @@ impl VoxExt for MVoxExt {
 
         Err(Error::Ext {
             reason: format!(
-                "mvox scene nodes {drawn_by:?} still draw object {}, which no hierarchy node \
-                 places",
-                object_id.to_u32()
+                "mvox scene nodes {drawn_by:?} still draw object {object_id}, which no hierarchy \
+                 node places"
             ),
         })
     }
@@ -297,13 +296,13 @@ impl VoxExt for MVoxExt {
             let node_id = remap
                 .hierarchy_nodes
                 .new_id(old_id)
-                .ok_or_else(|| stale("hierarchy node", old_id.to_u32()))?;
+                .ok_or_else(|| stale("hierarchy node", old_id))?;
             if let MVoxExtNodeBody::Shape { models } = &mut entry.body {
                 for model in models {
                     model.object = remap
                         .objects
                         .new_id(model.object)
-                        .ok_or_else(|| stale("object", model.object.to_u32()))?;
+                        .ok_or_else(|| stale("object", model.object))?;
                 }
             }
             self.scene_nodes.insert(node_id, entry);
@@ -316,7 +315,7 @@ impl VoxExt for MVoxExt {
         let palette_id = remap
             .palettes
             .new_id(old_palette_id)
-            .ok_or_else(|| stale("palette", old_palette_id.to_u32()))?;
+            .ok_or_else(|| stale("palette", old_palette_id))?;
 
         self.palette_id = Some(palette_id);
 
@@ -326,7 +325,7 @@ impl VoxExt for MVoxExt {
         for (old_id, entry) in materials {
             let material_id = material_remap
                 .new_id(old_id)
-                .ok_or_else(|| stale("material", old_id.to_u32()))?;
+                .ok_or_else(|| stale("material", old_id))?;
             self.materials.insert(material_id, entry);
         }
 
@@ -381,15 +380,12 @@ fn scene_node_mut(
     node_id: U32Id<BVoxHierarchyNode>,
 ) -> Result<&mut MVoxExtNode> {
     ext.scene_nodes.get_mut(&node_id).ok_or_else(|| Error::Ext {
-        reason: format!(
-            "mvox ext has no scene node for hierarchy node {}",
-            node_id.to_u32()
-        ),
+        reason: format!("mvox ext has no scene node for hierarchy node {node_id}"),
     })
 }
 
 /// The error for an entry keyed by an id the gc found dead.
-fn stale(entity: &str, id: u32) -> Error {
+fn stale<Brand>(entity: &str, id: U32Id<Brand>) -> Error {
     Error::Ext {
         reason: format!("mvox ext keeps an entry for {entity} {id}, which was released before gc"),
     }

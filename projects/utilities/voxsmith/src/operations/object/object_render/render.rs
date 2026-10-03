@@ -117,8 +117,7 @@ fn check_objects<T: VoxExt>(main: &VoxMain<T>, object_ids: &[U32Id<BVoxObject>])
     for &object_id in object_ids {
         if !seen.insert(object_id) {
             return Err(Error::invalid(format!(
-                "object {} is listed twice",
-                object_id.to_u32()
+                "object {object_id} is listed twice"
             )));
         }
 

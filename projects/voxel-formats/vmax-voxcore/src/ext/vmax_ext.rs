@@ -189,8 +189,7 @@ impl VoxExt for VMaxExt {
         for (old_id, mut provenance) in palettes {
             let Some(new_id) = remap.palettes.new_id(old_id) else {
                 return Err(refuse(format!(
-                    "gc dropped palette {}, which the vmax ext holds",
-                    old_id.to_u32()
+                    "gc dropped palette {old_id}, which the vmax ext holds"
                 )));
             };
             if !provenance.materials.is_empty() {

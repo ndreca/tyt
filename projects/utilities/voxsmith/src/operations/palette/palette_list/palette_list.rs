@@ -84,10 +84,7 @@ fn build_grid<T: VoxExt>(
     let mut grid = TreeGrid::with_cells(TreeGridJsonValueCells);
     let root_id = grid.retain_root(TreeGridLabel::bare("palettes"));
     for (palette_id, palette) in palettes {
-        let branch_id = grid.retain_child(
-            root_id,
-            TreeGridLabel::bare(palette_id.to_u32().to_string()),
-        );
+        let branch_id = grid.retain_child(root_id, TreeGridLabel::bare(palette_id.to_string()));
         if fields.materials {
             let materials_id = grid.retain_child(branch_id, TreeGridLabel::bare("materials"));
             grid.push_value(
@@ -125,10 +122,7 @@ fn build_records_grid<T: VoxExt>(
     let mut grid = TreeGrid::new();
     let root_id = grid.retain_root(TreeGridLabel::bare("palettes"));
     for (palette_id, palette) in palettes {
-        let row_id = grid.retain_child(
-            root_id,
-            TreeGridLabel::bare(palette_id.to_u32().to_string()),
-        );
+        let row_id = grid.retain_child(root_id, TreeGridLabel::bare(palette_id.to_string()));
         if fields.properties {
             let cell = property_names(palette).join(", ");
             let node_id = grid.retain_child(row_id, TreeGridLabel::bare("properties"));
@@ -170,28 +164,16 @@ fn retain_names_subtree(
     }
 }
 
-/// The objects that reference `palette_id`, in object order, as
-/// `(index, name)`. An object appears once however many of its layers reference
-/// the palette.
-fn referencing_objects<T: VoxExt>(
-    main: &VoxMain<T>,
-    palette_id: U32Id<BVoxPalette>,
-) -> Vec<(u32, &str)> {
+/// The names of the objects that reference `palette_id`, in object order. An
+/// object appears once however many of its layers reference the palette.
+fn referencing_names<T: VoxExt>(main: &VoxMain<T>, palette_id: U32Id<BVoxPalette>) -> Vec<&str> {
     main.iter_objects()
         .filter(|(_, object)| {
             object
                 .iter_layers()
                 .any(|(_, layer_palette_id)| layer_palette_id == palette_id)
         })
-        .map(|(object_id, object)| (object_id.to_u32(), object.name()))
-        .collect()
-}
-
-/// The names of the objects that reference `palette_id`, in object order.
-fn referencing_names<T: VoxExt>(main: &VoxMain<T>, palette_id: U32Id<BVoxPalette>) -> Vec<&str> {
-    referencing_objects(main, palette_id)
-        .into_iter()
-        .map(|(_, name)| name)
+        .map(|(_, object)| object.name())
         .collect()
 }
 

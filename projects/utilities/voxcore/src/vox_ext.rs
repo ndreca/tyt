@@ -262,8 +262,7 @@ mod tests {
             node_id: U32Id<BVoxHierarchyNode>,
         ) -> Result<()> {
             let count = state.hierarchy_node_count();
-            self.0
-                .push(format!("node retained {} of {count}", node_id.to_u32()));
+            self.0.push(format!("node retained {node_id} of {count}"));
             Ok(())
         }
 
@@ -273,8 +272,7 @@ mod tests {
             node_id: U32Id<BVoxHierarchyNode>,
         ) -> Result<()> {
             let count = state.hierarchy_node_count();
-            self.0
-                .push(format!("node released {} of {count}", node_id.to_u32()));
+            self.0.push(format!("node released {node_id} of {count}"));
             Ok(())
         }
 
@@ -285,10 +283,8 @@ mod tests {
             old_name: &str,
         ) -> Result<()> {
             let name = &state.hierarchy_node(node_id).unwrap().name;
-            self.0.push(format!(
-                "node renamed {} {old_name} to {name}",
-                node_id.to_u32()
-            ));
+            self.0
+                .push(format!("node renamed {node_id} {old_name} to {name}"));
             Ok(())
         }
 
@@ -301,8 +297,7 @@ mod tests {
             let position = state.hierarchy_node(node_id).unwrap().transform.position;
             self.0.push(format!(
                 "node moved {} {} to {position}",
-                node_id.to_u32(),
-                old_transform.position
+                node_id, old_transform.position
             ));
             Ok(())
         }
@@ -323,7 +318,7 @@ mod tests {
             };
             self.0.push(format!(
                 "node children {} {:?} {:?} to {:?} {:?}",
-                node_id.to_u32(),
+                node_id,
                 bare(old_child_node_ids),
                 bare_objects(old_child_object_ids),
                 bare(&node.child_node_ids),
@@ -354,8 +349,7 @@ mod tests {
             object_id: U32Id<BVoxObject>,
         ) -> Result<()> {
             let name = state.object(object_id).unwrap().name();
-            self.0
-                .push(format!("object retained {} {name}", object_id.to_u32()));
+            self.0.push(format!("object retained {object_id} {name}"));
             Ok(())
         }
 
@@ -365,8 +359,7 @@ mod tests {
             object_id: U32Id<BVoxObject>,
         ) -> Result<()> {
             let name = state.object(object_id).unwrap().name();
-            self.0
-                .push(format!("object released {} {name}", object_id.to_u32()));
+            self.0.push(format!("object released {object_id} {name}"));
             Ok(())
         }
 
@@ -380,10 +373,8 @@ mod tests {
                 .iter_objects()
                 .position(|(id, _)| id == object_id)
                 .unwrap();
-            self.0.push(format!(
-                "object moved {} {old_index} to {index}",
-                object_id.to_u32()
-            ));
+            self.0
+                .push(format!("object moved {object_id} {old_index} to {index}"));
             Ok(())
         }
 
@@ -394,10 +385,8 @@ mod tests {
             old_name: &str,
         ) -> Result<()> {
             let name = state.object(object_id).unwrap().name();
-            self.0.push(format!(
-                "object renamed {} {old_name} to {name}",
-                object_id.to_u32()
-            ));
+            self.0
+                .push(format!("object renamed {object_id} {old_name} to {name}"));
             Ok(())
         }
 
@@ -409,8 +398,7 @@ mod tests {
         ) -> Result<()> {
             let origin = state.object(object_id).unwrap().origin();
             self.0.push(format!(
-                "object origin {} {old_origin} to {origin}",
-                object_id.to_u32()
+                "object origin {object_id} {old_origin} to {origin}"
             ));
             Ok(())
         }
@@ -429,8 +417,7 @@ mod tests {
                 .collect();
             pairs.sort_unstable();
             self.0.push(format!(
-                "voxels remapped {} {old_bounds} to {bounds} {pairs:?}",
-                object_id.to_u32()
+                "voxels remapped {object_id} {old_bounds} to {bounds} {pairs:?}"
             ));
             Ok(())
         }
@@ -445,8 +432,7 @@ mod tests {
             let bounds = state.object(object_id).unwrap().bounds();
             let old_ids: Vec<u32> = old_voxel_ids.iter().map(|id| id.to_u32()).collect();
             self.0.push(format!(
-                "voxels resampled {} {old_bounds} to {bounds} from {old_ids:?}",
-                object_id.to_u32()
+                "voxels resampled {object_id} {old_bounds} to {bounds} from {old_ids:?}"
             ));
             Ok(())
         }
@@ -456,8 +442,7 @@ mod tests {
             _state: &VoxState,
             palette_id: U32Id<BVoxPalette>,
         ) -> Result<()> {
-            self.0
-                .push(format!("palette retained {}", palette_id.to_u32()));
+            self.0.push(format!("palette retained {palette_id}"));
             Ok(())
         }
 
@@ -466,8 +451,7 @@ mod tests {
             _state: &VoxState,
             palette_id: U32Id<BVoxPalette>,
         ) -> Result<()> {
-            self.0
-                .push(format!("palette released {}", palette_id.to_u32()));
+            self.0.push(format!("palette released {palette_id}"));
             Ok(())
         }
 
@@ -477,11 +461,8 @@ mod tests {
             palette_id: U32Id<BVoxPalette>,
             material_id: U32Id<BVoxMaterial>,
         ) -> Result<()> {
-            self.0.push(format!(
-                "material retained {} {}",
-                palette_id.to_u32(),
-                material_id.to_u32()
-            ));
+            self.0
+                .push(format!("material retained {palette_id} {material_id}"));
             Ok(())
         }
 
@@ -492,10 +473,8 @@ mod tests {
             material_ids: &[U32Id<BVoxMaterial>],
         ) -> Result<()> {
             let ids: Vec<u32> = material_ids.iter().map(|id| id.to_u32()).collect();
-            self.0.push(format!(
-                "materials released {} {ids:?}",
-                palette_id.to_u32()
-            ));
+            self.0
+                .push(format!("materials released {palette_id} {ids:?}"));
             Ok(())
         }
 
@@ -510,10 +489,8 @@ mod tests {
                 .map(|(from, to)| (from.to_u32(), to.to_u32()))
                 .collect();
             pairs.sort_unstable();
-            self.0.push(format!(
-                "materials repainted {} {pairs:?}",
-                palette_id.to_u32()
-            ));
+            self.0
+                .push(format!("materials repainted {palette_id} {pairs:?}"));
             Ok(())
         }
 
@@ -523,11 +500,8 @@ mod tests {
             object_id: U32Id<BVoxObject>,
             voxel_id: U32Id<BVoxVoxel>,
         ) -> Result<()> {
-            self.0.push(format!(
-                "voxel retained {} {}",
-                object_id.to_u32(),
-                voxel_id.to_u32()
-            ));
+            self.0
+                .push(format!("voxel retained {object_id} {voxel_id}"));
             Ok(())
         }
 
@@ -537,11 +511,8 @@ mod tests {
             object_id: U32Id<BVoxObject>,
             voxel_id: U32Id<BVoxVoxel>,
         ) -> Result<()> {
-            self.0.push(format!(
-                "voxel released {} {}",
-                object_id.to_u32(),
-                voxel_id.to_u32()
-            ));
+            self.0
+                .push(format!("voxel released {object_id} {voxel_id}"));
             Ok(())
         }
 
@@ -565,7 +536,7 @@ mod tests {
             object_id: U32Id<BVoxObject>,
         ) -> Result<()> {
             Err(Error::Ext {
-                reason: format!("object {} is pinned", object_id.to_u32()),
+                reason: format!("object {object_id} is pinned"),
             })
         }
     }

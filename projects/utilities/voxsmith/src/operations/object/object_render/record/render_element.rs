@@ -51,7 +51,7 @@ impl Display for RenderElement {
             RenderElement::Image => f.write_str("the image"),
 
             RenderElement::LightTransform { light_id } => {
-                write!(f, "light {}'s transform", light_id.to_u32())
+                write!(f, "light {light_id}'s transform")
             }
 
             RenderElement::ViewProjection { name } => write!(f, "view {name}'s projection"),

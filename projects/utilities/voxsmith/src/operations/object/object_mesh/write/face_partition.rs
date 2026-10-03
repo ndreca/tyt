@@ -68,10 +68,7 @@ impl FacePartition {
                 if let Some(other_id) = *taker {
                     return Err(Error::mesh_record(
                         destination.element.clone(),
-                        format!(
-                            "takes face {face}, which primitive {} takes too",
-                            other_id.to_u32()
-                        ),
+                        format!("takes face {face}, which primitive {other_id} takes too"),
                     ));
                 }
 

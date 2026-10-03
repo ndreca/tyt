@@ -167,8 +167,7 @@ fn build_layers(main: &GoxlVoxMain) -> Result<Vec<GoxlLayer>> {
     for (node_id, node) in main.iter_hierarchy_nodes() {
         let Some(layer) = layers.get(&node_id) else {
             return Err(Error::invalid(format!(
-                "goxl ext has no layer entry for node {}",
-                node_id.to_u32()
+                "goxl ext has no layer entry for node {node_id}"
             )));
         };
 
@@ -176,7 +175,7 @@ fn build_layers(main: &GoxlVoxMain) -> Result<Vec<GoxlLayer>> {
         if stamped != node.child_object_ids {
             return Err(Error::invalid(format!(
                 "goxl ext layer for node {} stamps objects {:?} but the node places {:?}",
-                node_id.to_u32(),
+                node_id,
                 bare_ids(&stamped),
                 bare_ids(&node.child_object_ids)
             )));
@@ -184,8 +183,7 @@ fn build_layers(main: &GoxlVoxMain) -> Result<Vec<GoxlLayer>> {
         if layer.base_id != 0 && !ids.contains(&layer.base_id) {
             return Err(Error::invalid(format!(
                 "goxl ext layer for node {} clones layer id {} but no entry has it",
-                node_id.to_u32(),
-                layer.base_id
+                node_id, layer.base_id
             )));
         }
         built.push(layer_from_provenance(node, layer, &index_by_object));

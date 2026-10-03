@@ -41,8 +41,8 @@ pub fn to_qb_file(main: &QbVoxMain) -> Result<QbFile> {
 
             if !placed.insert(object_id) {
                 return Err(Error::invalid(format!(
-                    "object {} is placed by more than one root, but a .qb matrix holds one grid",
-                    object_id.to_u32()
+                    "object {object_id} is placed by more than one root, but a .qb matrix holds \
+                     one grid"
                 )));
             }
 
@@ -59,8 +59,7 @@ pub fn to_qb_file(main: &QbVoxMain) -> Result<QbFile> {
         .find(|(object_id, _)| !placed.contains(object_id))
     {
         return Err(Error::invalid(format!(
-            "object {} is placed by no root, so it has no .qb matrix",
-            object_id.to_u32()
+            "object {object_id} is placed by no root, so it has no .qb matrix"
         )));
     }
 
@@ -90,15 +89,14 @@ fn placed_object_id(
 ) -> Result<U32Id<BVoxObject>> {
     if !root.child_node_ids.is_empty() {
         return Err(Error::invalid(format!(
-            "root node {} lists child nodes, but a .qb file has no hierarchy",
-            root_id.to_u32()
+            "root node {root_id} lists child nodes, but a .qb file has no hierarchy"
         )));
     }
 
     let [object_id] = root.child_object_ids.as_slice() else {
         return Err(Error::invalid(format!(
             "root node {} places {} objects, but a .qb matrix holds one grid",
-            root_id.to_u32(),
+            root_id,
             root.child_object_ids.len()
         )));
     };

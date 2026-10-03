@@ -352,44 +352,32 @@ impl Display for Error {
             ),
 
             Error::UnknownFile { file_id } => {
-                write!(f, "file {} is not one of this state's", file_id.to_u32())
+                write!(f, "file {file_id} is not one of this state's")
             }
 
             Error::UnknownImage { image_id } => {
-                write!(f, "image {} is not one of this state's", image_id.to_u32())
+                write!(f, "image {image_id} is not one of this state's")
             }
 
-            Error::UnknownTexture { texture_id } => write!(
-                f,
-                "texture {} is not one of this state's",
-                texture_id.to_u32()
-            ),
+            Error::UnknownTexture { texture_id } => {
+                write!(f, "texture {texture_id} is not one of this state's")
+            }
 
-            Error::UnknownMaterial { material_id } => write!(
-                f,
-                "material {} is not one of this state's",
-                material_id.to_u32()
-            ),
+            Error::UnknownMaterial { material_id } => {
+                write!(f, "material {material_id} is not one of this state's")
+            }
 
             Error::UnknownObject { object_id } => {
-                write!(
-                    f,
-                    "object {} is not one of this state's",
-                    object_id.to_u32()
-                )
+                write!(f, "object {object_id} is not one of this state's")
             }
 
-            Error::UnknownPrimitive { primitive_id } => write!(
-                f,
-                "primitive {} is not one of the object's",
-                primitive_id.to_u32()
-            ),
+            Error::UnknownPrimitive { primitive_id } => {
+                write!(f, "primitive {primitive_id} is not one of the object's")
+            }
 
-            Error::UnknownHierarchyNode { node_id } => write!(
-                f,
-                "hierarchy node {} is not one of this state's",
-                node_id.to_u32()
-            ),
+            Error::UnknownHierarchyNode { node_id } => {
+                write!(f, "hierarchy node {node_id} is not one of this state's")
+            }
 
             Error::IndexPastCount { index, count } => {
                 write!(f, "index {index} is at or past the listing count {count}")
@@ -403,7 +391,7 @@ impl Display for Error {
             } => write!(
                 f,
                 "file {} is still referenced: images {:?}, materials {:?}, objects {:?}",
-                file_id.to_u32(),
+                file_id,
                 id_u32s(image_ids),
                 id_u32s(material_ids),
                 id_u32s(object_ids)
@@ -415,7 +403,7 @@ impl Display for Error {
             } => write!(
                 f,
                 "image {} is still sampled by textures {:?}",
-                image_id.to_u32(),
+                image_id,
                 id_u32s(texture_ids)
             ),
 
@@ -426,7 +414,7 @@ impl Display for Error {
             } => write!(
                 f,
                 "texture {} is still referenced: materials {:?}, objects {:?}",
-                texture_id.to_u32(),
+                texture_id,
                 id_u32s(material_ids),
                 id_u32s(object_ids)
             ),
@@ -437,7 +425,7 @@ impl Display for Error {
             } => write!(
                 f,
                 "material {} is still drawn by primitives of objects {:?}",
-                material_id.to_u32(),
+                material_id,
                 id_u32s(object_ids)
             ),
 
@@ -447,7 +435,7 @@ impl Display for Error {
             } => write!(
                 f,
                 "object {} is still placed by hierarchy nodes {:?}",
-                object_id.to_u32(),
+                object_id,
                 id_u32s(node_ids)
             ),
 
@@ -458,7 +446,7 @@ impl Display for Error {
             } => write!(
                 f,
                 "hierarchy node {} is still referenced: parents {:?}, root {}",
-                node_id.to_u32(),
+                node_id,
                 id_u32s(parent_ids),
                 root
             ),
@@ -486,27 +474,24 @@ impl Display for Error {
                 vertex_id,
             } => write!(
                 f,
-                "triangle {} references vertex {}, past the primitive's vertices",
-                triangle_id.to_u32(),
-                vertex_id.to_u32()
+                "triangle {triangle_id} references vertex {vertex_id}, past the primitive's \
+                 vertices"
             ),
 
             Error::NonFiniteVertex { vertex_id } => {
-                write!(f, "vertex {} holds a non-finite value", vertex_id.to_u32())
+                write!(f, "vertex {vertex_id} holds a non-finite value")
             }
 
             Error::EmptyFileName => write!(f, "the file has an empty name"),
 
             Error::FileNameTaken { name, file_id } => write!(
                 f,
-                "the file name \"{name}\" is already used by file {}",
-                file_id.to_u32()
+                "the file name \"{name}\" is already used by file {file_id}"
             ),
 
             Error::ImageFileRef { file_id } => write!(
                 f,
-                "the image reads file {}, which is not one of this state's",
-                file_id.to_u32()
+                "the image reads file {file_id}, which is not one of this state's"
             ),
 
             Error::MalformedImage { media_type } => write!(
@@ -529,26 +514,23 @@ impl Display for Error {
 
             Error::PropertyTextureRef { name, texture_id } => write!(
                 f,
-                "property \"{name}\" references texture {}, which is not one of this state's",
-                texture_id.to_u32()
+                "property \"{name}\" references texture {texture_id}, which is not one of this \
+                 state's"
             ),
 
             Error::PropertyFileRef { name, file_id } => write!(
                 f,
-                "property \"{name}\" points at file {}, which is not one of this state's",
-                file_id.to_u32()
+                "property \"{name}\" points at file {file_id}, which is not one of this state's"
             ),
 
             Error::TextureImageRef { image_id } => write!(
                 f,
-                "the texture samples image {}, which is not one of this state's",
-                image_id.to_u32()
+                "the texture samples image {image_id}, which is not one of this state's"
             ),
 
             Error::MaterialTextureRef { texture_id } => write!(
                 f,
-                "the material draws texture {}, which is not one of this state's",
-                texture_id.to_u32()
+                "the material draws texture {texture_id}, which is not one of this state's"
             ),
 
             Error::PrimitiveMaterialRef {
@@ -556,9 +538,8 @@ impl Display for Error {
                 material_id,
             } => write!(
                 f,
-                "primitive {} draws with material {}, which is not one of this state's",
-                primitive_id.to_u32(),
-                material_id.to_u32()
+                "primitive {primitive_id} draws with material {material_id}, which is not one of \
+                 this state's"
             ),
 
             Error::PrimitiveUvStreamRef {
@@ -567,23 +548,20 @@ impl Display for Error {
                 uv_stream_id,
             } => write!(
                 f,
-                "primitive {} draws with material {}, whose texture samples UV stream {}, which \
-                 the primitive does not carry",
-                primitive_id.to_u32(),
-                material_id.to_u32(),
-                uv_stream_id.to_u32()
+                "primitive {primitive_id} draws with material {material_id}, whose texture samples \
+                 UV stream {uv_stream_id}, which the primitive does not carry"
             ),
 
             Error::InsertedDuplicateChildNode { index, child_id } => write!(
                 f,
-                "the hierarchy node at listing index {index} lists child node {} more than once",
-                child_id.to_u32()
+                "the hierarchy node at listing index {index} lists child node {child_id} more than \
+                 once"
             ),
 
             Error::InsertedDuplicateChildObject { index, object_id } => write!(
                 f,
-                "the hierarchy node at listing index {index} places object {} more than once",
-                object_id.to_u32()
+                "the hierarchy node at listing index {index} places object {object_id} more than \
+                 once"
             ),
 
             Error::InsertedNonFiniteTransform { index } => write!(
@@ -609,7 +587,7 @@ impl Display for Error {
             ),
 
             Error::FileName { file_id } => {
-                write!(f, "file {} has an empty name", file_id.to_u32())
+                write!(f, "file {file_id} has an empty name")
             }
 
             Error::DuplicateFileName {
@@ -617,22 +595,17 @@ impl Display for Error {
                 other_file_id,
             } => write!(
                 f,
-                "file {} shares its name with file {}",
-                file_id.to_u32(),
-                other_file_id.to_u32()
+                "file {file_id} shares its name with file {other_file_id}"
             ),
 
             Error::ImageFile { image_id, file_id } => write!(
                 f,
-                "image {} reads file {}, which does not exist",
-                image_id.to_u32(),
-                file_id.to_u32()
+                "image {image_id} reads file {file_id}, which does not exist"
             ),
 
             Error::ImageBytes { image_id } => write!(
                 f,
-                "image {} does not start with its media type's signature",
-                image_id.to_u32()
+                "image {image_id} does not start with its media type's signature"
             ),
 
             Error::TextureImage {
@@ -640,15 +613,12 @@ impl Display for Error {
                 image_id,
             } => write!(
                 f,
-                "texture {} samples image {}, which does not exist",
-                texture_id.to_u32(),
-                image_id.to_u32()
+                "texture {texture_id} samples image {image_id}, which does not exist"
             ),
 
             Error::MaterialFactorRange { material_id, name } => write!(
                 f,
-                "material {} factor \"{name}\" is outside its range",
-                material_id.to_u32()
+                "material {material_id} factor \"{name}\" is outside its range"
             ),
 
             Error::MaterialTexture {
@@ -656,9 +626,7 @@ impl Display for Error {
                 texture_id,
             } => write!(
                 f,
-                "material {} draws texture {}, which does not exist",
-                material_id.to_u32(),
-                texture_id.to_u32()
+                "material {material_id} draws texture {texture_id}, which does not exist"
             ),
 
             Error::PrimitiveMaterial {
@@ -667,10 +635,8 @@ impl Display for Error {
                 material_id,
             } => write!(
                 f,
-                "object {} primitive {} draws with material {}, which does not exist",
-                object_id.to_u32(),
-                primitive_id.to_u32(),
-                material_id.to_u32()
+                "object {object_id} primitive {primitive_id} draws with material {material_id}, \
+                 which does not exist"
             ),
 
             Error::PrimitiveUvStream {
@@ -680,76 +646,58 @@ impl Display for Error {
                 uv_stream_id,
             } => write!(
                 f,
-                "object {} primitive {} draws with material {}, whose texture samples UV stream \
-                 {}, which the primitive does not carry",
-                object_id.to_u32(),
-                primitive_id.to_u32(),
-                material_id.to_u32(),
-                uv_stream_id.to_u32()
+                "object {object_id} primitive {primitive_id} draws with material {material_id}, \
+                 whose texture samples UV stream {uv_stream_id}, which the primitive does not \
+                 carry"
             ),
 
             Error::ChildNode { node_id, child_id } => write!(
                 f,
-                "hierarchy node {} lists child node {}, which does not exist",
-                node_id.to_u32(),
-                child_id.to_u32()
+                "hierarchy node {node_id} lists child node {child_id}, which does not exist"
             ),
 
             Error::ChildObject { node_id, object_id } => write!(
                 f,
-                "hierarchy node {} places object {}, which does not exist",
-                node_id.to_u32(),
-                object_id.to_u32()
+                "hierarchy node {node_id} places object {object_id}, which does not exist"
             ),
 
             Error::Root { root_id } => write!(
                 f,
-                "root references hierarchy node {}, which does not exist",
-                root_id.to_u32()
+                "root references hierarchy node {root_id}, which does not exist"
             ),
 
             Error::Cycle { node_id } => write!(
                 f,
-                "hierarchy is not acyclic: a cycle reaches node {}",
-                node_id.to_u32()
+                "hierarchy is not acyclic: a cycle reaches node {node_id}"
             ),
 
             Error::DuplicateChildNode { node_id, child_id } => write!(
                 f,
-                "hierarchy node {} lists child node {} more than once",
-                node_id.to_u32(),
-                child_id.to_u32()
+                "hierarchy node {node_id} lists child node {child_id} more than once"
             ),
 
             Error::DuplicateChildObject { node_id, object_id } => write!(
                 f,
-                "hierarchy node {} places object {} more than once",
-                node_id.to_u32(),
-                object_id.to_u32()
+                "hierarchy node {node_id} places object {object_id} more than once"
             ),
 
-            Error::DuplicateRoot { root_id } => write!(
-                f,
-                "root lists hierarchy node {} more than once",
-                root_id.to_u32()
-            ),
+            Error::DuplicateRoot { root_id } => {
+                write!(f, "root lists hierarchy node {root_id} more than once")
+            }
 
             Error::NonFiniteTransform { node_id } => write!(
                 f,
-                "hierarchy node {} has a non-finite transform position or scale component",
-                node_id.to_u32()
+                "hierarchy node {node_id} has a non-finite transform position or scale component"
             ),
 
             Error::ZeroScale { node_id } => write!(
                 f,
-                "hierarchy node {} has a zero transform scale component",
-                node_id.to_u32()
+                "hierarchy node {node_id} has a zero transform scale component"
             ),
 
             Error::NonUnitRotation { node_id } => write!(
                 f,
-                "hierarchy node {} transform rotation is not a unit quaternion",
-                node_id.to_u32()
+                "hierarchy node {node_id} transform rotation is not a unit quaternion"
             ),
         }
     }

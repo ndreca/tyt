@@ -135,11 +135,9 @@ impl Display for Error {
                 failure,
             } => write!(formatter, "{failure}"),
 
-            Error::FacePieces { face_id } => write!(
-                formatter,
-                "face {} lists no voxel pieces",
-                face_id.to_usize()
-            ),
+            Error::FacePieces { face_id } => {
+                write!(formatter, "face {face_id} lists no voxel pieces")
+            }
 
             Error::MissingValue { name } => {
                 write!(formatter, "`{name}` has a type but no value")
@@ -160,9 +158,7 @@ impl Display for Error {
             Error::PieceVoxel { face_id, voxel_id } => {
                 write!(
                     formatter,
-                    "face {} names voxel {} past the voxel table",
-                    face_id.to_usize(),
-                    voxel_id.to_u32()
+                    "face {face_id} names voxel {voxel_id} past the voxel table"
                 )
             }
 
@@ -189,9 +185,7 @@ impl Display for Error {
                 swatches,
             } => write!(
                 formatter,
-                "voxel {} samples swatch {}, past the {swatches} swatches",
-                voxel_id.to_usize(),
-                swatch_id.to_u32()
+                "voxel {voxel_id} samples swatch {swatch_id}, past the {swatches} swatches"
             ),
         }
     }

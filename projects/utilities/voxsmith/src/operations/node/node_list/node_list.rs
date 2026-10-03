@@ -612,10 +612,7 @@ impl<T: VoxExt> Walk<'_, T> {
         let scene = self.scene;
 
         let Some(node) = scene.main.hierarchy_node(id) else {
-            self.retain_node(
-                parent_id,
-                TreeGridLabel::bare(format!("missing node {}", id.to_u32())),
-            );
+            self.retain_node(parent_id, TreeGridLabel::bare(format!("missing node {id}")));
             return;
         };
 
@@ -630,7 +627,7 @@ impl<T: VoxExt> Walk<'_, T> {
         let collapsed_stub =
             self.collapse_instances && !is_cycle && instance_index.is_some_and(|index| index > 0);
 
-        let mut tag = format!("node: {}", id.to_u32());
+        let mut tag = format!("node: {id}");
 
         if let Some(instance_index) = instance_index {
             tag.push_str(&format!(", instance: {instance_index}"));
@@ -761,14 +758,14 @@ impl<T: VoxExt> Walk<'_, T> {
         let Some(object) = scene.main.object(id) else {
             self.retain_node(
                 parent_id,
-                TreeGridLabel::bare(format!("missing object {}", id.to_u32())),
+                TreeGridLabel::bare(format!("missing object {id}")),
             );
             return;
         };
 
         let instance_index = (scene.object_placement(id) >= 2).then(|| self.object_instance(id));
 
-        let mut tag = format!("object: {}", id.to_u32());
+        let mut tag = format!("object: {id}");
 
         if let Some(instance_index) = instance_index {
             tag.push_str(&format!(", instance: {instance_index}"));
@@ -918,7 +915,7 @@ impl<T: VoxExt> Walk<'_, T> {
                     let materials = palette.material_count();
                     self.retain_value_leaf(
                         subtree_id,
-                        palette_id.to_u32().to_string(),
+                        palette_id.to_string(),
                         format!("{{materials: {materials}}}"),
                     );
                 }
@@ -926,7 +923,7 @@ impl<T: VoxExt> Walk<'_, T> {
                 None => {
                     self.grid.retain_child(
                         subtree_id,
-                        TreeGridLabel::bare(format!("missing palette {}", palette_id.to_u32())),
+                        TreeGridLabel::bare(format!("missing palette {palette_id}")),
                     );
                 }
             }

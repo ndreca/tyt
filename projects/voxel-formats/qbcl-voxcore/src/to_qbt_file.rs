@@ -71,8 +71,7 @@ fn rebuild_node(node_id: U32Id<BVoxHierarchyNode>, main: &QbtVoxMain) -> Result<
         .expect("a hierarchy id from the state resolves");
     let Some(entry) = main.ext().nodes.get(&node_id) else {
         return Err(Error::invalid(format!(
-            "qbt ext has no entry for node {}",
-            node_id.to_u32()
+            "qbt ext has no entry for node {node_id}"
         )));
     };
 
@@ -111,8 +110,7 @@ fn rebuild_node(node_id: U32Id<BVoxHierarchyNode>, main: &QbtVoxMain) -> Result<
             // Opaque bytes have no place for a grid or a child.
             if !objects.is_empty() || !children.is_empty() {
                 return Err(Error::invalid(format!(
-                    "node {} has an unknown entry but places an object or lists a child node",
-                    node_id.to_u32()
+                    "node {node_id} has an unknown entry but places an object or lists a child node"
                 )));
             }
             QbtNode::Unknown(QbtUnknownNode {
@@ -164,8 +162,7 @@ fn entry_node(
     let [first, extras @ ..] = objects else {
         if children.is_empty() {
             return Err(Error::invalid(format!(
-                "node {} has a grid entry but places no object and lists no child node",
-                node_id.to_u32()
+                "node {node_id} has a grid entry but places no object and lists no child node"
             )));
         }
 

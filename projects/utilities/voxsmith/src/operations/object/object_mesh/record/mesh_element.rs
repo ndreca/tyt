@@ -120,15 +120,15 @@ impl Display for MeshElement {
             MeshElement::File { file } => write!(f, "the file `{file}`"),
 
             MeshElement::MaterialExtra { material_id, name } => {
-                write!(f, "material {}'s extra `{name}`", material_id.to_u32())
+                write!(f, "material {material_id}'s extra `{name}`")
             }
 
             MeshElement::MaterialName { material_id } => {
-                write!(f, "material {}'s name", material_id.to_u32())
+                write!(f, "material {material_id}'s name")
             }
 
             MeshElement::MaterialUvStreams { material_id } => {
-                write!(f, "material {}'s UV streams", material_id.to_u32())
+                write!(f, "material {material_id}'s UV streams")
             }
 
             MeshElement::Materials => f.write_str("the material table"),
@@ -138,31 +138,27 @@ impl Display for MeshElement {
             MeshElement::Method => f.write_str("the method"),
 
             MeshElement::PrimitiveAttribute { primitive_id, name } => {
-                write!(
-                    f,
-                    "primitive {}'s attribute `{name}`",
-                    primitive_id.to_u32()
-                )
+                write!(f, "primitive {primitive_id}'s attribute `{name}`")
             }
 
             MeshElement::PrimitiveMaterial { primitive_id } => {
-                write!(f, "primitive {}'s material", primitive_id.to_u32())
+                write!(f, "primitive {primitive_id}'s material")
             }
 
             MeshElement::PrimitiveName { primitive_id } => {
-                write!(f, "primitive {}'s name", primitive_id.to_u32())
+                write!(f, "primitive {primitive_id}'s name")
             }
 
             MeshElement::PrimitiveNormal { primitive_id } => {
-                write!(f, "primitive {}'s normal", primitive_id.to_u32())
+                write!(f, "primitive {primitive_id}'s normal")
             }
 
             MeshElement::PrimitiveSelect { primitive_id } => {
-                write!(f, "primitive {}'s select", primitive_id.to_u32())
+                write!(f, "primitive {primitive_id}'s select")
             }
 
             MeshElement::PrimitiveUvStreams { primitive_id } => {
-                write!(f, "primitive {}'s UV streams", primitive_id.to_u32())
+                write!(f, "primitive {primitive_id}'s UV streams")
             }
 
             MeshElement::Primitives => f.write_str("the primitive table"),
@@ -172,7 +168,7 @@ impl Display for MeshElement {
             MeshElement::Slot {
                 material_id,
                 property,
-            } => write!(f, "material {}'s slot `{property}`", material_id.to_u32()),
+            } => write!(f, "material {material_id}'s slot `{property}`"),
 
             MeshElement::TextureShape => f.write_str("the texture shape"),
 

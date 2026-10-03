@@ -73,27 +73,25 @@ fn object_stems<T: VoxExt>(
             .expect("the selection resolved an id from the main's objects")
             .name();
 
-        let index = object_id.to_u32();
-
         if name.is_empty() {
             return Err(Error::usage(format!(
-                "object {index} has no name, and a run over several objects or `--split-files` \
+                "object {object_id} has no name, and a run over several objects or `--split-files` \
                  names each object's files by it; name the object or select one"
             )));
         }
 
         if name.contains('/') || name.contains('\\') {
             return Err(Error::usage(format!(
-                "object {index} is named `{name}`, which names its files, so it cannot contain \
+                "object {object_id} is named `{name}`, which names its files, so it cannot contain \
                  a path separator"
             )));
         }
 
         if let Some(earlier) = stems.iter().position(|stem| stem == name) {
             return Err(Error::usage(format!(
-                "objects {} and {index} share the name `{name}`, which names their files; \
+                "objects {} and {object_id} share the name `{name}`, which names their files; \
                  select one or rename them",
-                object_ids[earlier].to_u32()
+                object_ids[earlier]
             )));
         }
 

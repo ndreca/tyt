@@ -14,10 +14,7 @@ pub fn rekey_hierarchy_nodes<T>(
         .map(|(node_id, entry)| {
             let Some(new_id) = remap.hierarchy_nodes.new_id(node_id) else {
                 return Err(VoxError::Ext {
-                    reason: format!(
-                        "{format} ext has an entry for released node {}",
-                        node_id.to_u32()
-                    ),
+                    reason: format!("{format} ext has an entry for released node {node_id}"),
                 });
             };
             Ok((new_id, entry))

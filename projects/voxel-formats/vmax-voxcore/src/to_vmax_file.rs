@@ -143,7 +143,7 @@ pub fn to_vmax_file(main: &VMaxVoxMain, options: &VMaxWriteOptions) -> Result<VM
             let object_state = ext_entry(
                 main.ext().object_states.get(&object_id),
                 "object",
-                object_id.to_u32(),
+                object_id,
             )?;
 
             // Instances share one contents file: rebuild it once.
@@ -238,10 +238,8 @@ fn ext_placements(main: &VMaxVoxMain) -> Result<Vec<Placement<'_>>> {
         for &child_id in &node.child_node_ids {
             if let Some(&other_id) = parent_ids.get(&child_id) {
                 return Err(Error::invalid(format!(
-                    "node {} has parents {} and {}, but a Voxel Max node has one parent",
-                    child_id.to_u32(),
-                    other_id.to_u32(),
-                    parent_id.to_u32()
+                    "node {child_id} has parents {other_id} and {parent_id}, but a Voxel Max node \
+                     has one parent"
                 )));
             }
             parent_ids.insert(child_id, parent_id);
@@ -251,10 +249,8 @@ fn ext_placements(main: &VMaxVoxMain) -> Result<Vec<Placement<'_>>> {
     for &root_id in main.root_hierarchy_node_ids() {
         if let Some(parent_id) = parent_ids.get(&root_id) {
             return Err(Error::invalid(format!(
-                "node {} is a root and a child of node {}, but a Voxel Max node with a parent \
-                 is not a root",
-                root_id.to_u32(),
-                parent_id.to_u32()
+                "node {root_id} is a root and a child of node {parent_id}, but a Voxel Max node \
+                 with a parent is not a root"
             )));
         }
     }
@@ -262,9 +258,9 @@ fn ext_placements(main: &VMaxVoxMain) -> Result<Vec<Placement<'_>>> {
     main.iter_hierarchy_nodes()
         .map(|(node_id, node)| {
             let entry = |id: U32Id<BVoxHierarchyNode>| {
-                ext.hierarchy_nodes.get(&id).ok_or_else(|| {
-                    Error::invalid(format!("vmax ext holds no entry for node {}", id.to_u32()))
-                })
+                ext.hierarchy_nodes
+                    .get(&id)
+                    .ok_or_else(|| Error::invalid(format!("vmax ext holds no entry for node {id}")))
             };
             let parent_id = match parent_ids.get(&node_id) {
                 Some(&parent_id) => Some(entry(parent_id)?.id.clone()),
@@ -480,11 +476,7 @@ fn new_palette_plan(
     palette_id: U32Id<BVoxPalette>,
     colored_count: usize,
 ) -> Result<PalettePlan> {
-    let provenance = ext_entry(
-        main.ext().palettes.get(&palette_id),
-        "palette",
-        palette_id.to_u32(),
-    )?;
+    let provenance = ext_entry(main.ext().palettes.get(&palette_id), "palette", palette_id)?;
     let layout = PaletteLayout::resolve(main, palette_id)?;
 
     let color_table = match &layout.color {
@@ -493,16 +485,14 @@ fn new_palette_plan(
     };
     if color_table.is_none() && !layout.material.is_empty() {
         return Err(Error::invalid(format!(
-            "palette {} binds materials but no `{BASE_COLOR}`, and Voxel Max keeps a material \
-             list only in a color palette's sidecar",
-            palette_id.to_u32()
+            "palette {palette_id} binds materials but no `{BASE_COLOR}`, and Voxel Max keeps a \
+             material list only in a color palette's sidecar"
         )));
     }
     if layout.material.is_empty() && layout.emissive_color.is_some() {
         return Err(Error::invalid(format!(
-            "palette {} binds `{EMISSIVE_COLOR}` but no material property to carry its \
-             strength, which Voxel Max's default materials would not glow at",
-            palette_id.to_u32()
+            "palette {palette_id} binds `{EMISSIVE_COLOR}` but no material property to carry its \
+             strength, which Voxel Max's default materials would not glow at"
         )));
     }
     // An empty reference is one Voxel Max cannot resolve, so a colorless
@@ -557,8 +547,7 @@ impl<'a> PaletteLayout<'a> {
     fn resolve<T: VoxExt>(main: &'a VoxMain<T>, palette_id: U32Id<BVoxPalette>) -> Result<Self> {
         let palette = main.palette(palette_id).ok_or_else(|| {
             Error::invalid(format!(
-                "an object layers palette {}, which the state does not hold",
-                palette_id.to_u32()
+                "an object layers palette {palette_id}, which the state does not hold"
             ))
         })?;
         let mut color = None;
@@ -896,9 +885,8 @@ fn color_cell(layout: &PaletteLayout, material_id: U32Id<BVoxMaterial>) -> Resul
         .to_u32();
     if cell >= PALETTE_COLORS as u32 {
         return Err(Error::invalid(format!(
-            "material {} draws color cell {cell}, but a Voxel Max palette holds only \
-             {PALETTE_COLORS} colors",
-            material_id.to_u32()
+            "material {material_id} draws color cell {cell}, but a Voxel Max palette holds only \
+             {PALETTE_COLORS} colors"
         )));
     }
     Ok(cell as u8 + 1)
@@ -926,8 +914,7 @@ fn material_slot(layout: &PaletteLayout, material_id: U32Id<BVoxMaterial>) -> Re
                 return Err(Error::invalid(format!(
                     "material {} draws `{}` value {value_id} but `{first}` value {slot}, so it \
                      is no single Voxel Max material slot",
-                    material_id.to_u32(),
-                    property.name
+                    material_id, property.name
                 )));
             }
         }
@@ -937,9 +924,8 @@ fn material_slot(layout: &PaletteLayout, material_id: U32Id<BVoxMaterial>) -> Re
     };
     if slot as usize >= MATERIAL_SLOTS {
         return Err(Error::invalid(format!(
-            "material {} draws slot {slot}, but a Voxel Max palette holds only {MATERIAL_SLOTS} \
-             material slots",
-            material_id.to_u32()
+            "material {material_id} draws slot {slot}, but a Voxel Max palette holds only \
+             {MATERIAL_SLOTS} material slots"
         )));
     }
     Ok(slot as u8)
@@ -963,9 +949,8 @@ fn check_emissive(
     let color = |property: Option<&ColorProperty>, name: &str| -> Result<[f64; 3]> {
         let Some(property) = property else {
             return Err(Error::invalid(format!(
-                "material {} sits in a slot glowing at {sic}, but the palette binds no `{name}` \
-                 for Voxel Max to glow in",
-                material_id.to_u32()
+                "material {material_id} sits in a slot glowing at {sic}, but the palette binds no \
+                 `{name}` for Voxel Max to glow in"
             )));
         };
         let value_id = layout
@@ -983,10 +968,9 @@ fn check_emissive(
     let base = color(layout.color.as_ref(), BASE_COLOR)?;
     if emissive != base {
         return Err(Error::invalid(format!(
-            "material {} glows in linear {emissive:?} over a base color of linear {base:?}, but \
-             Voxel Max glows only in the base color, so writing it would change how the model \
-             looks",
-            material_id.to_u32()
+            "material {material_id} glows in linear {emissive:?} over a base color of linear \
+             {base:?}, but Voxel Max glows only in the base color, so writing it would change how \
+             the model looks"
         )));
     }
     Ok(())
@@ -994,7 +978,7 @@ fn check_emissive(
 
 /// The entry for an entity, or the error for an ext out of step with the
 /// scene.
-fn ext_entry<'a, T>(entry: Option<&'a T>, what: &str, id: u32) -> Result<&'a T> {
+fn ext_entry<'a, T, Brand>(entry: Option<&'a T>, what: &str, id: U32Id<Brand>) -> Result<&'a T> {
     entry.ok_or_else(|| Error::invalid(format!("vmax ext holds no entry for {what} {id}")))
 }
 

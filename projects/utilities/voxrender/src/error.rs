@@ -140,11 +140,9 @@ impl Display for Error {
                 VoxObject::MAX_GRID_CELLS
             ),
 
-            Error::UnknownVoxObject { object_id } => write!(
-                f,
-                "object {} is not one of the document's",
-                object_id.to_u32()
-            ),
+            Error::UnknownVoxObject { object_id } => {
+                write!(f, "object {object_id} is not one of the document's")
+            }
 
             Error::MaterialPropertyKind { property } => write!(
                 f,
@@ -159,38 +157,32 @@ impl Display for Error {
                 write!(f, "a {width} by {height} image has a zero side")
             }
 
-            Error::UnknownMaterial { material_id } => write!(
-                f,
-                "material {} is not one of the scene's",
-                material_id.to_u32()
-            ),
-
-            Error::UnknownObject { object_id } => {
-                write!(f, "object {} is not one of the scene's", object_id.to_u32())
+            Error::UnknownMaterial { material_id } => {
+                write!(f, "material {material_id} is not one of the scene's")
             }
 
-            Error::DuplicateObject { object_id } => write!(
-                f,
-                "object {} is already one of the scene's",
-                object_id.to_u32()
-            ),
+            Error::UnknownObject { object_id } => {
+                write!(f, "object {object_id} is not one of the scene's")
+            }
 
-            Error::UnknownPlacement { placement_id } => write!(
-                f,
-                "placement {} is not one of the scene's",
-                placement_id.to_u32()
-            ),
+            Error::DuplicateObject { object_id } => {
+                write!(f, "object {object_id} is already one of the scene's")
+            }
+
+            Error::UnknownPlacement { placement_id } => {
+                write!(f, "placement {placement_id} is not one of the scene's")
+            }
 
             Error::UnknownLight { light_id } => {
-                write!(f, "light {} is not one of the scene's", light_id.to_u32())
+                write!(f, "light {light_id} is not one of the scene's")
             }
 
             Error::UnknownView { view_id } => {
-                write!(f, "view {} is not one of the scene's", view_id.to_u32())
+                write!(f, "view {view_id} is not one of the scene's")
             }
 
             Error::UnknownVoxel { voxel_id } => {
-                write!(f, "voxel {} is outside the grid", voxel_id.to_u32())
+                write!(f, "voxel {voxel_id} is outside the grid")
             }
 
             Error::VoxelMaterialRef {
@@ -198,9 +190,7 @@ impl Display for Error {
                 material_id,
             } => write!(
                 f,
-                "voxel {} samples material {}, which is not one of the scene's",
-                voxel_id.to_u32(),
-                material_id.to_u32()
+                "voxel {voxel_id} samples material {material_id}, which is not one of the scene's"
             ),
 
             Error::MaterialInUse {
@@ -209,7 +199,7 @@ impl Display for Error {
             } => write!(
                 f,
                 "material {} is still sampled by {} object(s)",
-                material_id.to_u32(),
+                material_id,
                 object_ids.len()
             ),
 
@@ -219,7 +209,7 @@ impl Display for Error {
             } => write!(
                 f,
                 "object {} is still placed by {} placement(s)",
-                object_id.to_u32(),
+                object_id,
                 placement_ids.len()
             ),
 

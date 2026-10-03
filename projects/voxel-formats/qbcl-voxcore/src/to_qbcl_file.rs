@@ -87,8 +87,7 @@ fn rebuild_node(node_id: U32Id<BVoxHierarchyNode>, main: &QbclVoxMain) -> Result
         .expect("a hierarchy id from the state resolves");
     let Some(entry) = main.ext().nodes.get(&node_id) else {
         return Err(Error::invalid(format!(
-            "qbcl ext has no entry for node {}",
-            node_id.to_u32()
+            "qbcl ext has no entry for node {node_id}"
         )));
     };
 
@@ -113,8 +112,8 @@ fn rebuild_node(node_id: U32Id<BVoxHierarchyNode>, main: &QbclVoxMain) -> Result
                 // loses nothing.
                 if *transform != QbclModel::DEFAULT_TRANSFORM {
                     return Err(Error::invalid(format!(
-                        "node {} has a model entry with a transform chunk other than the default but places an object",
-                        node_id.to_u32()
+                        "node {node_id} has a model entry with a transform chunk other than the \
+                         default but places an object"
                     )));
                 }
                 synthesized_body(main, position, &objects, children)?
@@ -180,8 +179,7 @@ fn entry_body(
     let [first, extras @ ..] = objects else {
         if children.is_empty() {
             return Err(Error::invalid(format!(
-                "node {} has a grid entry but places no object and lists no child node",
-                node_id.to_u32()
+                "node {node_id} has a grid entry but places no object and lists no child node"
             )));
         }
 

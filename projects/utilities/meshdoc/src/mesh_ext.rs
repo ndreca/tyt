@@ -170,8 +170,7 @@ mod tests {
             node_id: U32Id<BMeshHierarchyNode>,
         ) -> Result<()> {
             let count = state.hierarchy_node_count();
-            self.0
-                .push(format!("node retained {} of {count}", node_id.to_u32()));
+            self.0.push(format!("node retained {node_id} of {count}"));
             Ok(())
         }
 
@@ -181,8 +180,7 @@ mod tests {
             node_id: U32Id<BMeshHierarchyNode>,
         ) -> Result<()> {
             let count = state.hierarchy_node_count();
-            self.0
-                .push(format!("node released {} of {count}", node_id.to_u32()));
+            self.0.push(format!("node released {node_id} of {count}"));
             Ok(())
         }
 
@@ -192,8 +190,7 @@ mod tests {
             object_id: U32Id<BMeshObject>,
         ) -> Result<()> {
             let name = state.object(object_id).unwrap().name();
-            self.0
-                .push(format!("object retained {} {name}", object_id.to_u32()));
+            self.0.push(format!("object retained {object_id} {name}"));
             Ok(())
         }
 
@@ -203,8 +200,7 @@ mod tests {
             object_id: U32Id<BMeshObject>,
         ) -> Result<()> {
             let name = state.object(object_id).unwrap().name();
-            self.0
-                .push(format!("object released {} {name}", object_id.to_u32()));
+            self.0.push(format!("object released {object_id} {name}"));
             Ok(())
         }
 
@@ -214,11 +210,8 @@ mod tests {
             object_id: U32Id<BMeshObject>,
             primitive_id: U32Id<BMeshPrimitive>,
         ) -> Result<()> {
-            self.0.push(format!(
-                "primitive retained {} {}",
-                object_id.to_u32(),
-                primitive_id.to_u32()
-            ));
+            self.0
+                .push(format!("primitive retained {object_id} {primitive_id}"));
             Ok(())
         }
 
@@ -228,11 +221,8 @@ mod tests {
             object_id: U32Id<BMeshObject>,
             primitive_id: U32Id<BMeshPrimitive>,
         ) -> Result<()> {
-            self.0.push(format!(
-                "primitive released {} {}",
-                object_id.to_u32(),
-                primitive_id.to_u32()
-            ));
+            self.0
+                .push(format!("primitive released {object_id} {primitive_id}"));
             Ok(())
         }
 
@@ -241,8 +231,7 @@ mod tests {
             _state: &MeshState,
             material_id: U32Id<BMeshMaterial>,
         ) -> Result<()> {
-            self.0
-                .push(format!("material retained {}", material_id.to_u32()));
+            self.0.push(format!("material retained {material_id}"));
             Ok(())
         }
 
@@ -251,8 +240,7 @@ mod tests {
             _state: &MeshState,
             material_id: U32Id<BMeshMaterial>,
         ) -> Result<()> {
-            self.0
-                .push(format!("material released {}", material_id.to_u32()));
+            self.0.push(format!("material released {material_id}"));
             Ok(())
         }
 
@@ -261,8 +249,7 @@ mod tests {
             _state: &MeshState,
             texture_id: U32Id<BMeshTexture>,
         ) -> Result<()> {
-            self.0
-                .push(format!("texture retained {}", texture_id.to_u32()));
+            self.0.push(format!("texture retained {texture_id}"));
             Ok(())
         }
 
@@ -271,8 +258,7 @@ mod tests {
             _state: &MeshState,
             texture_id: U32Id<BMeshTexture>,
         ) -> Result<()> {
-            self.0
-                .push(format!("texture released {}", texture_id.to_u32()));
+            self.0.push(format!("texture released {texture_id}"));
             Ok(())
         }
 
@@ -281,7 +267,7 @@ mod tests {
             _state: &MeshState,
             image_id: U32Id<BMeshImage>,
         ) -> Result<()> {
-            self.0.push(format!("image retained {}", image_id.to_u32()));
+            self.0.push(format!("image retained {image_id}"));
             Ok(())
         }
 
@@ -290,7 +276,7 @@ mod tests {
             _state: &MeshState,
             image_id: U32Id<BMeshImage>,
         ) -> Result<()> {
-            self.0.push(format!("image released {}", image_id.to_u32()));
+            self.0.push(format!("image released {image_id}"));
             Ok(())
         }
 
@@ -314,7 +300,7 @@ mod tests {
             object_id: U32Id<BMeshObject>,
         ) -> Result<()> {
             Err(Error::Ext {
-                reason: format!("object {} is pinned", object_id.to_u32()),
+                reason: format!("object {object_id} is pinned"),
             })
         }
     }

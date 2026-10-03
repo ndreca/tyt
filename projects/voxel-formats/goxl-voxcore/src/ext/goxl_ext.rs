@@ -97,7 +97,7 @@ fn layer_mut(
     node_id: U32Id<BVoxHierarchyNode>,
 ) -> VoxResult<&mut GoxlExtLayer> {
     layers.get_mut(&node_id).ok_or_else(|| VoxError::Ext {
-        reason: format!("goxl ext has no layer entry for node {}", node_id.to_u32()),
+        reason: format!("goxl ext has no layer entry for node {node_id}"),
     })
 }
 
@@ -174,7 +174,7 @@ impl VoxExt for GoxlExt {
     ) -> VoxResult<()> {
         let Some(layer) = self.layers.get(&node_id) else {
             return Err(VoxError::Ext {
-                reason: format!("goxl ext has no layer entry for node {}", node_id.to_u32()),
+                reason: format!("goxl ext has no layer entry for node {node_id}"),
             });
         };
 
@@ -191,8 +191,7 @@ impl VoxExt for GoxlExt {
                 reason: format!(
                     "node {} is goxl layer id {}, which the layers of nodes {clone_node_ids:?} \
                      clone; release the clones first",
-                    node_id.to_u32(),
-                    layer.id
+                    node_id, layer.id
                 ),
             });
         }
@@ -323,8 +322,7 @@ impl VoxExt for GoxlExt {
             let Some(node_id) = remap.hierarchy_nodes.new_id(old_node_id) else {
                 return Err(VoxError::Ext {
                     reason: format!(
-                        "gc released node {}, which still has a goxl ext layer entry",
-                        old_node_id.to_u32()
+                        "gc released node {old_node_id}, which still has a goxl ext layer entry"
                     ),
                 });
             };
@@ -336,8 +334,7 @@ impl VoxExt for GoxlExt {
                         reason: format!(
                             "gc released object {}, which the goxl ext layer for node {} still \
                              stamps",
-                            placement.object_id.to_u32(),
-                            old_node_id.to_u32()
+                            placement.object_id, old_node_id
                         ),
                     });
                 };

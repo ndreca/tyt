@@ -317,11 +317,9 @@ impl Display for Error {
         match self {
             Error::Ext { reason } => write!(f, "ext: {reason}"),
 
-            Error::MalformedValuePoolValue { value_id } => write!(
-                f,
-                "value {} is outside its kind's value domain",
-                value_id.to_u32()
-            ),
+            Error::MalformedValuePoolValue { value_id } => {
+                write!(f, "value {value_id} is outside its kind's value domain")
+            }
 
             Error::MalformedRetainedValue => {
                 write!(f, "the added value is outside its kind's value domain")
@@ -338,65 +336,39 @@ impl Display for Error {
             ),
 
             Error::UnknownObject { object_id } => {
-                write!(
-                    f,
-                    "object {} is not one of this state's",
-                    object_id.to_u32()
-                )
+                write!(f, "object {object_id} is not one of this state's")
             }
 
             Error::UnknownPalette { palette_id } => {
-                write!(
-                    f,
-                    "palette {} is not one of this state's",
-                    palette_id.to_u32()
-                )
+                write!(f, "palette {palette_id} is not one of this state's")
             }
 
             Error::UnknownValuePool { value_pool_id } => {
-                write!(
-                    f,
-                    "value pool {} is not one of this state's",
-                    value_pool_id.to_u32()
-                )
+                write!(f, "value pool {value_pool_id} is not one of this state's")
             }
 
-            Error::UnknownHierarchyNode { node_id } => write!(
-                f,
-                "hierarchy node {} is not one of this state's",
-                node_id.to_u32()
-            ),
+            Error::UnknownHierarchyNode { node_id } => {
+                write!(f, "hierarchy node {node_id} is not one of this state's")
+            }
 
-            Error::UnknownProperty { property_id } => write!(
-                f,
-                "property {} is not one of the palette's",
-                property_id.to_u32()
-            ),
+            Error::UnknownProperty { property_id } => {
+                write!(f, "property {property_id} is not one of the palette's")
+            }
 
-            Error::UnknownMaterial { material_id } => write!(
-                f,
-                "material {} is not one of the palette's",
-                material_id.to_u32()
-            ),
+            Error::UnknownMaterial { material_id } => {
+                write!(f, "material {material_id} is not one of the palette's")
+            }
 
             Error::UnknownValuePoolValue { value_id } => {
-                write!(
-                    f,
-                    "value {} is not one of the value pool's",
-                    value_id.to_u32()
-                )
+                write!(f, "value {value_id} is not one of the value pool's")
             }
 
             Error::UnknownLayer { layer_id } => {
-                write!(f, "layer {} is not one of the object's", layer_id.to_u32())
+                write!(f, "layer {layer_id} is not one of the object's")
             }
 
             Error::UnknownVoxel { voxel_id } => {
-                write!(
-                    f,
-                    "voxel {} is outside the object's grid",
-                    voxel_id.to_u32()
-                )
+                write!(f, "voxel {voxel_id} is outside the object's grid")
             }
 
             Error::RemappedVoxelOutsideGrid {
@@ -406,13 +378,7 @@ impl Display for Error {
             } => write!(
                 f,
                 "voxel {} would move to [{}, {}, {}], outside the {} x {} x {} grid",
-                voxel_id.to_u32(),
-                position.x,
-                position.y,
-                position.z,
-                bounds.x,
-                bounds.y,
-                bounds.z
+                voxel_id, position.x, position.y, position.z, bounds.x, bounds.y, bounds.z
             ),
 
             Error::RemappedVoxelCollision {
@@ -420,9 +386,7 @@ impl Display for Error {
                 other_voxel_id,
             } => write!(
                 f,
-                "voxels {} and {} would move onto one cell",
-                other_voxel_id.to_u32(),
-                voxel_id.to_u32()
+                "voxels {other_voxel_id} and {voxel_id} would move onto one cell"
             ),
 
             Error::ResampleSourceOutsideGrid { position, bounds } => write!(
@@ -436,9 +400,8 @@ impl Display for Error {
                 property_id,
             } => write!(
                 f,
-                "palette {} property {} draws from a value pool that holds no colors",
-                palette_id.to_u32(),
-                property_id.to_u32()
+                "palette {palette_id} property {property_id} draws from a value pool that holds no \
+                 colors"
             ),
 
             Error::IndexPastCount { index, count } => {
@@ -451,7 +414,7 @@ impl Display for Error {
             } => write!(
                 f,
                 "material {} is still sampled by objects {:?}",
-                material_id.to_u32(),
+                material_id,
                 id_u32s(object_ids)
             ),
 
@@ -461,7 +424,7 @@ impl Display for Error {
             } => write!(
                 f,
                 "value {} is still drawn by palettes {:?}",
-                value_id.to_u32(),
+                value_id,
                 id_u32s(palette_ids)
             ),
 
@@ -471,7 +434,7 @@ impl Display for Error {
             } => write!(
                 f,
                 "palette {} is still referenced by objects {:?}",
-                palette_id.to_u32(),
+                palette_id,
                 id_u32s(object_ids)
             ),
 
@@ -481,7 +444,7 @@ impl Display for Error {
             } => write!(
                 f,
                 "value pool {} is still referenced by palettes {:?}",
-                value_pool_id.to_u32(),
+                value_pool_id,
                 id_u32s(palette_ids)
             ),
 
@@ -491,7 +454,7 @@ impl Display for Error {
             } => write!(
                 f,
                 "object {} is still placed by hierarchy nodes {:?}",
-                object_id.to_u32(),
+                object_id,
                 id_u32s(node_ids)
             ),
 
@@ -502,7 +465,7 @@ impl Display for Error {
             } => write!(
                 f,
                 "hierarchy node {} is still referenced: parents {:?}, root {}",
-                node_id.to_u32(),
+                node_id,
                 id_u32s(parent_ids),
                 root
             ),
@@ -530,10 +493,8 @@ impl Display for Error {
                 value_pool_id,
             } => write!(
                 f,
-                "the inserted palette's property {} names value pool {}, which is not one of this \
-                 state's",
-                property_id.to_u32(),
-                value_pool_id.to_u32()
+                "the inserted palette's property {property_id} names value pool {value_pool_id}, \
+                 which is not one of this state's"
             ),
 
             Error::MaterialValueRef {
@@ -541,10 +502,8 @@ impl Display for Error {
                 material_id,
             } => write!(
                 f,
-                "the inserted palette's material {} draws a value for property {} that is not one \
-                 of its value pool's",
-                material_id.to_u32(),
-                property_id.to_u32()
+                "the inserted palette's material {material_id} draws a value for property \
+                 {property_id} that is not one of its value pool's"
             ),
 
             Error::LayerPaletteRef {
@@ -552,10 +511,8 @@ impl Display for Error {
                 palette_id,
             } => write!(
                 f,
-                "the inserted object's layer {} references palette {}, which is not one of this \
-                 state's",
-                layer_id.to_u32(),
-                palette_id.to_u32()
+                "the inserted object's layer {layer_id} references palette {palette_id}, which is \
+                 not one of this state's"
             ),
 
             Error::LayerSampleMaterial {
@@ -564,23 +521,20 @@ impl Display for Error {
                 material_id,
             } => write!(
                 f,
-                "voxel {} samples material {} for layer {}, which is not one of the layer's \
-                 palette's",
-                voxel_id.to_u32(),
-                material_id.to_u32(),
-                layer_id.to_u32()
+                "voxel {voxel_id} samples material {material_id} for layer {layer_id}, which is \
+                 not one of the layer's palette's"
             ),
 
             Error::InsertedDuplicateChildNode { index, child_id } => write!(
                 f,
-                "the hierarchy node at listing index {index} lists child node {} more than once",
-                child_id.to_u32()
+                "the hierarchy node at listing index {index} lists child node {child_id} more than \
+                 once"
             ),
 
             Error::InsertedDuplicateChildObject { index, object_id } => write!(
                 f,
-                "the hierarchy node at listing index {index} places object {} more than once",
-                object_id.to_u32()
+                "the hierarchy node at listing index {index} places object {object_id} more than \
+                 once"
             ),
 
             Error::InsertedNonFiniteTransform { index } => write!(
@@ -610,9 +564,7 @@ impl Display for Error {
                 value_id,
             } => write!(
                 f,
-                "value pool {} value {} is outside its kind's value domain",
-                value_pool_id.to_u32(),
-                value_id.to_u32()
+                "value pool {value_pool_id} value {value_id} is outside its kind's value domain"
             ),
 
             Error::PropertyValuePool {
@@ -621,10 +573,8 @@ impl Display for Error {
                 value_pool_id,
             } => write!(
                 f,
-                "palette {} property {} references value pool {}, which does not exist",
-                palette_id.to_u32(),
-                property_id.to_u32(),
-                value_pool_id.to_u32()
+                "palette {palette_id} property {property_id} references value pool \
+                 {value_pool_id}, which does not exist"
             ),
 
             Error::MaterialValue {
@@ -633,10 +583,8 @@ impl Display for Error {
                 material_id,
             } => write!(
                 f,
-                "palette {} material {} has a value id for property {} that is not one of the value pool's values",
-                palette_id.to_u32(),
-                material_id.to_u32(),
-                property_id.to_u32()
+                "palette {palette_id} material {material_id} has a value id for property \
+                 {property_id} that is not one of the value pool's values"
             ),
 
             Error::PaletteRef {
@@ -644,9 +592,7 @@ impl Display for Error {
                 palette_id,
             } => write!(
                 f,
-                "object {} references palette {}, which does not exist",
-                object_id.to_u32(),
-                palette_id.to_u32()
+                "object {object_id} references palette {palette_id}, which does not exist"
             ),
 
             Error::SampleMaterial {
@@ -655,74 +601,57 @@ impl Display for Error {
                 material_id,
             } => write!(
                 f,
-                "object {} voxel {} samples material {}, out of range of its palette",
-                object_id.to_u32(),
-                voxel_id.to_u32(),
-                material_id.to_u32()
+                "object {object_id} voxel {voxel_id} samples material {material_id}, out of range \
+                 of its palette"
             ),
 
             Error::ChildNode { node_id, child_id } => write!(
                 f,
-                "hierarchy node {} lists child node {}, which does not exist",
-                node_id.to_u32(),
-                child_id.to_u32()
+                "hierarchy node {node_id} lists child node {child_id}, which does not exist"
             ),
 
             Error::ChildObject { node_id, object_id } => write!(
                 f,
-                "hierarchy node {} places object {}, which does not exist",
-                node_id.to_u32(),
-                object_id.to_u32()
+                "hierarchy node {node_id} places object {object_id}, which does not exist"
             ),
 
             Error::Root { root_id } => write!(
                 f,
-                "root references hierarchy node {}, which does not exist",
-                root_id.to_u32()
+                "root references hierarchy node {root_id}, which does not exist"
             ),
 
             Error::Cycle { node_id } => write!(
                 f,
-                "hierarchy is not acyclic: a cycle reaches node {}",
-                node_id.to_u32()
+                "hierarchy is not acyclic: a cycle reaches node {node_id}"
             ),
 
             Error::DuplicateChildNode { node_id, child_id } => write!(
                 f,
-                "hierarchy node {} lists child node {} more than once",
-                node_id.to_u32(),
-                child_id.to_u32()
+                "hierarchy node {node_id} lists child node {child_id} more than once"
             ),
 
             Error::DuplicateChildObject { node_id, object_id } => write!(
                 f,
-                "hierarchy node {} places object {} more than once",
-                node_id.to_u32(),
-                object_id.to_u32()
+                "hierarchy node {node_id} places object {object_id} more than once"
             ),
 
-            Error::DuplicateRoot { root_id } => write!(
-                f,
-                "root lists hierarchy node {} more than once",
-                root_id.to_u32()
-            ),
+            Error::DuplicateRoot { root_id } => {
+                write!(f, "root lists hierarchy node {root_id} more than once")
+            }
 
             Error::NonFiniteTransform { node_id } => write!(
                 f,
-                "hierarchy node {} has a non-finite transform position or scale component",
-                node_id.to_u32()
+                "hierarchy node {node_id} has a non-finite transform position or scale component"
             ),
 
             Error::ZeroScale { node_id } => write!(
                 f,
-                "hierarchy node {} has a zero transform scale component",
-                node_id.to_u32()
+                "hierarchy node {node_id} has a zero transform scale component"
             ),
 
             Error::NonUnitRotation { node_id } => write!(
                 f,
-                "hierarchy node {} transform rotation is not a unit quaternion",
-                node_id.to_u32()
+                "hierarchy node {node_id} transform rotation is not a unit quaternion"
             ),
         }
     }
