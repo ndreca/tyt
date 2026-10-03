@@ -1,8 +1,7 @@
 # Voxel modeling plan
 
-Status: **open**, drafted 2026-09-30. Nothing is built yet. The
-[checklist](checklist.md) tracks both phases, and S1 waits on the
-[open questions](#open-questions).
+Status: **open**, drafted 2026-09-30. The [checklist](checklist.md) tracks both
+phases.
 
 ## Goal
 
@@ -38,13 +37,15 @@ the loop hands back.
 
 ## Reference
 
-Two pages specify the pipeline:
+Three pages specify the pipeline:
 
 1. The [modeling API](reference/modeling-api.md) lists every call a model file
    can make, with its signature and its effect in a line or two. It stands alone
    as the context an agent loads before writing a model.
 2. [Model evaluation](reference/model-evaluation.md) sets exactly what each call
    computes, for the implementations to follow.
+3. The [sdfj format](reference/sdfj-format.md) sets the document the builder
+   writes and vxl reads.
 
 ## Shapes
 
@@ -64,7 +65,7 @@ carry most of the form.
 
 ## Steps
 
-A model holds an ordered list of steps over one grid. A later step wins wherever
+A model holds an ordered list of steps over a grid. A later step wins wherever
 two steps reach the same cell. An edit usually changes or appends one line
 because the list reads in building order: the blocking out first, then the
 detail. Each step carries a name that the report and errors use.
@@ -93,11 +94,13 @@ its feet at `y = 0` stands on its pivot. The root node's scale carries the voxel
 size, and the placed document therefore measures meters.
 
 A model can group its steps into parts, and nested parts form a hierarchy. Each
-part writes its own object under a node at its pivot, and turning the node turns
-the part about its joint. `--select` can then pick a part by its path. Every
-step still runs over one grid. A cell belongs to the part whose step last filled
-it, and no cell lands in two objects. `--flatten` merges the parts back into one
-object with the same cells.
+part voxelizes on its own grid into its own object under a node at its pivot,
+and turning the node turns the part about its joint. `--select` can then pick a
+part by its path. A step reaches only its own part's cells, and parts can
+overlap. A part can sit in several lists, and an `offset` moves each place. The
+default `--frame world` samples every place on one lattice, and `--frame local`
+voxelizes a part once for all its places to share. `--flatten` merges the parts
+back into one object.
 
 ## Review
 
@@ -168,8 +171,8 @@ skips the build voxelizes a stale `.sdfj`.
 
 1. Shapes are signed distance functions sampled at voxel centers. Only the sign
    decides a voxel.
-2. Combinators build shapes. An ordered list of steps applies the shapes to the
-   grid, and the later step wins.
+2. Combinators build shapes. An ordered list of steps applies the shapes to a
+   part's grid, and the later step wins.
 3. Claude writes TypeScript against a typed builder and never raw per-voxel
    loops. `set` covers the single voxel a shape cannot place. TypeScript gives
    the model variables, functions, and loops. Node 24, Bun, and Deno all run
@@ -191,13 +194,13 @@ skips the build voxelizes a stale `.sdfj`.
 10. A model holds signed distance functions in meters and no voxel size.
     Sampling stays separate. `vxl sdf-doc voxelize` follows
     `vxl mesh-doc voxelize`: the output path, the sizing flags with their
-    defaults, `--fill-mode`, the encoding flags, and profiles in `.vxlconfig`.
-    The lattice anchors at the origin. The root node's scale holds the voxel
-    size. `set`, `coat`, `speckle`, the `cells` border, and the pattern lengths
-    a model leaves out count cells at any size.
-11. Parts label cells on one grid and hold no grids of their own. A cell belongs
-    to the part whose step last filled it. Flattening a model therefore gives
-    the same cells as splitting it.
+    defaults, `--frame`, `--fill-mode`, the encoding flags, and profiles in
+    `.vxlconfig`. The lattice anchors at the origin. The root node's scale holds
+    the voxel size. `set`, `coat`, `speckle`, the `cells` border, and the
+    pattern lengths a model leaves out count cells at any size.
+11. Each part voxelizes on its own grid into a voxj object. A step reaches only
+    its own part's cells, and parts can overlap. A turned joint then shows each
+    part whole.
 12. A material holds voxj properties as key/value pairs. The glTF vocabulary
     gives the eight named properties, and every palette binds all eight. A
     material leaving one out takes glTF's default, except that `metallic`
@@ -211,23 +214,28 @@ skips the build voxelizes a stale `.sdfj`.
 15. In every binary of the workspace, `integration` gathers the commands that
     print a file for another tool. `integration print-completions` takes over
     from `completion`. `vxl integration print-skill` prints the skill.
-
-## Open questions
-
-Each holds a proposed answer to confirm before S1.
-
-1. **Crate layout.** Proposed: the SDF crates follow the voxel and mesh
-   families. The family keeps that structure while `.sdfj` is its one format.
-   The crates stay thin because voxsmith does the work. The five names are free
-   on crates.io.
-   1. `sdfcore` at `projects/utilities/sdfcore` holds a model's state as tables
-      indexed by branded ids
-   2. `sdfj` at `projects/sdf-formats/sdfj` holds the `.sdfj` types.
-      `sdfj-codec` reads and writes `.sdfj` documents over those types.
-      `sdfj-sdfcore` converts between a document and the sdfcore state
-   3. `sdfconv` at `projects/utilities/sdfconv` reads and writes SDF formats
-      through the sdfcore state
-   4. voxsmith evaluates and samples the sdfcore state under a new `sdf_doc`
-      feature beside `mesh_doc`
-   5. vxl holds and embeds the builder's `.ts` files, the skill's workflow, and
-      the modeling API
+16. The SDF crates follow the voxel and mesh families. The family keeps that
+    structure even with `.sdfj` as its one format. The crates stay thin because
+    voxsmith does the work.
+    1. `sdfcore` at `projects/utilities/sdfcore` holds a model's state as tables
+       indexed by branded ids
+    2. `sdfj` at `projects/sdf-formats/sdfj` holds the `.sdfj` types.
+       `sdfj-codec` reads and writes `.sdfj` documents over those types.
+       `sdfj-sdfcore` converts between a document and the sdfcore state
+    3. `sdfconv` at `projects/utilities/sdfconv` reads and writes SDF formats
+       through the sdfcore state
+    4. voxsmith evaluates and samples the sdfcore state under an `sdf_doc`
+       feature beside `mesh_doc`
+    5. vxl holds and embeds the builder's `.ts` files, the skill's workflow, and
+       the modeling API
+17. The `.sdfj` format holds no library. The library is a JSON document of named
+    materials that vxl embeds and `.vxlconfig` extends. `vxl sdf-doc build`
+    copies a library material's properties into the document, and the document
+    stands alone.
+18. A step or a part can sit in several lists, as a voxj node can sit under
+    several parents. Each place writes a node. `--frame world` moves each
+    place's shapes by its offsets before sampling and keeps every part on one
+    lattice. `--frame local` voxelizes each part once, and every place shares
+    the part's object. Unique names within each list keep every voxj path
+    unique. The `.sdfj` document mirrors voxj with `objects`, `nodes`, and
+    `rootNodes`.

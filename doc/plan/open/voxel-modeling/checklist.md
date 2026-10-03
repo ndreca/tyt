@@ -16,6 +16,9 @@ Code-level choices go in an `implementation-decisions.md` beside this file.
 - `deno check`, `deno lint`, and `deno fmt --check` pass over the builder before
   a step stages. The builder's tests sit in `*.test.ts` files beside the code
   they cover and run under `deno test`.
+- A new crate starts at `0.1.0` with
+  `[package.metadata.workspaces] independent = true` and joins the workspace
+  members and `[patch.crates-io]`.
 - Trial notes go in `trials.md` beside this file. A trial model that turns out
   well joins the builder's `examples/`. Renders stay out of git.
 
@@ -25,21 +28,21 @@ The builder records models as `.sdfj`, and vxl voxelizes and renders them. A
 trial of about ten prompts then shows which operations Claude reaches for and
 where the loop fails.
 
-- [ ] **S0. Open questions.** Settle the README's open questions and fold the
+- [x] **S0. Open questions.** Settle the README's open questions and fold the
       answers into the plan and the reference pages.
 - [ ] **S1. Document.** A reference page for the `.sdfj` document beside the
       other two, with the entry the builder writes for each call in the modeling
-      API. The document follows voxj: a normalized hierarchy of tables whose
-      entries reference each other by index. The crates the
-      [crate layout](README.md#open-questions) proposes read and write the
-      document. `sdfcore` holds the document's tables as branded-id tables.
+      API. The document follows voxj: tables whose entries reference each other
+      by index hold every value a model can share, including steps, objects, and
+      nodes. The crates the [crate layout](README.md#decisions) sets read and
+      write the document. `sdfcore` holds the tables as branded-id tables.
 - [ ] **S2. Builder.** The builder's `.ts` files:
-      1. An entry point that puts the API in scope, imports the model, and
-         writes the `.sdfj` document
-      2. Type definitions declaring the API as globals, matching the modeling
-         API's declaration blocks
-      3. The builder's checks from model evaluation
-      4. A test per call pinning the entry the call writes
+  1. An entry point that puts the API in scope, imports the model, and writes
+     the `.sdfj` document
+  2. Type definitions declaring the API as globals, matching the modeling API's
+     declaration blocks
+  3. The builder's checks from model evaluation
+  4. A test per call pinning the entry the call writes
 - [ ] **S3. Build command.** `vxl sdf-doc build` with `--runtime` and profiles
       at `sdfDoc.build.profiles`. vxl embeds the builder and writes it to a
       temporary directory for each run. `vxl profile sdf-doc build list` lists
@@ -47,12 +50,14 @@ where the loop fails.
 - [ ] **S4. Shapes.** A voxsmith operation reads the `.sdfj` document and
       evaluates every shape, each with a test over a small grid against its
       distance in model evaluation.
-- [ ] **S5. Steps.** The sampling, the bounds, the grid, the five steps, parts
-      with their hierarchy, and the document checks. A test pins a box with
-      corners on cell corners filling exactly its cells.
-- [ ] **S6. Materials.** The library as vxl built-ins with properties for every
-      name the modeling API lists, the named and custom properties, `shades`,
-      the noise with its measured `sigma1`, and the patterns.
+- [ ] **S5. Steps.** The sampling, the bounds, the grid, the five steps, the
+      document checks, and parts with their grids, hierarchy, places, offsets,
+      and frames. A test pins a box with corners on cell corners filling exactly
+      its cells.
+- [ ] **S6. Materials.** The library as a JSON document vxl embeds, with
+      properties for every name the modeling API lists. `vxl sdf-doc build`
+      hands the library to the builder. The named and custom properties,
+      `shades`, the noise with its measured `sigma1`, and the patterns.
 - [ ] **S7. Voxelize command.** `vxl sdf-doc voxelize` with the flags and
       profiles the modeling API lists, the voxj document, and the report under
       `--report`. `vxl profile sdf-doc voxelize list` lists the profiles.
@@ -68,8 +73,8 @@ where the loop fails.
       the workflow and the modeling API into vxl. The modeling API links to
       other pages by their repository URLs.
       `vxl integration print-skill voxel-modeling` prints the workflow and then
-      the modeling API as one `SKILL.md`. Move the other two reference pages to
-      `doc/ref/sdf-doc/`.
+      the modeling API as one `SKILL.md`. Move model evaluation to
+      `doc/ref/sdf-doc/` and the sdfj format into the sdfj crate's `docs/`.
 - [ ] **S11. Trials.** Run about ten prompts through the skill, each in a fresh
       session. Log each prompt in `trials.md` with the passes it took, the
       failures, and the operations and report data Claude wanted and lacked. The
@@ -95,3 +100,9 @@ S12 writes phase 2's steps from the trials. Known so far:
    3. A step that reads the finished grid as `coat` does and picks darker shades
       in crevices and lighter ones on edges. Review renders shade crevices
       already, but an exported mesh keeps only the colors
+5. Part candidates for the trials to confirm:
+   1. A step that runs a part's steps on another part's grid. vxl samples the
+      part's shapes at that grid's cells. Later steps can then carve, paint, or
+      coat across both parts
+   2. A rotation on parts that turns the part's shapes at any angle before
+      sampling

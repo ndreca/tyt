@@ -12,8 +12,9 @@ links the articles it follows.
 `vxl sdf-doc build` turns a model file into an `.sdfj` document:
 
 1. The flags and profile merge into the [settings](#settings).
-2. vxl writes the builder's files to a temporary directory and runs the builder
-   under the runtime with the model's path and the output path.
+2. vxl writes the builder's files and the [library](#materials) to a temporary
+   directory and runs the builder under the runtime with the model's path and
+   the output path.
 3. The builder imports the model with the API in scope. The default export has
    to be an array of steps and parts.
 4. The builder writes the calls as the [`.sdfj` document](#the-sdfj-document).
@@ -24,9 +25,9 @@ links the articles it follows.
 1. The flags and profile merge into the [settings](#settings).
 2. vxl reads the document and runs the [checks](#checks) over it.
 3. The [sampling](#sampling) settles the voxel size.
-4. The [grid](#the-grid) wraps every `add` shape and every `set` point.
-5. The [steps](#steps) run in list order over the grid, with each part's list in
-   its place. The fill mode follows the last step.
+4. Each part's [grid](#the-grid) wraps the part's `add` shapes and `set` points.
+5. Each part's [steps](#steps) run in list order over its grid. The fill mode
+   follows the last step.
 6. The [palette](#materials) collects the materials the final cells hold. vxl
    writes the [voxj document](#the-voxj-document). `--report` prints the
    [report](#the-report).
@@ -44,9 +45,9 @@ does.
    supplying it.
 2. A profile holds the flags by camel-case name with their command-line values.
    A build profile holds `runtime`. A voxelize profile holds `resolution` as an
-   object of `reference` and `count`, `voxelSize`, `fillMode`, `flatten`, and
-   `report`. A voxelize profile sets at most one of `resolution` and
-   `voxelSize`. Either profile can also hold a one-line `description`. An
+   object of `reference` and `count`, `voxelSize`, `frame`, `fillMode`,
+   `flatten`, and `report`. A voxelize profile sets at most one of `resolution`
+   and `voxelSize`. Either profile can also hold a one-line `description`. An
    unknown key or value errors when the profiles load.
 3. A flag on the command line replaces the value the profile sets. Either
    `--resolution` or `--voxel-size` replaces the profile's `resolution` and
@@ -56,19 +57,9 @@ does.
 
 ## The `.sdfj` document
 
-The builder records the model and computes nothing. vxl expands and checks every
+The builder records the model and computes nothing. The
+[sdfj format](sdfj-format.md) sets the document. vxl expands and checks every
 value when it voxelizes.
-
-1. The document follows voxj's normalized layout. The builder writes each call
-   as one entry in the table for its kind. An entry references the entries for
-   its receiver and arguments by index. A shape feeding several steps appears
-   once.
-2. `mat` turns any name into a library reference. `shades` and the patterns
-   write their arguments unexpanded.
-3. The builder writes each number in its shortest round-trip form, and vxl reads
-   the number back as the same f64.
-4. The root part's entry lists the default export's steps and parts in order and
-   records the model file's stem as the root part's name.
 
 ## Sampling
 
@@ -79,16 +70,19 @@ inside. The sampling sets the voxel size `g` from the settings.
    `g` reads 1.
 2. `--resolution <reference> <n>` sets `g` to the reference side divided by `n`.
    The sides come from boxes taken before any rounding.
-3. World references measure the box around every `add` shape and every `set`
-   point.
-4. Object references measure each part's box, with or without `--flatten`. A
-   part's box wraps the `add` shapes and `set` points directly in the part's
-   list. A part with none has no box.
+3. World references measure the box around every part's `add` shapes and `set`
+   points at every place.
+4. Object references measure each part's box and take the extreme across parts,
+   with or without `--flatten`. A part's box wraps the `add` shapes and `set`
+   points in the part's list. A part with none has no box.
 
 The lattice anchors at the origin. The cell `[i, j, k]` spans from
-`[i, j, k] * g` to `[i + 1, j + 1, k + 1] * g`. A cell belongs to a shape when
-`d` at its center `[i + 0.5, j + 0.5, k + 0.5] * g` reads zero or less, and a
-center exactly on the surface counts as inside. Only the sign decides
+`[i, j, k] * g` to `[i + 1, j + 1, k + 1] * g`. vxl samples each part's shapes
+moved by a shift `o`. Under `--frame world`, `o` adds up the offsets on a
+place's path, and vxl samples each place separately. Under `--frame local`, `o`
+reads zero, and vxl samples a part once for all its places. A cell belongs to a
+shape when `d` at the point `[i + 0.5, j + 0.5, k + 0.5] * g - o` reads zero or
+less, and a point exactly on the surface counts as inside. Only the sign decides
 membership. A shape whose `d` bounds the true distance therefore voxelizes
 exactly as an exact one does.
 
@@ -109,6 +103,7 @@ off the path of most cells.
    zeros and ones, and the other multiples of 30 and 45 take `1 / 2`,
    `sqrt(2) / 2`, and `sqrt(3) / 2`. A quarter turn then keeps a box's corners
    on the cell corners.
+
 2. `twist` takes a sine and a cosine per point, and `bend` takes an arc tangent.
    A cell whose center lies within rounding of a twisted or bent surface may
    land either way between platforms.
@@ -378,34 +373,35 @@ small would lose cells. Every rule below errs large.
 
 ## The grid
 
-The grid spans the cells of the box around every `add` shape and the cell of
-every `set` point. The cap check runs before anything allocates. Cells outside
-the grid stay empty. `carve`, `paint`, and `coat` evaluate only the grid's cells
-and can therefore take an unbounded shape.
+Each part's grid spans the cells of the box around the part's `add` shapes moved
+by `o` and the cell of each of its `set` points. The cap check runs before
+anything allocates. Cells outside a part's grid stay empty. `carve`, `paint`,
+and `coat` evaluate only the grid's cells and can therefore take an unbounded
+shape.
 
 ## Steps
 
-Each cell holds nothing or a material. A cell also remembers the last step that
-changed it and the part that owns it.
+Each cell of a part's grid holds nothing or a material and remembers the last
+step that changed it. A step reaches only its own part's grid.
 
-1. `add` sets every cell its shape covers to the material, and the step's part
-   takes the cells.
-2. `carve` empties every cell its shape covers and clears the cells' owner.
-3. `paint` sets every live cell its shape covers to the material and leaves the
-   owner.
+1. `add` sets every cell its shape covers to the material.
+2. `carve` empties every cell its shape covers.
+3. `paint` sets every live cell its shape covers to the material.
 4. `coat` reads a snapshot of the grid taken before it runs. A live cell takes
    the material when one of the `depth` cells beyond it toward a listed side is
    empty or outside the grid. `within` narrows the result to the cells its shape
-   covers. The owner stays.
-5. `set` sets the cell `floor(p / g)` of each point `p`, and the step's part
-   takes the cells.
+   covers.
+5. `set` sets the cell `floor((p + o) / g)` of each point `p`.
 
 The steps outside every part belong to the root part. A pattern evaluates per
 cell from the cell's [frame position](#pattern-frames) as its step runs.
 
-After the last step, `--fill-mode surface` empties every live cell with no empty
-face neighbor. Cells outside the grid count as empty. The document holds the
-grid the fill mode leaves.
+A step in several parts' lists runs in each part. A part's `offset` moves the
+part's frame within its parent's frame.
+
+After a part's last step, `--fill-mode surface` empties every live cell of the
+part with no empty face neighbor. Cells outside the part's grid count as empty.
+The document holds the grids the fill mode leaves.
 
 ## Pattern frames
 
@@ -472,9 +468,11 @@ A pattern length left out takes its default count of cells times `g`.
    `vec-N-float`. `int` writes `int` or `vec-N-int`, and `json` writes `json`. A
    material leaving a custom property out takes the kind's empty value: 0, a
    zero vector, `false`, `""`, or `null`.
-4. The library holds properties per name. vxl embeds the built-in names. Each
-   `.vxlconfig` in the cascade can add a name or replace one at
-   `sdfDoc.library`.
+4. The library is a JSON document that maps each name to its properties in the
+   [sdfj format's](sdfj-format.md#materials) `properties` form. vxl embeds the
+   built-in library. Each `.vxlconfig` in the cascade can add a name or replace
+   one at `sdfDoc.library`. `mat` copies a name's properties into the `.sdfj`
+   document as the model builds.
 5. `shades` converts the base color to Oklab, steps its lightness by `spread`
    around the middle shade, and converts back. Every other property and the
    alpha carry over.
@@ -482,23 +480,26 @@ A pattern length left out takes its default count of cells times `g`.
 
 ## The voxj document
 
-1. Coordinates under the root node count voxels, and the model point `p` sits at
-   `p / g`. The root node scales by `g` on every axis, and the placed document
-   therefore measures meters.
-2. Each part that owns a cell writes one object named after the part, and the
-   root part's object takes the model file's stem. The object holds the part's
-   cells, and its `bounds` wrap them tightly. Without parts, or under
-   `--flatten`, one object named after the stem holds every live cell.
-3. Each part writes a node named after it, and the nodes nest as the parts do.
-   The root part's node is the document's one root node and sits at the origin.
-   Every other node takes the position `(pivot - parentPivot) / g`, the identity
-   rotation, and a scale of 1.
-4. With `f = -pivot / g`, a part's node places the part's object with an
-   `origin` of the object's min cell index plus `f` when `f` is whole on every
-   axis. Otherwise a child node named `voxels` at `f - floor(f)` places the
-   object with an `origin` of its min cell index plus `floor(f)`. Each voxel
-   then lands at its model position, and turning a part's node turns its object
-   about the pivot.
+1. Each root part writes a root node at its pivot, in meters, that scales by `g`
+   on every axis. Coordinates under a root node count voxels, and the placed
+   document therefore measures meters.
+2. Under `--frame world`, each place of a part writes one object holding the
+   place's live cells. Under `--frame local`, each part writes one object
+   holding the part's live cells, and every place shares the object. Under
+   `--flatten`, each root part writes one object holding every live cell at or
+   below the root part. Where two parts cover one cell, the part placed later
+   wins. An object takes its part's name. The object's `bounds` wrap its cells
+   tightly. A grid with no live cell writes no object.
+3. Each place of a part writes a node named after the part, and the nodes nest
+   as the places do. Every node below a root node takes the position
+   `(pivot - parentPivot) / g`, the identity rotation, and a scale of 1. Each
+   pivot there sits where the offsets on its path move it.
+4. With `f = -(pivot + o) / g` and the pivot in the part's frame, a part's node
+   places the part's object with an `origin` of the object's min cell index plus
+   `f` when `f` is whole on every axis. Otherwise a child node named `voxels` at
+   `f - floor(f)` places the object with an `origin` of its min cell index plus
+   `floor(f)`. Each voxel then lands at its model position, and turning a part's
+   node turns its object about the pivot.
 5. Every object's layer references the one palette. vxl writes the document with
    the run's `--format` and encoding flags.
 6. The palette binds the eight named properties in the order `baseColor`,
@@ -507,30 +508,36 @@ A pattern length left out takes its default count of cells times `g`.
    materials set in name order. Each property binds its own value pool of
    distinct values. The palette's materials follow the order a raster scan first
    meets them, object by object, with x outermost and z innermost.
-7. Objects and nodes follow the parts' order in the list, with the root part
-   first.
+7. Nodes and objects follow the order the places run in, from the first root
+   part. A shared object comes at its part's first place.
 8. The document carries no `editState` and no `ext`.
 
 ## The report
 
-1. The report reads the grid as the last step leaves it, before
-   `--fill-mode surface` runs. The model's line comes first, then a line per
-   step and part in list order. The lines of a part's list indent one level past
-   the part's line.
+1. The report reads each place's grid as the part's last step leaves it, before
+   `--fill-mode surface` runs. The grids come from `--frame world` under either
+   frame. The model's line comes first. Each place of a part then takes a part
+   line. The part's steps follow in list order, and its child parts come after
+   them. A part's steps and child parts indent one level past the part's line. A
+   lone root part takes no line, and its steps and child parts follow the
+   model's line.
 2. An `add` or a `set` writes every cell it fills. A `carve` writes the live
    cells it empties, and a `paint` or a `coat` writes the live cells it
    recolors. A step keeps the cells whose last change came from the step.
    `exposed` counts the kept live cells with an empty face neighbor. Cells
-   outside the grid count as empty. A step's size and bounds cover the cells the
-   step wrote.
-3. A part's count, size, and bounds cover the cells the part owns. A part reads
-   `detached` when its parent owns cells and none of the part's cells shares a
-   face with a parent cell.
-4. Pieces are the face-connected groups of live cells. The report numbers the
-   pieces from the largest. Among pieces of one size, the piece whose first cell
-   comes first in a raster scan with x outermost takes the lower number. With
-   more than one piece, the report ends with a line per piece that lists the
-   steps behind the piece's cells in list order.
+   outside the part's grid count as empty. A step's size and bounds cover the
+   cells the step wrote.
+3. A part line's count, size, and bounds cover the part's live cells at that
+   place. A part reads `detached` when its parent has live cells and none of the
+   part's cells meets a parent cell, either in the same position or across a
+   face. The model's line and the pieces cover the cells the placed parts cover
+   together.
+4. Pieces are the face-connected groups of the cells the placed parts cover. The
+   report numbers the pieces from the largest. Among pieces of one size, the
+   piece whose first cell comes first in a raster scan with x outermost takes
+   the lower number. With more than one piece, the report ends with a line per
+   piece that lists the steps behind the piece's cells in list order. A step
+   name that repeats across lists takes its path of part names.
 5. A size counts cells along x, y, and z. Bounds run in meters from the min
    cell's min corner to the max cell's max corner. The report rounds meters to
    six decimals, drops trailing zeros, and prints `-0` as `0`. The report pads
@@ -539,20 +546,22 @@ A pattern length left out takes its default count of cells times `g`.
 ## Checks
 
 Each command stops at its first failed check. A voxelize check reports the step
-it belongs to.
+it belongs to by its path of part names.
 
 1. `vxl sdf-doc build` checks its flags and profile. `--runtime` takes `node`,
    `bun`, or `deno`, and `--profile` reads a name the cascade holds. A runtime
    that fails to start stops the build with the system's message.
 2. While the model builds, the builder checks the default export and what the
    document cannot hold. The default export is an array of steps and parts.
-   Numbers are finite, and `json` holds no NaN, infinity, or `undefined`. An
-   error the model throws stops the build with its message.
+   Numbers are finite, `json` holds no NaN, infinity, or `undefined`, and `mat`
+   reads only the library's names. An error the model throws stops the build
+   with its message.
 3. `vxl sdf-doc voxelize` checks its flags and profile against the values
    `vxl mesh-doc voxelize` lists. `--voxel-size` reads above zero,
    `--resolution` takes a whole number above zero, and the two flags exclude
-   each other.
-4. vxl reads the document against its schema and checks every node's arguments.
+   each other. `--flatten` needs `--frame world`.
+4. vxl reads the document by the [sdfj format](sdfj-format.md#rules) and checks
+   every entry's arguments.
    - Radii, widths, thicknesses, sizes, scales, chamfers, and periods are above
      zero, except that a `cone` end may take 0.
    - Counts, `octaves`, and `depth` are whole numbers above zero. `sides` is at
@@ -576,16 +585,16 @@ it belongs to.
      ways. An `elongate` stretches at least one axis, and its `center` lies
      inside its shape's box along each axis it stretches.
    - A `polygon` outline never crosses itself.
-5. Over the document, every step has a non-empty name no other step shares, and
-   every part has a non-empty name no other part or the root part shares. Every
-   library reference matches a name in the library. Every material that sets a
-   custom property gives it one kind.
+5. Over the document, every step has a non-empty name no other step in its list
+   shares, and every part has a non-empty name no other part in its list shares.
+   The root parts count as one list. Every material that sets a custom property
+   gives it one kind.
 6. Over the sampling and the grid, every `add` shape has a box, and a
-   `--resolution` reference side reads above zero. The grid stays within 2^27
-   cells, and no `bend` reaches past half a turn of its arc.
+   `--resolution` reference side reads above zero. Each part's grid stays within
+   2^27 cells, and no `bend` reaches past half a turn of its arc.
 7. While the steps run, no distance reads NaN, and no `set` lists the same point
    twice.
 8. At the end, the model holds a live cell.
 
-A step that writes no cell and a part that owns none show in the report and stop
-nothing.
+A step that writes no cell and a part with no live cell show in the report and
+stop nothing.
