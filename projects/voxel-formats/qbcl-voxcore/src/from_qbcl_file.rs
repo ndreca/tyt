@@ -117,9 +117,7 @@ fn build_node(
 /// Builds the one shared palette: a color value pool of one entry per distinct
 /// color across every matrix and compound voxel in the tree, bound to
 /// `baseColor`, with one material per color and a map from a color to its
-/// material. The value pool is added to `main`. A tree with no solid voxels
-/// gets a single placeholder color so objects have a default material to
-/// sample.
+/// material. The value pool is added to `main`.
 fn build_palette(
     main: &mut VoxMain<()>,
     root: &QbclNode,
@@ -127,16 +125,12 @@ fn build_palette(
     let mut order: Vec<[u8; 3]> = Vec::new();
     let mut seen: HashSet<[u8; 3]> = HashSet::new();
     collect_colors(root, &mut order, &mut seen);
-    if order.is_empty() {
-        order.push([0, 0, 0]);
-    }
-
     // A Qubicle voxel carries no alpha, so colors decode to linear light and
     // ride in a shared `vec-3-float` value pool. Each material draws one value
     // id into it.
     let value_pool_id = main.retain_value_pool(
         VoxValuePool::vec_3_float(order.iter().map(|&color| color_floats(color)).collect())
-            .expect("byte-derived components are finite and the list is non-empty"),
+            .expect("byte-derived components are finite"),
     );
 
     let mut palette = VoxPalette::default();
@@ -236,7 +230,7 @@ fn build_object(
 
 #[cfg(test)]
 mod tests {
-    use crate::from_qbcl_file;
+    use crate::{from_qbcl_file, to_qbcl_file};
     use qbcl::qbcl::{QbclFile, QbclMatrix, QbclNode, QbclNodeBody};
 
     #[test]
@@ -254,5 +248,16 @@ mod tests {
             ..Default::default()
         };
         assert!(from_qbcl_file(&file).is_err());
+    }
+
+    /// A file with no solid voxels reads an empty palette and writes back.
+    #[test]
+    fn a_file_with_no_solid_voxels_reads_an_empty_palette() {
+        let main = from_qbcl_file(&QbclFile::default()).unwrap();
+
+        let (_, palette) = main.iter_palettes().next().unwrap();
+        assert_eq!(palette.iter_materials().count(), 0);
+
+        to_qbcl_file(&main).unwrap();
     }
 }

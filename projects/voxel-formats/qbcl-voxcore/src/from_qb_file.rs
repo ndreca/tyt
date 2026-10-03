@@ -45,8 +45,7 @@ pub fn from_qb_file(file: &QbFile) -> Result<QbVoxMain> {
 /// Builds the one shared palette: a color value pool of one entry per distinct
 /// color across every matrix's solid voxels, bound to `baseColor`, with
 /// one material per color and a map from a color to its material. The
-/// value pool is added to `main`. A file with no solid voxels gets a single
-/// placeholder color so objects have a default material to sample.
+/// value pool is added to `main`.
 fn build_palette(
     main: &mut VoxMain<()>,
     file: &QbFile,
@@ -64,16 +63,12 @@ fn build_palette(
             }
         }
     }
-    if order.is_empty() {
-        order.push([0, 0, 0]);
-    }
-
     // A Qubicle voxel carries no alpha, so colors decode to linear light and
     // ride in a shared `vec-3-float` value pool. Each material draws one value
     // id into it.
     let value_pool_id = main.retain_value_pool(
         VoxValuePool::vec_3_float(order.iter().map(|&color| color_floats(color)).collect())
-            .expect("byte-derived components are finite and the list is non-empty"),
+            .expect("byte-derived components are finite"),
     );
 
     let mut palette = VoxPalette::default();
@@ -140,7 +135,7 @@ fn build_object(
 
 #[cfg(test)]
 mod tests {
-    use crate::from_qb_file;
+    use crate::{from_qb_file, to_qb_file};
     use qbcl::qb::{QbFile, QbMatrix};
 
     #[test]
@@ -155,5 +150,16 @@ mod tests {
             ..Default::default()
         };
         assert!(from_qb_file(&file).is_err());
+    }
+
+    /// A file with no solid voxels reads an empty palette and writes back.
+    #[test]
+    fn a_file_with_no_solid_voxels_reads_an_empty_palette() {
+        let main = from_qb_file(&QbFile::default()).unwrap();
+
+        let (_, palette) = main.iter_palettes().next().unwrap();
+        assert_eq!(palette.iter_materials().count(), 0);
+
+        to_qb_file(&main).unwrap();
     }
 }
