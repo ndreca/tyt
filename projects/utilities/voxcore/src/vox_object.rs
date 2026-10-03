@@ -272,7 +272,7 @@ impl VoxObject {
         id: U32Id<BVoxVoxel>,
         sample_ids: &[U32Id<BVoxMaterial>],
     ) -> Result<()> {
-        if (id.to_u32() as usize) >= self.liveness.len() {
+        if id.to_usize_id() >= self.liveness.end() {
             return Err(Error::UnknownVoxel { voxel_id: id });
         }
 
@@ -295,7 +295,7 @@ impl VoxObject {
     /// Makes the voxel at `id` empty, leaving its samples in place but ignored.
     /// Errors, changing nothing, if `id` is outside the grid.
     pub fn release_voxel(&mut self, id: U32Id<BVoxVoxel>) -> Result<()> {
-        if (id.to_u32() as usize) >= self.liveness.len() {
+        if id.to_usize_id() >= self.liveness.end() {
             return Err(Error::UnknownVoxel { voxel_id: id });
         }
 
@@ -305,7 +305,7 @@ impl VoxObject {
 
     /// Whether the voxel at `id` is live. `false` if outside the grid.
     pub fn is_live(&self, id: U32Id<BVoxVoxel>) -> bool {
-        (id.to_u32() as usize) < self.liveness.len() && self.liveness.is_live(id)
+        id.to_usize_id() < self.liveness.end() && self.liveness.is_live(id)
     }
 
     /// Live voxel ids in ascending raster order. Recover positions with

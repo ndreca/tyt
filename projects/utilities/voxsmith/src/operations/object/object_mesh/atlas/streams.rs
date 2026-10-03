@@ -194,7 +194,7 @@ impl Streams {
 
         for (primitive_id, primitive) in record.primitives.iter().enumerate_ids() {
             if let Some(material_id) = primitive.material_id
-                && material_id.to_usize_id().to_usize() >= materials.len()
+                && material_id.to_usize_id() >= materials.end()
             {
                 return Err(Error::mesh_record(
                     MeshElement::PrimitiveMaterial { primitive_id },

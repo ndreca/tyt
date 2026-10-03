@@ -2,7 +2,7 @@ use crate::{
     VMaxExtMaterial, VMaxExtNode, VMaxExtObjectState, VMaxExtPalette, place_object,
     synthesized_node, synthesized_object_state,
 };
-use branded_id::{IdRange, IteratorExt, U32Id};
+use branded_id::{IdRange, IdVec, IteratorExt, U32Id};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::{
@@ -272,10 +272,11 @@ fn compacted_materials(
         .find(|&old_id| remap.value_pools.new_id(old_id) == Some(new_pool_id))
         .expect("a live pool has an old id");
     let values = &remap.value_pool_values[old_pool_id.to_usize_id()];
-    let mut compacted: Vec<Option<VMaxExtMaterial>> = (0..values.new_len()).map(|_| None).collect();
+    let mut compacted: IdVec<_, Option<VMaxExtMaterial>> =
+        (0..values.new_len()).map(|_| None).collect();
     for (old_id, material) in materials.into_iter().enumerate_ids::<U32Id<_>>() {
         if let Some(new_id) = values.new_id(old_id) {
-            compacted[new_id.to_u32() as usize] = Some(material);
+            compacted[new_id.to_usize_id()] = Some(material);
         }
     }
     compacted

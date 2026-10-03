@@ -48,9 +48,11 @@ impl MeshPrimitive {
     /// 2. a position is not finite
     /// 3. a corner references a vertex past the positions
     pub fn new(positions: Vec<TyVector3F64>, triangles: Vec<MeshTriangle>) -> Result<Self> {
-        let vertex_count = listing_count(positions.len())?;
+        listing_count(positions.len())?;
 
         listing_count(triangles.len())?;
+
+        let positions = IdVec::from_vec(positions);
 
         if let Some(index) = positions.iter().position(|position| !position.is_finite()) {
             return Err(Error::NonFiniteVertex {
@@ -62,7 +64,7 @@ impl MeshPrimitive {
             if let Some(&vertex_id) = triangle
                 .vertex_ids
                 .iter()
-                .find(|vertex_id| vertex_id.to_u32() >= vertex_count)
+                .find(|vertex_id| vertex_id.to_usize_id() >= positions.end())
             {
                 return Err(Error::CornerVertex {
                     triangle_id: U32Id::from_u32(
@@ -75,7 +77,7 @@ impl MeshPrimitive {
 
         Ok(Self {
             name: String::new(),
-            positions: IdVec::from_vec(positions),
+            positions,
             normals: None,
             tangents: None,
             uv_streams: IdVec::default(),

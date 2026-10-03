@@ -55,8 +55,8 @@ fn decoded<T>(values: VoxValueColumn<'_, T>, decode: impl Fn(&T) -> TyLinSrgbaF6
     let mut colors = IdVec::default();
     for (value_id, value) in values.iter() {
         let slot_id = value_id.to_usize_id();
-        if slot_id.to_usize() >= colors.len() {
-            colors.resize(slot_id.to_usize() + 1, None);
+        if slot_id >= colors.end() {
+            colors.resize(slot_id.offset(1).to_usize(), None);
         }
 
         colors[slot_id] = Some(decode(value));

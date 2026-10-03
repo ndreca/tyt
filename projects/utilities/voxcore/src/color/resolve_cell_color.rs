@@ -38,8 +38,8 @@ pub fn resolve_cell_color<'a, T: VoxExt>(
             .expect("a material draws one of its property's values");
 
         let slot_id = material_id.to_usize_id();
-        if slot_id.to_usize() >= colors.len() {
-            colors.resize(slot_id.to_usize() + 1, [0, 0, 0, 0]);
+        if slot_id >= colors.end() {
+            colors.resize(slot_id.offset(1).to_usize(), [0, 0, 0, 0]);
         }
 
         colors[slot_id] = color;

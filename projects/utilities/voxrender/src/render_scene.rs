@@ -227,13 +227,13 @@ impl RenderScene {
             }
         }
 
-        let len = id.to_u32() as usize + 1;
+        let slot_id = id.to_usize_id();
 
-        if self.objects.len() < len {
-            self.objects.resize(len, None);
+        if slot_id >= self.objects.end() {
+            self.objects.resize(slot_id.offset(1).to_usize(), None);
         }
 
-        self.objects[id.to_usize_id()] = Some(object);
+        self.objects[slot_id] = Some(object);
 
         Ok(())
     }

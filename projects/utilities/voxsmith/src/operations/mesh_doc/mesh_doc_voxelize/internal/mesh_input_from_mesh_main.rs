@@ -5,9 +5,10 @@ use crate::{
         MeshInput, MeshTriangle, PlacedObject, PlacedPrimitive, VoxelFrame, VoxelScale,
     },
 };
-use branded_id::U32Id;
+use branded_id::{IdVec, U32Id};
 use meshdoc::{
-    BMeshHierarchyNode, BMeshTexture, MeshExt, MeshMain, MeshMaterial, MeshPrimitive, MeshState,
+    BMeshHierarchyNode, BMeshTexture, BMeshVertex, MeshExt, MeshMain, MeshMaterial, MeshPrimitive,
+    MeshState,
 };
 use std::{collections::HashMap, sync::LazyLock};
 use ty_math::{TyBoundsF64, TyTransformF64, TyVector3F64};
@@ -141,8 +142,8 @@ impl<'a, D: DecodeImage> Walk<'a, '_, D> {
             .map(|&position| world.transform_point(position))
             .collect();
 
-        let positions: Vec<TyVector3F64> = match (self.frame, self.scale) {
-            (VoxelFrame::World, VoxelScale::Bake) => world_positions.clone(),
+        let positions: IdVec<BMeshVertex, TyVector3F64> = match (self.frame, self.scale) {
+            (VoxelFrame::World, VoxelScale::Bake) => IdVec::from_vec(world_positions.clone()),
 
             // The document refuses a zero scale component, so this divides
             // safely.
@@ -162,7 +163,7 @@ impl<'a, D: DecodeImage> Walk<'a, '_, D> {
             self.input.triangles.push(MeshTriangle {
                 points: triangle
                     .vertex_ids
-                    .map(|vertex_id| positions[vertex_id.to_usize_id().to_usize()]),
+                    .map(|vertex_id| positions[vertex_id.to_usize_id()]),
                 vertex_ids: triangle.vertex_ids,
                 primitive: index,
             });

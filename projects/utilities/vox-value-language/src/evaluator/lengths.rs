@@ -1,5 +1,5 @@
 use crate::{Domain, Error, Groupings, Result};
-use branded_id::IteratorExt;
+use branded_id::{IteratorExt, UsizeId};
 
 /// The entry count of every domain, fixed by the groupings.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -19,11 +19,13 @@ impl Lengths {
     pub(crate) fn from_groupings(groupings: &Groupings) -> Result<Lengths> {
         let swatches = groupings.swatch_count;
 
+        let swatch_end = UsizeId::from_usize(swatches);
+
         if let Some((voxel_id, &swatch_id)) = groupings
             .voxel_swatches
             .iter()
             .enumerate_ids()
-            .find(|(_, swatch_id)| swatch_id.to_usize_id().to_usize() >= swatches)
+            .find(|(_, swatch_id)| swatch_id.to_usize_id() >= swatch_end)
         {
             return Err(Error::VoxelSwatch {
                 voxel_id,
@@ -41,7 +43,7 @@ impl Lengths {
 
             if let Some(&voxel_id) = pieces
                 .iter()
-                .find(|voxel_id| voxel_id.to_usize_id().to_usize() >= voxels)
+                .find(|voxel_id| voxel_id.to_usize_id() >= groupings.voxel_swatches.end())
             {
                 return Err(Error::PieceVoxel { face_id, voxel_id });
             }

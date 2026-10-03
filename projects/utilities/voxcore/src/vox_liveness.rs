@@ -1,5 +1,5 @@
 use crate::BVoxVoxel;
-use branded_id::U32Id;
+use branded_id::{U32Id, UsizeId};
 
 /// A packed occupancy bitmap for a [`VoxObject`](crate::VoxObject)'s dense
 /// voxel grid: one bit per grid cell, keyed by the cell's voxel id. A set bit
@@ -35,6 +35,11 @@ impl VoxLiveness {
             .sum()
     }
 
+    /// The voxel id one past the last cell the map covers.
+    pub fn end(&self) -> UsizeId<BVoxVoxel> {
+        UsizeId::from_usize(self.len)
+    }
+
     /// Whether the map covers no cells.
     pub fn is_empty(&self) -> bool {
         self.len == 0
@@ -45,12 +50,13 @@ impl VoxLiveness {
     /// # Panics
     /// Panics if `id` is outside the covered range (`>= len`).
     pub fn is_live(&self, id: U32Id<BVoxVoxel>) -> bool {
-        let i = id.to_u32() as usize;
         assert!(
-            i < self.len,
-            "voxel id {i} is outside the {}-cell grid",
+            id.to_usize_id() < self.end(),
+            "voxel id {id} is outside the {}-cell grid",
             self.len
         );
+
+        let i = id.to_usize_id().to_usize();
 
         (self.words[i / 64] >> (i % 64)) & 1 == 1
     }
@@ -75,12 +81,13 @@ impl VoxLiveness {
     /// [`count_live`](Self::count_live), and [`iter_live`](Self::iter_live)
     /// rely on.
     pub fn set_live(&mut self, id: U32Id<BVoxVoxel>, live: bool) {
-        let i = id.to_u32() as usize;
         assert!(
-            i < self.len,
-            "voxel id {i} is outside the {}-cell grid",
+            id.to_usize_id() < self.end(),
+            "voxel id {id} is outside the {}-cell grid",
             self.len
         );
+
+        let i = id.to_usize_id().to_usize();
 
         let mask = 1u64 << (i % 64);
         if live {
