@@ -54,22 +54,22 @@ impl MeshPrimitive {
 
         let positions = IdVec::from_vec(positions);
 
-        if let Some(index) = positions.iter().position(|position| !position.is_finite()) {
-            return Err(Error::NonFiniteVertex {
-                vertex_id: vertex_id_at(index),
-            });
+        if let Some((vertex_id, _)) = positions
+            .iter()
+            .enumerate_ids()
+            .find(|(_, position)| !position.is_finite())
+        {
+            return Err(Error::NonFiniteVertex { vertex_id });
         }
 
-        for (index, triangle) in triangles.iter().enumerate() {
+        for (triangle_id, triangle) in triangles.iter().enumerate_ids() {
             if let Some(&vertex_id) = triangle
                 .vertex_ids
                 .iter()
                 .find(|vertex_id| vertex_id.to_usize_id() >= positions.end())
             {
                 return Err(Error::CornerVertex {
-                    triangle_id: U32Id::from_u32(
-                        u32::try_from(index).expect("the triangle count was checked"),
-                    ),
+                    triangle_id,
                     vertex_id,
                 });
             }
@@ -310,10 +310,12 @@ impl MeshPrimitive {
             });
         }
 
-        if let Some(index) = stream.iter().position(|entry| !is_finite(entry)) {
-            return Err(Error::NonFiniteVertex {
-                vertex_id: vertex_id_at(index),
-            });
+        if let Some((vertex_id, _)) = stream
+            .iter()
+            .enumerate_ids()
+            .find(|(_, entry)| !is_finite(entry))
+        {
+            return Err(Error::NonFiniteVertex { vertex_id });
         }
 
         Ok(IdVec::from_vec(stream))

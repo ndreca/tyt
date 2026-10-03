@@ -2,7 +2,7 @@ use crate::{
     Error, Result,
     operations::object::{
         ArrayDomain, CheckedDestination, ExtraForm, ExtraSource, FileForm, MeshElement, MeshRecord,
-        SlotProperty, SlotSource, table_index,
+        SlotProperty, SlotSource,
     },
 };
 use branded_id::{IdVec, IteratorExt, U32Id};
@@ -238,10 +238,8 @@ impl Streams {
         for (material_id, list) in materials.iter().enumerate_ids::<U32Id<BMeshMaterial>>() {
             for &bake in &material_bakes[material_id.to_usize_id()] {
                 // The material's list is what a primitive writes by default,
-                // so its position stands where no primitive draws the material.
-                let mut position = list
-                    .iter()
-                    .position(|&domain| domain == bake)
+                // so its stream stands where no primitive draws the material.
+                let mut stream_id = stream_id_of(list, bake)
                     .expect("a material's list holds every domain it bakes at");
 
                 let mut first_primitive_id: Option<U32Id<BMeshPrimitive>> = None;
@@ -255,26 +253,23 @@ impl Streams {
                         continue;
                     }
 
-                    let at = primitives[primitive_id.to_usize_id()]
-                        .iter()
-                        .position(|&domain| domain == bake)
-                        .expect(
-                            "a drawing primitive's list holds every domain its material bakes at",
-                        );
+                    let at = stream_id_of(&primitives[primitive_id.to_usize_id()], bake).expect(
+                        "a drawing primitive's list holds every domain its material bakes at",
+                    );
 
                     match first_primitive_id {
                         None => {
-                            position = at;
+                            stream_id = at;
                             first_primitive_id = Some(primitive_id);
                         }
 
-                        Some(first_primitive_id) if at != position => {
+                        Some(first_primitive_id) if at != stream_id => {
                             return Err(Error::mesh_record(
                                 MeshElement::PrimitiveUvStreams { primitive_id },
                                 format!(
                                     "writes the `{bake}` stream material {material_id} bakes at as \
                                      stream {at}, where primitive {first_primitive_id} writes it \
-                                     as stream {position}, so the material's textures cannot name \
+                                     as stream {stream_id}, so the material's textures cannot name \
                                      one stream"
                                 ),
                             ));
@@ -284,8 +279,7 @@ impl Streams {
                     }
                 }
 
-                stream_ids[material_id.to_usize_id()]
-                    .insert(bake, U32Id::from_u32(table_index(position)));
+                stream_ids[material_id.to_usize_id()].insert(bake, stream_id);
             }
         }
 
@@ -302,23 +296,23 @@ impl Streams {
 
             let bake = bakes[&element];
 
-            let mut writer: Option<(U32Id<BMeshPrimitive>, usize)> = None;
+            let mut writer: Option<(U32Id<BMeshPrimitive>, U32Id<BMeshUvStream>)> = None;
 
             for (primitive_id, list) in primitives.iter().enumerate_ids() {
-                let Some(at) = list.iter().position(|&domain| domain == bake) else {
+                let Some(at) = stream_id_of(list, bake) else {
                     continue;
                 };
 
                 match writer {
                     None => writer = Some((primitive_id, at)),
 
-                    Some((first_primitive_id, position)) if at != position => {
+                    Some((first_primitive_id, stream_id)) if at != stream_id => {
                         return Err(Error::mesh_record(
                             element,
                             format!(
                                 "bakes at `{bake}`, which primitive {primitive_id} writes as \
                                  stream {at}, where primitive {first_primitive_id} writes it as \
-                                 stream {position}, so the image cannot name one stream"
+                                 stream {stream_id}, so the image cannot name one stream"
                             ),
                         ));
                     }
@@ -327,14 +321,14 @@ impl Streams {
                 }
             }
 
-            let Some((_, position)) = writer else {
+            let Some((_, stream_id)) = writer else {
                 return Err(Error::mesh_record(
                     element,
                     format!("bakes at `{bake}`, and no primitive writes a `{bake}` stream"),
                 ));
             };
 
-            mesh_stream_ids.insert(bake, U32Id::from_u32(table_index(position)));
+            mesh_stream_ids.insert(bake, stream_id);
         }
 
         Ok(Streams {
@@ -393,6 +387,16 @@ fn check_list(list: &[ArrayDomain], element: MeshElement) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// The stream `list` writes `bake` as, or `None` when `list` lacks `bake`.
+fn stream_id_of(list: &[ArrayDomain], bake: ArrayDomain) -> Option<U32Id<BMeshUvStream>> {
+    let (stream_id, _) = list
+        .iter()
+        .enumerate_ids()
+        .find(|&(_, &domain)| domain == bake)?;
+
+    Some(stream_id)
 }
 
 #[cfg(test)]

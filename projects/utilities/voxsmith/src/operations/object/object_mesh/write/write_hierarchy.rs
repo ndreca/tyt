@@ -71,8 +71,8 @@ pub fn write_hierarchy<T: VoxExt>(
     debug_assert!(
         node_ids
             .iter()
-            .enumerate()
-            .all(|(index, node_id)| node_id.to_u32() as usize == index),
+            .enumerate_ids()
+            .all(|(expected_id, &node_id)| node_id == expected_id),
         "the batch took the predicted ids"
     );
 
