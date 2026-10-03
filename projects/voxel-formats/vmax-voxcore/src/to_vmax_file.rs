@@ -1851,9 +1851,11 @@ mod tests {
             .unwrap()
             .iter_properties()
             .map(|(_, property)| {
-                U32Id::from_u32(u32::from(
-                    property.name != BASE_COLOR && property.name != EMISSIVE_COLOR,
-                ))
+                if property.name == BASE_COLOR || property.name == EMISSIVE_COLOR {
+                    U32Id::from_u32(0)
+                } else {
+                    U32Id::from_u32(1)
+                }
             })
             .collect();
         let material_id = main.retain_material(palette_id, value_ids).unwrap();
@@ -1888,7 +1890,13 @@ mod tests {
             .palette(palette_id)
             .unwrap()
             .iter_properties()
-            .map(|(_, property)| U32Id::from_u32(u32::from(property.name == ROUGHNESS)))
+            .map(|(_, property)| {
+                if property.name == ROUGHNESS {
+                    U32Id::from_u32(1)
+                } else {
+                    U32Id::from_u32(0)
+                }
+            })
             .collect();
         main.retain_material(palette_id, value_ids).unwrap();
 

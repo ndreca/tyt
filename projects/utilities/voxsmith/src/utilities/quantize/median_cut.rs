@@ -76,8 +76,13 @@ fn longest_axis(point_box: &[QuantizePoint]) -> (usize, f64) {
 #[cfg(test)]
 mod tests {
     use crate::utilities::{QuantizePoint, median_cut};
-    use branded_id::IteratorExt;
+    use branded_id::{IteratorExt, U32Id};
     use ty_math::TyVector4F64;
+    use voxcore::BVoxMaterial;
+
+    fn material_id(index: u32) -> U32Id<BVoxMaterial> {
+        U32Id::from_u32(index)
+    }
 
     /// One box of 1D points at `values`, material ids in order.
     fn points(values: &[f64]) -> Vec<QuantizePoint> {
@@ -93,14 +98,11 @@ mod tests {
     }
 
     /// Each cluster's material ids, sorted, with the clusters sorted.
-    fn ids(clusters: Vec<Vec<QuantizePoint>>) -> Vec<Vec<u32>> {
-        let mut ids: Vec<Vec<u32>> = clusters
+    fn ids(clusters: Vec<Vec<QuantizePoint>>) -> Vec<Vec<U32Id<BVoxMaterial>>> {
+        let mut ids: Vec<Vec<_>> = clusters
             .into_iter()
             .map(|cluster| {
-                let mut ids: Vec<_> = cluster
-                    .into_iter()
-                    .map(|point| point.material_id.to_u32())
-                    .collect();
+                let mut ids: Vec<_> = cluster.into_iter().map(|point| point.material_id).collect();
                 ids.sort();
                 ids
             })
@@ -113,7 +115,13 @@ mod tests {
     fn equal_values_never_part() {
         // The count median falls inside the run of zeros.
         let clusters = median_cut(vec![points(&[0.0, 1.0, 0.0, 0.0])], 2);
-        assert_eq!(ids(clusters), [vec![0, 2, 3], vec![1]]);
+        assert_eq!(
+            ids(clusters),
+            [
+                vec![material_id(0), material_id(2), material_id(3)],
+                vec![material_id(1)]
+            ]
+        );
     }
 
     #[test]

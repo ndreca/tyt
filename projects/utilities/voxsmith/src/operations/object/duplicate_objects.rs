@@ -98,13 +98,8 @@ mod tests {
         main.retain_hierarchy_node(node).unwrap()
     }
 
-    fn children(main: &VoxMain<HookRecorder>, node_id: NodeId) -> Vec<u32> {
-        main.hierarchy_node(node_id)
-            .unwrap()
-            .child_object_ids
-            .iter()
-            .map(|object_id| object_id.to_u32())
-            .collect()
+    fn children(main: &VoxMain<HookRecorder>, node_id: NodeId) -> &[ObjectId] {
+        &main.hierarchy_node(node_id).unwrap().child_object_ids
     }
 
     /// `left` and `right` both place `a`. `b` is unplaced, and `a` has one
@@ -146,8 +141,8 @@ mod tests {
         assert_eq!(copy.name(), "a");
         assert_eq!(copy.origin(), TyVector3I32::new(1, 2, 3));
         assert_eq!(copy.live_count(), 1);
-        assert_eq!(children(&main, left_id), [0, 2]);
-        assert_eq!(children(&main, right_id), [0, 2]);
+        assert_eq!(children(&main, left_id), [a_id, copy_ids[0]]);
+        assert_eq!(children(&main, right_id), [a_id, copy_ids[0]]);
         assert_eq!(
             HookRecorder::events(&main),
             [
@@ -164,10 +159,10 @@ mod tests {
     fn a_parent_places_every_copy_alone() {
         let (mut main, [a_id, b_id], [left_id, right_id]) = scene();
 
-        duplicate_objects(&mut main, &[a_id, b_id], Some(right_id)).unwrap();
+        let copy_ids = duplicate_objects(&mut main, &[a_id, b_id], Some(right_id)).unwrap();
 
-        assert_eq!(children(&main, left_id), [0]);
-        assert_eq!(children(&main, right_id), [0, 2, 3]);
+        assert_eq!(children(&main, left_id), [a_id]);
+        assert_eq!(children(&main, right_id), [a_id, copy_ids[0], copy_ids[1]]);
         main.validate().unwrap();
     }
 

@@ -72,21 +72,27 @@ pub fn link_nodes<T: VoxExt>(
 mod tests {
     use crate::{operations::node::link_nodes, test_utilities::HookRecorder};
     use branded_id::U32Id;
-    use voxcore::{VoxHierarchyNode, VoxMain};
+    use voxcore::{BVoxHierarchyNode, VoxHierarchyNode, VoxMain};
+
+    fn node_id(index: u32) -> U32Id<BVoxHierarchyNode> {
+        U32Id::from_u32(index)
+    }
 
     /// Root `house` with child `door`, root `garage`, and unplaced `shed`.
     /// Ids run door 0, house 1, garage 2, shed 3.
     fn scene() -> VoxMain<HookRecorder> {
         let mut main: VoxMain = VoxMain::default();
 
-        let node = |name: &str, child_node_ids: Vec<u32>| VoxHierarchyNode {
+        let node = |name: &str, child_node_ids: Vec<U32Id<BVoxHierarchyNode>>| VoxHierarchyNode {
             name: name.to_owned(),
-            child_node_ids: child_node_ids.into_iter().map(U32Id::from_u32).collect(),
+            child_node_ids,
             ..Default::default()
         };
 
-        main.retain_hierarchy_node(node("door", vec![])).unwrap();
-        let house_id = main.retain_hierarchy_node(node("house", vec![0])).unwrap();
+        let door_id = main.retain_hierarchy_node(node("door", vec![])).unwrap();
+        let house_id = main
+            .retain_hierarchy_node(node("house", vec![door_id]))
+            .unwrap();
         let garage_id = main.retain_hierarchy_node(node("garage", vec![])).unwrap();
         main.retain_hierarchy_node(node("shed", vec![])).unwrap();
 
@@ -96,13 +102,11 @@ mod tests {
         main.put_ext(HookRecorder::default())
     }
 
-    fn child_node_ids(main: &VoxMain<HookRecorder>, node_id: u32) -> Vec<u32> {
-        main.hierarchy_node(U32Id::from_u32(node_id))
-            .unwrap()
-            .child_node_ids
-            .iter()
-            .map(|child_id| child_id.to_u32())
-            .collect()
+    fn child_node_ids(
+        main: &VoxMain<HookRecorder>,
+        node_id: U32Id<BVoxHierarchyNode>,
+    ) -> &[U32Id<BVoxHierarchyNode>] {
+        &main.hierarchy_node(node_id).unwrap().child_node_ids
     }
 
     #[test]
@@ -116,8 +120,8 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(child_node_ids(&main, 2), [0, 3]);
-        assert_eq!(child_node_ids(&main, 1), [0]);
+        assert_eq!(child_node_ids(&main, node_id(2)), [node_id(0), node_id(3)]);
+        assert_eq!(child_node_ids(&main, node_id(1)), [node_id(0)]);
         assert_eq!(HookRecorder::events(&main), ["node 2 children set"]);
         main.validate().unwrap();
     }

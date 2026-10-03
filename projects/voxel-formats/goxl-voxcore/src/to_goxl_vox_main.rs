@@ -580,8 +580,8 @@ mod tests {
             vec![placement(1, [0, -16, 0]), placement(2, [16, -16, 0])]
         );
 
-        for (tile_id, x) in [(1u32, 10u32), (2, 13)] {
-            let tile = main.object(U32Id::from_u32(tile_id)).unwrap();
+        for (tile_id, x) in [(U32Id::from_u32(1), 10u32), (U32Id::from_u32(2), 13)] {
+            let tile = main.object(tile_id).unwrap();
 
             assert_eq!(tile.bounds(), TyVector3U32::splat(16));
 

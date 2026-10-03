@@ -209,17 +209,13 @@ mod tests {
         let swatches = Swatches::resolve(&main, &object).unwrap();
 
         assert_eq!(swatches.count(), 2);
-        let entries: Vec<u32> = swatches
-            .voxel_swatch_ids()
-            .iter()
-            .map(|swatch_id| swatch_id.to_u32())
-            .collect();
-        assert_eq!(entries, [0, 1, 0]);
         assert_eq!(
-            swatches
-                .voxel_entry_id(object.voxel_id(TyVector3U32::new(2, 0, 0)).unwrap())
-                .to_u32(),
-            2
+            swatches.voxel_swatch_ids().as_slice(),
+            [U32Id::from_u32(0), U32Id::from_u32(1), U32Id::from_u32(0)]
+        );
+        assert_eq!(
+            swatches.voxel_entry_id(object.voxel_id(TyVector3U32::new(2, 0, 0)).unwrap()),
+            U32Id::from_u32(2)
         );
 
         let metallic = swatches.effective().property_id_by_name(METALLIC).unwrap();

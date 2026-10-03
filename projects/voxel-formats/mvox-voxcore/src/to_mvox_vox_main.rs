@@ -652,7 +652,9 @@ mod tests {
 
         assert_eq!(main.object_count(), 2);
 
-        for (object_id, slot) in [(red_id, 1), (blue_id, 2)] {
+        for (object_id, material_id) in
+            [(red_id, U32Id::from_u32(1)), (blue_id, U32Id::from_u32(2))]
+        {
             let object = main.object(object_id).unwrap();
 
             let (layer_id, layer_palette_id) = object.iter_layers().next().unwrap();
@@ -663,10 +665,7 @@ mod tests {
 
             let voxel_id = object.voxel_id(TyVector3U32::ZERO).unwrap();
 
-            assert_eq!(
-                object.voxel_material(voxel_id, layer_id),
-                Some(U32Id::<BVoxMaterial>::from_u32(slot))
-            );
+            assert_eq!(object.voxel_material(voxel_id, layer_id), Some(material_id));
         }
 
         let after: Vec<[u8; 4]> = [red_id, blue_id]
@@ -736,9 +735,9 @@ mod tests {
             .retain_property(BASE_COLOR.to_owned(), value_pool_id)
             .unwrap();
 
-        for value_id in IdRange::from_len(256) {
-            palette.retain_material(vec![value_id]).unwrap();
-        }
+        let material_ids: Vec<_> = IdRange::from_len(256)
+            .map(|value_id| palette.retain_material(vec![value_id]).unwrap())
+            .collect();
 
         let palette_id = main.retain_palette(palette).unwrap();
 
@@ -746,12 +745,10 @@ mod tests {
 
         object.retain_layer(palette_id).unwrap();
 
-        for color in 0..256u32 {
-            let voxel_id = object.voxel_id(TyVector3U32::new(color, 0, 0)).unwrap();
+        for (x, &material_id) in (0..).zip(&material_ids) {
+            let voxel_id = object.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap();
 
-            object
-                .retain_voxel(voxel_id, &[U32Id::from_u32(color)])
-                .unwrap();
+            object.retain_voxel(voxel_id, &[material_id]).unwrap();
         }
 
         main.retain_object(object).unwrap();

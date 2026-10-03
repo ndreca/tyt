@@ -1331,26 +1331,28 @@ mod tests {
         palette
             .retain_property(METALLIC.to_owned(), metals)
             .unwrap();
-        for value_id in IdRange::from_len(2) {
-            palette
-                .retain_material(vec![value_id, U32Id::from_u32(0)])
-                .unwrap();
-        }
+        let material_ids: Vec<_> = IdRange::from_len(2)
+            .map(|value_id| {
+                palette
+                    .retain_material(vec![value_id, U32Id::from_u32(0)])
+                    .unwrap()
+            })
+            .collect();
         let palette_id = main.retain_palette(palette).unwrap();
 
         let mut bar = VoxObject::new("bar".to_owned(), TyVector3U32::new(2, 1, 1)).unwrap();
         bar.set_origin(TyVector3I32::new(1, 0, 0));
         bar.retain_layer(palette_id).unwrap();
-        for x in 0..2 {
+        for (x, &material_id) in (0..).zip(&material_ids) {
             let voxel_id = bar.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap();
-            bar.retain_voxel(voxel_id, &[U32Id::from_u32(x)]).unwrap();
+            bar.retain_voxel(voxel_id, &[material_id]).unwrap();
         }
         let bar_id = main.retain_object(bar).unwrap();
 
         let mut lone = VoxObject::new("lone".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
         lone.retain_layer(palette_id).unwrap();
-        lone.retain_voxel(U32Id::from_u32(0), &[U32Id::from_u32(1)])
-            .unwrap();
+        let voxel_id = lone.voxel_id(TyVector3U32::ZERO).unwrap();
+        lone.retain_voxel(voxel_id, &[material_ids[1]]).unwrap();
         let lone_id = main.retain_object(lone).unwrap();
 
         (main, bar_id, lone_id)
@@ -1382,7 +1384,8 @@ mod tests {
         );
 
         let lone = scene.object(lone_id).unwrap();
-        assert_eq!(lone.voxel_material(U32Id::from_u32(0)), Some(blue_id));
+        let voxel_id = lone.voxel_id(TyVector3U32::ZERO).unwrap();
+        assert_eq!(lone.voxel_material(voxel_id), Some(blue_id));
     }
 
     #[test]

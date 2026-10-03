@@ -2766,7 +2766,7 @@ mod tests {
         let live_voxel_id = object_b.voxel_id(TyVector3U32::new(2, 3, 1)).unwrap();
         object_b.retain_voxel(live_voxel_id, &[]).unwrap();
         let b_id = main.retain_object(object_b).unwrap();
-        assert_eq!(b_id.to_u32(), 1);
+        assert_eq!(b_id, U32Id::from_u32(1));
         assert_eq!(main.validate(), Ok(()));
 
         // Release `a` and gc: `b` renumbers to 0, keeping its margin grid and
@@ -3449,9 +3449,9 @@ mod tests {
 
         assert_eq!(
             main.iter_objects()
-                .map(|(object_id, _)| object_id.to_u32())
+                .map(|(object_id, _)| object_id)
                 .collect::<Vec<_>>(),
-            [0, 1]
+            [U32Id::from_u32(0), U32Id::from_u32(1)]
         );
 
         // The value remap is indexed by the value pool's old id. The value
@@ -3472,11 +3472,8 @@ mod tests {
         assert_eq!(value_pool.int_values().unwrap().get(value_id(1)), Some(&1));
 
         assert_eq!(
-            value_pool
-                .iter_value_ids()
-                .map(|value_id| value_id.to_u32())
-                .collect::<Vec<_>>(),
-            [0, 1]
+            value_pool.iter_value_ids().collect::<Vec<_>>(),
+            [value_id(0), value_id(1)]
         );
 
         // The material cells followed the value renumbering, so each still
@@ -3543,9 +3540,9 @@ mod tests {
 
         assert_eq!(
             main.iter_value_pools()
-                .map(|(value_pool_id, _)| value_pool_id.to_u32())
+                .map(|(value_pool_id, _)| value_pool_id)
                 .collect::<Vec<_>>(),
-            [0, 1]
+            [value_pool_id(0), value_pool_id(1)]
         );
 
         // Each value pool's value remap is keyed by that value pool's pre-gc
@@ -4108,18 +4105,24 @@ mod tests {
         fn below(&mut self, bound: usize) -> usize {
             (self.next() % bound as u64) as usize
         }
+
+        /// A `u32` in `[0, bound)`.
+        fn below_u32(&mut self, bound: u32) -> u32 {
+            u32::try_from(self.next() % u64::from(bound))
+                .expect("the remainder is below a u32 bound")
+        }
     }
 
     /// Applies one operation drawn from `rng`. Ids come from a small range so
     /// calls hit live and dead entities alike, and every `Result` is dropped:
     /// the property under test is that no success breaks the main.
     fn apply_random_operation(main: &mut VoxMain, rng: &mut Lcg) {
-        let wild_value_pool_id = value_pool_id(rng.below(6) as u32);
-        let wild_palette_id = palette_id(rng.below(6) as u32);
-        let wild_object_id = U32Id::<BVoxObject>::from_u32(rng.below(6) as u32);
-        let wild_node_id = node_id(rng.below(8) as u32);
-        let wild_material_id = material_id(rng.below(4) as u32);
-        let wild_value_id = value_id(rng.below(4) as u32);
+        let wild_value_pool_id = value_pool_id(rng.below_u32(6));
+        let wild_palette_id = palette_id(rng.below_u32(6));
+        let wild_object_id = U32Id::<BVoxObject>::from_u32(rng.below_u32(6));
+        let wild_node_id = node_id(rng.below_u32(8));
+        let wild_material_id = material_id(rng.below_u32(4));
+        let wild_value_id = value_id(rng.below_u32(4));
         match rng.below(26) {
             0 => {
                 let values = (0..1 + rng.below(3)).map(|v| v as i64).collect();
@@ -4138,7 +4141,7 @@ mod tests {
 
                 for _ in 0..1 + rng.below(2) {
                     let row = (0..palette.property_count())
-                        .map(|_| value_id(rng.below(4) as u32))
+                        .map(|_| value_id(rng.below_u32(4)))
                         .collect();
                     let _ = palette.retain_material(row);
                 }
@@ -4147,27 +4150,27 @@ mod tests {
             }
 
             2 => {
-                let bounds = TyVector3U32::new(1 + rng.below(2) as u32, 1 + rng.below(2) as u32, 1);
+                let bounds = TyVector3U32::new(1 + rng.below_u32(2), 1 + rng.below_u32(2), 1);
                 let mut object = VoxObject::new(String::new(), bounds).unwrap();
                 if rng.below(2) == 0 {
                     object.retain_layer_filled(wild_palette_id, wild_material_id);
                 }
 
                 let sample_ids: Vec<_> = (0..object.layer_count())
-                    .map(|_| material_id(rng.below(4) as u32))
+                    .map(|_| material_id(rng.below_u32(4)))
                     .collect();
 
-                let _ = object.retain_voxel(voxel_id(rng.below(4) as u32), &sample_ids);
+                let _ = object.retain_voxel(voxel_id(rng.below_u32(4)), &sample_ids);
                 let _ = main.retain_object(object);
             }
 
             3 => {
                 let _ = main.retain_hierarchy_node(VoxHierarchyNode {
                     child_node_ids: (0..rng.below(3))
-                        .map(|_| node_id(rng.below(8) as u32))
+                        .map(|_| node_id(rng.below_u32(8)))
                         .collect(),
                     child_object_ids: (0..rng.below(2))
-                        .map(|_| U32Id::from_u32(rng.below(6) as u32))
+                        .map(|_| U32Id::from_u32(rng.below_u32(6)))
                         .collect(),
                     ..VoxHierarchyNode::default()
                 });
@@ -4178,7 +4181,7 @@ mod tests {
                     .map(|_| {
                         node_with_children(
                             (0..rng.below(3))
-                                .map(|_| node_id(rng.below(10) as u32))
+                                .map(|_| node_id(rng.below_u32(10)))
                                 .collect(),
                         )
                     })
@@ -4193,7 +4196,7 @@ mod tests {
 
             6 => {
                 let root_ids = (0..rng.below(3))
-                    .map(|_| node_id(rng.below(8) as u32))
+                    .map(|_| node_id(rng.below_u32(8)))
                     .collect();
                 let _ = main.set_root_hierarchy_node_ids(root_ids);
             }
@@ -4207,26 +4210,24 @@ mod tests {
                     .object(wild_object_id)
                     .map_or(0, VoxObject::layer_count);
 
-                let sample_ids: Vec<_> = (0..layers)
-                    .map(|_| material_id(rng.below(4) as u32))
-                    .collect();
+                let sample_ids: Vec<_> =
+                    (0..layers).map(|_| material_id(rng.below_u32(4))).collect();
 
-                let _ =
-                    main.retain_voxel(wild_object_id, voxel_id(rng.below(6) as u32), &sample_ids);
+                let _ = main.retain_voxel(wild_object_id, voxel_id(rng.below_u32(6)), &sample_ids);
             }
 
             9 => {
-                let _ = main.release_voxel(wild_object_id, voxel_id(rng.below(6) as u32));
+                let _ = main.release_voxel(wild_object_id, voxel_id(rng.below_u32(6)));
             }
 
             10 => {
-                let _ = main.release_layer(wild_object_id, U32Id::from_u32(rng.below(3) as u32));
+                let _ = main.release_layer(wild_object_id, U32Id::from_u32(rng.below_u32(3)));
             }
 
             11 => {
                 let _ = main.move_layer(
                     wild_object_id,
-                    U32Id::from_u32(rng.below(3) as u32),
+                    U32Id::from_u32(rng.below_u32(3)),
                     rng.below(3),
                 );
             }
@@ -4245,13 +4246,12 @@ mod tests {
                     .palette(wild_palette_id)
                     .map_or(0, VoxPalette::property_count);
 
-                let row = (0..arity).map(|_| value_id(rng.below(4) as u32)).collect();
+                let row = (0..arity).map(|_| value_id(rng.below_u32(4))).collect();
                 let _ = main.retain_material(wild_palette_id, row);
             }
 
             14 => {
-                let _ =
-                    main.release_property(wild_palette_id, U32Id::from_u32(rng.below(3) as u32));
+                let _ = main.release_property(wild_palette_id, U32Id::from_u32(rng.below_u32(3)));
             }
 
             15 => {
@@ -4281,7 +4281,7 @@ mod tests {
             21 => {
                 let _ = main.repaint_materials(
                     wild_palette_id,
-                    &HashMap::from([(wild_material_id, material_id(rng.below(4) as u32))]),
+                    &HashMap::from([(wild_material_id, material_id(rng.below_u32(4)))]),
                 );
             }
 
@@ -4289,7 +4289,7 @@ mod tests {
                 let _ = main.repoint_value_pool_value(
                     wild_value_pool_id,
                     wild_value_id,
-                    value_id(rng.below(4) as u32),
+                    value_id(rng.below_u32(4)),
                 );
             }
 
@@ -4301,7 +4301,7 @@ mod tests {
                 let _ = main.set_material_value(
                     wild_palette_id,
                     wild_material_id,
-                    U32Id::from_u32(rng.below(3) as u32),
+                    U32Id::from_u32(rng.below_u32(3)),
                     wild_value_id,
                 );
             }

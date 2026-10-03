@@ -406,7 +406,7 @@ mod tests {
         let stream_id = primitive
             .push_uv_stream(vec![TyVector2F64::ZERO; 3])
             .unwrap();
-        assert_eq!(stream_id.to_u32(), 0);
+        assert_eq!(stream_id, U32Id::from_u32(0));
         assert_eq!(primitive.uv_stream_count(), 1);
         assert_eq!(primitive.uv_stream(U32Id::from_u32(1)), None);
     }

@@ -39,7 +39,7 @@ mod tests {
     use ty_math::{TySrgbaU8, TyVector3U32};
     use vmax_codec::DependenciesImpl;
     use voxcore::{
-        BVoxHierarchyNode, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette, VoxValuePool,
+        VoxHierarchyNode, VoxMain, VoxObject, VoxPalette, VoxValuePool,
         color::lin_srgba_f64_from_srgba_u8, material::BASE_COLOR,
     };
 
@@ -68,10 +68,7 @@ mod tests {
                 ..Default::default()
             })
             .unwrap();
-        main.set_root_hierarchy_node_ids(vec![U32Id::<BVoxHierarchyNode>::from_u32(
-            node_id.to_u32(),
-        )])
-        .unwrap();
+        main.set_root_hierarchy_node_ids(vec![node_id]).unwrap();
         main.validate().unwrap();
         main
     }

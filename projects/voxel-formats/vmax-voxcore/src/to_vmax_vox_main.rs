@@ -247,19 +247,19 @@ mod tests {
         palette
             .retain_property("metallic".to_owned(), metallic_value_pool_id)
             .unwrap();
-        for value_id in IdRange::from_len(9) {
-            palette
-                .retain_material(vec![U32Id::from_u32(0), value_id])
-                .unwrap();
-        }
+        let material_ids: Vec<_> = IdRange::from_len(9)
+            .map(|value_id| {
+                palette
+                    .retain_material(vec![U32Id::from_u32(0), value_id])
+                    .unwrap()
+            })
+            .collect();
         let palette_id = main.retain_palette(palette).unwrap();
         let mut object = VoxObject::new(String::new(), TyVector3U32::new(9, 1, 1)).unwrap();
         object.retain_layer(palette_id).unwrap();
-        for index in 0..9u32 {
-            let voxel_id = object.voxel_id(TyVector3U32::new(index, 0, 0)).unwrap();
-            object
-                .retain_voxel(voxel_id, &[U32Id::<BVoxMaterial>::from_u32(index)])
-                .unwrap();
+        for (x, &material_id) in (0..).zip(&material_ids) {
+            let voxel_id = object.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap();
+            object.retain_voxel(voxel_id, &[material_id]).unwrap();
         }
         main.retain_object(object).unwrap();
         main.retain_hierarchy_node(object_node("o", 0, at(0.0, 0.0, 0.0)))

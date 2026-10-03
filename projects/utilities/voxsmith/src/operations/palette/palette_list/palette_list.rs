@@ -189,8 +189,8 @@ mod tests {
     use voxcore::{BVoxPalette, BVoxValuePoolValue, VoxMain, VoxObject, VoxPalette, VoxValuePool};
 
     /// The branded value id `index`.
-    fn value_id(index: usize) -> U32Id<BVoxValuePoolValue> {
-        U32Id::from_u32(index as u32)
+    fn value_id(index: u32) -> U32Id<BVoxValuePoolValue> {
+        U32Id::from_u32(index)
     }
 
     /// The branded palette id `index`.

@@ -429,21 +429,21 @@ mod tests {
         palette
             .retain_property(METALLIC.to_owned(), metals)
             .unwrap();
-        palette
-            .retain_material(vec![U32Id::from_u32(0), U32Id::from_u32(0)])
-            .unwrap();
-        palette
-            .retain_material(vec![U32Id::from_u32(1), U32Id::from_u32(1)])
-            .unwrap();
+        let material_ids = [
+            palette
+                .retain_material(vec![U32Id::from_u32(0), U32Id::from_u32(0)])
+                .unwrap(),
+            palette
+                .retain_material(vec![U32Id::from_u32(1), U32Id::from_u32(1)])
+                .unwrap(),
+        ];
         let palette_id = main.retain_palette(palette).unwrap();
 
         let mut object = VoxObject::new("bar".to_owned(), TyVector3U32::new(2, 1, 1)).unwrap();
         object.retain_layer(palette_id).unwrap();
-        for x in 0..2 {
+        for (x, material_id) in (0..).zip(material_ids) {
             let voxel_id = object.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap();
-            object
-                .retain_voxel(voxel_id, &[U32Id::from_u32(x)])
-                .unwrap();
+            object.retain_voxel(voxel_id, &[material_id]).unwrap();
         }
 
         (main, object)

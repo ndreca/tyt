@@ -130,10 +130,13 @@ mod tests {
     use crate::{operations::object::add_objects, test_utilities::HookRecorder};
     use branded_id::U32Id;
     use ty_math::TyVector3U32;
-    use voxcore::{VoxHierarchyNode, VoxMain, VoxObject, VoxPalette, VoxValuePool};
+    use voxcore::{
+        BVoxMaterial, BVoxObject, BVoxPalette, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette,
+        VoxValuePool,
+    };
 
     /// Retains a one-value pool and a palette with one material drawing it.
-    fn palette(main: &mut VoxMain, color: [f64; 4]) {
+    fn palette(main: &mut VoxMain, color: [f64; 4]) -> (U32Id<BVoxPalette>, U32Id<BVoxMaterial>) {
         let value_pool = VoxValuePool::vec_4_float(vec![color]).unwrap();
 
         let value_pool_id = main.retain_value_pool(value_pool);
@@ -142,21 +145,24 @@ mod tests {
         palette
             .retain_property("baseColor".to_owned(), value_pool_id)
             .unwrap();
-        palette.retain_material(vec![U32Id::from_u32(0)]).unwrap();
+        let material_id = palette.retain_material(vec![U32Id::from_u32(0)]).unwrap();
 
-        main.retain_palette(palette).unwrap();
+        (main.retain_palette(palette).unwrap(), material_id)
     }
 
-    /// A `1 x 1 x 1` object with one live voxel sampling material 0 of
-    /// `palette_index`.
-    fn object(main: &mut VoxMain, name: &str, palette_index: u32) {
+    /// A `1 x 1 x 1` object with one live voxel sampling `material_id` of
+    /// `palette_id`.
+    fn object(
+        main: &mut VoxMain,
+        name: &str,
+        (palette_id, material_id): (U32Id<BVoxPalette>, U32Id<BVoxMaterial>),
+    ) -> U32Id<BVoxObject> {
         let mut object = VoxObject::new(name.to_owned(), TyVector3U32::splat(1)).unwrap();
-        object.retain_layer(U32Id::from_u32(palette_index)).unwrap();
-        object
-            .retain_voxel(U32Id::from_u32(0), &[U32Id::from_u32(0)])
-            .unwrap();
+        object.retain_layer(palette_id).unwrap();
+        let voxel_id = object.voxel_id(TyVector3U32::ZERO).unwrap();
+        object.retain_voxel(voxel_id, &[material_id]).unwrap();
 
-        main.retain_object(object).unwrap();
+        main.retain_object(object).unwrap()
     }
 
     /// Palettes `red`, `green`, and `blue`, and objects `a` on blue, `b` on
@@ -164,13 +170,13 @@ mod tests {
     fn source() -> VoxMain {
         let mut source = VoxMain::default();
 
-        palette(&mut source, [1.0, 0.0, 0.0, 1.0]);
-        palette(&mut source, [0.0, 1.0, 0.0, 1.0]);
-        palette(&mut source, [0.0, 0.0, 1.0, 1.0]);
+        let red = palette(&mut source, [1.0, 0.0, 0.0, 1.0]);
+        let green = palette(&mut source, [0.0, 1.0, 0.0, 1.0]);
+        let blue = palette(&mut source, [0.0, 0.0, 1.0, 1.0]);
 
-        object(&mut source, "a", 2);
-        object(&mut source, "b", 0);
-        object(&mut source, "c", 1);
+        object(&mut source, "a", blue);
+        object(&mut source, "b", red);
+        object(&mut source, "c", green);
 
         source
     }
@@ -179,13 +185,13 @@ mod tests {
     fn scene() -> VoxMain<HookRecorder> {
         let mut main = VoxMain::default();
 
-        palette(&mut main, [1.0, 1.0, 1.0, 1.0]);
+        let white = palette(&mut main, [1.0, 1.0, 1.0, 1.0]);
 
-        object(&mut main, "scene", 0);
+        let scene_id = object(&mut main, "scene", white);
 
         let house = VoxHierarchyNode {
             name: "house".to_owned(),
-            child_object_ids: vec![U32Id::from_u32(0)],
+            child_object_ids: vec![scene_id],
             ..Default::default()
         };
 
@@ -221,11 +227,11 @@ mod tests {
                 .next()
                 .unwrap();
 
-            palette_id.to_u32()
+            palette_id
         };
 
-        assert_eq!(layer_palette(0), 2);
-        assert_eq!(layer_palette(1), 1);
+        assert_eq!(layer_palette(0), U32Id::from_u32(2));
+        assert_eq!(layer_palette(1), U32Id::from_u32(1));
 
         let root_names: Vec<&str> = main
             .root_hierarchy_node_ids()
@@ -253,13 +259,13 @@ mod tests {
     fn a_palette_equal_to_one_in_the_scene_is_still_copied() {
         let mut source = VoxMain::default();
 
-        palette(&mut source, [1.0, 1.0, 1.0, 1.0]);
+        let white = palette(&mut source, [1.0, 1.0, 1.0, 1.0]);
 
-        object(&mut source, "a", 0);
+        let a_id = object(&mut source, "a", white);
 
         let mut main = scene();
 
-        add_objects(&mut main, source.state(), &[U32Id::from_u32(0)], None).unwrap();
+        add_objects(&mut main, source.state(), &[a_id], None).unwrap();
 
         assert_eq!(main.palette_count(), 2);
         main.validate().unwrap();

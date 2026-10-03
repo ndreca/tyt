@@ -163,8 +163,8 @@ mod tests {
     };
 
     /// The branded value id `index`.
-    fn value_id(index: usize) -> U32Id<BVoxValuePoolValue> {
-        U32Id::from_u32(index as u32)
+    fn value_id(index: u32) -> U32Id<BVoxValuePoolValue> {
+        U32Id::from_u32(index)
     }
 
     /// Median-cut quantizing of `baseColor` in OKLab with no dither, capped at
@@ -242,7 +242,7 @@ mod tests {
     /// voxels on material `i`.
     fn main_with_rows(
         properties: Vec<(&str, VoxValuePool)>,
-        rows: &[Vec<usize>],
+        rows: &[Vec<u32>],
         repeats: &[usize],
     ) -> (VoxMain, U32Id<BVoxPalette>, U32Id<BVoxObject>) {
         let mut main = VoxMain::default();
@@ -256,7 +256,7 @@ mod tests {
     fn retain_rows(
         main: &mut VoxMain,
         properties: Vec<(&str, VoxValuePool)>,
-        rows: &[Vec<usize>],
+        rows: &[Vec<u32>],
         repeats: &[usize],
     ) -> (U32Id<BVoxPalette>, U32Id<BVoxObject>) {
         let mut palette = VoxPalette::default();
@@ -330,7 +330,8 @@ mod tests {
                         .unwrap(),
                 ),
             ],
-            &(0..colors.len())
+            &(0..)
+                .take(colors.len())
                 .map(|index| vec![index, index])
                 .collect::<Vec<_>>(),
             repeats,
@@ -724,9 +725,9 @@ mod tests {
         glow_palette
             .retain_property("emissiveStrength".to_owned(), strength_value_pool_id)
             .unwrap();
-        glow_palette.retain_material(vec![value_id(0)]).unwrap();
+        let glow_material_id = glow_palette.retain_material(vec![value_id(0)]).unwrap();
         let glow_palette_id = main.retain_palette(glow_palette).unwrap();
-        main.retain_layer_filled(object_id, glow_palette_id, U32Id::from_u32(0))
+        main.retain_layer_filled(object_id, glow_palette_id, glow_material_id)
             .unwrap();
 
         let dithered = QuantizeOptions {

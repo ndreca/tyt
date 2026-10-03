@@ -149,7 +149,7 @@ mod tests {
         let position = TyVector3U32::new(1, 2, 3);
         let id = object.voxel_id(position).unwrap();
 
-        assert_eq!(id.to_u32(), 12 + 2 * 4 + 3);
+        assert_eq!(id, U32Id::from_u32(12 + 2 * 4 + 3));
         assert_eq!(object.voxel_position(id), Some(position));
         assert_eq!(object.voxel_id(TyVector3U32::new(2, 0, 0)), None);
         assert_eq!(object.voxel_position(U32Id::from_u32(24)), None);

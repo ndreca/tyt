@@ -232,7 +232,8 @@ mod tests {
         TyVector3U32,
     };
     use voxcore::{
-        BVoxObject, BVoxPalette, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette, VoxValuePool,
+        BVoxMaterial, BVoxObject, BVoxPalette, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette,
+        VoxValuePool,
         material::{BASE_COLOR, METALLIC},
     };
 
@@ -271,14 +272,16 @@ mod tests {
     /// id of the bar painted with its two materials, unplaced.
     fn painted() -> (VoxMain, U32Id<BVoxObject>) {
         let mut main: VoxMain = VoxMain::default();
-        let palette_id = paint(&mut main);
-        let object_id = main.retain_object(painted_bar(palette_id)).unwrap();
+        let (palette_id, material_ids) = paint(&mut main);
+        let object_id = main
+            .retain_object(painted_bar(palette_id, material_ids))
+            .unwrap();
         (main, object_id)
     }
 
     /// Retains into `main` a palette carrying `baseColor` and `metallic` with
-    /// two materials, returning its id.
-    fn paint(main: &mut VoxMain) -> U32Id<BVoxPalette> {
+    /// two materials, returning their ids.
+    fn paint(main: &mut VoxMain) -> (U32Id<BVoxPalette>, [U32Id<BVoxMaterial>; 2]) {
         let colors = main.retain_value_pool(
             VoxValuePool::vec_4_float(vec![[1.0, 0.0, 0.0, 1.0], [0.0, 0.0, 1.0, 1.0]]).unwrap(),
         );
@@ -291,25 +294,28 @@ mod tests {
         palette
             .retain_property(METALLIC.to_owned(), metals)
             .unwrap();
-        palette
-            .retain_material(vec![U32Id::from_u32(0), U32Id::from_u32(0)])
-            .unwrap();
-        palette
-            .retain_material(vec![U32Id::from_u32(1), U32Id::from_u32(1)])
-            .unwrap();
-        main.retain_palette(palette).unwrap()
+        let material_ids = [
+            palette
+                .retain_material(vec![U32Id::from_u32(0), U32Id::from_u32(0)])
+                .unwrap(),
+            palette
+                .retain_material(vec![U32Id::from_u32(1), U32Id::from_u32(1)])
+                .unwrap(),
+        ];
+        (main.retain_palette(palette).unwrap(), material_ids)
     }
 
-    /// The bar painted with the two materials of `palette_id`, one per voxel.
-    fn painted_bar(palette_id: U32Id<BVoxPalette>) -> VoxObject {
+    /// The bar painted with `material_ids` of `palette_id`, one per voxel.
+    fn painted_bar(
+        palette_id: U32Id<BVoxPalette>,
+        material_ids: [U32Id<BVoxMaterial>; 2],
+    ) -> VoxObject {
         let mut object = bar();
-        object.retain_layer_filled(palette_id, U32Id::from_u32(0));
-        for x in 0..2 {
+        object.retain_layer_filled(palette_id, material_ids[0]);
+        for (x, material_id) in (0..).zip(material_ids) {
             let voxel_id = object.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap();
             object.release_voxel(voxel_id).unwrap();
-            object
-                .retain_voxel(voxel_id, &[U32Id::from_u32(x)])
-                .unwrap();
+            object.retain_voxel(voxel_id, &[material_id]).unwrap();
         }
         object
     }
@@ -706,9 +712,13 @@ mod tests {
     #[test]
     fn each_target_draws_its_own_materials_in_the_shared_document() {
         let mut main: VoxMain = VoxMain::default();
-        let palette_id = paint(&mut main);
-        let a = main.retain_object(painted_bar(palette_id)).unwrap();
-        let b = main.retain_object(painted_bar(palette_id)).unwrap();
+        let (palette_id, material_ids) = paint(&mut main);
+        let a = main
+            .retain_object(painted_bar(palette_id, material_ids))
+            .unwrap();
+        let b = main
+            .retain_object(painted_bar(palette_id, material_ids))
+            .unwrap();
 
         let mut record = record(Method::Greedy);
         record.materials = materials(vec![value_slot("baseColorTexture", "baseColor")]);
@@ -819,7 +829,7 @@ mod tests {
                     triangle
                         .vertex_ids
                         .iter()
-                        .all(|vertex_id| vertex_id.to_usize_id().to_usize() < 20)
+                        .all(|vertex_id| vertex_id.to_usize_id() < primitive.positions().end())
                 );
             }
         }
@@ -847,19 +857,20 @@ mod tests {
         palette
             .retain_property(METALLIC.to_owned(), metals)
             .unwrap();
-        for (color, metal) in [(0, 0), (1, 1), (2, 1)] {
-            palette
-                .retain_material(vec![U32Id::from_u32(color), U32Id::from_u32(metal)])
-                .unwrap();
-        }
+        let material_ids: Vec<_> = [(0, 0), (1, 1), (2, 1)]
+            .into_iter()
+            .map(|(color, metal)| {
+                palette
+                    .retain_material(vec![U32Id::from_u32(color), U32Id::from_u32(metal)])
+                    .unwrap()
+            })
+            .collect();
         let palette_id = main.retain_palette(palette).unwrap();
         let mut object = VoxObject::new("bar".to_owned(), TyVector3U32::new(3, 1, 1)).unwrap();
         object.retain_layer(palette_id).unwrap();
-        for x in 0..3 {
+        for (x, &material_id) in (0..).zip(&material_ids) {
             let voxel_id = object.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap();
-            object
-                .retain_voxel(voxel_id, &[U32Id::from_u32(x)])
-                .unwrap();
+            object.retain_voxel(voxel_id, &[material_id]).unwrap();
         }
         let object_id = main.retain_object(object).unwrap();
 
@@ -1166,8 +1177,10 @@ mod tests {
     #[test]
     fn a_run_binds_only_the_properties_it_reads() {
         let mut main: VoxMain = VoxMain::default();
-        let palette_id = paint(&mut main);
-        let object_id = main.retain_object(painted_bar(palette_id)).unwrap();
+        let (palette_id, material_ids) = paint(&mut main);
+        let object_id = main
+            .retain_object(painted_bar(palette_id, material_ids))
+            .unwrap();
         let tags = main.retain_value_pool(VoxValuePool::int(vec![-1]).unwrap());
         main.retain_property_filled(palette_id, "tag".to_owned(), tags, U32Id::from_u32(0))
             .unwrap();

@@ -421,6 +421,7 @@ fn material_row_in_order(
 mod tests {
     use crate::{BVoxMaterial, BVoxProperty, BVoxValuePool, BVoxValuePoolValue, Error, VoxPalette};
     use branded_id::U32Id;
+    use std::collections::HashMap;
 
     fn value_pool_id(index: u32) -> U32Id<BVoxValuePool> {
         U32Id::from_u32(index)
@@ -921,7 +922,12 @@ mod tests {
             .retain_property("b".to_owned(), value_pool_id(1))
             .unwrap();
 
-        palette.relabel_value_pools(|value_pool_id| U32Id::from_u32(value_pool_id.to_u32() + 5));
+        let relabeled = HashMap::from([
+            (value_pool_id(0), value_pool_id(5)),
+            (value_pool_id(1), value_pool_id(6)),
+        ]);
+
+        palette.relabel_value_pools(|value_pool_id| relabeled[&value_pool_id]);
 
         assert_eq!(
             palette.property(a_id).unwrap().value_pool_id,

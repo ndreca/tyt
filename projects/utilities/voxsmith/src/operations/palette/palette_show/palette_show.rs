@@ -791,8 +791,8 @@ mod tests {
     };
 
     /// The branded value id `index`.
-    fn value_id(index: usize) -> U32Id<BVoxValuePoolValue> {
-        U32Id::from_u32(index as u32)
+    fn value_id(index: u32) -> U32Id<BVoxValuePoolValue> {
+        U32Id::from_u32(index)
     }
 
     /// A `vec-4-float` value pool of the given 8-bit sRGB colors, each decoded

@@ -1589,9 +1589,15 @@ mod tests {
         assert_eq!(remap.hierarchy_nodes.new_id(node_ids[2]), Some(node_id(1)));
 
         // Every cross-reference resolves through the compacted ids.
-        assert_eq!(main.texture(texture_id_at(0)).unwrap().image_id.to_u32(), 0);
+        assert_eq!(
+            main.texture(texture_id_at(0)).unwrap().image_id,
+            U32Id::from_u32(0)
+        );
         let material = main.material(material_id_at(0)).unwrap();
-        assert_eq!(material.emissive_texture.unwrap().texture_id.to_u32(), 0);
+        assert_eq!(
+            material.emissive_texture.unwrap().texture_id,
+            texture_id_at(0)
+        );
         let object = main.object(object_id_at(0)).unwrap();
         assert_eq!(object.primitive_count(), 1);
         assert_eq!(

@@ -147,17 +147,14 @@ mod tests {
     #[test]
     fn iter_live_yields_ascending_ids_matching_count() {
         let mut liveness = VoxLiveness::new(200);
-        let live = [3, 64, 65, 130, 199];
-        for index in live {
-            liveness.set_live(voxel_id(index), true);
+        let live = [3, 64, 65, 130, 199].map(voxel_id);
+        for voxel_id in live {
+            liveness.set_live(voxel_id, true);
         }
 
         assert_eq!(liveness.count_live(), live.len());
 
-        let got: Vec<u32> = liveness
-            .iter_live()
-            .map(|voxel_id| voxel_id.to_u32())
-            .collect();
+        let got: Vec<_> = liveness.iter_live().collect();
 
         assert_eq!(got, live);
     }

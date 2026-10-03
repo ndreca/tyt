@@ -1079,11 +1079,11 @@ mod tests {
 
         main.gc().unwrap();
 
-        let mut ids: Vec<u32> = main.ext().materials.keys().map(|id| id.to_u32()).collect();
+        let mut ids: Vec<_> = main.ext().materials.keys().copied().collect();
 
         ids.sort_unstable();
 
-        assert_eq!(ids, [1, 2, 4]);
+        assert_eq!(ids, [material_id(1), material_id(2), material_id(4)]);
 
         let rebuilt = to_mvox_file(&main).unwrap();
 
