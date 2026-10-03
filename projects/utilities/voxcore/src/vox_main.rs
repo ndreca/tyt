@@ -4,7 +4,7 @@ use crate::{
     VoxExt, VoxGcRemap, VoxHierarchyNode, VoxObject, VoxPalette, VoxState, VoxValue, VoxValuePool,
     check_node_transform, first_cycle_node_index,
 };
-use branded_id::{IdVec, U32Id, soa::IdRemap};
+use branded_id::{IdVec, U32Id, ext::RangeExt, soa::IdRemap};
 use std::{
     collections::{HashMap, HashSet},
     mem,
@@ -167,12 +167,10 @@ impl<T: VoxExt> VoxMain<T> {
         // Compact each value pool's values first, recording the value
         // relabelings by the value pool's pre-gc id so the palette pass below
         // can translate its cells before value-pool ids move.
-        let mut value_pool_value_remaps: IdVec<_, _> = self
-            .state
-            .value_pools
-            .ids()
-            .peek_next_fresh()
-            .range_from_zero()
+        let value_pools_end = self.state.value_pools.ids().peek_next_fresh();
+
+        let mut value_pool_value_remaps: IdVec<_, _> = (U32Id::MIN..value_pools_end)
+            .into_id_range()
             .map(|_| IdRemap::default())
             .collect();
 
@@ -192,12 +190,10 @@ impl<T: VoxExt> VoxMain<T> {
         // indexed by old palette id, the column covers the palette id pool's
         // whole id space. Cells translate through the value relabelings first,
         // while each property still names its value pool's pre-gc id.
-        let mut material_remaps: IdVec<_, _> = self
-            .state
-            .palettes
-            .ids()
-            .peek_next_fresh()
-            .range_from_zero()
+        let palettes_end = self.state.palettes.ids().peek_next_fresh();
+
+        let mut material_remaps: IdVec<_, _> = (U32Id::MIN..palettes_end)
+            .into_id_range()
             .map(|_| IdRemap::default())
             .collect();
 

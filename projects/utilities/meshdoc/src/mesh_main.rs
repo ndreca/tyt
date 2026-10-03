@@ -4,7 +4,7 @@ use crate::{
     MeshImageSource, MeshMaterial, MeshObject, MeshPrimitive, MeshProperty, MeshState, MeshTexture,
     Result, TakenExt, first_cycle_node_index,
 };
-use branded_id::{IdVec, U32Id, soa::IdRemap};
+use branded_id::{IdVec, U32Id, ext::RangeExt, soa::IdRemap};
 use std::collections::{HashMap, HashSet};
 
 /// The in-memory state of a mesh model.
@@ -228,12 +228,10 @@ impl<T: MeshExt> MeshMain<T> {
         // object id pool's whole id space.
         let material_remap = self.state.materials.gc();
 
-        let mut primitive_remaps: IdVec<_, _> = self
-            .state
-            .objects
-            .ids()
-            .peek_next_fresh()
-            .range_from_zero()
+        let objects_end = self.state.objects.ids().peek_next_fresh();
+
+        let mut primitive_remaps: IdVec<_, _> = (U32Id::MIN..objects_end)
+            .into_id_range()
             .map(|_| IdRemap::default())
             .collect();
 
