@@ -233,8 +233,7 @@ mod tests {
             .unwrap();
         zero.retain_property("metallic".to_owned(), metallic_value_pool_id)
             .unwrap();
-        let zero_material_id = zero
-            .retain_material(vec![value_id(0), value_id(0)])
+        zero.retain_material(vec![value_id(0), value_id(0)])
             .unwrap();
         zero.retain_material(vec![value_id(1), value_id(1)])
             .unwrap();
@@ -245,16 +244,16 @@ mod tests {
             .unwrap();
         one.retain_property("emissiveStrength".to_owned(), metallic_value_pool_id)
             .unwrap();
-        let one_material_id = one.retain_material(vec![value_id(2), value_id(1)]).unwrap();
+        one.retain_material(vec![value_id(2), value_id(1)]).unwrap();
         let one_palette_id = main.retain_palette(one).unwrap();
 
         let mut a = VoxObject::new("a".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
-        a.retain_layer_filled(zero_palette_id, zero_material_id);
+        a.retain_layer(zero_palette_id).unwrap();
         main.retain_object(a).unwrap();
 
         let mut b = VoxObject::new("b".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
-        b.retain_layer_filled(zero_palette_id, zero_material_id);
-        b.retain_layer_filled(one_palette_id, one_material_id);
+        b.retain_layer(zero_palette_id).unwrap();
+        b.retain_layer(one_palette_id).unwrap();
         main.retain_object(b).unwrap();
 
         main

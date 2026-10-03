@@ -23,7 +23,7 @@ pub fn test_main<T>(ext: T) -> VoxMain<T> {
 
     let mut object = VoxObject::new("body".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
 
-    object.retain_layer_filled(palette_id, material_id);
+    object.retain_layer(palette_id).unwrap();
 
     let voxel_id = object.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap();
 

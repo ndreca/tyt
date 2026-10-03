@@ -396,7 +396,7 @@ mod tests {
         let palette_id = main.retain_palette(palette).unwrap();
 
         let mut object = VoxObject::new("body".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
-        object.retain_layer_filled(palette_id, material_id);
+        object.retain_layer(palette_id).unwrap();
         let voxel_id = object.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap();
         object.retain_voxel(voxel_id, &[material_id]).unwrap();
         main.retain_object(object).unwrap();
@@ -561,7 +561,7 @@ mod tests {
         let mut glow = VoxPalette::default();
         glow.retain_property("emissiveStrength".to_owned(), strengths_value_pool_id)
             .unwrap();
-        let glow_material_id = glow.retain_material(vec![U32Id::from_u32(0)]).unwrap();
+        glow.retain_material(vec![U32Id::from_u32(0)]).unwrap();
         let glow_palette_id = main.retain_palette(glow).unwrap();
 
         let colors_value_pool_id =
@@ -569,12 +569,12 @@ mod tests {
         let mut base = VoxPalette::default();
         base.retain_property("baseColor".to_owned(), colors_value_pool_id)
             .unwrap();
-        let material_id = base.retain_material(vec![U32Id::from_u32(0)]).unwrap();
+        base.retain_material(vec![U32Id::from_u32(0)]).unwrap();
         let base_palette_id = main.retain_palette(base).unwrap();
 
         let mut object = VoxObject::new("body".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
-        object.retain_layer_filled(base_palette_id, material_id);
-        object.retain_layer_filled(glow_palette_id, glow_material_id);
+        object.retain_layer(base_palette_id).unwrap();
+        object.retain_layer(glow_palette_id).unwrap();
         main.retain_object(object).unwrap();
 
         let document = voxj_document("layered.voxj", 1);

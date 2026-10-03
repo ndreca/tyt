@@ -109,7 +109,7 @@ pub fn voxelize_mesh(
 
     let mut main = VoxMain::default();
 
-    let (palette, sample_ids, default_material_id) =
+    let (palette, sample_ids) =
         build_palette(&mut main, &cell_materials, options.out_of_range_property)?;
 
     let palette_id = main.retain_palette(palette)?;
@@ -127,7 +127,9 @@ pub fn voxelize_mesh(
         let mut object = VoxObject::new(name, counts).map_err(|_| grid_too_large(counts))?;
 
         object.set_origin(space.min_cell());
-        object.retain_layer_filled(palette_id, default_material_id);
+        object
+            .retain_layer(palette_id)
+            .expect("a fresh object has no live voxel");
 
         for (voxel_id, sample_id) in samples.iter().enumerate_ids() {
             if let Some(material_id) = sample_id {
@@ -272,20 +274,13 @@ fn fill_interior(
     }
 }
 
-/// A built palette, each filled cell's material sample, and the default
-/// material.
-type PaletteBuild = (
-    VoxPalette,
-    Vec<Option<U32Id<BVoxMaterial>>>,
-    U32Id<BVoxMaterial>,
-);
+/// A built palette and each filled cell's material sample.
+type PaletteBuild = (VoxPalette, Vec<Option<U32Id<BVoxMaterial>>>);
 
 /// Assembles a palette from a per-cell material list. Identical materials
 /// merge to one palette material. Every vocabulary property draws from a
-/// deduplicated value pool added to `main`. The default material is the
-/// first built, or a lone white material for an all-empty grid, so the
-/// palette is never empty. A value outside its property's range follows
-/// `out_of_range`.
+/// deduplicated value pool added to `main`. A value outside its property's
+/// range follows `out_of_range`.
 fn build_palette(
     main: &mut VoxMain,
     cell_materials: &[Option<VoxelMaterial>],
@@ -307,12 +302,6 @@ fn build_palette(
             })
         })
         .collect();
-
-    // An all-empty grid still needs a non-empty palette so its value pools and
-    // default material are valid; give it a lone white material.
-    if distinct.is_empty() {
-        distinct.push(VoxelMaterial::flat(fill_lin_srgba_f64_color(None)));
-    }
 
     // The color properties follow the same policy as the scalars: every
     // component of `baseColor`, alpha included, and `emissiveColor` lies in
@@ -410,9 +399,7 @@ fn build_palette(
         .map(|&index| index.map(|index| material_ids[index]))
         .collect();
 
-    let default_material_id = material_ids[0];
-
-    Ok((palette, sample_ids, default_material_id))
+    Ok((palette, sample_ids))
 }
 
 /// A deduplicated value pool column and each distinct material's value id into
@@ -662,7 +649,7 @@ mod tests {
         let mut main = VoxMain::default();
         let cells: Vec<Option<VoxelMaterial>> = materials.into_iter().map(Some).collect();
 
-        let (palette, sample_ids, _) = build_palette(&mut main, &cells, out_of_range)?;
+        let (palette, sample_ids) = build_palette(&mut main, &cells, out_of_range)?;
 
         let palette_id = main.retain_palette(palette)?;
         let material_ids = sample_ids
@@ -783,14 +770,13 @@ mod tests {
     }
 
     #[test]
-    fn an_empty_grid_gets_a_lone_white_material() {
+    fn an_empty_grid_gets_an_empty_palette() {
         let mut main = VoxMain::default();
-        let (palette, sample_ids, default_material_id) =
+        let (palette, sample_ids) =
             build_palette(&mut main, &[None, None], OutOfRangeProperty::Error).unwrap();
 
-        assert_eq!(palette.material_count(), 1);
+        assert_eq!(palette.material_count(), 0);
         assert_eq!(sample_ids, [None, None]);
-        assert_eq!(default_material_id, U32Id::from_u32(0));
     }
 
     /// Materials with the second one's `metallic` out of its range.

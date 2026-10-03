@@ -720,7 +720,7 @@ mod tests {
         let mut object = VoxObject::new("o".to_owned(), TyVector3U32::new(1, 2, 3)).unwrap();
         object.set_origin(TyVector3I32::new(5, 6, 7));
         let first_layer_id = object.retain_layer(palette_id(0)).unwrap();
-        let second_layer_id = object.retain_layer_filled(palette_id(1), material_id(1));
+        let second_layer_id = object.retain_layer(palette_id(1)).unwrap();
         let first_id = object.voxel_id(TyVector3U32::new(0, 1, 0)).unwrap();
         object
             .retain_voxel(first_id, &[material_id(3), material_id(4)])

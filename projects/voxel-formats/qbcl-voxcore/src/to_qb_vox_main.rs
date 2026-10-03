@@ -1,4 +1,4 @@
-use crate::{Error, QbVoxMain, Result, qb_ext_from_file, rounded_translation, translation};
+use crate::{QbVoxMain, Result, qb_ext_from_file, rounded_translation, translation};
 use branded_id::U32Id;
 use qbcl::qb::QbFile;
 use std::collections::HashSet;
@@ -34,7 +34,7 @@ pub fn to_qb_vox_main(mut main: VoxMain<()>) -> Result<QbVoxMain> {
         let object = main
             .object(placement.object_id)
             .expect("a placement's object is one of the state's");
-        let copy = duplicate_object(&main, object)?;
+        let copy = duplicate_object(object);
         object_ids.push(main.retain_object(copy)?);
     }
 
@@ -146,37 +146,16 @@ fn push_node_placements(
 
 /// A fresh object with `object`'s name, grid, origin, layers, and live
 /// voxels, so a format that places one grid per object can give each extra
-/// placement an object. A layer's default material, which only the empty
-/// cells hold, is the material its first live voxel samples, or the palette's
-/// first material for a layer with no live voxel. Errors when such a layer's
-/// palette has no material, because the copy's empty cells need one.
-fn duplicate_object(main: &VoxMain<()>, object: &VoxObject) -> Result<VoxObject> {
+/// placement an object.
+fn duplicate_object(object: &VoxObject) -> VoxObject {
     let mut copy = VoxObject::new(object.name().to_owned(), object.bounds())
         .expect("the source object's grid is within the dense limit");
     copy.set_origin(object.origin());
 
     let layer_ids: Vec<_> = object.iter_layers().collect();
-    let first_live = object.iter_live().next();
-    for &(layer_id, palette_id) in &layer_ids {
-        let sampled_id = first_live.and_then(|voxel_id| object.voxel_material(voxel_id, layer_id));
-        let default_material_id = match sampled_id {
-            Some(material_id) => material_id,
-
-            None => {
-                let palette = main
-                    .palette(palette_id)
-                    .expect("a layer references a live palette");
-                let Some(material_id) = palette.iter_materials().next() else {
-                    return Err(Error::Invalid(format!(
-                        "object {} has no live voxel and its palette {palette_id} has no \
-                         material to give the copy's empty cells",
-                        object.name()
-                    )));
-                };
-                material_id
-            }
-        };
-        copy.retain_layer_filled(palette_id, default_material_id);
+    for &(_, palette_id) in &layer_ids {
+        copy.retain_layer(palette_id)
+            .expect("the copy has no live voxel yet");
     }
 
     let mut sample_ids = Vec::with_capacity(layer_ids.len());
@@ -191,14 +170,12 @@ fn duplicate_object(main: &VoxMain<()>, object: &VoxObject) -> Result<VoxObject>
             .expect("the copy has the source's grid and layers");
     }
 
-    Ok(copy)
+    copy
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        Error, from_qb_file, to_qb_file, to_qb_vox_main, to_qb_vox_main::duplicate_object,
-    };
+    use crate::{from_qb_file, to_qb_file, to_qb_vox_main, to_qb_vox_main::duplicate_object};
     use branded_id::{IdRange, U32Id};
     use qbcl::qb::QbFile;
     use std::collections::BTreeSet;
@@ -449,38 +426,17 @@ mod tests {
     }
 
     #[test]
-    fn an_empty_layer_defaults_to_the_palettes_first_material() {
+    fn an_object_with_no_live_voxel_over_an_empty_palette_duplicates() {
         let mut main: VoxMain = VoxMain::default();
 
-        let value_pool_id = main.retain_value_pool(VoxValuePool::int(vec![1]).unwrap());
+        let palette_id = main.retain_palette(VoxPalette::default()).unwrap();
 
-        let mut palette = VoxPalette::default();
-
-        palette
-            .retain_property("v".to_owned(), value_pool_id)
-            .unwrap();
-
-        palette.retain_material(vec![U32Id::from_u32(0)]).unwrap();
-
-        let palette_id = main.retain_palette(palette).unwrap();
-
-        let copy = duplicate_object(&main, &empty_object(palette_id)).unwrap();
+        let copy = duplicate_object(&empty_object(palette_id));
 
         assert_eq!(copy.layer_count(), 1);
 
         main.retain_object(copy).unwrap();
 
         main.validate().unwrap();
-    }
-
-    #[test]
-    fn an_empty_layer_over_an_empty_palette_errors() {
-        let mut main: VoxMain = VoxMain::default();
-
-        let palette_id = main.retain_palette(VoxPalette::default()).unwrap();
-
-        let actual = duplicate_object(&main, &empty_object(palette_id));
-
-        assert!(matches!(actual, Err(Error::Invalid(_))));
     }
 }

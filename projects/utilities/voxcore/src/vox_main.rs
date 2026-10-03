@@ -2606,7 +2606,7 @@ mod tests {
 
         // A four-voxel row, one voxel per material.
         let mut object = VoxObject::new("o".to_owned(), TyVector3U32::new(4, 1, 1)).unwrap();
-        let layer_id = object.retain_layer_filled(live_palette_id, material_ids[0]);
+        let layer_id = object.retain_layer(live_palette_id).unwrap();
         let voxel_ids: Vec<_> = (0..4)
             .map(|x| object.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap())
             .collect();
@@ -2819,8 +2819,8 @@ mod tests {
 
         // Two layers on the same palette; each voxel samples one material per
         // layer.
-        let base_id = object.retain_layer_filled(live_palette_id, matte_red_id);
-        let overlay_id = object.retain_layer_filled(live_palette_id, matte_red_id);
+        let base_id = object.retain_layer(live_palette_id).unwrap();
+        let overlay_id = object.retain_layer(live_palette_id).unwrap();
         let v0_id = object.voxel_id(TyVector3U32::new(0, 0, 0)).unwrap();
         let v1_id = object.voxel_id(TyVector3U32::new(1, 0, 0)).unwrap();
         object

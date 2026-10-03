@@ -279,7 +279,7 @@ mod tests {
         let mut object =
             VoxObject::new("o".to_owned(), TyVector3U32::new(count as u32, 1, 1)).unwrap();
         let palette_id = main.retain_palette(palette).unwrap();
-        object.retain_layer_filled(palette_id, material_ids[0]);
+        object.retain_layer(palette_id).unwrap();
 
         let placements = material_ids
             .iter()
@@ -362,7 +362,7 @@ mod tests {
 
         let mut object = VoxObject::new("o".to_owned(), bounds).unwrap();
         let palette_id = main.retain_palette(palette).unwrap();
-        object.retain_layer_filled(palette_id, material_ids[0]);
+        object.retain_layer(palette_id).unwrap();
 
         for &(position, color_index) in voxels {
             let voxel_id = object.voxel_id(position).unwrap();

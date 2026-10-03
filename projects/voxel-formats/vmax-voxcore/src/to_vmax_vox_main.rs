@@ -160,7 +160,7 @@ mod tests {
         let palette_id = main.retain_palette(palette).unwrap();
 
         let mut object = VoxObject::new("o".to_owned(), TyVector3U32::splat(1)).unwrap();
-        object.retain_layer_filled(palette_id, material_id);
+        object.retain_layer(palette_id).unwrap();
         object
             .retain_voxel(U32Id::from_u32(0), &[material_id])
             .unwrap();
@@ -207,7 +207,7 @@ mod tests {
         let palette_id = main.retain_palette(palette).unwrap();
 
         let mut object = VoxObject::new("o".to_owned(), TyVector3U32::splat(1)).unwrap();
-        object.retain_layer_filled(palette_id, material_id);
+        object.retain_layer(palette_id).unwrap();
         object
             .retain_voxel(U32Id::from_u32(0), &[material_id])
             .unwrap();

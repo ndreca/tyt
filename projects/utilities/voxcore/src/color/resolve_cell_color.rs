@@ -73,7 +73,7 @@ mod tests {
         let palette_id = state.retain_palette(palette).unwrap();
 
         let mut object = VoxObject::new("o".to_owned(), TyVector3U32::new(2, 1, 1)).unwrap();
-        object.retain_layer_filled(palette_id, red_id);
+        object.retain_layer(palette_id).unwrap();
         for (x, material_id) in [(0, red_id), (1, blue_id)] {
             let voxel_id = object.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap();
             object.retain_voxel(voxel_id, &[material_id]).unwrap();
@@ -110,11 +110,11 @@ mod tests {
         let property_id = palette
             .retain_property(BASE_COLOR.to_owned(), value_pool_id)
             .unwrap();
-        let material_id = palette.retain_material(vec![U32Id::from_u32(0)]).unwrap();
+        palette.retain_material(vec![U32Id::from_u32(0)]).unwrap();
         let palette_id = state.retain_palette(palette).unwrap();
 
         let mut object = VoxObject::new("o".to_owned(), TyVector3U32::new(1, 1, 1)).unwrap();
-        object.retain_layer_filled(palette_id, material_id);
+        object.retain_layer(palette_id).unwrap();
 
         assert_eq!(
             resolve_cell_color(&state, &object).unwrap_err(),

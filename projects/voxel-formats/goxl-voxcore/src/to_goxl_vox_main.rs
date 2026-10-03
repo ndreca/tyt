@@ -236,11 +236,11 @@ fn tiles(object: &VoxObject, world: TyVector3I32) -> Result<Vec<([i32; 3], VoxOb
                 TyVector3U32::splat(GoxlBlock::SIZE),
             )?;
 
-            // A layer's default material only backs empty cells, so the first
-            // cut voxel's sample serves.
-            for (index, &(_, palette_id)) in layers.iter().enumerate() {
-                tile.retain_layer_filled(palette_id, cells[0].samples[index]);
+            for &(_, palette_id) in &layers {
+                tile.retain_layer(palette_id)
+                    .expect("a fresh tile has no live voxel");
             }
+
             for cell in &cells {
                 let voxel_id = tile
                     .voxel_id(cell.local)

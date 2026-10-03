@@ -204,8 +204,8 @@ mod tests {
         let count = layers[0].1.len();
         let mut object =
             VoxObject::new("o".to_owned(), TyVector3U32::new(count as u32, 1, 1)).unwrap();
-        for (palette_id, samples) in layers {
-            object.retain_layer_filled(*palette_id, samples[0]);
+        for (palette_id, _) in layers {
+            object.retain_layer(*palette_id).unwrap();
         }
         for (index, voxel_id) in IdRange::from_len(count).enumerate() {
             let row: Vec<_> = layers.iter().map(|(_, samples)| samples[index]).collect();
