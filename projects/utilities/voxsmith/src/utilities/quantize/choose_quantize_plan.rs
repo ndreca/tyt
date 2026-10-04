@@ -3,6 +3,7 @@ use crate::{
     utilities::{
         AlphaMode, ColorSpace, PartitionProperties, PropertyInterpretation, QuantizeOptions,
         QuantizePlan, QuantizePoint, ReductionMethod, kmeans, median_cut, octree,
+        value_pool_kind_name,
     },
 };
 use branded_id::U32Id;
@@ -193,7 +194,7 @@ impl Reading {
     fn resolve(options: &QuantizeOptions, value_pool: &VoxValuePool) -> Result<(Self, usize)> {
         let name = &options.property;
         let values = value_pool.values();
-        let kind_name = kind_name(values);
+        let kind_name = value_pool_kind_name(values);
 
         let interpretation = match options.interpret_property {
             PropertyInterpretation::Auto if name == BASE_COLOR || name == EMISSIVE_COLOR => {
@@ -667,23 +668,6 @@ fn first_equal_column_ids<T: PartialEq>(values: VoxValueColumn<'_, T>) -> FirstE
     }
 
     ids
-}
-
-/// The voxj type name of `values`'s kind.
-fn kind_name(values: VoxValuePoolValues<'_>) -> &'static str {
-    match values {
-        VoxValuePoolValues::Bool(_) => "bool",
-        VoxValuePoolValues::Float(_) => "float",
-        VoxValuePoolValues::Int(_) => "int",
-        VoxValuePoolValues::Json(_) => "json",
-        VoxValuePoolValues::String(_) => "string",
-        VoxValuePoolValues::Vec2Float(_) => "vec-2-float",
-        VoxValuePoolValues::Vec2Int(_) => "vec-2-int",
-        VoxValuePoolValues::Vec3Float(_) => "vec-3-float",
-        VoxValuePoolValues::Vec3Int(_) => "vec-3-int",
-        VoxValuePoolValues::Vec4Float(_) => "vec-4-float",
-        VoxValuePoolValues::Vec4Int(_) => "vec-4-int",
-    }
 }
 
 /// A cluster's representative: its most-sampled point, ties to the lowest

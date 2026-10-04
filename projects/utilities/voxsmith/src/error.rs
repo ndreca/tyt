@@ -2,6 +2,10 @@
 use crate::operations::object::MeshElement;
 #[cfg(feature = "render")]
 use crate::operations::object::RenderElement;
+#[cfg(feature = "palette")]
+use crate::operations::palette::PaletteEditElement;
+#[cfg(feature = "palette")]
+use branded_id::U32Id;
 use meshdoc::Error as MeshError;
 use pathspec::Error as PathSpecError;
 use std::{
@@ -10,6 +14,8 @@ use std::{
 };
 #[cfg(feature = "_treegrid")]
 use treegrid::TreeGridError;
+#[cfg(feature = "palette")]
+use voxcore::BVoxPalette;
 use voxcore::Error as VoxError;
 #[cfg(feature = "render")]
 use voxrender::Error as RenderError;
@@ -39,6 +45,26 @@ pub enum Error {
     /// An image could not be encoded as PNG.
     #[cfg(feature = "object")]
     Png(String),
+
+    /// A palette edit element the run could not apply.
+    #[cfg(feature = "palette")]
+    PaletteEdit {
+        /// The element the error rose from.
+        element: PaletteEditElement,
+
+        /// What went wrong with it.
+        reason: String,
+    },
+
+    /// An error one palette of a run over several palettes raised.
+    #[cfg(feature = "palette")]
+    InPalette {
+        /// The palette the error rose from.
+        palette_id: U32Id<BVoxPalette>,
+
+        /// The error.
+        error: Box<Error>,
+    },
 
     /// A render record element the run could not render.
     #[cfg(feature = "render")]
@@ -88,6 +114,12 @@ impl Display for Error {
             #[cfg(feature = "object")]
             Error::Png(message) => write!(f, "could not encode PNG: {message}"),
 
+            #[cfg(feature = "palette")]
+            Error::PaletteEdit { element, reason } => write!(f, "{element} {reason}"),
+
+            #[cfg(feature = "palette")]
+            Error::InPalette { palette_id, error } => write!(f, "palette {palette_id}: {error}"),
+
             #[cfg(feature = "render")]
             Error::RenderRecord { element, reason } => write!(f, "{element} {reason}"),
 
@@ -119,6 +151,12 @@ impl StdError for Error {
 
             #[cfg(feature = "object")]
             Error::Png(_) => None,
+
+            #[cfg(feature = "palette")]
+            Error::PaletteEdit { .. } => None,
+
+            #[cfg(feature = "palette")]
+            Error::InPalette { error, .. } => Some(error.as_ref()),
 
             #[cfg(feature = "render")]
             Error::RenderRecord { .. } => None,

@@ -52,7 +52,7 @@ The design is in the [README](README.md). Check steps off as they land.
       (`commands/palette/palette_quantize/palette_quantize.rs`) becomes the
       repeatable selector. Behavior change: a bare quantize now reaches every
       palette.
-- [ ] **S5. voxsmith `edit_palettes`.** Move `property_value` and its pool
+- [x] **S5. voxsmith `edit_palettes`.** Move `property_value` and its pool
       readers out of `mesh_environment.rs` into a crate-internal file. That
       file's `mod` line is gated on `any(feature = "object", feature =
       "palette")`. The `palette` feature gains `dep:vox-value-language`. The

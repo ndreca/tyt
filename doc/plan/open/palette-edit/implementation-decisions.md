@@ -81,3 +81,32 @@ they land.
   palette never changes another's sampling.
 - A palette counts as sampled when an object with a live voxel has a layer
   referencing it, since every live voxel samples each of its object's layers.
+
+## S5. voxsmith `edit_palettes`
+
+- `edit_palettes` takes the resolved palette ids, the program text, and one
+  `PropertyWrite` per `--write-property`. vxl assembles the program in S6.
+- The program and the writes parse once. Each palette checks and evaluates
+  them. As in `object mesh`, every check error rises before an evaluation
+  error.
+- `Error::PaletteEdit` reports the element, the program or a write.
+  `Error::InPalette` wraps any error raised over one palette with its id. A
+  parse error or a repeated write rises before any palette and carries none.
+- `WrittenValues` types a write's value for each material by its value pool
+  kind. The domain, kind, and range checks all run before anything lands. The
+  appends then `expect` because the evaluator rejects non-finite results and
+  every unsigned value lies in the int domain.
+- A landed value reuses the first equal value in the pool's listing order,
+  found by a linear scan. `-0.0` reuses `0.0`.
+- The range check mirrors `check_material_property_ranges`: a kind the name
+  does not read passes.
+- A materialless palette gains a written property on an empty value pool.
+- Each overwritten cell's old value is a release candidate. After every
+  palette lands, `release_undrawn_values` releases the candidates no palette
+  draws. `quantize_palette` calls the same helper.
+- `edit_palettes` leaves `gc` to `edit_document`. `quantize_palette` still
+  runs it.
+- `value_pool_kind_name` moves out of `choose_quantize_plan` for the kind
+  error.
+- An int outside `u32` still errors at its swatch, the material at that
+  listing position.

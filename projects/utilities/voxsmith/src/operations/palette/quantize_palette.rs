@@ -1,6 +1,8 @@
 use crate::{
     Error, Result,
-    utilities::{QuantizeOptions, apply_quantize_plan, choose_quantize_plan},
+    utilities::{
+        QuantizeOptions, apply_quantize_plan, choose_quantize_plan, release_undrawn_values,
+    },
 };
 use branded_id::U32Id;
 use std::collections::HashSet;
@@ -118,29 +120,7 @@ fn release_unsampled_materials<T: VoxExt>(
 
     main.release_materials(palette_id, &doomed_ids)?;
 
-    // Every value some material of any palette still holds.
-    let mut held_value_ids = HashSet::new();
-    for (_, palette) in main.iter_palettes() {
-        for (property_id, property) in palette.iter_properties() {
-            for material_id in palette.iter_materials() {
-                let value_id = palette
-                    .value_id(material_id, property_id)
-                    .expect("a live material holds a value for every property");
-                held_value_ids.insert((property.value_pool_id, value_id));
-            }
-        }
-    }
-
-    let mut released_value_ids = HashSet::new();
-    for (value_pool_id, value_id) in doomed_value_ids {
-        if !held_value_ids.contains(&(value_pool_id, value_id))
-            && released_value_ids.insert((value_pool_id, value_id))
-        {
-            main.release_value_pool_value(value_pool_id, value_id)?;
-        }
-    }
-
-    Ok(())
+    release_undrawn_values(main, doomed_value_ids)
 }
 
 #[cfg(test)]

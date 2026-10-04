@@ -31,7 +31,27 @@ pub use vector_component::*;
 mod is_node_path_match;
 mod node_path;
 mod node_paths;
+mod value_pool_kind_name;
 
 pub(crate) use is_node_path_match::*;
 pub(crate) use node_path::*;
 pub(crate) use node_paths::*;
+pub(crate) use value_pool_kind_name::*;
+
+#[cfg(any(feature = "object", feature = "palette"))]
+mod property_value;
+
+#[cfg(any(feature = "object", feature = "palette"))]
+pub(crate) use property_value::*;
+
+#[cfg(feature = "palette")]
+mod release_undrawn_values;
+
+#[cfg(feature = "palette")]
+pub(crate) use release_undrawn_values::*;
+
+#[cfg(feature = "palette")]
+mod written_values;
+
+#[cfg(feature = "palette")]
+pub(crate) use written_values::*;
