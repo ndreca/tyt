@@ -16,5 +16,5 @@ A call errors on an argument the document cannot hold. vxl checks the arguments'
 values when it voxelizes. The tests run under `deno test`.
 
 The folder is also the `sdfj-builder` crate, with its Rust in `src/`.
-`SDFJ_BUILDER_FILES` embeds the files a run needs for a Rust host to write out
-and start.
+`SDFJ_BUILDER_FILES` embeds the files a run needs. `JavaScriptRuntime` holds the
+arguments that start the builder under each runtime.

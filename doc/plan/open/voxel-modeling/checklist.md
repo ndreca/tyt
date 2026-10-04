@@ -44,7 +44,7 @@ where the loop fails.
      declaration blocks
   3. The builder's checks from model evaluation
   4. A test per call pinning the entry the call writes
-- [ ] **S3. Build command.** `vxl sdf-doc build` with `--runtime` and profiles
+- [x] **S3. Build command.** `vxl sdf-doc build` with `--runtime` and profiles
       at `sdfDoc.build.profiles`. vxl embeds the builder and writes it to a
       temporary directory for each run. `vxl profile sdf-doc build list` lists
       the profiles.

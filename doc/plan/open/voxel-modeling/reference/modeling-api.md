@@ -102,6 +102,8 @@ the encoding flags stay on the command line. A flag on the command line
 overrides the profile, and either size flag replaces both `resolution` and
 `voxelSize`. The `.vxlconfig` files load in
 [`mesh-doc voxelize`'s cascade](../../vxl-commands/reference/mesh-doc/voxelize.md#profiles).
+`vxl profile sdf-doc build list` and `vxl profile sdf-doc voxelize list` print
+the profiles.
 
 ## Model files
 

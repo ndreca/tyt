@@ -13,12 +13,14 @@ links the articles it follows.
 
 1. The flags and profile merge into the [settings](#settings).
 2. vxl writes the builder's files and the [library](#materials) to a temporary
-   directory and runs the builder under the runtime with the model's path and
-   the output path.
+   directory and runs the builder on the model under the runtime. The runtime
+   shares vxl's standard output and error.
 3. The builder imports the model with the API in scope. The default export has
    to be an array of steps and parts.
-4. The builder writes the calls as the [`.sdfj` document](#the-sdfj-document).
-   vxl passes on the builder's messages and exit status.
+4. The builder writes the calls as the [`.sdfj` document](#the-sdfj-document)
+   in the temporary directory. vxl copies the document to the output path when
+   the runtime exits with code 0. Any other exit fails the build and leaves the
+   output path untouched.
 
 `vxl sdf-doc voxelize` turns the `.sdfj` document into voxj:
 

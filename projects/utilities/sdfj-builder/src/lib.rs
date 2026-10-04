@@ -2,13 +2,17 @@
 
 //! The TypeScript builder that records a voxel model as an SDF Json (`.sdfj`)
 //! document, embedded for a Rust host to run. A run writes
-//! [`SDFJ_BUILDER_FILES`] under one directory and a `library.json` beside
-//! `ts/main.ts`, then starts `ts/main.ts` under Node, Bun, or Deno.
+//! [`SDFJ_BUILDER_FILES`] and the library at [`SDFJ_BUILDER_LIBRARY_PATH`]
+//! under one directory and then starts a [`JavaScriptRuntime`] on the builder.
 
 // Public API
 
+mod javascript_runtime;
 mod sdfj_builder_file;
 mod sdfj_builder_files;
+mod sdfj_builder_library_path;
 
+pub use javascript_runtime::*;
 pub use sdfj_builder_file::*;
 pub use sdfj_builder_files::*;
+pub use sdfj_builder_library_path::*;

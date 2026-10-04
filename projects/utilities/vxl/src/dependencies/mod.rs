@@ -4,18 +4,22 @@
 
 // Public API
 
+mod create_temp_dir;
 #[allow(clippy::module_inception)]
 mod dependencies;
 mod dependencies_impl;
 mod display_image;
 mod resolve_prefs_paths;
+mod run_program;
 mod terminal_columns;
 mod write_stdout;
 
+pub use create_temp_dir::*;
 pub use dependencies::*;
 pub use dependencies_impl::*;
 pub use display_image::*;
 pub use resolve_prefs_paths::*;
+pub use run_program::*;
 pub use terminal_columns::*;
 pub use write_stdout::*;
 

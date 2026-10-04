@@ -1,6 +1,6 @@
 use crate::{
-    DirectoryEntry, DisplayImage, ListDir, ReadFile, ResolvePrefsPaths, TerminalColumns, WriteFile,
-    WriteStdout,
+    CreateTempDir, DirectoryEntry, DisplayImage, ListDir, ReadFile, ResolvePrefsPaths, RunProgram,
+    TerminalColumns, WriteFile, WriteStdout,
 };
 use crossterm::{
     event::{poll, read},
@@ -17,11 +17,14 @@ use meshconv::{
 #[cfg(unix)]
 use std::mem;
 use std::{
+    ffi::OsString,
     fs,
     io::{self, Error as IOError, IsTerminal, Result as IOResult, Write},
     path::Path,
+    process::Command,
     time::Duration,
 };
+use tempfile::{Builder, TempDir};
 use ty_preferences::{
     Dependencies as PreferencesDependencies, DependenciesImpl as PreferencesDependenciesImpl,
     PrefsPaths, resolve_prefs_paths,
@@ -29,9 +32,8 @@ use ty_preferences::{
 use viuer::{Config, print};
 use voxconv::{DependenciesImpl as VoxconvDependenciesImpl, ForwardDependencies};
 
-/// The dependencies over std's filesystem and standard output, with the
-/// voxel codecs forwarded to voxconv's impl, the mesh codecs to meshconv's,
-/// the config reads to ty-preferences', and inline images to viuer.
+/// The dependencies over the real filesystem, processes, and terminal. The
+/// codec and config traits forward to their crates' impls.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct DependenciesImpl;
 
@@ -88,6 +90,18 @@ impl PreferencesDependencies for DependenciesImpl {
 impl ResolvePrefsPaths for DependenciesImpl {
     fn resolve_prefs_paths(&self) -> IOResult<PrefsPaths> {
         resolve_prefs_paths()
+    }
+}
+
+impl CreateTempDir for DependenciesImpl {
+    fn create_temp_dir(&self) -> IOResult<TempDir> {
+        Builder::new().prefix("vxl-").tempdir()
+    }
+}
+
+impl RunProgram for DependenciesImpl {
+    fn run_program(&self, program: &str, args: &[OsString]) -> IOResult<Option<i32>> {
+        Ok(Command::new(program).args(args).status()?.code())
     }
 }
 

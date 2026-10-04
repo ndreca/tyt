@@ -1,6 +1,6 @@
 use crate::{
     Dependencies, Result,
-    commands::{ProfileMeshDoc, ProfileObject, ProfilePalette},
+    commands::{ProfileMeshDoc, ProfileObject, ProfilePalette, ProfileSdfDoc},
 };
 use clap::Subcommand;
 
@@ -16,6 +16,9 @@ pub enum ProfileCommand {
 
     #[command(name = "palette")]
     ProfilePalette(ProfilePalette),
+
+    #[command(name = "sdf-doc")]
+    ProfileSdfDoc(ProfileSdfDoc),
 }
 
 impl ProfileCommand {
@@ -25,6 +28,7 @@ impl ProfileCommand {
             ProfileCommand::ProfileMeshDoc(mesh_doc) => mesh_doc.execute(dependencies),
             ProfileCommand::ProfileObject(object) => object.execute(dependencies),
             ProfileCommand::ProfilePalette(palette) => palette.execute(dependencies),
+            ProfileCommand::ProfileSdfDoc(sdf_doc) => sdf_doc.execute(dependencies),
         }
     }
 }

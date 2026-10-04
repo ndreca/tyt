@@ -84,3 +84,22 @@ land.
     format page's
 12. The builder holds no material names. `mat` types every name as a
     `Material`, and the library vxl passes in decides which names it reads
+
+## S3. Build command
+
+1. sdfj-builder holds each runtime's program and arguments in
+   `JavaScriptRuntime` and the library's path in `SDFJ_BUILDER_LIBRARY_PATH`.
+   vxl's code holds no path inside the builder's directory
+2. `--config` points Deno at the builder's `deno.json`, which keeps a config
+   beside the model out of the run. Deno's write access covers every path
+   because Deno's permission lists split a path on commas with no escape
+3. vxl's `Dependencies` gains `CreateTempDir` and `RunProgram`. The runtime
+   inherits vxl's standard streams, which carry the builder's messages and the
+   model's stack unchanged
+4. The builder writes the document inside the temporary directory. vxl then
+   writes the output through `WriteFile`, which creates missing directories for
+   every command's output
+5. vxl passes an empty library until S6 embeds one
+6. A stand-in for `node` tests the run because `cargo test` runs without a
+   JavaScript runtime installed. At S3, Node 24.15 and Deno 2.9 ran the builder
+   through vxl by hand. Bun was not installed
