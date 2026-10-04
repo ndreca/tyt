@@ -1,6 +1,6 @@
 [package]
 name = "mvox-voxcore"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 license-file = "LICENSE"
 repository = "https://github.com/tyleo/tyt"
@@ -16,8 +16,8 @@ branded-id = "0.2.0"
 mvox = "0.2.0"
 mvox-codec = { version = "0.2.0", optional = true }
 serde = { version = "1", features = ["derive"], optional = true }
-ty-math = "0.3.0"
-voxcore = { version = "0.3.0", default-features = false, features = ["color"] }
+ty-math = "0.4.0"
+voxcore = { version = "0.4.0", default-features = false, features = ["color"] }
 
 [dev-dependencies]
 serde_json = "1"

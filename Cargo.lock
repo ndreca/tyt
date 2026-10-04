@@ -707,7 +707,7 @@ dependencies = [
 
 [[package]]
 name = "gltf-meshdoc"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "base64",
  "branded-id",
@@ -732,7 +732,7 @@ dependencies = [
 
 [[package]]
 name = "goxl-voxcore"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "branded-id",
  "goxl",
@@ -1000,7 +1000,7 @@ checksum = "88904434abc2901f197fe8cc55f0445e7ded921dba5911dad2e2b39b48e663c4"
 
 [[package]]
 name = "meshconv"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "branded-id",
  "gltf-meshdoc",
@@ -1010,7 +1010,7 @@ dependencies = [
 
 [[package]]
 name = "meshdoc"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "branded-id",
  "ty-math",
@@ -1061,7 +1061,7 @@ dependencies = [
 
 [[package]]
 name = "mvox-voxcore"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "branded-id",
  "mvox",
@@ -1342,7 +1342,7 @@ dependencies = [
 
 [[package]]
 name = "qbcl-voxcore"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "branded-id",
  "qbcl",
@@ -1616,7 +1616,7 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "sdfconv"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "branded-id",
  "sdfcore",
@@ -1626,7 +1626,7 @@ dependencies = [
 
 [[package]]
 name = "sdfcore"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "branded-id",
  "ty-math",
@@ -1634,7 +1634,7 @@ dependencies = [
 
 [[package]]
 name = "sdfj"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1642,11 +1642,11 @@ dependencies = [
 
 [[package]]
 name = "sdfj-builder"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "sdfj-codec"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "sdfj",
  "serde_json",
@@ -1654,7 +1654,7 @@ dependencies = [
 
 [[package]]
 name = "sdfj-sdfcore"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "branded-id",
  "sdfcore",
@@ -1904,7 +1904,7 @@ dependencies = [
 
 [[package]]
 name = "treegrid"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "branded-id",
  "serde_json",
@@ -1917,7 +1917,7 @@ version = "0.2.0"
 
 [[package]]
 name = "ty-math"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "glam",
  "palette",
@@ -1925,7 +1925,7 @@ dependencies = [
 
 [[package]]
 name = "ty-math-serde"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "serde",
  "ty-math",
@@ -1942,7 +1942,7 @@ dependencies = [
 
 [[package]]
 name = "tyt"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -1962,7 +1962,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-claude"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -1974,11 +1974,11 @@ dependencies = [
 
 [[package]]
 name = "tyt-common"
-version = "0.2.0"
+version = "0.3.0"
 
 [[package]]
 name = "tyt-cubemap"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -1988,7 +1988,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-fbx"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "branded-id",
  "clap",
@@ -2002,7 +2002,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-fs"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -2014,7 +2014,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-image"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -2024,7 +2024,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-injection"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "base64",
  "crossterm",
@@ -2043,7 +2043,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-material"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -2053,7 +2053,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-meshy"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -2065,7 +2065,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-meta"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -2075,7 +2075,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-oai"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -2087,7 +2087,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-vmax"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "branded-id",
  "clap",
@@ -2199,7 +2199,7 @@ dependencies = [
 
 [[package]]
 name = "vmax"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "serde",
  "serde_bytes",
@@ -2207,7 +2207,7 @@ dependencies = [
 
 [[package]]
 name = "vmax-codec"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "lzfse",
  "plist",
@@ -2219,7 +2219,7 @@ dependencies = [
 
 [[package]]
 name = "vmax-voxcore"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "branded-id",
  "serde",
@@ -2238,7 +2238,7 @@ dependencies = [
 
 [[package]]
 name = "voxconv"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "branded-id",
  "goxl-voxcore",
@@ -2256,7 +2256,7 @@ dependencies = [
 
 [[package]]
 name = "voxcore"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "branded-id",
  "ty-math",
@@ -2264,7 +2264,7 @@ dependencies = [
 
 [[package]]
 name = "voxj"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "base64",
  "flate2",
@@ -2274,7 +2274,7 @@ dependencies = [
 
 [[package]]
 name = "voxj-codec"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "flate2",
  "serde_json",
@@ -2283,7 +2283,7 @@ dependencies = [
 
 [[package]]
 name = "voxj-voxcore"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "branded-id",
  "ty-math",
@@ -2294,7 +2294,7 @@ dependencies = [
 
 [[package]]
 name = "voxrender"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "branded-id",
  "png",
@@ -2305,7 +2305,7 @@ dependencies = [
 
 [[package]]
 name = "voxsmith"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "branded-id",
  "meshdoc",
@@ -2325,7 +2325,7 @@ dependencies = [
 
 [[package]]
 name = "voxsurface"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "branded-id",
  "ty-math",
@@ -2334,7 +2334,7 @@ dependencies = [
 
 [[package]]
 name = "vxl"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "branded-id",
  "clap",
