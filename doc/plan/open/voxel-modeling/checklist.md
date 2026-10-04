@@ -30,7 +30,7 @@ where the loop fails.
 
 - [x] **S0. Open questions.** Settle the README's open questions and fold the
       answers into the plan and the reference pages.
-- [ ] **S1. Document.** A reference page for the `.sdfj` document beside the
+- [x] **S1. Document.** A reference page for the `.sdfj` document beside the
       other two, with the entry the builder writes for each call in the modeling
       API. The document follows voxj: tables whose entries reference each other
       by index hold every value a model can share, including steps, objects, and

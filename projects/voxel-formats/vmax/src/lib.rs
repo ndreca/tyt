@@ -28,3 +28,19 @@ pub use palette_settings_vmaxpsb::*;
 pub use scene_json::*;
 pub use selection_vmaxb::*;
 pub use vmax_file::*;
+
+// Internal API
+
+#[cfg(feature = "serde")]
+mod find_non_finite;
+#[cfg(feature = "serde")]
+mod finite;
+#[cfg(feature = "serde")]
+mod json_value;
+
+#[cfg(feature = "serde")]
+pub(crate) use find_non_finite::*;
+#[cfg(feature = "serde")]
+pub(crate) use finite::*;
+#[cfg(feature = "serde")]
+pub(crate) use json_value::*;

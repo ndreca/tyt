@@ -1,0 +1,25 @@
+[package]
+name = "sdfj"
+version = "0.1.0"
+edition = "2024"
+license-file = "LICENSE"
+repository = "https://github.com/tyleo/tyt"
+description = "Core types for the SDF Json (.sdfj) format."
+keywords = ["sdf", "sdfj", "json", "3d", "model"]
+categories = ["data-structures", "game-development", "graphics"]
+
+[package.metadata.workspaces]
+independent = true
+
+[package.metadata.docs.rs]
+all-features = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
+
+[features]
+default = ["serde"]
+serde = ["dep:serde"]

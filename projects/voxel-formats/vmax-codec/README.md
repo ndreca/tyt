@@ -9,7 +9,8 @@ filesystem itself. You give `from_vmax_package` a way to list and read the
 package's files and `to_vmax_package` a way to write them, so the same code works
 against a folder, a zip, or bytes already in memory. Reading parses every file
 the package can hold into typed fields. An unknown filename or an unmodeled key
-is an error, which keeps a round trip lossless.
+is an error, which keeps a round trip lossless. Writing errors on a NaN, an
+infinity, or a data blob in `scene.json`.
 
 The codec is a dumb load/save: a `VMaxFile` is the parsed package in its
 on-disk shape, and `from_vmax_package` then `to_vmax_package` reproduces it. Voxel

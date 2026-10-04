@@ -1,0 +1,27 @@
+[package]
+name = "sdfj-sdfcore"
+version = "0.1.0"
+edition = "2024"
+license-file = "LICENSE"
+repository = "https://github.com/tyleo/tyt"
+description = "Converts between SDF Json documents and the sdfcore state."
+keywords = ["sdf", "sdfj", "json", "3d", "conversion"]
+categories = ["encoding", "game-development", "graphics"]
+
+[package.metadata.workspaces]
+independent = true
+
+[dependencies]
+branded-id = "0.2.0"
+sdfcore = "0.1.0"
+sdfj = { version = "0.1.0", default-features = false }
+sdfj-codec = { version = "0.1.0", default-features = false, optional = true }
+ty-math = { version = "0.3.0", default-features = false }
+
+[dev-dependencies]
+sdfj-codec = { version = "0.1.0", features = ["impl"] }
+
+[features]
+default = ["codec"]
+codec = ["dep:sdfj-codec"]
+impl = ["sdfj-codec?/impl"]

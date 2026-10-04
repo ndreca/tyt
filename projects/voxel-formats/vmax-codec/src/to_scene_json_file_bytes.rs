@@ -1,4 +1,4 @@
-use crate::EncodeVMaxSceneJson;
+use crate::{EncodeVMaxSceneJson, Error, Result};
 use vmax::VMaxSceneJsonFile;
 
 /// Encodes a [`VMaxSceneJsonFile`] into compact `scene.json` bytes through
@@ -9,6 +9,8 @@ use vmax::VMaxSceneJsonFile;
 pub fn to_scene_json_file_bytes<D: EncodeVMaxSceneJson>(
     dependencies: &D,
     file: &VMaxSceneJsonFile,
-) -> Vec<u8> {
-    dependencies.encode_vmax_scene_json(file)
+) -> Result<Vec<u8>> {
+    dependencies
+        .encode_vmax_scene_json(file)
+        .map_err(Error::Json)
 }

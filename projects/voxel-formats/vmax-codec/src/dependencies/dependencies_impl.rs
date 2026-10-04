@@ -143,8 +143,8 @@ impl DecodeVMaxSceneJson for DependenciesImpl {
 }
 
 impl EncodeVMaxSceneJson for DependenciesImpl {
-    fn encode_vmax_scene_json(&self, file: &VMaxSceneJsonFile) -> Vec<u8> {
-        serde_json::to_vec(file).expect("a scene holds nothing without a JSON form")
+    fn encode_vmax_scene_json(&self, file: &VMaxSceneJsonFile) -> Result<Vec<u8>, String> {
+        serde_json::to_vec(file).map_err(|error| error.to_string())
     }
 }
 
@@ -275,7 +275,7 @@ mod tests {
             aint: Some(0.30000000000000004),
             ..Default::default()
         };
-        let bytes = DependenciesImpl.encode_vmax_scene_json(&scene);
+        let bytes = DependenciesImpl.encode_vmax_scene_json(&scene).unwrap();
         assert!(!bytes.contains(&b'\n'));
         assert_eq!(
             DependenciesImpl.decode_vmax_scene_json(&bytes).unwrap(),

@@ -127,7 +127,7 @@ fn strip_contents_suffix(name: &str) -> Option<String> {
 
 #[cfg(all(test, feature = "impl"))]
 mod tests {
-    use crate::{DependenciesImpl, from_vmax_package, to_vmax_package};
+    use crate::{DependenciesImpl, Error, from_vmax_package, to_vmax_package};
     use std::collections::{BTreeMap, HashMap};
     use vmax::{
         VMaxFile, VMaxHistorySession, VMaxHistoryVmaxhbFile, VMaxHistoryVmaxhvsbFile,
@@ -296,5 +296,35 @@ mod tests {
         assert!(dir.contains_key("QuickLook/Thumbnail.png"));
         assert!(dir.contains_key("QuickLook/contents.vmaxb.png"));
         assert!(dir.contains_key("QuickLook/group-id.png"));
+    }
+
+    #[test]
+    fn a_scene_without_a_json_form_fails_to_write() {
+        let mut nan_position = sample();
+        nan_position.scene_json_file.objects[0].position[0] = f64::NAN;
+
+        let mut infinite_setting = sample();
+        infinite_setting.scene_json_file.aint = Some(f64::INFINITY);
+
+        let mut nan_pivot_offset = sample();
+        nan_pivot_offset.scene_json_file.objects[0].t_po =
+            Some(VMaxValue::Array(vec![VMaxValue::Real(f64::NAN)]));
+
+        let mut data_pivot_offset = sample();
+        data_pivot_offset.scene_json_file.objects[0].t_po = Some(VMaxValue::Dictionary(
+            BTreeMap::from([("x".to_owned(), VMaxValue::Data(vec![1, 2]))]),
+        ));
+
+        for file in [
+            nan_position,
+            infinite_setting,
+            nan_pivot_offset,
+            data_pivot_offset,
+        ] {
+            assert!(matches!(
+                to_vmax_package(&DependenciesImpl, &file, |_, _| Ok(())),
+                Err(Error::Json(_))
+            ));
+        }
     }
 }

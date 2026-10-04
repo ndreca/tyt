@@ -7,7 +7,7 @@ use std::{
 /// An error decoding or encoding the payloads of a Voxel Max `.vmax` package.
 #[derive(Debug)]
 pub enum Error {
-    /// The `scene.json` payload could not be parsed.
+    /// The `scene.json` payload could not be parsed or written.
     Json(String),
 
     /// A binary property-list payload could not be parsed or serialized.

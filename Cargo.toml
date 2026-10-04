@@ -18,6 +18,8 @@ members = [
     "projects/utilities/meshconv",
     "projects/utilities/meshdoc",
     "projects/utilities/pathspec",
+    "projects/utilities/sdfconv",
+    "projects/utilities/sdfcore",
     "projects/utilities/treegrid",
     "projects/utilities/treeselect",
     "projects/utilities/ty-math",
@@ -32,6 +34,10 @@ members = [
     "projects/utilities/vxl",
 
     "projects/mesh-formats/gltf-meshdoc",
+
+    "projects/sdf-formats/sdfj",
+    "projects/sdf-formats/sdfj-codec",
+    "projects/sdf-formats/sdfj-sdfcore",
 
     "projects/voxel-formats/goxl",
     "projects/voxel-formats/goxl-codec",
@@ -73,6 +79,8 @@ tyt-vmax = { path = "projects/tyt/tyt-vmax" }
 meshconv = { path = "projects/utilities/meshconv" }
 meshdoc = { path = "projects/utilities/meshdoc" }
 pathspec = { path = "projects/utilities/pathspec" }
+sdfconv = { path = "projects/utilities/sdfconv" }
+sdfcore = { path = "projects/utilities/sdfcore" }
 treegrid = { path = "projects/utilities/treegrid" }
 treeselect = { path = "projects/utilities/treeselect" }
 ty-math = { path = "projects/utilities/ty-math" }
@@ -87,6 +95,10 @@ voxsurface = { path = "projects/utilities/voxsurface" }
 vxl = { path = "projects/utilities/vxl" }
 
 gltf-meshdoc = { path = "projects/mesh-formats/gltf-meshdoc" }
+
+sdfj = { path = "projects/sdf-formats/sdfj" }
+sdfj-codec = { path = "projects/sdf-formats/sdfj-codec" }
+sdfj-sdfcore = { path = "projects/sdf-formats/sdfj-sdfcore" }
 
 goxl = { path = "projects/voxel-formats/goxl" }
 goxl-codec = { path = "projects/voxel-formats/goxl-codec" }

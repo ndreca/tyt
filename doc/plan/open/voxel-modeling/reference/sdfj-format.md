@@ -44,8 +44,9 @@ the document, and `vxl sdf-doc voxelize` reads it. The
 
 1. `version` reads 1
 2. Each table holds one kind of value a model can share: `shapes3d` the
-   `Shape`s, `shapes2d` the `Shape2`s, `materials` the `Material`s, `shades` the
-   `shades` calls, `patterns` the `Pattern`s, and `steps` the `Step`s
+   `Shape3d`s, `shapes2d` the `Shape2d`s, `materials` the `Material`s,
+   `shades` the `shades` calls, `patterns` the `Pattern`s, and `steps` the
+   `Step`s
 3. `objects` and `nodes` hold the parts. The two tables follow voxj's objects
    and hierarchy nodes
 4. An entry references another entry by its index in that entry's table

@@ -1,0 +1,27 @@
+[package]
+name = "sdfconv"
+version = "0.1.0"
+edition = "2024"
+license-file = "LICENSE"
+repository = "https://github.com/tyleo/tyt"
+description = "Reads and writes SDF file formats through the sdfcore state."
+keywords = ["sdf", "conversion", "3d", "sdfj"]
+categories = ["encoding", "game-development", "graphics"]
+
+[package.metadata.workspaces]
+independent = true
+
+[dependencies]
+sdfcore = "0.1.0"
+sdfj-sdfcore = { version = "0.1.0", default-features = false, optional = true }
+
+[dev-dependencies]
+branded-id = "0.2.0"
+ty-math = { version = "0.3.0", default-features = false }
+
+[features]
+default = ["impl", "sdfj"]
+
+impl = ["sdfj-sdfcore?/impl"]
+
+sdfj = ["dep:sdfj-sdfcore", "sdfj-sdfcore/codec"]

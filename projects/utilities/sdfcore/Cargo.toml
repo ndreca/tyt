@@ -1,0 +1,16 @@
+[package]
+name = "sdfcore"
+version = "0.1.0"
+edition = "2024"
+license-file = "LICENSE"
+repository = "https://github.com/tyleo/tyt"
+description = "Core types for signed distance field models."
+keywords = ["sdf", "voxel", "3d", "model"]
+categories = ["data-structures", "game-development", "graphics"]
+
+[package.metadata.workspaces]
+independent = true
+
+[dependencies]
+branded-id = "0.2.0"
+ty-math = { version = "0.3.0", default-features = false }

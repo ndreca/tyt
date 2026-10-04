@@ -1,0 +1,38 @@
+use crate::{Dependencies, Format, ReadFormat, Result, WriteFormat, sdfj::SdfjSerialization};
+use sdfcore::SdfMain;
+use sdfj_sdfcore::codec::{from_sdfj_bytes, to_sdfj_bytes, to_sdfj_pretty_bytes};
+
+/// SDF Json, the `.sdfj` document.
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub struct Sdfj;
+
+impl Format for Sdfj {
+    type WriteOptions = SdfjSerialization;
+
+    const NAME: &'static str = "sdfj";
+
+    const EXTENSIONS: &'static [&'static str] = &["sdfj"];
+
+    fn read_format() -> ReadFormat {
+        ReadFormat::Sdfj
+    }
+
+    fn write_format(options: SdfjSerialization) -> WriteFormat {
+        WriteFormat::Sdfj(options)
+    }
+
+    fn read<D: Dependencies>(dependencies: &D, bytes: &[u8]) -> Result<SdfMain> {
+        Ok(from_sdfj_bytes(dependencies.sdfj(), bytes)?)
+    }
+
+    fn write<D: Dependencies>(
+        dependencies: &D,
+        options: &SdfjSerialization,
+        main: &SdfMain,
+    ) -> Result<Vec<u8>> {
+        Ok(match options {
+            SdfjSerialization::Compact => to_sdfj_bytes(dependencies.sdfj(), main),
+            SdfjSerialization::Pretty => to_sdfj_pretty_bytes(dependencies.sdfj(), main),
+        })
+    }
+}

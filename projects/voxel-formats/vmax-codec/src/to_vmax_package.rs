@@ -22,7 +22,7 @@ where
 {
     write(
         "scene.json",
-        &to_scene_json_file_bytes(dependencies, &file.scene_json_file),
+        &to_scene_json_file_bytes(dependencies, &file.scene_json_file)?,
     )?;
     for (name, contents) in &file.contents_files {
         write(name, &to_contents_vmaxb_file_bytes(dependencies, contents)?)?;

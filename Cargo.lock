@@ -1615,6 +1615,51 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
+name = "sdfconv"
+version = "0.1.0"
+dependencies = [
+ "branded-id",
+ "sdfcore",
+ "sdfj-sdfcore",
+ "ty-math",
+]
+
+[[package]]
+name = "sdfcore"
+version = "0.1.0"
+dependencies = [
+ "branded-id",
+ "ty-math",
+]
+
+[[package]]
+name = "sdfj"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "sdfj-codec"
+version = "0.1.0"
+dependencies = [
+ "sdfj",
+ "serde_json",
+]
+
+[[package]]
+name = "sdfj-sdfcore"
+version = "0.1.0"
+dependencies = [
+ "branded-id",
+ "sdfcore",
+ "sdfj",
+ "sdfj-codec",
+ "ty-math",
+]
+
+[[package]]
 name = "semver"
 version = "1.0.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"

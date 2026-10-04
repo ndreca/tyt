@@ -1,0 +1,23 @@
+[package]
+name = "sdfj-codec"
+version = "0.1.0"
+edition = "2024"
+license-file = "LICENSE"
+repository = "https://github.com/tyleo/tyt"
+description = "Encodes sdfj types into .sdfj documents."
+keywords = ["sdf", "sdfj", "json", "3d", "codec"]
+categories = ["encoding", "game-development", "graphics", "parser-implementations"]
+
+[package.metadata.workspaces]
+independent = true
+
+[dependencies]
+serde_json = { version = "1", features = [
+    "float_roundtrip",
+    "preserve_order",
+], optional = true }
+sdfj = { version = "0.1.0", default-features = false }
+
+[features]
+default = ["impl"]
+impl = ["dep:serde_json", "sdfj/serde"]

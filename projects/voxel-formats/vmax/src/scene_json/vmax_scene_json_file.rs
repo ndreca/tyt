@@ -34,11 +34,23 @@ pub struct VMaxSceneJsonFile {
     pub ag: Option<i64>,
 
     /// Ambient-light intensity.
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "crate::finite"
+        )
+    )]
     pub aint: Option<f64>,
 
     /// Ambient-occlusion amount.
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "crate::finite"
+        )
+    )]
     pub ao: Option<f64>,
 
     /// Background color, e.g. `"#151313FF"`.
@@ -46,27 +58,63 @@ pub struct VMaxSceneJsonFile {
     pub background: Option<String>,
 
     /// Bloom blur radius.
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "crate::finite"
+        )
+    )]
     pub bloombrad: Option<f64>,
 
     /// Bloom intensity.
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "crate::finite"
+        )
+    )]
     pub bloomint: Option<f64>,
 
     /// Bloom threshold.
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "crate::finite"
+        )
+    )]
     pub bloomthr: Option<f64>,
 
     /// Contrast.
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "crate::finite"
+        )
+    )]
     pub cont: Option<f64>,
 
     /// Exposure / environment intensity.
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "crate::finite"
+        )
+    )]
     pub eint: Option<f64>,
 
     /// Film-grain intensity.
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "crate::finite"
+        )
+    )]
     pub graint: Option<f64>,
 
     /// Key-light color, e.g. `"#FFFFFFFF"`.
@@ -74,7 +122,13 @@ pub struct VMaxSceneJsonFile {
     pub lcolor: Option<String>,
 
     /// Key-light intensity.
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "crate::finite"
+        )
+    )]
     pub lint: Option<f64>,
 
     /// Noise-reduction / denoise flag.
@@ -86,19 +140,43 @@ pub struct VMaxSceneJsonFile {
     pub oie: Option<bool>,
 
     /// Outline intensity.
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "crate::finite"
+        )
+    )]
     pub outlineint: Option<f64>,
 
     /// Outline size.
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "crate::finite"
+        )
+    )]
     pub outlinesz: Option<f64>,
 
     /// Saturation.
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "crate::finite"
+        )
+    )]
     pub sat: Option<f64>,
 
     /// Shadow intensity.
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "crate::finite"
+        )
+    )]
     pub shadowint: Option<f64>,
 
     /// Screen-space reflections enabled.
@@ -106,19 +184,43 @@ pub struct VMaxSceneJsonFile {
     pub ssr: Option<bool>,
 
     /// Color temperature.
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "crate::finite"
+        )
+    )]
     pub temp: Option<f64>,
 
     /// Color tint.
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "crate::finite"
+        )
+    )]
     pub tint: Option<f64>,
 
     /// Vignette intensity.
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "crate::finite"
+        )
+    )]
     pub vigint: Option<f64>,
 
     /// Vignette falloff power.
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            skip_serializing_if = "Option::is_none",
+            serialize_with = "crate::finite"
+        )
+    )]
     pub vigpow: Option<f64>,
 }
 

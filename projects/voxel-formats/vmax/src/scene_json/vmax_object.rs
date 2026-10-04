@@ -42,15 +42,24 @@ pub struct VMaxObject {
     pub hidden: Option<bool>,
 
     /// Position (`t_p`).
-    #[cfg_attr(feature = "serde", serde(rename = "t_p"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(rename = "t_p", serialize_with = "crate::finite")
+    )]
     pub position: [f64; 3],
 
     /// Rotation as an `[x, y, z, angle]` axis-angle (`t_r`).
-    #[cfg_attr(feature = "serde", serde(rename = "t_r"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(rename = "t_r", serialize_with = "crate::finite")
+    )]
     pub rotation: [f64; 4],
 
     /// Scale (`t_s`).
-    #[cfg_attr(feature = "serde", serde(rename = "t_s"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(rename = "t_s", serialize_with = "crate::finite")
+    )]
     pub scale: [f64; 3],
 
     /// Hierarchy sort/path triple.
@@ -80,19 +89,31 @@ pub struct VMaxObject {
     /// (round-trips unchanged).
     #[cfg_attr(
         feature = "serde",
-        serde(skip_serializing_if = "Option::is_none", default)
+        serde(
+            skip_serializing_if = "Option::is_none",
+            default,
+            serialize_with = "crate::json_value"
+        )
     )]
     pub t_po: Option<VMaxValue>,
 
     /// Center of the object's voxel bounds in model space.
-    #[cfg_attr(feature = "serde", serde(rename = "e_c", default))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(rename = "e_c", default, serialize_with = "crate::finite")
+    )]
     pub center: [f64; 3],
 
     /// Min corner of the object's voxel bounds, relative to
     /// [`center`](Self::center). Absolute box min is `center + bounds_min`.
     #[cfg_attr(
         feature = "serde",
-        serde(rename = "e_mi", skip_serializing_if = "Option::is_none", default)
+        serde(
+            rename = "e_mi",
+            skip_serializing_if = "Option::is_none",
+            default,
+            serialize_with = "crate::finite"
+        )
     )]
     pub bounds_min: Option<[f64; 3]>,
 
@@ -100,7 +121,12 @@ pub struct VMaxObject {
     /// [`center`](Self::center). Absolute box max is `center + bounds_max`.
     #[cfg_attr(
         feature = "serde",
-        serde(rename = "e_ma", skip_serializing_if = "Option::is_none", default)
+        serde(
+            rename = "e_ma",
+            skip_serializing_if = "Option::is_none",
+            default,
+            serialize_with = "crate::finite"
+        )
     )]
     pub bounds_max: Option<[f64; 3]>,
 }

@@ -154,7 +154,7 @@ type Axes = "x" | "y" | "z" | "xy" | "xz" | "yz" | "xyz";
 type Side = "+x" | "-x" | "+y" | "-y" | "+z" | "-z";
 ```
 
-A `Shape` holds a 3D region, and a `Shape2` holds a 2D region in a plane with
+A `Shape3d` holds a 3D region, and a `Shape2d` holds a 2D region in a plane with
 axes u and v. A `Material` holds surface properties, a `Pattern` picks a
 material per cell, and a `Step` makes one entry of a part's list. A `Part`
 voxelizes its steps into an object that turns about a joint. These values never
@@ -164,9 +164,13 @@ can therefore feed several steps.
 ## Steps
 
 ```ts
-function add(name: string, shape: Shape, material: Material | Pattern): Step;
-function carve(name: string, shape: Shape): Step;
-function paint(name: string, shape: Shape, material: Material | Pattern): Step;
+function add(name: string, shape: Shape3d, material: Material | Pattern): Step;
+function carve(name: string, shape: Shape3d): Step;
+function paint(
+  name: string,
+  shape: Shape3d,
+  material: Material | Pattern,
+): Step;
 function coat(
   name: string,
   material: Material | Pattern,
@@ -181,7 +185,7 @@ function set(
 interface CoatOptions {
   sides?: Side[];
   depth?: number;
-  within?: Shape;
+  within?: Shape3d;
 }
 ```
 
@@ -280,28 +284,28 @@ file's default export one part to place.
 ### Primitives
 
 ```ts
-function box(min: Vec3, max: Vec3, options?: { round?: number }): Shape;
-function boxFrame(min: Vec3, max: Vec3, thickness: number): Shape;
-function sphere(center: Vec3, radius: number): Shape;
-function ellipsoid(center: Vec3, radii: Vec3): Shape;
+function box(min: Vec3, max: Vec3, options?: { round?: number }): Shape3d;
+function boxFrame(min: Vec3, max: Vec3, thickness: number): Shape3d;
+function sphere(center: Vec3, radius: number): Shape3d;
+function ellipsoid(center: Vec3, radii: Vec3): Shape3d;
 function cylinder(
   a: Vec3,
   b: Vec3,
   radius: number,
   options?: { round?: number },
-): Shape;
-function cone(a: Vec3, b: Vec3, radiusA: number, radiusB: number): Shape;
-function capsule(a: Vec3, b: Vec3, radius: number): Shape;
-function roundCone(a: Vec3, b: Vec3, radiusA: number, radiusB: number): Shape;
+): Shape3d;
+function cone(a: Vec3, b: Vec3, radiusA: number, radiusB: number): Shape3d;
+function capsule(a: Vec3, b: Vec3, radius: number): Shape3d;
+function roundCone(a: Vec3, b: Vec3, radiusA: number, radiusB: number): Shape3d;
 function torus(
   center: Vec3,
   ringRadius: number,
   tubeRadius: number,
   options?: { axis?: Axis; from?: number; to?: number },
-): Shape;
-function octahedron(center: Vec3, radius: number): Shape;
-function pyramid(baseCenter: Vec3, width: number, height: number): Shape;
-function halfSpace(side: Side, at: number): Shape;
+): Shape3d;
+function octahedron(center: Vec3, radius: number): Shape3d;
+function pyramid(baseCenter: Vec3, width: number, height: number): Shape3d;
+function halfSpace(side: Side, at: number): Shape3d;
 ```
 
 1. `box` spans its two corners. `round` rounds its edges and corners by that
@@ -331,22 +335,22 @@ function halfSpace(side: Side, at: number): Shape;
 ### 2D shapes
 
 ```ts
-function circle(center: Vec2, radius: number): Shape2;
+function circle(center: Vec2, radius: number): Shape2d;
 function rect(
   min: Vec2,
   max: Vec2,
   options?: { chamfer?: number; round?: number },
-): Shape2;
-function ellipse(center: Vec2, radii: Vec2): Shape2;
-function ngon(center: Vec2, sides: number, radius: number): Shape2;
+): Shape2d;
+function ellipse(center: Vec2, radii: Vec2): Shape2d;
+function ngon(center: Vec2, sides: number, radius: number): Shape2d;
 function star(
   center: Vec2,
   points: number,
   outerRadius: number,
   innerRadius: number,
-): Shape2;
-function polygon(points: Vec2[]): Shape2;
-function polyline(points: Vec2[], width: number): Shape2;
+): Shape2d;
+function polygon(points: Vec2[]): Shape2d;
+function polyline(points: Vec2[], width: number): Shape2d;
 function arc(
   center: Vec2,
   radius: number,
@@ -354,15 +358,15 @@ function arc(
   toDegrees: number,
   width: number,
   options?: { caps?: "flat" | "round" },
-): Shape2;
+): Shape2d;
 function sector(
   center: Vec2,
   radius: number,
   fromDegrees: number,
   toDegrees: number,
-): Shape2;
-function vesica(a: Vec2, b: Vec2, width: number): Shape2;
-function arch(min: Vec2, max: Vec2): Shape2;
+): Shape2d;
+function vesica(a: Vec2, b: Vec2, width: number): Shape2d;
+function arch(min: Vec2, max: Vec2): Shape2d;
 ```
 
 Angles in the plane run from +u toward +v.
@@ -386,14 +390,17 @@ Angles in the plane run from +u toward +v.
 
 ```ts
 function extrude(
-  profile: Shape2,
+  profile: Shape2d,
   options: { axis?: Axis; from: number; to: number },
-): Shape;
+): Shape3d;
 function revolve(
-  profile: Shape2,
+  profile: Shape2d,
   options?: { axis?: Axis; center?: Vec3 },
-): Shape;
-function lathe(points: Vec2[], options?: { axis?: Axis; center?: Vec3 }): Shape;
+): Shape3d;
+function lathe(
+  points: Vec2[],
+  options?: { axis?: Axis; center?: Vec3 },
+): Shape3d;
 ```
 
 1. `extrude` pushes the profile from `from` to `to` along the z axis unless
@@ -409,18 +416,18 @@ function lathe(points: Vec2[], options?: { axis?: Axis; center?: Vec3 }): Shape;
 ### Booleans
 
 ```ts
-function union<S extends Shape | Shape2>(...shapes: S[]): S;
-function intersect<S extends Shape | Shape2>(...shapes: S[]): S;
-function subtract<S extends Shape | Shape2>(base: S, ...cutters: S[]): S;
-function smoothUnion<S extends Shape | Shape2>(
+function union<S extends Shape3d | Shape2d>(...shapes: S[]): S;
+function intersect<S extends Shape3d | Shape2d>(...shapes: S[]): S;
+function subtract<S extends Shape3d | Shape2d>(base: S, ...cutters: S[]): S;
+function smoothUnion<S extends Shape3d | Shape2d>(
   radius: number,
   ...shapes: S[]
 ): S;
-function smoothIntersect<S extends Shape | Shape2>(
+function smoothIntersect<S extends Shape3d | Shape2d>(
   radius: number,
   ...shapes: S[]
 ): S;
-function smoothSubtract<S extends Shape | Shape2>(
+function smoothSubtract<S extends Shape3d | Shape2d>(
   radius: number,
   base: S,
   ...cutters: S[]
@@ -438,14 +445,14 @@ shape can union many shapes under one material.
 ### Transforms
 
 ```ts
-interface Shape {
-  translate(offset: Vec3): Shape;
-  rotate(axis: Axis, degrees: number, pivot?: Vec3): Shape;
-  orient(from: Vec3, to: Vec3, pivot?: Vec3): Shape;
-  scale(factor: number | Vec3, pivot?: Vec3): Shape;
-  mirror(axes: Axes, center?: Vec3): Shape;
-  repeat(step: Vec3, count: Vec3): Shape;
-  repeatPolar(axis: Axis, count: number, center?: Vec3): Shape;
+interface Shape3d {
+  translate(offset: Vec3): Shape3d;
+  rotate(axis: Axis, degrees: number, pivot?: Vec3): Shape3d;
+  orient(from: Vec3, to: Vec3, pivot?: Vec3): Shape3d;
+  scale(factor: number | Vec3, pivot?: Vec3): Shape3d;
+  mirror(axes: Axes, center?: Vec3): Shape3d;
+  repeat(step: Vec3, count: Vec3): Shape3d;
+  repeatPolar(axis: Axis, count: number, center?: Vec3): Shape3d;
 }
 ```
 
@@ -462,37 +469,37 @@ interface Shape {
 5. `repeatPolar` makes `count` copies turned evenly around `axis` through
    `center`.
 
-A `Shape2` takes the same methods in the plane, plus the [modifiers](#modifiers)
-`offset` and `shell`:
+A `Shape2d` takes the same methods in the plane, plus the
+[modifiers](#modifiers) `offset` and `shell`:
 
 ```ts
-interface Shape2 {
-  translate(offset: Vec2): Shape2;
-  rotate(degrees: number, pivot?: Vec2): Shape2;
-  scale(factor: number | Vec2, pivot?: Vec2): Shape2;
-  mirror(axes: "u" | "v" | "uv", center?: Vec2): Shape2;
-  repeat(step: Vec2, count: Vec2): Shape2;
-  repeatPolar(count: number, center?: Vec2): Shape2;
-  offset(distance: number): Shape2;
-  shell(thickness: number): Shape2;
+interface Shape2d {
+  translate(offset: Vec2): Shape2d;
+  rotate(degrees: number, pivot?: Vec2): Shape2d;
+  scale(factor: number | Vec2, pivot?: Vec2): Shape2d;
+  mirror(axes: "u" | "v" | "uv", center?: Vec2): Shape2d;
+  repeat(step: Vec2, count: Vec2): Shape2d;
+  repeatPolar(count: number, center?: Vec2): Shape2d;
+  offset(distance: number): Shape2d;
+  shell(thickness: number): Shape2d;
 }
 ```
 
 ### Modifiers
 
 ```ts
-interface Shape {
-  offset(distance: number): Shape;
-  shell(thickness: number): Shape;
-  elongate(lengths: Vec3, center?: Vec3): Shape;
-  twist(axis: Axis, degreesPerMeter: number, center?: Vec3): Shape;
-  bend(along: Axis, toward: Side, radius: number, pivot?: Vec3): Shape;
+interface Shape3d {
+  offset(distance: number): Shape3d;
+  shell(thickness: number): Shape3d;
+  elongate(lengths: Vec3, center?: Vec3): Shape3d;
+  twist(axis: Axis, degreesPerMeter: number, center?: Vec3): Shape3d;
+  bend(along: Axis, toward: Side, radius: number, pivot?: Vec3): Shape3d;
   displace(options: {
     amplitude: number;
     scale: number;
     octaves?: number;
     seed: number;
-  }): Shape;
+  }): Shape3d;
 }
 ```
 
