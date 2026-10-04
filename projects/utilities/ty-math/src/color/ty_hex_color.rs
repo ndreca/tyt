@@ -7,15 +7,16 @@ pub trait TyHexColor: Sized {
     /// Parses a `#RRGGBB` or `#RRGGBBAA` hex string, with or without the
     /// leading `#`. A missing alpha defaults to opaque. Returns `None` when the
     /// value is not six or eight hexadecimal digits.
-    fn from_hex(hex: &str) -> Option<Self>;
+    // palette's inherent `from_hex` would shadow a trait method of that name.
+    fn parse_hex(hex: &str) -> Option<Self>;
 
     /// Formats the color as an uppercase `#RRGGBBAA` hex string. Round-trips
-    /// with [`from_hex`](Self::from_hex).
-    fn to_hex(self) -> String;
+    /// with [`parse_hex`](Self::parse_hex).
+    fn format_hex(self) -> String;
 }
 
 impl TyHexColor for TySrgbaU8 {
-    fn from_hex(hex: &str) -> Option<Self> {
+    fn parse_hex(hex: &str) -> Option<Self> {
         let hex = hex.strip_prefix('#').unwrap_or(hex);
 
         if hex.len() != 6 && hex.len() != 8 {
@@ -32,7 +33,7 @@ impl TyHexColor for TySrgbaU8 {
         ))
     }
 
-    fn to_hex(self) -> String {
+    fn format_hex(self) -> String {
         let (r, g, b, a) = (self.red, self.green, self.blue, self.alpha);
 
         format!("#{r:02X}{g:02X}{b:02X}{a:02X}")
@@ -48,25 +49,25 @@ mod tests {
         // Eight digits carry alpha, six default it to opaque, and the `#` is
         // optional either way.
         assert_eq!(
-            TySrgbaU8::from_hex("#01020304"),
+            TySrgbaU8::parse_hex("#01020304"),
             Some(TySrgbaU8::new(1, 2, 3, 4))
         );
         assert_eq!(
-            TySrgbaU8::from_hex("FF8000"),
+            TySrgbaU8::parse_hex("FF8000"),
             Some(TySrgbaU8::new(255, 128, 0, 255))
         );
-        assert_eq!(TySrgbaU8::new(1, 2, 3, 4).to_hex(), "#01020304");
+        assert_eq!(TySrgbaU8::new(1, 2, 3, 4).format_hex(), "#01020304");
         assert_eq!(
-            TySrgbaU8::from_hex(&TySrgbaU8::new(10, 200, 30, 40).to_hex()),
+            TySrgbaU8::parse_hex(&TySrgbaU8::new(10, 200, 30, 40).format_hex()),
             Some(TySrgbaU8::new(10, 200, 30, 40))
         );
     }
 
     #[test]
-    fn from_hex_rejects_malformed() {
+    fn parse_hex_rejects_malformed() {
         // Wrong length and non-hex digits are both rejected.
-        assert_eq!(TySrgbaU8::from_hex("#12345"), None);
-        assert_eq!(TySrgbaU8::from_hex("#GGGGGG"), None);
-        assert_eq!(TySrgbaU8::from_hex(""), None);
+        assert_eq!(TySrgbaU8::parse_hex("#12345"), None);
+        assert_eq!(TySrgbaU8::parse_hex("#GGGGGG"), None);
+        assert_eq!(TySrgbaU8::parse_hex(""), None);
     }
 }

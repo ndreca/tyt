@@ -642,7 +642,7 @@ mod tests {
     /// The linear-light `[f64; 4]` components of a `#RRGGBB` or `#RRGGBBAA`
     /// color. A missing alpha defaults to opaque.
     fn color_floats(hex: &str) -> [f64; 4] {
-        lin_srgba_f64_from_srgba_u8(TySrgbaU8::from_hex(hex).expect("a valid hex color")).into()
+        lin_srgba_f64_from_srgba_u8(TySrgbaU8::parse_hex(hex).expect("a valid hex color")).into()
     }
 
     /// Adds a palette binding `baseColor` to a value pool of the

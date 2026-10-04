@@ -272,7 +272,7 @@ mod tests {
 
     /// The linear-light components of a `#RRGGBBAA` hex string.
     fn linear_rgba(hex: &str) -> [f64; 4] {
-        lin_srgba_f64_from_srgba_u8(TySrgbaU8::from_hex(hex).expect("a valid hex color")).into()
+        lin_srgba_f64_from_srgba_u8(TySrgbaU8::parse_hex(hex).expect("a valid hex color")).into()
     }
 
     /// A bare main built straight from voxcore: a red-green object and a

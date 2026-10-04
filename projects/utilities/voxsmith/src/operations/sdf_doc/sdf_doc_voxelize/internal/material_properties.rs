@@ -81,7 +81,8 @@ fn color(value: &SdfPropertyValue, takes_alpha: bool) -> Option<TyLinSrgbaF64> {
         return None;
     }
 
-    Some(lin_srgba_f64_from_srgba_u8(TySrgbaU8::from_hex(text)?))
+    let srgba_u8 = TySrgbaU8::parse_hex(text).expect("the checked digits parse");
+    Some(lin_srgba_f64_from_srgba_u8(srgba_u8))
 }
 
 /// The number in `value` for the named property `name`, inside the property's

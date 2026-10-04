@@ -189,7 +189,7 @@ mod tests {
     /// The linear-light components of a `#RRGGBB` hex string.
     fn linear_rgb(hex: &str) -> [f64; 3] {
         let linear =
-            lin_srgba_f64_from_srgba_u8(TySrgbaU8::from_hex(hex).expect("a valid hex color"));
+            lin_srgba_f64_from_srgba_u8(TySrgbaU8::parse_hex(hex).expect("a valid hex color"));
         [linear.red, linear.green, linear.blue]
     }
 
