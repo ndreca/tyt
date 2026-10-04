@@ -2,6 +2,7 @@
 
 mod check;
 mod check_expression;
+mod check_expression_in_context;
 mod check_failure;
 mod checked_expression;
 mod checked_program;
@@ -9,6 +10,7 @@ mod reads;
 
 pub use check::*;
 pub use check_expression::*;
+pub use check_expression_in_context::*;
 pub use check_failure::*;
 pub use checked_expression::*;
 pub use checked_program::*;

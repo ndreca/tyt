@@ -6,12 +6,17 @@ use crate::{
 };
 use std::collections::HashMap;
 
-/// Checks a whole expression, erroring where its bare literals never met a
-/// type.
-pub fn check_root(node: &SyntaxNode, scope: &HashMap<String, Type>) -> CheckResult<CheckedNode> {
-    match check_node(node, scope)? {
-        Checked::Pending(_) => Err(CheckFailure::UntypedLiteral),
-        Checked::Typed(node) => Ok(node),
+/// Checks a whole expression. Bare literals no operand fixes settle as
+/// `context`, and error without one.
+pub fn check_root(
+    node: &SyntaxNode,
+    scope: &HashMap<String, Type>,
+    context: Option<Scalar>,
+) -> CheckResult<CheckedNode> {
+    match (check_node(node, scope)?, context) {
+        (Checked::Pending(pending), Some(context)) => pending.resolve(context),
+        (Checked::Pending(_), None) => Err(CheckFailure::UntypedLiteral),
+        (Checked::Typed(node), _) => Ok(node),
     }
 }
 

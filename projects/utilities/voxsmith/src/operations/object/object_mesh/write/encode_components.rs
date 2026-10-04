@@ -2,7 +2,6 @@ use crate::{
     Error, Result,
     operations::object::{MeshElement, Transfer},
 };
-use ty_math::{TyLinSrgbF64, TySrgbF64};
 
 /// One entry's components under `transfer`, which curves each color
 /// component and leaves an alpha as it is. A `unit` destination and the curve
@@ -45,14 +44,26 @@ pub fn encode_components(
         .collect()
 }
 
-/// `linear` encoded through the sRGB curve.
+/// `linear` encoded through the sRGB curve. `palette` evaluates the power
+/// segment as `1.055 * p - 0.055` and lands `1.0` an ulp short. The equal
+/// `p + 0.055 * (p - 1)` keeps `1.0` exact.
 fn srgb_encode(linear: f64) -> f64 {
-    TySrgbF64::from_linear(TyLinSrgbF64::new(linear, linear, linear)).red
+    if linear <= 0.0031308 {
+        return 12.92 * linear;
+    }
+
+    let power = linear.powf(1.0 / 2.4);
+
+    0.055f64.mul_add(power - 1.0, power)
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::operations::object::{MeshElement, Transfer, encode_components};
+    use crate::operations::object::{
+        MeshElement, Transfer, encode_components,
+        object_mesh::write::encode_components::srgb_encode,
+    };
+    use ty_math::{TyLinSrgbF64, TySrgbF64};
 
     fn element() -> MeshElement {
         MeshElement::File {
@@ -66,13 +77,29 @@ mod tests {
             encode_components(&element(), &[0.0, 1.0, 0.5, 0.5], Transfer::Srgb, false).unwrap();
 
         assert_eq!(encoded[0], 0.0);
-        assert!((encoded[1] - 1.0).abs() < 1e-12);
+        assert_eq!(encoded[1], 1.0);
         assert!((encoded[2] - 0.7354).abs() < 1e-4);
         assert_eq!(encoded[3], 0.5);
 
         let grey_alpha = encode_components(&element(), &[0.5, 0.5], Transfer::Srgb, false).unwrap();
         assert!((grey_alpha[0] - 0.7354).abs() < 1e-4);
         assert_eq!(grey_alpha[1], 0.5);
+    }
+
+    #[test]
+    fn the_srgb_curve_matches_palette_and_keeps_the_endpoints_exact() {
+        assert_eq!(srgb_encode(0.0), 0.0);
+        assert_eq!(srgb_encode(1.0), 1.0);
+
+        for step in 0..=1000 {
+            let linear = f64::from(step) / 1000.0;
+            let expected = TySrgbF64::from_linear(TyLinSrgbF64::new(linear, 0.0, 0.0)).red;
+
+            assert!(
+                (srgb_encode(linear) - expected).abs() <= f64::EPSILON,
+                "{linear}"
+            );
+        }
     }
 
     #[test]

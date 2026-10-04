@@ -1,4 +1,4 @@
-use crate::commands::ProgramFlag;
+use crate::ProgramFlag;
 use clap::{Arg, ArgAction, ArgMatches, Args, Command, Error as ClapError, FromArgMatches};
 
 /// The `--value` and `--values-from` occurrences in line order, kept
@@ -28,9 +28,8 @@ impl Args for ProgramFlags {
                     .action(ArgAction::Append)
                     .help(
                         "One or more statements of the value language defining values the \
-                         writers and slots can reference. Every property of the effective \
-                         palette enters the program as a name. Every occurrence joins the \
-                         program in order. Repeatable",
+                         writes can reference. Every occurrence joins the program in order. \
+                         Repeatable",
                     ),
             )
             .arg(
@@ -40,8 +39,8 @@ impl Args for ProgramFlags {
                     .action(ArgAction::Append)
                     .help(
                         "Appends a profile's bindings to the program at the flag's position, \
-                         the profile's `valuesFrom` imports first. Any writer elements the \
-                         profile holds stay behind. Repeatable",
+                         the profile's `valuesFrom` imports first. Every other element the \
+                         profile holds stays behind. Repeatable",
                     ),
             )
     }
@@ -86,7 +85,7 @@ impl FromArgMatches for ProgramFlags {
 
 #[cfg(test)]
 mod tests {
-    use crate::commands::{ProgramFlag, ProgramFlags};
+    use crate::{ProgramFlag, ProgramFlags};
     use clap::Parser;
 
     #[derive(Parser)]

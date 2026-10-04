@@ -12,7 +12,7 @@ pub fn check(program: Program, environment: &TypeEnvironment) -> Result<CheckedP
 
     for binding in program.bindings {
         let expression =
-            check_root(&binding.expression, &scope).map_err(|failure| Error::Check {
+            check_root(&binding.expression, &scope, None).map_err(|failure| Error::Check {
                 binding: Some(binding.name.clone()),
                 failure,
             })?;

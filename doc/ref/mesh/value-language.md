@@ -173,7 +173,11 @@ expression reads it.
 A literal names its type or takes it from context. A decimal point makes an
 `f64`, a suffix pins any type, `2f64`, `2u8`, `2u16`, `2u32`, and a bare whole
 number infers from the expression around it, so `mod(voxelPosition.y, 2)` reads
-`2` as `u32`. A literal nothing types errors, and a suffix fixes it.
+`2` as `u32`. A destination that takes one number type also supplies context.
+A material factor, a PNG, `COLOR_0`, and every `srgb` value take `f64`, so
+`--write-material-slot-value 0 metallicFactor 1` writes `1.0`. A linear JSON
+entry or custom attribute writes any number type and supplies none. A literal
+nothing types errors, and a suffix fixes it.
 
 The conversions are explicit and componentwise. `f64(e)` takes any unsigned
 value exactly. `u8(e)`, `u16(e)`, and `u32(e)` widen an unsigned value
@@ -1753,7 +1757,8 @@ Numeric type rules, with every number an `f64`, `u8`, `u16`, or `u32` (see
 1. Every operator, comparison, and function takes one numeric type across its
    numeric operands; nothing converts implicitly.
 2. A whole-number literal takes the type its context fixes, a suffix or a
-   decimal point fixes one directly, and a literal nothing types errors.
+   decimal point fixes one directly, and a literal nothing types errors. A
+   destination that takes one number type is context for its expression.
 3. The conversions are `f64(e)`, `u8(e)`, `u16(e)`, `u32(e)`, and the
    `ceil_`/`floor_`/`round_` forms, componentwise. The named modes round; every
    other conversion is exact or errors, a fraction and a range overflow each

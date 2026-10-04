@@ -1,6 +1,5 @@
-use crate::{Error, ProfileSet, Result, commands::MeshProfile};
+use crate::{Error, ProfileSet, Result, commands::MeshProfile, parse_fragment};
 use std::collections::HashSet;
-use vox_value_language::parse;
 use voxsmith::operations::object::{Computation, ComputedBinding};
 
 /// Joins the program from its fragments and gathers the computed bindings,
@@ -141,35 +140,11 @@ impl<'a> ProgramBuilder<'a> {
     }
 }
 
-/// The program fragment `text`, which `origin` holds, with its terminator
-/// appended. An all-whitespace fragment errors, as does one that does not
-/// parse.
-fn parse_fragment(origin: &str, text: &str) -> Result<String> {
-    if text.trim().is_empty() {
-        return Err(Error::usage(format!(
-            "{origin} holds only whitespace where bindings go"
-        )));
-    }
-
-    let fragment = format!("{text};");
-
-    parse(&fragment).map_err(|error| {
-        Error::usage(format!(
-            "{origin} holds `{text}`, which does not parse: {error}"
-        ))
-    })?;
-
-    Ok(fragment)
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{
         ProfileSet,
-        commands::{
-            ProgramBuilder, built_in_profiles,
-            object::object_mesh::internal::record::program_builder::parse_fragment,
-        },
+        commands::{ProgramBuilder, built_in_profiles},
         profile_set_from_json,
     };
     use std::collections::BTreeSet;
@@ -335,29 +310,5 @@ mod tests {
             .unwrap_err()
             .to_string();
         assert!(error.contains("`broken`'s values entry 1"), "{error}");
-    }
-
-    #[test]
-    fn a_fragment_gains_its_terminator() {
-        assert_eq!(parse_fragment("--value", "a = 1").unwrap(), "a = 1;");
-        assert_eq!(
-            parse_fragment("--value", "a = 1; b = a;").unwrap(),
-            "a = 1; b = a;;"
-        );
-    }
-
-    #[test]
-    fn whitespace_and_broken_fragments_error_at_their_origin() {
-        let error = parse_fragment("--value", "  ").unwrap_err().to_string();
-        assert!(error.contains("--value"), "{error}");
-
-        let error = parse_fragment("the profile `x`'s values entry 0", "a =")
-            .unwrap_err()
-            .to_string();
-        assert!(
-            error.contains("the profile `x`'s values entry 0"),
-            "{error}"
-        );
-        assert!(error.contains("`a =`"), "{error}");
     }
 }

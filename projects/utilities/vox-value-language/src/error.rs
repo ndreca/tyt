@@ -8,7 +8,8 @@ use std::{
     ops::Range,
 };
 
-/// An error from the language pipeline.
+/// An error from the language pipeline. Its message reads after a phrase
+/// saying what failed, such as `the program`.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
     /// An expression broke a checking rule, inside the binding or on its
@@ -105,7 +106,7 @@ impl Display for Error {
             Error::Check {
                 binding: None,
                 failure,
-            } => write!(formatter, "{failure}"),
+            } => write!(formatter, "does not check: {failure}"),
 
             Error::ComponentCount {
                 domain,
@@ -133,7 +134,7 @@ impl Display for Error {
             Error::Eval {
                 binding: None,
                 failure,
-            } => write!(formatter, "{failure}"),
+            } => write!(formatter, "does not evaluate: {failure}"),
 
             Error::FacePieces { face_id } => {
                 write!(formatter, "face {face_id} lists no voxel pieces")

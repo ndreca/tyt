@@ -75,7 +75,7 @@ mod tests {
             eval_expression(&expression, &evaluated)
                 .unwrap_err()
                 .to_string(),
-            "index 5 reaches past 2 entries"
+            "does not evaluate: index 5 reaches past 2 entries"
         );
     }
 }

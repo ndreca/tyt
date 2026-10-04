@@ -9,10 +9,11 @@ pub fn check_expression(
     expression: &Expression,
     program: &CheckedProgram,
 ) -> Result<CheckedExpression> {
-    let root = check_root(&expression.root, &program.scope).map_err(|failure| Error::Check {
-        binding: None,
-        failure,
-    })?;
+    let root =
+        check_root(&expression.root, &program.scope, None).map_err(|failure| Error::Check {
+            binding: None,
+            failure,
+        })?;
 
     Ok(CheckedExpression { root })
 }
@@ -72,7 +73,7 @@ mod tests {
             check_expression(&parse_expression("1").unwrap(), &program())
                 .unwrap_err()
                 .to_string(),
-            "a bare whole-number literal takes its type from context, and nothing here fixes one"
+            "does not check: a bare whole-number literal takes its type from context, and nothing here fixes one"
         );
     }
 }

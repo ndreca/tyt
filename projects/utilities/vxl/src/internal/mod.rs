@@ -5,6 +5,7 @@
 // Internal API
 
 mod alpha_mode;
+mod check_expression;
 mod cli_value;
 mod cli_value_parser;
 mod color_space;
@@ -24,12 +25,15 @@ mod parent_selection;
 mod parse_finite_f64;
 mod parse_flag_index;
 mod parse_flag_value;
+mod parse_fragment;
 mod parse_id_selector;
 mod positive_f64;
 mod profile;
 mod profile_description;
 mod profile_origin;
 mod profile_set;
+mod program_flag;
+mod program_flags;
 mod property_interpretation;
 mod quantize_args;
 mod quantize_config;
@@ -52,6 +56,7 @@ mod voxj_sample_encoding;
 mod voxj_serialization;
 mod width;
 
+pub(crate) use check_expression::*;
 pub(crate) use cli_value::*;
 pub(crate) use cli_value_parser::*;
 pub(crate) use edit_document::*;
@@ -66,12 +71,15 @@ pub(crate) use parent_selection::*;
 pub(crate) use parse_finite_f64::*;
 pub(crate) use parse_flag_index::*;
 pub(crate) use parse_flag_value::*;
+pub(crate) use parse_fragment::*;
 pub(crate) use parse_id_selector::*;
 pub(crate) use positive_f64::*;
 pub(crate) use profile::*;
 pub(crate) use profile_description::*;
 pub(crate) use profile_origin::*;
 pub(crate) use profile_set::*;
+pub(crate) use program_flag::*;
+pub(crate) use program_flags::*;
 pub(crate) use quantize_args::*;
 pub(crate) use quantize_config::*;
 pub(crate) use quantize_profile::*;

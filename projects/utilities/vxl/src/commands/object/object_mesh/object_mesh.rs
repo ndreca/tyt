@@ -1,9 +1,9 @@
 use crate::{
-    CliValue, Dependencies, Error, NoneOr, ObjectSelection, PositiveF64, ProfileSet, Result,
-    VoxelInput, cli_value_parser,
+    CliValue, Dependencies, Error, NoneOr, ObjectSelection, PositiveF64, ProfileSet, ProgramFlag,
+    ProgramFlags, Result, VoxelInput, check_expression, cli_value_parser,
     commands::{
-        ExtraEntry, MaterialTable, MeshProfile, MeshRun, PrimitiveTable, ProgramBuilder,
-        ProgramFlag, ProgramFlags, SlotEntry, load_mesh_profile_set, parse_texture_shape,
+        ExtraEntry, MaterialTable, MeshProfile, MeshRun, PrimitiveTable, ProgramBuilder, SlotEntry,
+        load_mesh_profile_set, parse_texture_shape,
     },
     flag_occurrences, parse_flag_index, parse_flag_value,
 };
@@ -19,7 +19,6 @@ use std::{
     path::{Path, PathBuf},
     result::Result as StdResult,
 };
-use vox_value_language::parse_expression;
 use voxconv::load;
 use voxcore::{BVoxObject, VoxExt, VoxMain};
 use voxsmith::{
@@ -34,7 +33,8 @@ use voxsmith::{
 /// Triangulates the selected objects' voxels into a glTF or GLB mesh, one
 /// mesh object per voxel object placed by the hierarchy reaching it, baking
 /// the palette materials into values that ride along as textures, material
-/// fields, and files beside the mesh.
+/// fields, and files beside the mesh. Every property of the effective palette
+/// enters the program as a name.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "mesh")]
 pub struct ObjectMesh {
@@ -1646,15 +1646,6 @@ fn fill_file_template(template: &str, file_stem: &str) -> String {
     template.replace("{file-stem}", file_stem)
 }
 
-/// Errors unless `text`, which `origin` holds, parses as one expression.
-fn check_expression(origin: &str, text: &str) -> Result<()> {
-    parse_expression(text).map(drop).map_err(|error| {
-        Error::usage(format!(
-            "{origin} holds `{text}`, which does not parse as an expression: {error}"
-        ))
-    })
-}
-
 /// Errors unless every image reference in `record`, a slot or an image
 /// extra sourced from a file, points at a PNG the run writes.
 fn check_image_sources(record: &MeshRecord) -> Result<()> {
@@ -1733,9 +1724,9 @@ mod tests {
             SlotEntry, built_in_profiles,
             object::object_mesh::object_mesh::{
                 apply_profile_files, apply_profile_materials, apply_profile_mesh_extras,
-                apply_profile_primitives, check_expression, declare_profile_primitives,
-                extra_write, fill_file_template, parse_uv_list, push_file_write, push_unique,
-                require_file_name, resolve_gltf_container, select_mesh_objects, stack_profiles,
+                apply_profile_primitives, declare_profile_primitives, extra_write,
+                fill_file_template, parse_uv_list, push_file_write, push_unique, require_file_name,
+                resolve_gltf_container, select_mesh_objects, stack_profiles,
             },
         },
         owned_names, profile_set_from_json, try_parse_object_selection,
@@ -3223,17 +3214,6 @@ mod tests {
             fill_file_template("metallic-smoothness.png", "turret"),
             "metallic-smoothness.png"
         );
-    }
-
-    #[test]
-    fn a_broken_expression_errors_at_its_origin() {
-        assert!(check_expression("--primitive", "emissiveStrength > 0").is_ok());
-
-        let error = check_expression("--primitive", "1 +")
-            .unwrap_err()
-            .to_string();
-        assert!(error.contains("--primitive"), "{error}");
-        assert!(error.contains("`1 +`"), "{error}");
     }
 
     #[test]

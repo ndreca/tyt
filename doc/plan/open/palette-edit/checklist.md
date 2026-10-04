@@ -61,7 +61,7 @@ The design is in the [README](README.md). Check steps off as they land.
       `release_unsampled_materials` moves into a crate-internal helper both
       operations call. Range checks go through `check_material_range`
       (`utilities/check_material_range.rs`).
-- [ ] **S6. vxl `palette edit` and profiles.** Add
+- [x] **S6. vxl `palette edit` and profiles.** Add
       `commands/palette/palette_edit/` beside `palette_quantize/`. The command
       writes through `edit_document` (`internal/edit_document.rs`). Program
       assembly, fragment origins, and `--values-from` follow

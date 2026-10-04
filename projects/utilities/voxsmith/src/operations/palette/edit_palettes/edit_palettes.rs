@@ -6,12 +6,12 @@ use crate::{
 use branded_id::U32Id;
 use std::collections::{BTreeSet, HashMap};
 use vox_value_language::{
-    Expression, Groupings, Program, TypeEnvironment, ValueEnvironment, check, check_expression,
-    eval, eval_expression, parse, parse_expression,
+    Expression, Groupings, Program, Scalar, TypeEnvironment, ValueEnvironment, check,
+    check_expression, check_expression_in_context, eval, eval_expression, parse, parse_expression,
 };
 use voxcore::{
     BVoxPalette, BVoxProperty, BVoxValuePool, BVoxValuePoolValue, Error as VoxError, VoxExt,
-    VoxMain, VoxPalette,
+    VoxMain, VoxPalette, VoxValuePoolValues,
 };
 
 /// One write evaluated over one palette, ready to land.
@@ -127,8 +127,11 @@ fn plan_writes<T: VoxExt>(
     let mut checked_expressions = Vec::with_capacity(writes.len());
 
     for (write, expression) in writes.iter().zip(expressions) {
-        let checked_expression = check_expression(expression, &checked)
-            .map_err(|error| Error::palette_edit(write_element(write), error))?;
+        let checked_expression = match literal_context(main, palette, &write.property) {
+            Some(context) => check_expression_in_context(expression, &checked, context),
+            None => check_expression(expression, &checked),
+        }
+        .map_err(|error| Error::palette_edit(write_element(write), error))?;
 
         checked_expressions.push(checked_expression);
     }
@@ -171,6 +174,41 @@ fn plan_writes<T: VoxExt>(
     }
 
     Ok(planned)
+}
+
+/// The scalar a bare literal in the write to `property` takes: the number
+/// type of the property's value pool, or `None` when `palette` lacks the
+/// property or its value pool holds no numbers.
+fn literal_context<T: VoxExt>(
+    main: &VoxMain<T>,
+    palette: &VoxPalette,
+    property: &str,
+) -> Option<Scalar> {
+    let property_id = palette.property_id_by_name(property)?;
+
+    let property = palette
+        .property(property_id)
+        .expect("a resolved name identifies one of the palette's properties");
+
+    let value_pool = main
+        .value_pool(property.value_pool_id)
+        .expect("a property names a live value pool");
+
+    match value_pool.values() {
+        VoxValuePoolValues::Float(_)
+        | VoxValuePoolValues::Vec2Float(_)
+        | VoxValuePoolValues::Vec3Float(_)
+        | VoxValuePoolValues::Vec4Float(_) => Some(Scalar::F64),
+
+        VoxValuePoolValues::Int(_)
+        | VoxValuePoolValues::Vec2Int(_)
+        | VoxValuePoolValues::Vec3Int(_)
+        | VoxValuePoolValues::Vec4Int(_) => Some(Scalar::U32),
+
+        VoxValuePoolValues::Bool(_)
+        | VoxValuePoolValues::Json(_)
+        | VoxValuePoolValues::String(_) => None,
+    }
 }
 
 /// The types and values of each property of `palette` that `free_names`
@@ -574,6 +612,52 @@ mod tests {
         assert_eq!(
             drawn(&main, untagged_id, ROUGHNESS, VoxValuePool::float_values),
             [0.4]
+        );
+    }
+
+    #[test]
+    fn a_bare_literal_takes_the_number_type_of_the_value_pool() {
+        let mut main = VoxMain::default();
+        let palette_id = retain_palette(
+            &mut main,
+            vec![
+                (ROUGHNESS, VoxValuePool::float(vec![0.2]).unwrap()),
+                ("count", VoxValuePool::int(vec![3]).unwrap()),
+            ],
+            &[vec![0, 0]],
+        );
+
+        edit_palettes(
+            &mut main,
+            &[palette_id],
+            "",
+            &[write(ROUGHNESS, "1"), write("count", "2 + 5")],
+        )
+        .unwrap();
+
+        assert_eq!(
+            drawn(&main, palette_id, ROUGHNESS, VoxValuePool::float_values),
+            [1.0]
+        );
+        assert_eq!(
+            drawn(&main, palette_id, "count", VoxValuePool::int_values),
+            [7]
+        );
+    }
+
+    #[test]
+    fn a_bare_literal_for_a_missing_property_errors() {
+        let mut main = VoxMain::default();
+        let palette_id = retain_tagged(&mut main, &["rust"], &[0.2]);
+
+        let error = edit_palettes(&mut main, &[palette_id], "", &[write("wear", "1")]).unwrap_err();
+
+        assert!(is_write_error(&error, palette_id, "wear"), "{error}");
+        assert!(
+            error
+                .to_string()
+                .contains("the write to `wear` does not check: a bare whole-number literal"),
+            "{error}"
         );
     }
 

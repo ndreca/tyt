@@ -110,3 +110,38 @@ they land.
   error.
 - An int outside `u32` still errors at its swatch, the material at that
   listing position.
+
+## S6. vxl `palette edit` and profiles
+
+- `ProgramFlag`, `ProgramFlags`, `parse_fragment`, and `check_expression` move
+  into vxl's `internal` because `object mesh` and `palette edit` both use them.
+  The `--value` and `--values-from` help no longer mentions mesh writers.
+  `object mesh`'s command doc now says how its properties bind.
+- `PaletteEditProgramBuilder` mirrors `ProgramBuilder` without the computed
+  bindings.
+- vxl checks that each write expression parses and that no property is written
+  twice before it loads the document. Each error reports the flag or profile
+  key. voxsmith repeats both checks.
+- The profile stack merges `properties` by key. The flags' writes come first
+  in line order. The stack's writes of every other property follow in property
+  order. A write a flag replaces is never parsed.
+- A property two stacked profiles write errors with `object mesh`'s claim
+  wording.
+- A run with no write still evaluates the program over each selected palette,
+  then saves the document unchanged.
+- A check or evaluation error of a lone expression now puts `does not check:`
+  or `does not evaluate:` before its failure. The message reads after the
+  element it rose from: "the write to `shadows` does not check: ...".
+  `object mesh` errors read the same way.
+- `vox-value-language` gains `check_expression_in_context`, which settles the
+  bare literals no operand fixes as a given scalar. A write to an existing
+  float property settles them as `f64`, and one to an int property as `u32`.
+  A write adding a property has no context, so `1` there still errors.
+- `object mesh` destinations that take one number type settle bare literals
+  the same way. Each `Destination` carries the context its landing fixes. A
+  slot, a PNG, `COLOR_0`, and every `srgb` value take `f64`. A select and a
+  linear JSON entry or custom attribute take none. The value-language
+  reference states the rule.
+- The mesh writers' `srgb` encode evaluates the curve as `p + 0.055 * (p - 1)`
+  instead of `palette`'s `1.055 * p - 0.055`. The two agree within an epsilon.
+  Only the new form writes `1.0` as `1.0` instead of `0.9999999999999999`.

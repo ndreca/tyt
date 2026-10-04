@@ -1460,6 +1460,34 @@ mod tests {
     }
 
     #[test]
+    fn a_bare_literal_takes_the_number_type_its_landing_fixes() {
+        let (main, object_id) = painted();
+        let material_id = U32Id::from_u32(0);
+        let mut record = record(Method::Greedy);
+        record.materials = materials(vec![value_slot("metallicFactor", "1")]);
+        record.primitives[U32Id::from_u32(0).to_usize_id()].material_id = Some(material_id);
+        record.files = vec![file_write("bar.json", Some("white"), "1", Transfer::Srgb)];
+
+        let document = mesh_one(&main, object_id, &record).unwrap();
+
+        assert_eq!(document.material(material_id).unwrap().metallic_factor, 1.0);
+
+        let (_, file) = document.file_by_name("bar.json").unwrap();
+        let text = String::from_utf8(file.bytes.clone()).unwrap();
+        assert!(text.contains("\"white\": 1.0"), "{text}");
+
+        // A linear JSON entry writes any number type, so nothing fixes one.
+        let mut linear = record.clone();
+        linear.files = vec![file_write("bar.json", Some("grey"), "1", Transfer::Linear)];
+        assert_eq!(
+            failing_element(&linear),
+            MeshElement::File {
+                file: "bar.json".to_owned(),
+            }
+        );
+    }
+
+    #[test]
     fn two_slots_naming_one_value_share_its_image_and_a_file_slot_references_its_file() {
         let (main, object_id) = painted();
         let material_id = U32Id::from_u32(0);

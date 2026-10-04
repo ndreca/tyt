@@ -2,11 +2,14 @@ use crate::{
     Error, Result,
     operations::object::{
         AttributeWrite, CheckedDestination, ExtraForm, ExtraSource, ExtraWrite, FileForm, Landing,
-        MeshElement, MeshRecord, SlotProperty, SlotSource,
+        MeshElement, MeshRecord, SlotProperty, SlotSource, Transfer,
     },
 };
 use branded_id::IteratorExt;
-use vox_value_language::{CheckedProgram, Expression, check_expression, parse_expression};
+use vox_value_language::{
+    CheckedProgram, Expression, Scalar, check_expression, check_expression_in_context,
+    parse_expression,
+};
 
 /// A record element holding an expression the run writes somewhere.
 #[derive(Clone, Debug, PartialEq)]
@@ -18,6 +21,10 @@ pub struct Destination {
     pub text: String,
 
     pub expression: Expression,
+
+    /// The number type a bare literal takes, or `None` when the landing fixes
+    /// none.
+    pub literal_context: Option<Scalar>,
 }
 
 impl Destination {
@@ -36,13 +43,16 @@ impl Destination {
                     continue;
                 };
 
+                let (landing, literal_context) = match extra.form {
+                    ExtraForm::Image => (Landing::Texture, Some(Scalar::F64)),
+                    ExtraForm::Json => (Landing::Json, transfer_context(value.transfer)),
+                };
+
                 destinations.push(parsed(
                     element(&extra.name),
-                    match extra.form {
-                        ExtraForm::Image => Landing::Texture,
-                        ExtraForm::Json => Landing::Json,
-                    },
+                    landing,
                     &value.expression,
+                    literal_context,
                 )?);
             }
 
@@ -73,7 +83,8 @@ impl Destination {
                     Landing::Factor
                 };
 
-                destinations.push(parsed(element, landing, text)?);
+                // Every numeric slot takes f64.
+                destinations.push(parsed(element, landing, text, Some(Scalar::F64))?);
             }
 
             extras(&mut destinations, &material.extras, &|name| {
@@ -89,12 +100,17 @@ impl Destination {
                 MeshElement::PrimitiveSelect { primitive_id },
                 Landing::Select,
                 &primitive.select,
+                None,
             )?);
 
             for attribute in &primitive.attributes {
-                let text = match attribute {
-                    AttributeWrite::Builtin { expression, .. } => expression,
-                    AttributeWrite::Custom { value, .. } => &value.expression,
+                // `COLOR_0`, the one builtin, takes f64.
+                let (text, literal_context) = match attribute {
+                    AttributeWrite::Builtin { expression, .. } => (expression, Some(Scalar::F64)),
+
+                    AttributeWrite::Custom { value, .. } => {
+                        (&value.expression, transfer_context(value.transfer))
+                    }
                 };
 
                 destinations.push(parsed(
@@ -104,20 +120,24 @@ impl Destination {
                     },
                     Landing::Attribute,
                     text,
+                    literal_context,
                 )?);
             }
         }
 
         for file in &record.files {
+            let (landing, literal_context) = match file.form {
+                FileForm::Json { .. } => (Landing::Json, transfer_context(file.value.transfer)),
+                FileForm::Png => (Landing::Texture, Some(Scalar::F64)),
+            };
+
             destinations.push(parsed(
                 MeshElement::File {
                     file: file.file.clone(),
                 },
-                match file.form {
-                    FileForm::Json { .. } => Landing::Json,
-                    FileForm::Png => Landing::Texture,
-                },
+                landing,
                 &file.value.expression,
+                literal_context,
             )?);
         }
 
@@ -133,8 +153,11 @@ impl Destination {
     /// Checks the expression in the scope at `checked`'s end. Every error
     /// rises from the element.
     pub(crate) fn check(self, checked: &CheckedProgram) -> Result<CheckedDestination> {
-        let expression = check_expression(&self.expression, checked)
-            .map_err(|error| Error::mesh_record(self.element.clone(), error))?;
+        let expression = match self.literal_context {
+            Some(context) => check_expression_in_context(&self.expression, checked, context),
+            None => check_expression(&self.expression, checked),
+        }
+        .map_err(|error| Error::mesh_record(self.element.clone(), error))?;
 
         Ok(CheckedDestination {
             destination: self,
@@ -145,7 +168,12 @@ impl Destination {
 
 /// Parses `text` into the destination at `element`. A parse error rises from
 /// the element.
-fn parsed(element: MeshElement, landing: Landing, text: &str) -> Result<Destination> {
+fn parsed(
+    element: MeshElement,
+    landing: Landing,
+    text: &str,
+    literal_context: Option<Scalar>,
+) -> Result<Destination> {
     let expression =
         parse_expression(text).map_err(|error| Error::mesh_record(element.clone(), error))?;
 
@@ -154,7 +182,17 @@ fn parsed(element: MeshElement, landing: Landing, text: &str) -> Result<Destinat
         landing,
         text: text.to_owned(),
         expression,
+        literal_context,
     })
+}
+
+/// The number type a bare literal takes under `transfer`. `srgb` transfers
+/// f64 alone. `linear` writes any number type and fixes none.
+fn transfer_context(transfer: Transfer) -> Option<Scalar> {
+    match transfer {
+        Transfer::Linear => None,
+        Transfer::Srgb => Some(Scalar::F64),
+    }
 }
 
 #[cfg(test)]
