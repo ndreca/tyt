@@ -104,8 +104,6 @@ voxj = { path = "projects/voxel-formats/voxj" }
 voxj-codec = { path = "projects/voxel-formats/voxj-codec" }
 voxj-voxcore = { path = "projects/voxel-formats/voxj-voxcore" }
 
-branded-id = { path = "submodules/branded-id" }
-
 [workspace.metadata.workspaces]
 
 allow_branch = "main"

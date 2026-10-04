@@ -1,6 +1,6 @@
 [package]
 name = "vxl"
-version = "0.3.1"
+version = "0.4.0"
 edition = "2024"
 license-file = "LICENSE"
 repository = "https://github.com/tyleo/tyt"
@@ -22,16 +22,16 @@ clap_complete = { version = "4.5", optional = true }
 crossterm = "0.29"
 image = { version = "0.25", default-features = false }
 jsonc-parser = { version = "0.33.1", features = ["serde"] }
-meshconv = "0.1.0"
-meshdoc = "0.1.0"
+meshconv = "0.2.0"
+meshdoc = "0.2.0"
 serde = { version = "1", features = ["derive"] }
-ty-math = "0.2.0"
-ty-preferences = "0.3.0"
+ty-math = "0.3.0"
+ty-preferences = "0.4.0"
 viuer = "0.11"
-vox-value-language = "0.1.0"
-voxconv = "0.1.0"
-voxcore = { version = "0.2.1", default-features = false }
-voxsmith = { version = "0.3.0", default-features = false, features = [
+vox-value-language = "0.2.0"
+voxconv = "0.2.0"
+voxcore = { version = "0.3.0", default-features = false }
+voxsmith = { version = "0.4.0", default-features = false, features = [
     "impl",
     "mesh_doc",
     "node",
@@ -44,7 +44,7 @@ voxsmith = { version = "0.3.0", default-features = false, features = [
 
 [dev-dependencies]
 serde_json = "1"
-ty-math = { version = "0.2.0", default-features = false }
+ty-math = { version = "0.3.0", default-features = false }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

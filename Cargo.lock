@@ -220,6 +220,8 @@ dependencies = [
 [[package]]
 name = "branded-id"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62aff5e10e7a767a234b4665ee42cca97dbf8f4718a5c773f83e6508275e209e"
 dependencies = [
  "serde",
  "uuid",
@@ -711,7 +713,7 @@ dependencies = [
 
 [[package]]
 name = "gltf-meshdoc"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "base64",
  "branded-id",
@@ -724,11 +726,11 @@ dependencies = [
 
 [[package]]
 name = "goxl"
-version = "0.1.1"
+version = "0.2.0"
 
 [[package]]
 name = "goxl-codec"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "goxl",
  "png",
@@ -736,7 +738,7 @@ dependencies = [
 
 [[package]]
 name = "goxl-voxcore"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "branded-id",
  "goxl",
@@ -1004,7 +1006,7 @@ checksum = "88904434abc2901f197fe8cc55f0445e7ded921dba5911dad2e2b39b48e663c4"
 
 [[package]]
 name = "meshconv"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "branded-id",
  "gltf-meshdoc",
@@ -1014,7 +1016,7 @@ dependencies = [
 
 [[package]]
 name = "meshdoc"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "branded-id",
  "ty-math",
@@ -1054,18 +1056,18 @@ dependencies = [
 
 [[package]]
 name = "mvox"
-version = "0.1.1"
+version = "0.2.0"
 
 [[package]]
 name = "mvox-codec"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "mvox",
 ]
 
 [[package]]
 name = "mvox-voxcore"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "branded-id",
  "mvox",
@@ -1234,7 +1236,7 @@ checksum = "35fb2e5f958ec131621fdd531e9fc186ed768cbe395337403ae56c17a74c68ec"
 
 [[package]]
 name = "pathspec"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "globset",
 ]
@@ -1328,11 +1330,11 @@ checksum = "e0c5ccf5294c6ccd63a74f1565028353830a9c2f5eb0c682c355c471726a6e3f"
 
 [[package]]
 name = "qbcl"
-version = "0.1.2"
+version = "0.2.0"
 
 [[package]]
 name = "qbcl-codec"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "flate2",
  "qbcl",
@@ -1340,7 +1342,7 @@ dependencies = [
 
 [[package]]
 name = "qbcl-voxcore"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "branded-id",
  "qbcl",
@@ -1853,7 +1855,7 @@ dependencies = [
 
 [[package]]
 name = "treegrid"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "branded-id",
  "serde_json",
@@ -1862,11 +1864,11 @@ dependencies = [
 
 [[package]]
 name = "treeselect"
-version = "0.1.1"
+version = "0.2.0"
 
 [[package]]
 name = "ty-math"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "glam",
  "palette",
@@ -1874,7 +1876,7 @@ dependencies = [
 
 [[package]]
 name = "ty-math-serde"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "serde",
  "ty-math",
@@ -1882,7 +1884,7 @@ dependencies = [
 
 [[package]]
 name = "ty-preferences"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "jsonc-parser",
  "serde",
@@ -1891,7 +1893,7 @@ dependencies = [
 
 [[package]]
 name = "tyt"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -1911,7 +1913,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-claude"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -1923,11 +1925,11 @@ dependencies = [
 
 [[package]]
 name = "tyt-common"
-version = "0.1.7"
+version = "0.2.0"
 
 [[package]]
 name = "tyt-cubemap"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -1937,7 +1939,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-fbx"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "branded-id",
  "clap",
@@ -1951,7 +1953,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-fs"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -1963,7 +1965,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-image"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -1973,7 +1975,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-injection"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "base64",
  "crossterm",
@@ -1992,7 +1994,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-material"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -2002,7 +2004,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-meshy"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -2014,7 +2016,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-meta"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -2024,7 +2026,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-oai"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "clap",
  "clap_complete",
@@ -2036,7 +2038,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-vmax"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "branded-id",
  "clap",
@@ -2148,7 +2150,7 @@ dependencies = [
 
 [[package]]
 name = "vmax"
-version = "0.1.10"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_bytes",
@@ -2156,7 +2158,7 @@ dependencies = [
 
 [[package]]
 name = "vmax-codec"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "lzfse",
  "plist",
@@ -2168,7 +2170,7 @@ dependencies = [
 
 [[package]]
 name = "vmax-voxcore"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "branded-id",
  "serde",
@@ -2180,14 +2182,14 @@ dependencies = [
 
 [[package]]
 name = "vox-value-language"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "branded-id",
 ]
 
 [[package]]
 name = "voxconv"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "branded-id",
  "goxl-voxcore",
@@ -2205,7 +2207,7 @@ dependencies = [
 
 [[package]]
 name = "voxcore"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "branded-id",
  "ty-math",
@@ -2213,7 +2215,7 @@ dependencies = [
 
 [[package]]
 name = "voxj"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "base64",
  "flate2",
@@ -2223,7 +2225,7 @@ dependencies = [
 
 [[package]]
 name = "voxj-codec"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "flate2",
  "serde_json",
@@ -2232,7 +2234,7 @@ dependencies = [
 
 [[package]]
 name = "voxj-voxcore"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "branded-id",
  "ty-math",
@@ -2243,7 +2245,7 @@ dependencies = [
 
 [[package]]
 name = "voxrender"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "branded-id",
  "png",
@@ -2254,7 +2256,7 @@ dependencies = [
 
 [[package]]
 name = "voxsmith"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "branded-id",
  "meshdoc",
@@ -2273,7 +2275,7 @@ dependencies = [
 
 [[package]]
 name = "voxsurface"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "branded-id",
  "ty-math",
@@ -2282,7 +2284,7 @@ dependencies = [
 
 [[package]]
 name = "vxl"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "branded-id",
  "clap",
