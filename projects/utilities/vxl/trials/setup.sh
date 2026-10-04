@@ -1,7 +1,7 @@
 #!/bin/sh
 # Prepares a round in $VOXEL_TRIALS, ~/voxel-trials by default. Each run's slot
-# loses its files and takes the skill the installed vxl prints. _runs/round.json
-# records what the round runs on.
+# loses its files and skills and takes the skill the installed vxl prints.
+# _runs/round.json records what the round runs on.
 # Usage: setup.sh [model] [effort]
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
@@ -21,9 +21,10 @@ untrusted=0
 for dir in $(jq -r '.[].dir' "$here/prompts.json"); do
   for run in "$dir" "$dir-2"; do
     slot=$root/$run
-    mkdir -p "$slot/.claude/skills/voxel-modeling"
+    rm -rf "$slot/.claude/skills"
+    mkdir -p "$slot/.claude/skills/vxl-model"
     find "$slot" -mindepth 1 -maxdepth 1 ! -name .claude -exec rm -rf {} +
-    vxl integration skill print voxel-modeling > "$slot/.claude/skills/voxel-modeling/SKILL.md"
+    vxl integration skill print vxl-model > "$slot/.claude/skills/vxl-model/SKILL.md"
     sed "s|@SNAPSHOT@|$root/_harness/snapshot.sh|" "$here/settings.json" > "$slot/.claude/settings.json"
     if ! jq -e --arg p "$slot" '.projects[$p].hasTrustDialogAccepted == true' "$HOME/.claude.json" > /dev/null; then
       untrusted=$((untrusted + 1))
@@ -36,7 +37,7 @@ jq -n \
   --arg date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --arg commit "$(git -C "$here" rev-parse HEAD)" \
   --argjson dirty "$dirty" \
-  --arg vxl "$(sed -n 's/^  vxl-version: "\(.*\)"$/\1/p' "$root/chair/.claude/skills/voxel-modeling/SKILL.md")" \
+  --arg vxl "$(sed -n 's/^  vxl-version: "\(.*\)"$/\1/p' "$root/chair/.claude/skills/vxl-model/SKILL.md")" \
   --arg claude "$(claude --version | cut -d ' ' -f 1)" \
   --arg model "$model" \
   --arg effort "$effort" \

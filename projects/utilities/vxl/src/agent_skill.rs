@@ -4,8 +4,8 @@ use clap::ValueEnum;
 #[derive(Clone, Copy, Debug, ValueEnum)]
 pub enum AgentSkill {
     /// Builds a voxel model from a prompt through `vxl sdf-doc`.
-    #[value(name = "voxel-modeling")]
-    VoxelModeling,
+    #[value(name = "vxl-model")]
+    VxlModel,
 }
 
 impl AgentSkill {
@@ -13,7 +13,7 @@ impl AgentSkill {
     /// printed the skill.
     pub fn skill_md(self) -> String {
         let (description, sections) = match self {
-            AgentSkill::VoxelModeling => (
+            AgentSkill::VxlModel => (
                 "Builds a voxel model from a prompt with vxl. Writes a TypeScript \
                  model file of shapes and materials in meters, voxelizes the model, \
                  renders review views, and revises the file until the model matches \
@@ -21,7 +21,7 @@ impl AgentSkill {
                  asked to make, model, or build a voxel model, prop, or scene, or an \
                  .sdfj, .voxj, glTF, or .glb file of one.",
                 [
-                    include_str!("../skills/voxel-modeling/workflow.md"),
+                    include_str!("../skills/vxl-model/workflow.md"),
                     include_str!("../docs/modeling-api.md"),
                 ],
             ),
@@ -96,8 +96,8 @@ mod tests {
     }
 
     #[test]
-    fn the_voxel_modeling_skill_holds_the_workflow_then_the_modeling_api() {
-        let skill_md = AgentSkill::VoxelModeling.skill_md();
+    fn the_vxl_model_skill_holds_the_workflow_then_the_modeling_api() {
+        let skill_md = AgentSkill::VxlModel.skill_md();
 
         let headings: Vec<_> = prose_lines(&skill_md)
             .into_iter()

@@ -1,7 +1,7 @@
 # Trials
 
 Step S12 of the [checklist](checklist.md) runs these prompts through the
-voxel-modeling skill.
+vxl-model skill.
 
 ## Running a trial
 

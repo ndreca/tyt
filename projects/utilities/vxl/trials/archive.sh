@@ -9,7 +9,7 @@ dest=$root/rounds/$1
 [ -d "$root/_runs" ] || { echo "no round in $root" >&2; exit 1; }
 [ ! -e "$dest" ] || { echo "$dest exists" >&2; exit 1; }
 mkdir -p "$dest/slots"
-cp "$root/chair/.claude/skills/voxel-modeling/SKILL.md" "$dest/SKILL.md"
+cp "$root/chair/.claude/skills/vxl-model/SKILL.md" "$dest/SKILL.md"
 
 for dir in $(jq -r '.[].dir' "$here/prompts.json"); do
   for run in "$dir" "$dir-2"; do

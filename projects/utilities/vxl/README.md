@@ -71,13 +71,13 @@ if (-not (Select-String -Quiet -Path $PROFILE -Pattern [regex]::Escape($line))) 
 
 ### Claude Code skill
 
-The `voxel-modeling` skill teaches [Claude Code](https://claude.com/claude-code)
-to build voxel models with vxl:
+The `vxl-model` skill teaches [Claude Code](https://claude.com/claude-code) to
+build voxel models with vxl:
 
 ```sh
 # Installs the skill for every project.
-mkdir -p ~/.claude/skills/voxel-modeling
-vxl integration skill print voxel-modeling > ~/.claude/skills/voxel-modeling/SKILL.md
+mkdir -p ~/.claude/skills/vxl-model
+vxl integration skill print vxl-model > ~/.claude/skills/vxl-model/SKILL.md
 ```
 
 A project's `.claude/skills` folder holds the skill for that project alone. The

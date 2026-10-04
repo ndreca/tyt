@@ -116,7 +116,7 @@ fn skill_install_help() -> String {
          With ~/.claude/skills in place of .claude/skills, the commands install the\n\
          skill for every project. A new Claude Code session loads a skill when a\n\
          prompt asks for what the skill does. The prompt \"make a voxel chair\"\n\
-         asks for voxel-modeling. Upgrading vxl takes a reprint.",
+         asks for vxl-model. Upgrading vxl takes a reprint.",
         installs.join("\n\n")
     )
 }

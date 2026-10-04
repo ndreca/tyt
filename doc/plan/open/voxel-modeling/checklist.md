@@ -78,8 +78,8 @@ Trials then show which operations Claude reaches for and where the loop fails.
 - [x] **S11. Skill.** Write the skill's workflow as the README lays it out. Move
       the workflow and the modeling API into vxl. The modeling API links to
       other pages by their repository URLs.
-      `vxl integration skill print voxel-modeling` prints the workflow and then
-      the modeling API as one `SKILL.md`. Move model evaluation to
+      `vxl integration skill print vxl-model` prints the workflow and then the
+      modeling API as one `SKILL.md`. Move model evaluation to
       `doc/ref/sdf-doc/` and the sdfj format into the sdfj crate's `docs/`.
 - [x] **S12. Trials.** Run the prompts in `trials.md` through the skill, each in
       a fresh session. Log each prompt in `trials.md` with the passes it took,

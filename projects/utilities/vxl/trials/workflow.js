@@ -1,7 +1,7 @@
 export const meta = {
   name: 'voxel-trials',
   description: 'Run each voxel-modeling trial prompt twice in headless Claude Code sessions, then analyze and compare the runs',
-  whenToUse: 'A round of the voxel-modeling skill trials, after setup.sh in projects/utilities/vxl/trials',
+  whenToUse: 'A round of the voxel-modeling trials, after setup.sh in projects/utilities/vxl/trials',
   phases: [
     { title: 'Run', detail: 'one headless claude -p session per trial directory, 12 at a time' },
     { title: 'Analyze', detail: 'one agent per prompt reads both runs and compares them' },
@@ -72,7 +72,7 @@ const RUN_ANALYSIS = {
   type: 'object',
   properties: {
     run: { type: 'integer', description: '1 or 2' },
-    skillLoaded: { type: 'boolean', description: 'the session loaded the voxel-modeling skill' },
+    skillLoaded: { type: 'boolean', description: 'the session loaded the vxl-model skill' },
     finished: { type: 'boolean', description: 'the session called the model done, rather than stopping on an error, a question, or the time cap' },
     passes: { type: 'integer', description: 'commands that ran sdf-doc voxelize' },
     failedPasses: { type: 'integer', description: 'passes whose command exited with an error' },
@@ -122,14 +122,14 @@ const TRIAL_ANALYSIS = {
 
 function analysisPrompt(t, runResults) {
   const runs = [t.dir, `${t.dir}-2`]
-  return `You analyze voxel-modeling trial ${t.num}. The prompt "${t.prompt}" ran twice, each time in a fresh headless Claude Code session that had only the voxel-modeling skill to go on. Run 1 worked in ~/voxel-trials/${runs[0]} and run 2 in ~/voxel-trials/${runs[1]}. The harness recorded each run in ~/voxel-trials/_runs/<run directory>: result.json holds the session's final message, turns, duration, cost, permission denials, and model usage; stderr.log holds stderr; passes/NN/ holds the renders and model file each pass left. The harness reported: ${JSON.stringify(runResults)}.
+  return `You analyze voxel-modeling trial ${t.num}. The prompt "${t.prompt}" ran twice, each time in a fresh headless Claude Code session that had only the vxl-model skill to go on. Run 1 worked in ~/voxel-trials/${runs[0]} and run 2 in ~/voxel-trials/${runs[1]}. The harness recorded each run in ~/voxel-trials/_runs/<run directory>: result.json holds the session's final message, turns, duration, cost, permission denials, and model usage; stderr.log holds stderr; passes/NN/ holds the renders and model file each pass left. The harness reported: ${JSON.stringify(runResults)}.
 
 This job is read-only. Never edit, create, or delete anything under ~/voxel-trials except the files this prompt tells you to write.
 
 For each run:
 1. Run \`python3 ${HARNESS}/summarize-transcript.py <run directory> > ~/voxel-trials/_runs/<run directory>/transcript.txt\` from the repository root, then read transcript.txt in full, in chunks with Read offsets when it is long. It holds the session's messages, commands, model edits, and reports, with images left out.
 2. Read the final model file. Look at the final renders with Read (front, right, top, hero, and any other PNG the session rendered last), and at the hero render in passes/01 to see how far the model came.
-3. The skill the sessions followed is ~/voxel-trials/${t.dir}/.claude/skills/voxel-modeling/SKILL.md. Before listing an operation as lacking, confirm in SKILL.md that the API lacks it. When the API has it and the session missed it, list it under skillMisses instead.
+3. The skill the sessions followed is ~/voxel-trials/${t.dir}/.claude/skills/vxl-model/SKILL.md. Before listing an operation as lacking, confirm in SKILL.md that the API lacks it. When the API has it and the session missed it, list it under skillMisses instead.
 ${t.stress ? `\nThe prompt was chosen to stress this: ${t.stress}. Report how each run fared against each point.\n` : ''}${t.check ? `\n${t.check} Stay read-only.\n` : ''}
 Judge each result from the renders the way the person who wrote the prompt would. Be concrete and critical, and keep each list item to one or two sentences. Then write the whole object you return as JSON to ~/voxel-trials/_runs/${t.dir}/analysis.json and return it.`
 }
@@ -189,7 +189,7 @@ const SYNTHESIS = {
   },
   required: ['operationsLacked', 'recurringFailures', 'skillMisses', 'reportDataLacked', 'colorIssues', 'consistency', 'worked', 'phase2'],
 }
-const synthesis = await agent(`You synthesize the voxel-modeling trials. ${trials.length} prompts, from single props to scenes and interiors, each ran twice in fresh headless Claude Code sessions with the voxel-modeling skill (~/voxel-trials/chair/.claude/skills/voxel-modeling/SKILL.md). Per-trial analyses follow as JSON. Merge duplicates across trials, rank each list by how many trials it touched and how badly, and cite trial numbers. Recommendations for Phase 2 cover operators, patterns, report data, render support, skill text, and the .sdfj format. Spot-check any claim you rely on heavily by reading ~/voxel-trials/_runs/<directory>/analysis.json or the transcript.txt beside it. Write the object you return as JSON to ~/voxel-trials/_runs/synthesis.json too.
+const synthesis = await agent(`You synthesize the voxel-modeling trials. ${trials.length} prompts, from single props to scenes and interiors, each ran twice in fresh headless Claude Code sessions with the vxl-model skill (~/voxel-trials/chair/.claude/skills/vxl-model/SKILL.md). Per-trial analyses follow as JSON. Merge duplicates across trials, rank each list by how many trials it touched and how badly, and cite trial numbers. Recommendations for Phase 2 cover operators, patterns, report data, render support, skill text, and the .sdfj format. Spot-check any claim you rely on heavily by reading ~/voxel-trials/_runs/<directory>/analysis.json or the transcript.txt beside it. Write the object you return as JSON to ~/voxel-trials/_runs/synthesis.json too.
 
 ${JSON.stringify(analyses)}`, { label: 'synthesize', phase: 'Synthesize', effort: 'high', schema: SYNTHESIS })
 

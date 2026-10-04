@@ -284,8 +284,8 @@ land.
 ## S11. Skill
 
 1. The modeling API moves to vxl's `docs/` and the workflow to vxl's
-   `skills/voxel-modeling/`. A published crate embeds only files inside the
-   crate's directory
+   `skills/vxl-model/`. A published crate embeds only files inside the crate's
+   directory
 2. `AgentSkill` in vxl's library builds each skill's `SKILL.md`. The
    frontmatter's `name` takes the skill's command-line value. `metadata` records
    the vxl version

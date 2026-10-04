@@ -135,8 +135,8 @@ A skill teaches Claude the loop because nothing else tells Claude the builder
 exists. vxl prints the skill as one `SKILL.md`:
 
 ```sh
-mkdir -p .claude/skills/voxel-modeling
-vxl integration skill print voxel-modeling > .claude/skills/voxel-modeling/SKILL.md
+mkdir -p .claude/skills/vxl-model
+vxl integration skill print vxl-model > .claude/skills/vxl-model/SKILL.md
 ```
 
 `SKILL.md` holds the workflow, then the modeling API with its example model. One

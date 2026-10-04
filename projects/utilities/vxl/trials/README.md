@@ -1,9 +1,9 @@
 # Voxel-modeling trials
 
-The trials run each prompt in `prompts.json` through the voxel-modeling skill
-twice, each time in a fresh headless Claude Code session. The voxel-modeling
-plan's [trials](../../../../doc/plan/open/voxel-modeling/trials.md) log the
-first round.
+The trials run each prompt in `prompts.json` through the vxl-model skill twice,
+each time in a fresh headless Claude Code session. The voxel-modeling plan's
+[trials](../../../../doc/plan/open/voxel-modeling/trials.md) log the first
+round.
 
 ## Layout
 
