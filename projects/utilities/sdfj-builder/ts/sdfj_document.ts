@@ -1,5 +1,6 @@
 import * as check from "./check.ts";
 import { type Entry, entry } from "./entry.ts";
+import { libraryNames } from "./library.ts";
 import { Material } from "./material.ts";
 import { Part } from "./part.ts";
 import { Pattern } from "./pattern.ts";
@@ -43,23 +44,59 @@ export interface SdfjDocument {
 
   /** The nodes at the top of the hierarchy. */
   rootNodes: number[];
+
+  /** The names of the entries, by names table. */
+  names: SdfjNames;
 }
 
+/** The names a document gives its entries. */
+export interface SdfjNames {
+  /** Names of `Shape3d` entries. */
+  shapes3d: Record<string, number>;
+
+  /** Names of `Shape2d` entries. */
+  shapes2d: Record<string, number>;
+
+  /** Names of `Material` entries. */
+  materials: Record<string, number>;
+
+  /** Names of `Pattern` entries. */
+  patterns: Record<string, number>;
+
+  /** Names of `Step` entries. */
+  steps: Record<string, number>;
+
+  /** Names of the nodes parts write. */
+  parts: Record<string, number>;
+}
+
+/** A value a document can give a name. */
+export type NamedValue = Material | Part | Pattern | Shape2d | Shape3d | Step;
+
 /**
- * The document of the model `name` whose default export is `list`. A value met
- * again reuses its entry.
+ * The document of the model `name` whose default export is `list` and whose
+ * named exports are `exports`. A value met again reuses its entry. Each entry
+ * takes the names of the exports holding it and the names it holds in its
+ * library.
  */
 export function sdfjDocument(
   name: string,
   list: readonly (Step | Part)[],
+  exports: readonly (readonly [string, NamedValue])[] = [],
 ): SdfjDocument {
   const writer = new SdfjWriter();
   writer.document.rootNodes.push(writer.node(name, undefined, undefined, list));
+  for (const [, value] of exports) {
+    writer.named(value);
+  }
+  writer.document.names = writer.names(exports);
   return writer.document;
 }
 
 /** A value with an entry in one of the document's tables. */
 type TableValue = Material | Pattern | Shades | Shape2d | Shape3d | Step;
+
+type NamesTable = keyof SdfjNames;
 
 /** The document so far and the index each written value took. */
 class SdfjWriter {
@@ -74,9 +111,71 @@ class SdfjWriter {
     objects: [],
     nodes: [],
     rootNodes: [],
+    names: {
+      shapes3d: {},
+      shapes2d: {},
+      materials: {},
+      patterns: {},
+      steps: {},
+      parts: {},
+    },
   };
 
   readonly #indices = new Map<TableValue | Part, number>();
+
+  /** Writes the entry `value` holds. */
+  named(value: NamedValue): void {
+    if (value instanceof Part) {
+      this.#part(value);
+    } else {
+      this.#index(value);
+    }
+  }
+
+  /** The names of the written entries. */
+  names(exports: readonly (readonly [string, NamedValue])[]): SdfjNames {
+    const tables = new Map<NamesTable, Map<string, number>>();
+    const add = (name: string, value: TableValue | Part) => {
+      const table = namesTable(value);
+      if (table === undefined) {
+        return;
+      }
+      const index = this.#indices.get(value) as number;
+      let names = tables.get(table);
+      if (names === undefined) {
+        names = new Map();
+        tables.set(table, names);
+      }
+      const taken = names.get(name);
+      if (taken !== undefined && taken !== index) {
+        const values = `${value.constructor.name}s`;
+        throw new Error(
+          `two different ${values} take the name ${JSON.stringify(name)}`,
+        );
+      }
+      names.set(name, index);
+    };
+    for (const value of this.#indices.keys()) {
+      for (const name of libraryNames(value)) {
+        add(name, value);
+      }
+    }
+    for (const [name, value] of exports) {
+      add(name, value);
+    }
+    const sorted = (table: NamesTable) =>
+      Object.fromEntries(
+        [...tables.get(table) ?? []].sort(([a], [b]) => a < b ? -1 : 1),
+      );
+    return {
+      shapes3d: sorted("shapes3d"),
+      shapes2d: sorted("shapes2d"),
+      materials: sorted("materials"),
+      patterns: sorted("patterns"),
+      steps: sorted("steps"),
+      parts: sorted("parts"),
+    };
+  }
 
   /** Writes a node, and an object when `list` holds steps. */
   node(
@@ -162,4 +261,27 @@ class SdfjWriter {
     }
     return [this.document.steps, Step.entry(value)];
   }
+}
+
+/** The names table holding the names of `value`'s entry, if any. */
+function namesTable(value: TableValue | Part): NamesTable | undefined {
+  if (value instanceof Material) {
+    return "materials";
+  }
+  if (value instanceof Part) {
+    return "parts";
+  }
+  if (value instanceof Pattern) {
+    return "patterns";
+  }
+  if (value instanceof Shape2d) {
+    return "shapes2d";
+  }
+  if (value instanceof Shape3d) {
+    return "shapes3d";
+  }
+  if (value instanceof Step) {
+    return "steps";
+  }
+  return undefined;
 }

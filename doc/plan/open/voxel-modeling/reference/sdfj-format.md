@@ -39,6 +39,9 @@ the document, and `vxl sdf-doc voxelize` reads it. The
   "rootNodes": [
     /* ... */
   ],
+  "names": {
+    /* ... */
+  },
 }
 ```
 
@@ -51,16 +54,19 @@ the document, and `vxl sdf-doc voxelize` reads it. The
    and hierarchy nodes
 4. An entry references another entry by its index in that entry's table
 5. `rootNodes` lists the nodes at the top of the hierarchy
+6. `names` gives entries the [names](#names) a model reads them by when the
+   document serves as a library
 
-A document holds every top-level key, even for an empty table. An unknown key
-fails to read.
+A document holds `version` and can leave out any other key. A reader takes a
+missing table or names map as empty, and a writer leaves each empty one out. An
+unknown key fails to read.
 
 ## Writing
 
 The builder walks the default export depth first and writes each value into its
-table after the values it references. A value met again reuses its entry, so a
-shape feeding several steps appears once. The walk leaves every reference within
-a table pointing to an earlier entry.
+table after the values it references. The named exports follow in name order. A
+value met again reuses its entry, so a shape feeding several steps appears once.
+The walk leaves every reference within a table pointing to an earlier entry.
 
 An option the model leaves out stays out of the entry, and vxl applies the
 default. The builder writes four shorthands in full:
@@ -155,13 +161,11 @@ references an entry in `shapes2d`.
 | `material` | `properties`      |
 | `shade`    | `shades`, `index` |
 
-1. `mat.oak` writes a `material` entry with the properties the
-   [library](model-evaluation.md#materials) holds for `oak`
-2. `properties` holds the material's properties by name. A boolean, a number, a
+1. `properties` holds the material's properties by name. A boolean, a number, a
    string, or an array of numbers writes as itself. `int` writes
    `{ "kind": "int", "value": ... }`, and `json` writes
    `{ "kind": "json", "value": ... }`
-3. A `shade` takes the shade at `index` from the `shades` entry it references.
+2. A `shade` takes the shade at `index` from the `shades` entry it references.
    The darkest shade takes index 0
 
 An entry in `shades` holds `base`, `count`, and `spread?`. The builder writes
@@ -224,6 +228,26 @@ in list order. Each object voxelizes on its own grid. A node holds `name`,
 A part in several lists writes one node that each parent lists. The builder
 writes the default export as one root node named after the model file's stem.
 
+## Names
+
+`names` holds a map per kind of value a model can name. Each map takes a name to
+an index. `shapes3d`, `shapes2d`, `materials`, `patterns`, and `steps` index
+their tables, and `parts` indexes `nodes`. One entry can take several names.
+
+The builder writes a name for each of the model's named exports, with each map
+in name order. An entry the model copies from a
+[library](modeling-api.md#libraries) keeps every name it holds there.
+
+```jsonc
+// export const walnut = material({ baseColor: "#5C4033" });
+// export const wood = walnut;
+// export default [];
+"materials": [{ "kind": "material", "properties": { "baseColor": "#5C4033" } }],
+"names": {
+  "materials": { "walnut": 0, "wood": 0 },
+},
+```
+
 ## Rules
 
 vxl reads a document only when the document follows the [structure](#structure),
@@ -236,6 +260,7 @@ the [entries](#entries), and these rules:
    entry's `base` comes before the shade in `materials`
 4. `rootNodes` lists each node at most once, and a root node sits in no
    `childNodes`
+5. Every name in `names` points into its table
 
 The [checks](model-evaluation.md#checks) cover the arguments' values.
 
@@ -260,7 +285,7 @@ export default [
 ];
 ```
 
-`chair.sdfj` holds:
+Built with the `materials` library, `chair.sdfj` holds:
 
 ```jsonc
 {
@@ -279,7 +304,6 @@ export default [
     { "kind": "mirror", "shape": 1, "axes": "xz" },
     { "kind": "box", "min": [-0.25, 0.425, -0.25], "max": [0.25, 0.475, 0.25] },
   ],
-  "shapes2d": [],
   "materials": [
     {
       "kind": "material",
@@ -309,11 +333,15 @@ export default [
   "objects": [{ "name": "chair", "steps": [0, 1] }],
   "nodes": [{ "name": "chair", "childObjects": [0], "childNodes": [] }],
   "rootNodes": [0],
+  "names": {
+    "materials": { "oak": 0 },
+  },
 }
 ```
 
 Each `oak` call writes its own `shades` entry. The palette merges the identical
-shades when vxl voxelizes.
+shades when vxl voxelizes. `mat.oak` copies the `oak` entry from the
+[`materials`](modeling-api.md#the-materials-library) library with its name.
 
 ### Forest
 
@@ -343,7 +371,7 @@ export default [
 ];
 ```
 
-`forest.sdfj` holds:
+Built with the `materials` library, `forest.sdfj` holds:
 
 ```jsonc
 {
@@ -357,7 +385,6 @@ export default [
       "radii": [0.05, 0.05, 0.075],
     },
   ],
-  "shapes2d": [],
   "materials": [
     {
       "kind": "material",
@@ -373,8 +400,6 @@ export default [
     },
     { "kind": "material", "properties": { "baseColor": "#C8B8A0" } },
   ],
-  "shades": [],
-  "patterns": [],
   "steps": [
     { "kind": "add", "name": "trunk", "shape": 0, "material": 0 },
     { "kind": "add", "name": "crown", "shape": 1, "material": 1 },
@@ -420,6 +445,9 @@ export default [
     { "name": "forest", "childObjects": [], "childNodes": [3, 4, 6] },
   ],
   "rootNodes": [7],
+  "names": {
+    "materials": { "bark": 0, "leaf": 1 },
+  },
 }
 ```
 

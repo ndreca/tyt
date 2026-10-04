@@ -24,8 +24,12 @@ image = { version = "0.25", default-features = false }
 jsonc-parser = { version = "0.33.1", features = ["serde"] }
 meshconv = "0.2.0"
 meshdoc = "0.2.0"
+sdfj = "0.1.0"
 sdfj-builder = "0.1.0"
+sdfj-codec = "0.1.0"
+sdfj-sdfcore = "0.1.0"
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 tempfile = "3.27"
 ty-math = "0.3.0"
 ty-preferences = "0.4.0"
@@ -45,8 +49,8 @@ voxsmith = { version = "0.4.0", default-features = false, features = [
 ] }
 
 [dev-dependencies]
-serde_json = "1"
 ty-math = { version = "0.3.0", default-features = false }
+voxsmith = { version = "0.4.0", default-features = false, features = ["sdf_doc"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

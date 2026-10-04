@@ -33,6 +33,11 @@ impl<TValue> SdfjMap<TValue> {
     pub fn into_entries(self) -> Vec<SdfjMapEntry<TValue>> {
         self.0
     }
+
+    /// Whether the map holds no entry.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
 }
 
 impl<TValue> Default for SdfjMap<TValue> {

@@ -51,7 +51,7 @@ land.
 1. The builder is the TypeScript package `sdfj-builder` in
    `projects/utilities`, apart from vxl for a later npm release. The
    TypeScript sits in `ts/`. `main.ts` takes the model path and the output
-   path and reads `library.json` from its own directory
+   path and reads `libraries.json` from its own directory
 2. The folder is also a crate with its Rust in `src/`. `SDFJ_BUILDER_FILES`
    embeds every file a run needs because a published vxl can include only
    files inside its own directory. A test checks the list against the folder
@@ -83,12 +83,12 @@ land.
     format's examples, and their tests compare the written documents with the
     format page's
 12. The builder holds no material names. `mat` types every name as a
-    `Material`, and the library vxl passes in decides which names it reads
+    `Material`, and the libraries vxl passes in decide which names it reads
 
 ## S3. Build command
 
 1. sdfj-builder holds each runtime's program and arguments in
-   `JavaScriptRuntime` and the library's path in `SDFJ_BUILDER_LIBRARY_PATH`.
+   `JavaScriptRuntime` and the libraries' path in `SDFJ_BUILDER_LIBRARIES_PATH`.
    vxl's code holds no path inside the builder's directory
 2. `--config` points Deno at the builder's `deno.json`, which keeps a config
    beside the model out of the run. Deno's write access covers every path
@@ -99,8 +99,7 @@ land.
 4. The builder writes the document inside the temporary directory. vxl then
    writes the output through `WriteFile`, which creates missing directories for
    every command's output
-5. vxl passes an empty library until S7 adds libraries
-6. A stand-in for `node` tests the run because `cargo test` runs without a
+5. A stand-in for `node` tests the run because `cargo test` runs without a
    JavaScript runtime installed. At S3, Node 24.15 and Deno 2.9 ran the builder
    through vxl by hand. Bun was not installed
 
@@ -194,3 +193,37 @@ land.
    them out
 8. The kind check reads every material in the document, whether a step reaches
    the material or not
+
+## S7. Libraries
+
+1. sdfcore holds each names table as `(String, U32Id)` pairs because the id
+   brands derive no traits. A generic struct deriving `Clone` would need its
+   brand to implement `Clone` too
+2. `names` lists its keys in the document's table order. `parts` maps to
+   `nodes` because a part writes one node
+3. Every table and names map can stay out of a document. serde reads a missing
+   table as empty and skips an empty one on write. The Rust types keep every
+   table. The builder converts at its edges: `sdfjJson` drops the empty tables
+   it writes, and `sdfjDocumentFromJson` fills in the tables a library lacks
+4. The builder writes the named exports in name order after the default export
+   because a module namespace lists its exports by name. The builder writes
+   each names table in name order too
+5. A `WeakMap` holds the library names of each value read from a library. Every
+   document that writes the value writes those names too. The writer gathers
+   the library names and the export names after the walk
+6. `lib` and `mat` read an entry through a getter on first use. The builder
+   never reads a library's unused entries. A library node that fails to read as
+   a part errors only when a model uses the part
+7. The builder reads a library part's steps before its child parts. A copied
+   part whose list interleaved steps and child parts keeps its node and object,
+   but its entries can take other indices
+8. vxl hands the builder `libraries.json`, an array of each library's `name`
+   and `document`. The name lets the builder's errors point to the library
+9. vxl loads the cascade's libraries only when a build lists one. sdfj-sdfcore
+   checks each listed library before the builder runs
+10. vxl embeds its built-in layer as the JSONC text `built_in.vxlconfig`. The
+    text parses through the code every `.vxlconfig` layer takes. A comment
+    beside each material shows the material's name
+11. Nothing prints a library's `description` yet
+12. vxl's tests take voxsmith's `sdf_doc` feature to sample every built-in
+    material with its default `shades`

@@ -1,10 +1,16 @@
 import type { Entry } from "../entry.ts";
+import type { Library } from "../library.ts";
 import { material } from "../material.ts";
 import type { Part } from "../part.ts";
 import { sphere } from "../primitives.ts";
 import { circle } from "../primitives2d.ts";
 import { extrude } from "../profiles.ts";
-import { type SdfjDocument, sdfjDocument } from "../sdfj_document.ts";
+import {
+  type NamedValue,
+  type SdfjDocument,
+  sdfjDocument,
+} from "../sdfj_document.ts";
+import { sdfjJson } from "../sdfj_json.ts";
 import type { Shape2d } from "../shape2d.ts";
 import type { Shape3d } from "../shape3d.ts";
 import { add, type Step } from "../step.ts";
@@ -34,6 +40,14 @@ export const DISK_ENTRY: Entry = { kind: "circle", center: [0, 0], radius: 1 };
 /** The document of a model whose default export is `list`. */
 export function document(list: readonly (Step | Part)[]): SdfjDocument {
   return sdfjDocument("model", list);
+}
+
+/** The library `name` whose document names each of `exports`. */
+export function library(
+  name: string,
+  exports: readonly (readonly [string, NamedValue])[],
+): Library {
+  return { name, document: sdfjJson(sdfjDocument(name, [], exports)) };
 }
 
 /** The `shapes3d` table of a model that adds `shape`. */

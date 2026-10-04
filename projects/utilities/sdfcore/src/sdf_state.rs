@@ -1,6 +1,6 @@
 use crate::{
     BSdfMaterial, BSdfNode, BSdfObject, BSdfPattern, BSdfShades, BSdfShape2d, BSdfShape3d,
-    BSdfStep, Error, Result, SdfEntryId, SdfMaterial, SdfNode, SdfObject, SdfPattern,
+    BSdfStep, Error, Result, SdfEntryId, SdfMaterial, SdfNames, SdfNode, SdfObject, SdfPattern,
     SdfPropertyValue, SdfShades, SdfShape2d, SdfShape3d, SdfStep, SdfStepMaterial, SdfValue,
 };
 use branded_id::{IdVec, IteratorExt, U32Id, UsizeId};
@@ -37,6 +37,10 @@ pub struct SdfState {
 
     /// The nodes at the top of the hierarchy.
     pub root_node_ids: Vec<U32Id<BSdfNode>>,
+
+    /// The names a model reads the entries by when the document serves as a
+    /// library.
+    pub names: SdfNames,
 }
 
 impl SdfState {
@@ -121,7 +125,39 @@ impl SdfState {
             }
         }
 
-        Ok(())
+        let names = &self.names;
+
+        check_names(
+            "shapes3d",
+            &names.shapes3d,
+            self.shapes3d.end(),
+            SdfEntryId::Shape3d,
+        )?;
+
+        check_names(
+            "shapes2d",
+            &names.shapes2d,
+            self.shapes2d.end(),
+            SdfEntryId::Shape2d,
+        )?;
+
+        check_names(
+            "materials",
+            &names.materials,
+            self.materials.end(),
+            SdfEntryId::Material,
+        )?;
+
+        check_names(
+            "patterns",
+            &names.patterns,
+            self.patterns.end(),
+            SdfEntryId::Pattern,
+        )?;
+
+        check_names("steps", &names.steps, self.steps.end(), SdfEntryId::Step)?;
+
+        check_names("parts", &names.parts, self.nodes.end(), SdfEntryId::Node)
     }
 
     /// The check of the entry at `entry_id`.
@@ -925,12 +961,41 @@ fn check_node(check: &EntryCheck, node: &SdfNode) -> Result<()> {
     check.node_ids(node.child_node_ids.iter().copied())
 }
 
+/// Checks that each of `names` appears once and points before `end_id`.
+fn check_names<TBrand>(
+    table: &'static str,
+    names: &[(String, U32Id<TBrand>)],
+    end_id: UsizeId<TBrand>,
+    to_entry_id: fn(U32Id<TBrand>) -> SdfEntryId,
+) -> Result<()> {
+    let mut seen = HashSet::with_capacity(names.len());
+
+    for (name, named_id) in names {
+        if !seen.insert(name.as_str()) {
+            return Err(Error::RepeatedName {
+                table,
+                name: name.clone(),
+            });
+        }
+
+        if named_id.to_usize_id() >= end_id {
+            return Err(Error::NameMissing {
+                table,
+                name: name.clone(),
+                entry_id: to_entry_id(*named_id),
+            });
+        }
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        Error, SdfEntryId, SdfMap, SdfMapEntry, SdfMaterial, SdfNode, SdfObject, SdfPattern,
-        SdfProperty, SdfPropertyValue, SdfShades, SdfShape3d, SdfState, SdfStep, SdfStepMaterial,
-        SdfValue,
+        Error, SdfEntryId, SdfMap, SdfMapEntry, SdfMaterial, SdfNames, SdfNode, SdfObject,
+        SdfPattern, SdfProperty, SdfPropertyValue, SdfShades, SdfShape3d, SdfState, SdfStep,
+        SdfStepMaterial, SdfValue,
     };
     use branded_id::{IdVec, U32Id};
     use ty_math::{TyAxis3, TyVector3F64};
@@ -1251,5 +1316,61 @@ mod tests {
                 parent_node_id: U32Id::from_u32(1),
             })
         );
+    }
+
+    #[test]
+    fn a_name_points_into_its_table() {
+        let mut state = state();
+
+        state.names = SdfNames {
+            materials: vec![
+                ("walnut".to_owned(), U32Id::from_u32(0)),
+                ("wood".to_owned(), U32Id::from_u32(0)),
+            ],
+            parts: vec![("chair".to_owned(), U32Id::from_u32(0))],
+            ..SdfNames::default()
+        };
+
+        state.validate().unwrap();
+
+        state
+            .names
+            .parts
+            .push(("arm".to_owned(), U32Id::from_u32(1)));
+
+        let error = state.validate().unwrap_err();
+
+        assert_eq!(
+            error,
+            Error::NameMissing {
+                table: "parts",
+                name: "arm".to_owned(),
+                entry_id: SdfEntryId::Node(U32Id::from_u32(1)),
+            }
+        );
+
+        assert_eq!(
+            error.to_string(),
+            "names.parts gives `arm` to nodes[1], past the end of nodes"
+        );
+    }
+
+    #[test]
+    fn a_repeated_name_errors() {
+        let mut state = state();
+
+        state.names.steps = vec![("seat".to_owned(), U32Id::from_u32(0)); 2];
+
+        let error = state.validate().unwrap_err();
+
+        assert_eq!(
+            error,
+            Error::RepeatedName {
+                table: "steps",
+                name: "seat".to_owned(),
+            }
+        );
+
+        assert_eq!(error.to_string(), "names.steps holds `seat` twice");
     }
 }

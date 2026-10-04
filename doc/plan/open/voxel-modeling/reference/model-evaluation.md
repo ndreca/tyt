@@ -12,9 +12,10 @@ links the articles it follows.
 `vxl sdf-doc build` turns a model file into an `.sdfj` document:
 
 1. The flags and profile merge into the [settings](#settings).
-2. vxl writes the builder's files and the [library](#materials) to a temporary
-   directory and runs the builder on the model under the runtime. The runtime
-   shares vxl's standard output and error.
+2. vxl reads the [libraries](#libraries) the settings list and writes them with
+   the builder's files to a temporary directory. vxl then runs the builder on
+   the model under the runtime. The runtime shares vxl's standard output and
+   error.
 3. The builder imports the model with the API in scope. The default export has
    to be an array of steps and parts.
 4. The builder writes the calls as the [`.sdfj` document](#the-sdfj-document)
@@ -46,7 +47,8 @@ does.
    load. The cascade holds no built-in profiles. A name reads from the last file
    supplying it.
 2. A profile holds the flags by camel-case name with their command-line values.
-   A build profile holds `runtime`. A voxelize profile holds `resolution` as an
+   A build profile holds `runtime` and `libraries` as an array of library
+   names. A voxelize profile holds `resolution` as an
    object of `reference` and `count`, `voxelSize`, `frame`, `fillMode`,
    `flatten`, and `report`. A voxelize profile sets at most one of `resolution`
    and `voxelSize`. Either profile can also hold a one-line `description`. An
@@ -62,6 +64,29 @@ does.
 The builder records the model and computes nothing. The
 [sdfj format](sdfj-format.md) sets the document. vxl expands and checks every
 value when it voxelizes.
+
+## Libraries
+
+1. `sdfDoc.build.libraries` defines libraries by name through the `.vxlconfig`
+   cascade, with vxl's built-in layer first. `files` maps a name to an optional
+   `description` and a `path`, which resolves against the directory of the
+   `.vxlconfig` holding it. `embedded` maps a name to an optional `description`
+   and an `.sdfj` `document`.
+2. A name reads from the last layer defining it in either group. One layer
+   defining a name in both groups errors.
+3. vxl's built-in layer embeds `materials`, which names a material for each name
+   the modeling API lists.
+4. vxl reads each library the settings list and checks it by the
+   [sdfj format](sdfj-format.md#rules). The builder reads the libraries in list
+   order, and a later library wins a name.
+5. `lib` and `mat` read an entry the first time the model uses its name. One
+   library entry gives one value however often the model uses the entry.
+   Reading an entry also reads every entry it references.
+6. A library part reads from its node. The node's object gives the part's steps
+   in order, and the node's children give its child parts.
+7. The builder writes a library value as it writes any value. A written entry
+   takes each name it holds in its library and the name of each named export
+   holding it.
 
 ## Sampling
 
@@ -490,17 +515,12 @@ A pattern length left out takes its default count of cells times `g`.
    `vec-N-float`. `int` writes `int` or `vec-N-int`, and `json` writes `json`. A
    material leaving a custom property out takes the kind's empty value: 0, a
    zero vector, `false`, `""`, or `null`.
-4. The library is a JSON document that maps each name to its properties in the
-   [sdfj format's](sdfj-format.md#materials) `properties` form. vxl embeds the
-   built-in library. Each `.vxlconfig` in the cascade can add a name or replace
-   one at `sdfDoc.library`. `mat` copies a name's properties into the `.sdfj`
-   document as the model builds.
-5. `shades` converts the base color to
+4. `shades` converts the base color to
    [Oklab](https://bottosson.github.io/posts/oklab/), steps its lightness, and
    converts back. Shade `i` of `count` steps the lightness by
    `(i - (count - 1) / 2) * spread`. A step of 0 keeps the base color. Every
    other property and the alpha carry over.
-6. Two materials with identical properties merge into one palette material.
+5. Two materials with identical properties merge into one palette material.
 
 ## The voxj document
 
@@ -573,15 +593,21 @@ Each command stops at its first failed check. A voxelize check reports the step
 it belongs to by its path of part names.
 
 1. `vxl sdf-doc build` checks its flags and profile. `--runtime` takes `node`,
-   `bun`, or `deno`, and `--profile` reads a name the cascade holds. A runtime
-   that fails to start stops the build with the system's message.
+   `bun`, or `deno`, and `--profile` reads a name the cascade holds. `--library`
+   and `libraries` read names the cascade defines, and each library they list
+   follows the sdfj format's rules. A runtime that fails to start stops the
+   build with the system's message.
 2. While the model builds, the builder checks the default export and what the
    document cannot hold. The default export is an array of steps and parts.
    Each argument takes the type the modeling API declares, and an options
    object holds only the options its call lists. Numbers are finite, `json`
-   holds only JSON values, and `mat` reads only the library's names. `shades`
-   takes a whole count above zero, and a boolean takes at least one shape. An
-   error the model throws stops the build with its message.
+   holds only JSON values, and `lib` and `mat` read only the names the
+   libraries hold. `shades` takes a whole count above zero, and a boolean takes
+   at least one shape. Each named export holds a material, a pattern, a shape,
+   a step, a part, or a function. Two different entries of one kind take
+   different names. A library part's node holds at most one object. That object
+   takes the node's name, lists at least one step, and belongs to no other
+   node. An error the model throws stops the build with its message.
 3. `vxl sdf-doc voxelize` checks its flags and profile against the values
    `vxl mesh-doc voxelize` lists. `--voxel-size` reads above zero,
    `--resolution` takes a whole number above zero, and the two flags exclude

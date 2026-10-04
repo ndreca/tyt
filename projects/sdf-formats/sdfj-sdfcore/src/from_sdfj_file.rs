@@ -1,14 +1,14 @@
 use crate::{Error, Result};
 use branded_id::{IdVec, U32Id};
 use sdfcore::{
-    SdfAxes2d, SdfAxes3d, SdfCaps, SdfMain, SdfMap, SdfMapEntry, SdfMaterial, SdfNode, SdfObject,
-    SdfPattern, SdfProperty, SdfPropertyValue, SdfShades, SdfShape2d, SdfShape3d, SdfSide,
-    SdfState, SdfStep, SdfStepMaterial, SdfValue,
+    SdfAxes2d, SdfAxes3d, SdfCaps, SdfMain, SdfMap, SdfMapEntry, SdfMaterial, SdfNames, SdfNode,
+    SdfObject, SdfPattern, SdfProperty, SdfPropertyValue, SdfShades, SdfShape2d, SdfShape3d,
+    SdfSide, SdfState, SdfStep, SdfStepMaterial, SdfValue,
 };
 use sdfj::{
-    SDFJ_VERSION, SdfjAxes2d, SdfjAxes3d, SdfjAxis, SdfjCaps, SdfjFile, SdfjIntValue, SdfjMaterial,
-    SdfjNode, SdfjObject, SdfjPattern, SdfjPropertyValue, SdfjShades, SdfjShape2d, SdfjShape3d,
-    SdfjSide, SdfjStep, SdfjTaggedValue, SdfjValue,
+    SDFJ_VERSION, SdfjAxes2d, SdfjAxes3d, SdfjAxis, SdfjCaps, SdfjFile, SdfjIntValue, SdfjMap,
+    SdfjMapEntry, SdfjMaterial, SdfjNode, SdfjObject, SdfjPattern, SdfjPropertyValue, SdfjShades,
+    SdfjShape2d, SdfjShape3d, SdfjSide, SdfjStep, SdfjTaggedValue, SdfjValue,
 };
 use std::result::Result as StdResult;
 use ty_math::{TyAxis3, TyVector2F64, TyVector3F64};
@@ -44,6 +44,14 @@ pub fn from_sdfj_file(file: &SdfjFile) -> Result<SdfMain> {
         objects: entries("objects", &file.objects, sdf_object_from_sdfj_object)?,
         nodes: entries("nodes", &file.nodes, sdf_node_from_sdfj_node)?,
         root_node_ids,
+        names: SdfNames {
+            shapes3d: names("shapes3d", &file.names.shapes3d)?,
+            shapes2d: names("shapes2d", &file.names.shapes2d)?,
+            materials: names("materials", &file.names.materials)?,
+            patterns: names("patterns", &file.names.patterns)?,
+            steps: names("steps", &file.names.steps)?,
+            parts: names("parts", &file.names.parts)?,
+        },
     };
 
     Ok(SdfMain::new(state)?)
@@ -61,6 +69,20 @@ fn entries<TSdfj, TBrand, TSdf>(
         .enumerate()
         .map(|(index, entry)| {
             convert(entry).map_err(|message| Error::invalid(format!("{table}[{index}] {message}")))
+        })
+        .collect()
+}
+
+/// Converts each name of the names table `table`. A failure starts with the
+/// name's place.
+fn names<TBrand>(table: &str, map: &SdfjMap<usize>) -> Result<Vec<(String, U32Id<TBrand>)>> {
+    map.entries()
+        .iter()
+        .map(|SdfjMapEntry { key, value }| {
+            let named_id = wire_id(*value)
+                .map_err(|message| Error::invalid(format!("names.{table} `{key}` {message}")))?;
+
+            Ok((key.clone(), named_id))
         })
         .collect()
 }
@@ -911,7 +933,7 @@ mod tests {
     use crate::{CHAIR_SDFJ, EVERY_KIND_SDFJ, Error, FOREST_SDFJ, from_sdfj_file, to_sdfj_file};
     use branded_id::U32Id;
     use sdfcore::{Error as SdfError, SdfAxes3d, SdfEntryId, SdfShape3d, SdfStep, SdfStepMaterial};
-    use sdfj::{SdfjFile, SdfjStep};
+    use sdfj::{SdfjFile, SdfjMap, SdfjMapEntry, SdfjStep};
     use sdfj_codec::{DependenciesImpl, from_sdfj_file_bytes};
 
     /// The chair document.
@@ -1006,6 +1028,36 @@ mod tests {
             from_sdfj_file(&file).unwrap_err().to_string(),
             "rootNodes references index 4294967296, past the id space"
         );
+
+        let mut file = chair();
+
+        file.names.parts = SdfjMap::new(vec![SdfjMapEntry {
+            key: "chair".to_owned(),
+            value: 1 << 32,
+        }]);
+
+        assert_eq!(
+            from_sdfj_file(&file).unwrap_err().to_string(),
+            "names.parts `chair` references index 4294967296, past the id space"
+        );
+    }
+
+    #[test]
+    fn names_keep_their_order_and_entries() {
+        let file = from_sdfj_file_bytes(&DependenciesImpl, EVERY_KIND_SDFJ.as_bytes()).unwrap();
+
+        let names = from_sdfj_file(&file).unwrap().into_state().names;
+
+        assert_eq!(
+            names.materials,
+            [
+                ("rune".to_owned(), U32Id::from_u32(0)),
+                ("glass".to_owned(), U32Id::from_u32(1)),
+                ("stone".to_owned(), U32Id::from_u32(0)),
+            ]
+        );
+
+        assert_eq!(names.parts, [("part".to_owned(), U32Id::from_u32(0))]);
     }
 
     #[test]

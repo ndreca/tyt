@@ -1,24 +1,26 @@
 use crate::{CreateTempDir, ReadFile, Result, RunProgram, WriteFile};
-use sdfj_builder::{JavaScriptRuntime, SDFJ_BUILDER_FILES, SDFJ_BUILDER_LIBRARY_PATH};
+use sdfj_builder::{JavaScriptRuntime, SDFJ_BUILDER_FILES, SDFJ_BUILDER_LIBRARIES_PATH};
 use std::{
     io::{Error as IOError, ErrorKind},
     path::Path,
 };
 
-/// Builds `model` under `runtime` into the document at `output`. A failed run
-/// leaves `output` untouched.
+/// Builds `model` under `runtime` into the document at `output`. The builder
+/// reads its libraries from the JSON `libraries`. A failed run leaves `output`
+/// untouched.
 pub fn run_sdfj_builder(
     dependencies: &(impl CreateTempDir + ReadFile + RunProgram + WriteFile),
     runtime: JavaScriptRuntime,
     model: &Path,
     output: &Path,
+    libraries: &[u8],
 ) -> Result<()> {
     let directory = dependencies.create_temp_dir()?;
     let directory = directory.path();
     for file in SDFJ_BUILDER_FILES {
         dependencies.write_file(&directory.join(file.path), file.text.as_bytes())?;
     }
-    dependencies.write_file(&directory.join(SDFJ_BUILDER_LIBRARY_PATH), b"{}")?;
+    dependencies.write_file(&directory.join(SDFJ_BUILDER_LIBRARIES_PATH), libraries)?;
 
     let program = runtime.program();
     let document = directory.join("document.sdfj");
@@ -61,7 +63,7 @@ mod tests {
         CreateTempDir, DependenciesImpl, ReadFile, RunProgram, WriteFile,
         commands::run_sdfj_builder,
     };
-    use sdfj_builder::{JavaScriptRuntime, SDFJ_BUILDER_FILES, SDFJ_BUILDER_LIBRARY_PATH};
+    use sdfj_builder::{JavaScriptRuntime, SDFJ_BUILDER_FILES, SDFJ_BUILDER_LIBRARIES_PATH};
     use std::{
         cell::RefCell,
         ffi::OsString,
@@ -72,6 +74,8 @@ mod tests {
     use tempfile::TempDir;
 
     const DOCUMENT: &str = "{\"version\":1}\n";
+
+    const LIBRARIES: &str = "[{\"name\":\"materials\",\"document\":{}}]";
 
     /// Real files and a stand-in for `node`.
     struct StandIn {
@@ -121,8 +125,8 @@ mod tests {
                 let text = fs::read_to_string(directory.join(file.path)).unwrap();
                 assert_eq!(text, file.text, "{}", file.path);
             }
-            let library = fs::read_to_string(directory.join(SDFJ_BUILDER_LIBRARY_PATH));
-            assert_eq!(library.unwrap(), "{}");
+            let libraries = fs::read_to_string(directory.join(SDFJ_BUILDER_LIBRARIES_PATH));
+            assert_eq!(libraries.unwrap(), LIBRARIES);
 
             fs::write(document, DOCUMENT).unwrap();
             *self.directory.borrow_mut() = Some(directory.to_owned());
@@ -136,6 +140,7 @@ mod tests {
             JavaScriptRuntime::Node,
             Path::new("chair.ts"),
             &out.path().join("models/chair.sdfj"),
+            LIBRARIES.as_bytes(),
         )
         .err()
         .map(|error| error.to_string())

@@ -57,7 +57,7 @@ where the loop fails.
       corners filling exactly its cells.
 - [x] **S6. Materials.** The named and custom properties with their checks,
       `shades`, and the patterns.
-- [ ] **S7. Libraries.** Libraries as [decision 17](README.md#decisions) sets
+- [x] **S7. Libraries.** Libraries as [decision 17](README.md#decisions) sets
       them:
   1. The `names` table in sdfj, sdfcore, and the bridge
   2. The builder writing names, reading the libraries vxl hands it, and copying

@@ -13,8 +13,8 @@ mod tests {
         to_sdfj_pretty_file_bytes,
     };
     use sdfj::{
-        SDFJ_VERSION, SdfjFile, SdfjMap, SdfjMapEntry, SdfjMaterial, SdfjNode, SdfjObject,
-        SdfjPropertyValue, SdfjShape3d, SdfjStep, SdfjTaggedValue, SdfjValue,
+        SDFJ_VERSION, SdfjFile, SdfjMap, SdfjMapEntry, SdfjMaterial, SdfjNames, SdfjNode,
+        SdfjObject, SdfjPropertyValue, SdfjShape3d, SdfjStep, SdfjTaggedValue, SdfjValue,
     };
 
     /// One sphere under one material, as one part.
@@ -52,6 +52,7 @@ mod tests {
                 child_nodes: Vec::new(),
             }],
             root_nodes: vec![0],
+            names: SdfjNames::default(),
         }
     }
 

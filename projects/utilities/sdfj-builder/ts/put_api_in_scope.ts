@@ -1,11 +1,11 @@
 import * as api from "./api.ts";
-import { libraryMaterials } from "./library.ts";
+import { type Library, libraryGlobals } from "./library.ts";
 
-/** Puts the API on `globalThis`, with `mat` reading `library`. */
-export function putApiInScope(library: unknown): void {
-  const globals: Pick<typeof globalThis, keyof typeof api | "mat"> = {
+/** Puts the API on `globalThis`, with `lib` and `mat` reading `libraries`. */
+export function putApiInScope(libraries: readonly Library[]): void {
+  const globals: Pick<typeof globalThis, keyof typeof api | "lib" | "mat"> = {
     ...api,
-    mat: libraryMaterials(library),
+    ...libraryGlobals(libraries),
   };
   Object.assign(globalThis, globals);
 }

@@ -1,12 +1,13 @@
 use crate::{
-    SdfjMaterial, SdfjNode, SdfjObject, SdfjPattern, SdfjShades, SdfjShape2d, SdfjShape3d, SdfjStep,
+    SdfjMaterial, SdfjNames, SdfjNode, SdfjObject, SdfjPattern, SdfjShades, SdfjShape2d,
+    SdfjShape3d, SdfjStep,
 };
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 /// The root of an SDF Json document. Each table holds one kind of value a
-/// model can share, and entries reference each other by index. Every key is
-/// required.
+/// model can share, and entries reference each other by index. A write leaves
+/// each empty table out, and a read takes a missing one as empty.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(
@@ -19,39 +20,83 @@ pub struct SdfjFile {
     pub version: u32,
 
     /// The 3D shapes.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub shapes3d: Vec<SdfjShape3d>,
 
     /// The 2D shapes.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub shapes2d: Vec<SdfjShape2d>,
 
     /// The materials.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub materials: Vec<SdfjMaterial>,
 
     /// The `shades` calls.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub shades: Vec<SdfjShades>,
 
     /// The patterns.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub patterns: Vec<SdfjPattern>,
 
     /// The steps.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub steps: Vec<SdfjStep>,
 
     /// The parts' objects.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub objects: Vec<SdfjObject>,
 
     /// The parts' nodes.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub nodes: Vec<SdfjNode>,
 
     /// Indices into [`nodes`](SdfjFile::nodes): the nodes at the top of the
     /// hierarchy.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub root_nodes: Vec<usize>,
+
+    /// The names a model reads the entries by when the document serves as a
+    /// library.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "SdfjNames::is_empty")
+    )]
+    pub names: SdfjNames,
 }
 
 #[cfg(all(test, feature = "serde"))]
 mod tests {
     use crate::{
-        SdfjFile, SdfjIntValue, SdfjMaterial, SdfjPropertyValue, SdfjStep, SdfjTaggedValue,
-        SdfjValue,
+        SdfjFile, SdfjIntValue, SdfjMapEntry, SdfjMaterial, SdfjPropertyValue, SdfjStep,
+        SdfjTaggedValue, SdfjValue,
     };
     use serde_json::{Value, json};
 
@@ -86,6 +131,14 @@ mod tests {
             "objects": [{ "name": "chair", "steps": [0, 1] }],
             "nodes": [{ "name": "chair", "pivot": [0, 0, 0], "childObjects": [0], "childNodes": [] }],
             "rootNodes": [0],
+            "names": {
+                "shapes3d": { "leg": 0 },
+                "shapes2d": {},
+                "materials": { "walnut": 0, "wood": 0 },
+                "patterns": {},
+                "steps": { "legs": 0 },
+                "parts": { "chair": 0 },
+            },
         })
     }
 
@@ -132,6 +185,20 @@ mod tests {
                 pattern: Some(0),
             }
         );
+
+        assert_eq!(
+            file.names.materials.entries(),
+            [
+                SdfjMapEntry {
+                    key: "walnut".to_owned(),
+                    value: 0,
+                },
+                SdfjMapEntry {
+                    key: "wood".to_owned(),
+                    value: 0,
+                },
+            ]
+        );
     }
 
     #[test]
@@ -152,16 +219,52 @@ mod tests {
         let documents = [
             chair_with(|chair| chair["extra"] = json!([])),
             chair_with(|chair| {
-                chair.as_object_mut().unwrap().remove("shapes2d");
+                chair.as_object_mut().unwrap().remove("version");
             }),
             chair_with(|chair| chair["shapes3d"][3]["center"] = json!([0, 0, 0])),
             chair_with(|chair| chair["nodes"][0]["extra"] = json!(1)),
             chair_with(|chair| chair["shades"][0]["extra"] = json!(1)),
+            chair_with(|chair| chair["names"]["nodes"] = json!({})),
         ];
 
         for document in documents {
             assert!(serde_json::from_value::<SdfjFile>(document).is_err());
         }
+    }
+
+    #[test]
+    fn a_missing_table_or_names_map_reads_as_empty() {
+        let file: SdfjFile = serde_json::from_value(json!({ "version": 1 })).unwrap();
+
+        assert!(file.shapes3d.is_empty());
+        assert!(file.root_nodes.is_empty());
+        assert!(file.names.is_empty());
+
+        let chair = chair_with(|chair| {
+            chair["names"].as_object_mut().unwrap().remove("parts");
+        });
+
+        let file: SdfjFile = serde_json::from_value(chair).unwrap();
+
+        assert!(file.names.parts.is_empty());
+    }
+
+    #[test]
+    fn a_write_leaves_each_empty_table_and_names_map_out() {
+        let file: SdfjFile = serde_json::from_value(chair()).unwrap();
+
+        let value = serde_json::to_value(&file).unwrap();
+
+        assert_eq!(value.get("shapes2d"), None);
+
+        assert_eq!(value["names"].get("patterns"), None);
+
+        let empty: SdfjFile = serde_json::from_value(json!({ "version": 1 })).unwrap();
+
+        assert_eq!(
+            serde_json::to_value(&empty).unwrap(),
+            json!({ "version": 1 })
+        );
     }
 
     #[test]
@@ -189,6 +292,7 @@ mod tests {
         let documents = [
             chair_with(|chair| chair["steps"][0]["shape"] = json!(2.0)),
             chair_with(|chair| chair["rootNodes"] = json!([-1])),
+            chair_with(|chair| chair["names"]["steps"]["legs"] = json!("0")),
         ];
 
         for document in documents {

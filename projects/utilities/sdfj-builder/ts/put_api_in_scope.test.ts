@@ -3,11 +3,14 @@ import * as api from "./api.ts";
 import { putApiInScope } from "./put_api_in_scope.ts";
 
 Deno.test("putApiInScope puts every API name on globalThis", () => {
-  putApiInScope({});
+  putApiInScope([]);
   for (const [name, value] of Object.entries(api)) {
     assert.equal(Reflect.get(globalThis, name), value, name);
   }
   assert.throws(() => globalThis.mat.oak, {
-    message: 'mat has no material "oak"',
+    message: 'mat has no material "oak" because the build reads no library',
+  });
+  assert.throws(() => globalThis.lib.parts.stool, {
+    message: 'lib.parts has no part "stool" because the build reads no library',
   });
 });

@@ -15,6 +15,7 @@ what each call computes.
 ```sh
 # chair.sdfj, then chair.voxj at 2.5 cm per voxel
 vxl sdf-doc build chair.ts
+  --library materials
 vxl sdf-doc voxelize chair.sdfj
   --voxel-size 0.025
   --report
@@ -25,9 +26,11 @@ vxl sdf-doc voxelize chair.sdfj
 
 1. `[output]` sets the document's path. The path defaults to the model's path
    with an `.sdfj` extension
-2. `--runtime <runtime>` runs the model under `node`, `bun`, or `deno` and
+2. `--library <library>` lists a [library](#libraries) the model reads, such as
+   vxl's [`materials`](#the-materials-library). The flag repeats
+3. `--runtime <runtime>` runs the model under `node`, `bun`, or `deno` and
    defaults to `node`. The runtime has to be installed
-3. `--profile <profile>` applies saved flags from a [profile](#profiles)
+4. `--profile <profile>` applies saved flags from a [profile](#profiles)
 
 `vxl sdf-doc voxelize` samples the document on a [voxel grid](#coordinates) and
 writes a voxj document. Its flags follow
@@ -70,7 +73,11 @@ models can then share one profile's settings:
   "sdfDoc": {
     "build": {
       "profiles": {
-        "bun": { "description": "Models under Bun", "runtime": "bun" },
+        "bun": {
+          "description": "Models under Bun",
+          "libraries": ["materials"],
+          "runtime": "bun",
+        },
       },
     },
     "voxelize": {
@@ -95,12 +102,12 @@ vxl sdf-doc voxelize lantern.sdfj
   --profile props
 ```
 
-A build profile takes `runtime`. A voxelize profile takes `resolution` or
-`voxelSize`, `frame`, `fillMode`, `flatten`, and `report`. Either takes an
-optional `description`. Each flag key takes its flag's values. The output and
-the encoding flags stay on the command line. A flag on the command line
-overrides the profile, and either size flag replaces both `resolution` and
-`voxelSize`. The `.vxlconfig` files load in
+A build profile takes `libraries` and `runtime`. A voxelize profile takes
+`resolution` or `voxelSize`, `frame`, `fillMode`, `flatten`, and `report`.
+Either takes an optional `description`. Each flag key takes its flag's values.
+The output and the encoding flags stay on the command line. A flag on the
+command line overrides the profile, and either size flag replaces both
+`resolution` and `voxelSize`. The `.vxlconfig` files load in
 [`mesh-doc voxelize`'s cascade](../../vxl-commands/reference/mesh-doc/voxelize.md#profiles).
 `vxl profile sdf-doc build list` and `vxl profile sdf-doc voxelize list` print
 the profiles.
@@ -121,6 +128,9 @@ holds no voxel size.
 
 A larger model can split across files. A file imports another by its relative
 path with the `.ts` extension. Every file sees the names on this page.
+
+A named export gives its value a name in the `.sdfj` document. The document can
+then serve as a [library](#libraries).
 
 ## Coordinates
 
@@ -581,7 +591,8 @@ interface Properties {
 type Value = boolean | number | string | number[] | IntValue | JsonValue;
 ```
 
-1. `mat` holds the [library](#library) by name, such as `mat.oak` or `mat.ruby`.
+1. `mat` holds the materials of the build's [libraries](#libraries) by name,
+   such as `mat.oak` or `mat.ruby`.
 2. `material` makes a material from the key/value properties a voxj palette
    holds. The eight listed properties follow voxj's
    [glTF conventions](../../../../../projects/voxel-formats/voxj/docs/voxel-json-file-format.md#gltf-conventions)
@@ -616,7 +627,9 @@ const chest = material({
 });
 ```
 
-### Library
+### The materials library
+
+vxl defines the `materials` library, which names these materials:
 
 | Group  | Names                                                                   |
 | ------ | ----------------------------------------------------------------------- |
@@ -631,9 +644,8 @@ const chest = material({
 The metals are fully metallic, the gems are smooth and saturated, and the light
 group glows. The gems, `ice`, and `water` also transmit light at their own
 `ior`. Velvet, painted wood, and anything else the library lacks take a custom
-`material`. vxl holds the library's values. A `.vxlconfig` can add a name or
-replace one at `sdfDoc.library`. `vxl sdf-doc build` copies each name's values
-into the `.sdfj` document. A library edit takes effect at the next build.
+`material`. A `.vxlconfig` can replace `materials` as it replaces any
+[library](#libraries).
 
 ### Patterns
 
@@ -698,6 +710,89 @@ voxel size.
    differ.
 7. `checker` alternates its materials over cubes `size` wide. `size` defaults to
    1 cell.
+
+## Libraries
+
+A library shares named entries between models. `lib` holds the entries of the
+build's libraries by kind and name. `mat` holds `lib.materials`:
+
+```ts
+const lib: {
+  shapes3d: Record<string, Shape3d>;
+  shapes2d: Record<string, Shape2d>;
+  materials: Record<string, Material>;
+  patterns: Record<string, Pattern>;
+  steps: Record<string, Step>;
+  parts: Record<string, Part>;
+};
+```
+
+```ts
+export default [
+  part("left", { offset: [-0.5, 0, 0] }, [lib.parts.stool]),
+  part("right", { offset: [0.5, 0, 0] }, [lib.parts.stool]),
+  add("counter", box([-1, 0.9, -0.3], [1, 0.95, 0.3]), mat.marble),
+];
+```
+
+1. `--library` and a build profile's `libraries` list the libraries a build
+   reads. A later library wins a name. A build that lists none reads no library
+2. Reading a name no listed library holds errors
+3. Using an entry copies the entry, every entry it references, and their names
+   into the model's `.sdfj` document. The document then voxelizes without the
+   library
+4. A library edit takes effect at the next build
+
+Every built `.sdfj` document can serve as a library. A model file's named
+exports name their materials, patterns, shapes, steps, and parts in the
+document. An exported function names nothing. Any other named export errors.
+Exporting the array from `shades` errors, but each shade can take its own
+export. A model that exports its own `oak` and also uses `mat.oak` errors
+because two different materials take one name.
+
+```ts
+// woods.ts, built into woods.sdfj
+export const walnut = material({ baseColor: "#5C4033", roughness: 0.6 });
+export const stool = part("stool", {}, [
+  add("seat", cylinder([0, 0.4, 0], [0, 0.44, 0], 0.2), walnut),
+]);
+
+export default [stool];
+```
+
+A `.vxlconfig` defines libraries by name at `sdfDoc.build.libraries`. `files`
+holds each library as the `path` of an `.sdfj` file relative to the
+`.vxlconfig`. `embedded` holds each library's `document` inline. Either takes
+an optional `description`. A later `.vxlconfig` in the [cascade](#profiles)
+replaces a library of the same name in either group:
+
+```jsonc
+{
+  "sdfDoc": {
+    "build": {
+      "libraries": {
+        "files": {
+          "woods": {
+            "description": "Stools and woods",
+            "path": "libraries/woods.sdfj",
+          },
+        },
+        "embedded": {
+          "fabrics": {
+            "description": "Velvet",
+            "document": {
+              /* ... */
+            },
+          },
+        },
+      },
+      "profiles": {
+        "bar": { "libraries": ["materials", "woods", "fabrics"] },
+      },
+    },
+  },
+}
+```
 
 ## Report
 

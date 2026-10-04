@@ -1,6 +1,9 @@
 use crate::{
     Dependencies, Result, cli_value_parser,
-    commands::{SdfDocBuildProfile, load_sdf_doc_build_profile_set, run_sdfj_builder},
+    commands::{
+        SdfDocBuildProfile, load_sdf_doc_build_profile_set, run_sdfj_builder,
+        sdfj_builder_libraries,
+    },
 };
 use clap::Parser;
 use sdfj_builder::JavaScriptRuntime;
@@ -18,6 +21,13 @@ pub struct SdfDocBuild {
     /// `.sdfj` extension.
     #[arg(value_name = "output")]
     output: Option<PathBuf>,
+
+    /// A library the model reads through `lib` and `mat`. The flag repeats, and
+    /// a later library wins a name. The flag replaces the profile's
+    /// `libraries`. vxl defines `materials`, and each `.vxlconfig` can define
+    /// more at `sdfDoc.build.libraries`.
+    #[arg(value_name = "library", long)]
+    library: Vec<String>,
 
     /// The runtime that runs the model, which has to be installed. Defaults to
     /// `node`.
@@ -48,12 +58,25 @@ impl SdfDocBuild {
             None => SdfDocBuildProfile::default(),
         };
 
+        let (origin, libraries) = self.libraries(&profile);
+        let libraries = sdfj_builder_libraries(&dependencies, origin, libraries)?;
+
         run_sdfj_builder(
             &dependencies,
             self.runtime(&profile),
             &self.model,
             &self.output(),
+            &libraries,
         )
+    }
+
+    /// The setting that lists the build's libraries, and the libraries it lists.
+    fn libraries<'a>(&'a self, profile: &'a SdfDocBuildProfile) -> (&'static str, &'a [String]) {
+        if self.library.is_empty() {
+            ("the profile's `libraries`", &profile.libraries)
+        } else {
+            ("--library", &self.library)
+        }
     }
 
     fn runtime(&self, profile: &SdfDocBuildProfile) -> JavaScriptRuntime {
@@ -95,6 +118,31 @@ mod tests {
 
         let deno = parse(&["chair.ts", "--runtime", "deno"]);
         assert_eq!(deno.runtime(&bun), JavaScriptRuntime::Deno);
+    }
+
+    #[test]
+    fn the_flag_replaces_the_profile_libraries() {
+        let studio: SdfDocBuildProfile =
+            serde_json::from_str(r#"{ "libraries": ["materials", "props"] }"#).unwrap();
+
+        let none = parse(&["chair.ts"]);
+        assert_eq!(
+            none.libraries(&SdfDocBuildProfile::default()).1,
+            [] as [String; 0]
+        );
+        assert_eq!(
+            none.libraries(&studio),
+            (
+                "the profile's `libraries`",
+                &["materials", "props"].map(String::from)[..]
+            )
+        );
+
+        let fabrics = parse(&["chair.ts", "--library", "fabrics", "--library", "props"]);
+        assert_eq!(
+            fabrics.libraries(&studio),
+            ("--library", &["fabrics", "props"].map(String::from)[..])
+        );
     }
 
     #[test]

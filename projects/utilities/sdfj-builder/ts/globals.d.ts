@@ -1,6 +1,7 @@
 // Declares the API as globals for type-checking model files. Each global takes
 // the type of the API export it holds.
 import type * as api from "./api.ts";
+import type { Lib } from "./library.ts";
 
 declare global {
   type Axes = api.Axes;
@@ -44,7 +45,8 @@ declare global {
   var intersect: typeof api.intersect;
   var json: typeof api.json;
   var lathe: typeof api.lathe;
-  var mat: Readonly<Record<string, Material>>;
+  var lib: Lib;
+  var mat: Lib["materials"];
   var material: typeof api.material;
   var ngon: typeof api.ngon;
   var noise: typeof api.noise;

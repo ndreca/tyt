@@ -23,6 +23,7 @@ person can run the same loop by hand.
 
 ```sh
 vxl sdf-doc build chair.ts
+  --library materials
 vxl sdf-doc voxelize chair.sdfj
   --voxel-size 0.025
   --report

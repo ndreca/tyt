@@ -1,5 +1,5 @@
 /// One entry of every kind with every optional key, each referencing earlier
-/// entries.
+/// entries, and a name in every names table.
 pub const EVERY_KIND_SDFJ: &str = r##"{
   "version": 1,
   "shapes3d": [
@@ -104,6 +104,14 @@ pub const EVERY_KIND_SDFJ: &str = r##"{
     { "name": "part", "pivot": [0, 0.5, 0], "offset": [1, 0, 0], "childObjects": [0], "childNodes": [] },
     { "name": "model", "childObjects": [], "childNodes": [0] }
   ],
-  "rootNodes": [1]
+  "rootNodes": [1],
+  "names": {
+    "shapes3d": { "block": 0 },
+    "shapes2d": { "disk": 0 },
+    "materials": { "rune": 0, "glass": 1, "stone": 0 },
+    "patterns": { "stripes": 0 },
+    "steps": { "set": 4 },
+    "parts": { "part": 0 }
+  }
 }
 "##;

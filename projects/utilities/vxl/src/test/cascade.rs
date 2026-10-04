@@ -1,13 +1,14 @@
-use crate::ResolvePrefsPaths;
+use crate::{ReadFile, ResolvePrefsPaths};
 use std::{
     collections::BTreeMap,
-    io::Result as IOResult,
+    io::{Error as IOError, ErrorKind, Result as IOResult},
     path::{Path, PathBuf},
 };
 use ty_preferences::{Dependencies as PreferencesDependencies, PrefsPaths};
 
 /// A cascade over in-memory files, the working directory `/repo/sub` under
-/// the git root `/repo` and the user's home `/home`.
+/// the git root `/repo` and the user's home `/home`. A command reads files
+/// beyond the `.vxlconfig` layers through [`ReadFile`].
 pub struct Cascade {
     in_repository: bool,
 
@@ -35,6 +36,15 @@ impl PreferencesDependencies for Cascade {
 
     fn write_file(&self, _: &Path, _: &[u8]) -> IOResult<()> {
         unreachable!("loading never writes")
+    }
+}
+
+impl ReadFile for Cascade {
+    fn read_file(&self, path: &Path) -> IOResult<Vec<u8>> {
+        match self.files.get(path) {
+            Some(text) => Ok(text.as_bytes().to_vec()),
+            None => Err(IOError::from(ErrorKind::NotFound)),
+        }
     }
 }
 

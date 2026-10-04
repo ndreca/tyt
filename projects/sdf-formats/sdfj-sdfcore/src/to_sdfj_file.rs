@@ -6,8 +6,8 @@ use sdfcore::{
 };
 use sdfj::{
     SDFJ_VERSION, SdfjAxes2d, SdfjAxes3d, SdfjAxis, SdfjCaps, SdfjFile, SdfjIntValue, SdfjMap,
-    SdfjMapEntry, SdfjMaterial, SdfjNode, SdfjObject, SdfjPattern, SdfjPropertyValue, SdfjShades,
-    SdfjShape2d, SdfjShape3d, SdfjSide, SdfjStep, SdfjTaggedValue, SdfjValue,
+    SdfjMapEntry, SdfjMaterial, SdfjNames, SdfjNode, SdfjObject, SdfjPattern, SdfjPropertyValue,
+    SdfjShades, SdfjShape2d, SdfjShape3d, SdfjSide, SdfjStep, SdfjTaggedValue, SdfjValue,
 };
 use ty_math::{TyAxis3, TyVector2F64, TyVector3F64};
 
@@ -51,7 +51,28 @@ pub fn to_sdfj_file(main: &SdfMain) -> SdfjFile {
             .collect(),
         nodes: state.nodes.iter().map(sdfj_node_from_sdf_node).collect(),
         root_nodes: wire_indices(&state.root_node_ids),
+        names: SdfjNames {
+            shapes3d: sdfj_names(&state.names.shapes3d),
+            shapes2d: sdfj_names(&state.names.shapes2d),
+            materials: sdfj_names(&state.names.materials),
+            patterns: sdfj_names(&state.names.patterns),
+            steps: sdfj_names(&state.names.steps),
+            parts: sdfj_names(&state.names.parts),
+        },
     }
+}
+
+/// A names table as a document holds it.
+fn sdfj_names<TBrand>(names: &[(String, U32Id<TBrand>)]) -> SdfjMap<usize> {
+    SdfjMap::new(
+        names
+            .iter()
+            .map(|(name, named_id)| SdfjMapEntry {
+                key: name.clone(),
+                value: wire_index(*named_id),
+            })
+            .collect(),
+    )
 }
 
 /// The wire index of `id`.

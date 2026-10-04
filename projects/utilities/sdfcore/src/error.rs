@@ -8,6 +8,15 @@ use std::{
 /// A rule an [`SdfState`](crate::SdfState) breaks.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
+    /// A name points past the end of its table.
+    NameMissing {
+        table: &'static str,
+
+        name: String,
+
+        entry_id: SdfEntryId,
+    },
+
     /// An entry holds a NaN or an infinity.
     NonFiniteNumber { entry_id: SdfEntryId, number: f64 },
 
@@ -26,6 +35,9 @@ pub enum Error {
 
         key: String,
     },
+
+    /// A names table holds one name twice.
+    RepeatedName { table: &'static str, name: String },
 
     /// A material holds one property name twice.
     RepeatedPropertyName {
@@ -75,6 +87,16 @@ pub enum Error {
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
+            Error::NameMissing {
+                table,
+                name,
+                entry_id,
+            } => write!(
+                f,
+                "names.{table} gives `{name}` to {entry_id}, past the end of {}",
+                entry_id.table()
+            ),
+
             Error::NonFiniteNumber { entry_id, number } => {
                 write!(f, "{entry_id} holds the non-finite number {number}")
             }
@@ -100,6 +122,10 @@ impl Display for Error {
                 f,
                 "materials[{material_id}] holds the key `{key}` twice in one object"
             ),
+
+            Error::RepeatedName { table, name } => {
+                write!(f, "names.{table} holds `{name}` twice")
+            }
 
             Error::RepeatedPropertyName { material_id, name } => write!(
                 f,
