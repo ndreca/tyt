@@ -1,0 +1,13 @@
+[package]
+name = "sdfj-builder"
+version = "0.1.0"
+edition = "2024"
+license-file = "LICENSE"
+repository = "https://github.com/tyleo/tyt"
+description = "The TypeScript builder that records voxel models as SDF Json (.sdfj) documents."
+keywords = ["sdf", "sdfj", "typescript", "voxel", "model"]
+categories = ["game-development", "graphics"]
+exclude = ["ts/*.test.ts", "ts/test"]
+
+[package.metadata.workspaces]
+independent = true

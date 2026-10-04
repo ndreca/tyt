@@ -553,9 +553,11 @@ it belongs to by its path of part names.
    that fails to start stops the build with the system's message.
 2. While the model builds, the builder checks the default export and what the
    document cannot hold. The default export is an array of steps and parts.
-   Numbers are finite, `json` holds no NaN, infinity, or `undefined`, and `mat`
-   reads only the library's names. An error the model throws stops the build
-   with its message.
+   Each argument takes the type the modeling API declares, and an options
+   object holds only the options its call lists. Numbers are finite, `json`
+   holds only JSON values, and `mat` reads only the library's names. `shades`
+   takes a whole count above zero, and a boolean takes at least one shape. An
+   error the model throws stops the build with its message.
 3. `vxl sdf-doc voxelize` checks its flags and profile against the values
    `vxl mesh-doc voxelize` lists. `--voxel-size` reads above zero,
    `--resolution` takes a whole number above zero, and the two flags exclude
@@ -564,8 +566,12 @@ it belongs to by its path of part names.
    every entry's arguments.
    - Radii, widths, thicknesses, sizes, scales, chamfers, and periods are above
      zero, except that a `cone` end may take 0.
-   - Counts, `octaves`, and `depth` are whole numbers above zero. `sides` is at
-     least 3 and `points` at least 2.
+   - Counts, `octaves`, and `depth` are whole numbers above zero. An `ngon`'s
+     `sides` is at least 3 and a `star`'s `points` at least 2.
+   - A pattern's `materials` and a `speckle`'s `accents` hold at least one
+     material. A `union`, an `intersect`, and their smooth variants hold at
+     least one shape. A `polygon` lists at least 3 points, and a `polyline` and
+     a `lathe` list at least 2.
    - `amplitude`, `warp`, and the lengths of an `elongate` are zero or more,
      `density` falls in `[0, 1]`, and a range's end passes its start.
    - Colors parse as `#RRGGBB`, or `#RRGGBBAA` for `baseColor`. Named properties

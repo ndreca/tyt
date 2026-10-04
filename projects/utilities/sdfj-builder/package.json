@@ -1,0 +1,9 @@
+{
+  "name": "sdfj-builder",
+  "version": "0.1.0",
+  "description": "Records voxel models written in TypeScript as SDF Json (.sdfj) documents.",
+  "author": "tyleo",
+  "license": "MIT",
+  "repository": "https://github.com/tyleo/tyt",
+  "type": "module"
+}

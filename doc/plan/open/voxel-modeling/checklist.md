@@ -15,7 +15,8 @@ Code-level choices go in an `implementation-decisions.md` beside this file.
   `.ts` files.
 - `deno check`, `deno lint`, and `deno fmt --check` pass over the builder before
   a step stages. The builder's tests sit in `*.test.ts` files beside the code
-  they cover and run under `deno test`.
+  they cover and run under `deno test`. The pre-commit hook runs all four on a
+  commit that touches the builder.
 - A new crate starts at `0.1.0` with
   `[package.metadata.workspaces] independent = true` and joins the workspace
   members and `[patch.crates-io]`.
@@ -36,7 +37,7 @@ where the loop fails.
       by index hold every value a model can share, including steps, objects, and
       nodes. The crates the [crate layout](README.md#decisions) sets read and
       write the document. `sdfcore` holds the tables as branded-id tables.
-- [ ] **S2. Builder.** The builder's `.ts` files:
+- [x] **S2. Builder.** The builder's `.ts` files:
   1. An entry point that puts the API in scope, imports the model, and writes
      the `.sdfj` document
   2. Type definitions declaring the API as globals, matching the modeling API's

@@ -1,0 +1,73 @@
+// Declares the API as globals for type-checking model files. Each global takes
+// the type of the API export it holds.
+import type * as api from "./api.ts";
+
+declare global {
+  type Axes = api.Axes;
+  type Axis = api.Axis;
+  type CoatOptions = api.CoatOptions;
+  type IntValue = api.IntValue;
+  type JsonValue = api.JsonValue;
+  type Material = api.Material;
+  type Part = api.Part;
+  type Pattern = api.Pattern;
+  type Properties = api.Properties;
+  type Shape2d = api.Shape2d;
+  type Shape3d = api.Shape3d;
+  type Side = api.Side;
+  type Step = api.Step;
+  type Value = api.Value;
+  type Vec2 = api.Vec2;
+  type Vec3 = api.Vec3;
+
+  var add: typeof api.add;
+  var arc: typeof api.arc;
+  var arch: typeof api.arch;
+  var bands: typeof api.bands;
+  var box: typeof api.box;
+  var boxFrame: typeof api.boxFrame;
+  var capsule: typeof api.capsule;
+  var carve: typeof api.carve;
+  var cells: typeof api.cells;
+  var checker: typeof api.checker;
+  var circle: typeof api.circle;
+  var coat: typeof api.coat;
+  var cone: typeof api.cone;
+  var cylinder: typeof api.cylinder;
+  var ellipse: typeof api.ellipse;
+  var ellipsoid: typeof api.ellipsoid;
+  var extrude: typeof api.extrude;
+  var gradient: typeof api.gradient;
+  var grain: typeof api.grain;
+  var halfSpace: typeof api.halfSpace;
+  var int: typeof api.int;
+  var intersect: typeof api.intersect;
+  var json: typeof api.json;
+  var lathe: typeof api.lathe;
+  var mat: Readonly<Record<string, Material>>;
+  var material: typeof api.material;
+  var ngon: typeof api.ngon;
+  var noise: typeof api.noise;
+  var octahedron: typeof api.octahedron;
+  var paint: typeof api.paint;
+  var part: typeof api.part;
+  var polygon: typeof api.polygon;
+  var polyline: typeof api.polyline;
+  var pyramid: typeof api.pyramid;
+  var rect: typeof api.rect;
+  var revolve: typeof api.revolve;
+  var roundCone: typeof api.roundCone;
+  var sector: typeof api.sector;
+  var set: typeof api.set;
+  var shades: typeof api.shades;
+  var smoothIntersect: typeof api.smoothIntersect;
+  var smoothSubtract: typeof api.smoothSubtract;
+  var smoothUnion: typeof api.smoothUnion;
+  var speckle: typeof api.speckle;
+  var sphere: typeof api.sphere;
+  var star: typeof api.star;
+  var subtract: typeof api.subtract;
+  var torus: typeof api.torus;
+  var union: typeof api.union;
+  var vesica: typeof api.vesica;
+}

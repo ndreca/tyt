@@ -553,7 +553,7 @@ world coordinates.
 ## Materials
 
 ```ts
-const mat: Record<LibraryName, Material>;
+const mat: Record<string, Material>;
 
 function material(properties: Properties): Material;
 function int(value: number | number[]): IntValue;
@@ -762,9 +762,10 @@ A second piece usually means a shape floats.
 
 ## Errors
 
-Each command stops at its first error. The message reports the failing value and
-the failing step's path of part names. A step that writes no cell stops nothing
-and reads `0 cells` in the report. The [checks](model-evaluation.md#checks) list
+Each command stops at its first error. A build error reports the failing call,
+the argument, and the value. A voxelize error reports the failing value and the
+failing step's path of part names. A step that writes no cell stops nothing and
+reads `0 cells` in the report. The [checks](model-evaluation.md#checks) list
 every error.
 
 ## Resolution

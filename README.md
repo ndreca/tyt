@@ -152,7 +152,7 @@ After cloning, run setup once:
 npm run setup
 ```
 
-This points `core.hooksPath` at `.githooks`, so a pre-commit hook runs `cargo fmt --all -- --check` and `cargo clippy --workspace --all-targets -- -D warnings` before each commit. It also checks out the `submodules/branded-id` submodule, where `branded-id` is developed. The workspace builds against the published `branded-id`. To build against unreleased submodule changes, add `branded-id = { path = "submodules/branded-id" }` under the root manifest's `[patch.crates-io]`, and drop it once that version is published. Without npm, run `git config core.hooksPath .githooks` and `git submodule update --init submodules/branded-id`.
+This points `core.hooksPath` at `.githooks`, so a pre-commit hook runs `cargo fmt --all -- --check` and `cargo clippy --workspace --all-targets -- -D warnings` before each commit. A commit touching `projects/utilities/sdfj-builder` also runs the builder's Deno checks and needs `deno`. Setup also checks out the `submodules/branded-id` submodule, where `branded-id` is developed. The workspace builds against the published `branded-id`. To build against unreleased submodule changes, add `branded-id = { path = "submodules/branded-id" }` under the root manifest's `[patch.crates-io]`, and drop it once that version is published. Without npm, run `git config core.hooksPath .githooks` and `git submodule update --init submodules/branded-id`.
 
 Format and lint manually with:
 

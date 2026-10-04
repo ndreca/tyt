@@ -20,6 +20,7 @@ members = [
     "projects/utilities/pathspec",
     "projects/utilities/sdfconv",
     "projects/utilities/sdfcore",
+    "projects/utilities/sdfj-builder",
     "projects/utilities/treegrid",
     "projects/utilities/treeselect",
     "projects/utilities/ty-math",
@@ -97,6 +98,7 @@ vxl = { path = "projects/utilities/vxl" }
 gltf-meshdoc = { path = "projects/mesh-formats/gltf-meshdoc" }
 
 sdfj = { path = "projects/sdf-formats/sdfj" }
+sdfj-builder = { path = "projects/utilities/sdfj-builder" }
 sdfj-codec = { path = "projects/sdf-formats/sdfj-codec" }
 sdfj-sdfcore = { path = "projects/sdf-formats/sdfj-sdfcore" }
 

@@ -45,3 +45,42 @@ land.
     JSON, the default, or pretty-printed JSON
 13. The bridge's tests round-trip the chair, the forest, and a fixture holding
     one entry of every kind with every optional key
+
+## S2. Builder
+
+1. The builder is the TypeScript package `sdfj-builder` in
+   `projects/utilities`, apart from vxl for a later npm release. The
+   TypeScript sits in `ts/`. `main.ts` takes the model path and the output
+   path and reads `library.json` from its own directory
+2. The folder is also a crate with its Rust in `src/`. `SDFJ_BUILDER_FILES`
+   embeds every file a run needs because a published vxl can include only
+   files inside its own directory. A test checks the list against the folder
+3. `deno.json` sets `nodeModulesDir` to `none` because Deno otherwise expects a
+   `node_modules` beside the `package.json`
+4. Each module holds one section of the modeling API. One export per file would
+   split the API into about sixty files of a few lines each
+5. The builder checks every argument against the type the modeling API
+   declares, because a runtime strips a model's types without checking them. A
+   value the document cannot hold then errors at the call that made it. Ranges
+   and whole numbers stay vxl's checks. `shades` checks its count because it
+   returns that many materials, and a boolean checks for a first shape because
+   that shape picks the table
+6. A value holds its entry in a private field, which keeps each class distinct
+   to the type checker. Vectors, lists, properties, and `json` values copy at
+   the call, and no value changes after its call returns
+7. `globals.d.ts` declares each global as the type of its export from `api.ts`.
+   `putApiInScope` assigns the globals through `Pick<typeof globalThis, ...>`,
+   and a name missing from either file fails the type check
+8. `deno.json` turns on `verbatimModuleSyntax` and `erasableSyntaxOnly`. With
+   both on, every file Deno checks also runs under Node's type stripping
+9. The builder writes compact JSON and a trailing newline, the form sdfj-codec
+   writes by default. `jsonText` keeps the sign of `-0` and errors on a value
+   without a JSON form instead of writing `null`
+10. An error escapes uncaught. Each runtime prints the message and a stack whose
+    frames include the model file's line
+11. The tests run on `Deno.test` and `node:assert/strict`, and the builder stays
+    free of dependencies. `test/chair.ts` and `test/forest.ts` hold the sdfj
+    format's examples, and their tests compare the written documents with the
+    format page's
+12. The builder holds no material names. `mat` types every name as a
+    `Material`, and the library vxl passes in decides which names it reads

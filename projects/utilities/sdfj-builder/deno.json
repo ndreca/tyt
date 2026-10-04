@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "erasableSyntaxOnly": true,
+    "types": ["./ts/globals.d.ts"],
+    "verbatimModuleSyntax": true
+  },
+  "lock": false,
+  "nodeModulesDir": "none"
+}

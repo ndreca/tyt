@@ -18,3 +18,15 @@ if ! cargo clippy --workspace --all-targets -- -D warnings; then
     echo "pre-commit: clippy reported lints - fix them, then re-commit." >&2
     exit 1
 fi
+
+if git diff --cached --name-only | grep -q '^projects/utilities/sdfj-builder/'; then
+    if ! command -v deno >/dev/null 2>&1; then
+        echo "pre-commit: the commit touches sdfj-builder, whose checks need deno." >&2
+        exit 1
+    fi
+    if ! (cd projects/utilities/sdfj-builder && deno check && deno lint && deno fmt --check && deno test); then
+        echo >&2
+        echo "pre-commit: sdfj-builder's deno checks failed - fix them, then re-stage." >&2
+        exit 1
+    fi
+fi

@@ -1,0 +1,45 @@
+import assert from "node:assert/strict";
+import { part } from "./part.ts";
+import { add } from "./step.ts";
+import { ball, document, white } from "./test/tables.ts";
+
+Deno.test("part writes an object for its steps and a node", () => {
+  const arm = part("arm", { pivot: [1, 0, 0], offset: [0, 1, 0] }, [
+    add("arm", ball, white),
+  ]);
+  const { objects, nodes, rootNodes } = document([arm]);
+  assert.deepStrictEqual(objects, [{ name: "arm", steps: [0] }]);
+  assert.deepStrictEqual(nodes, [
+    {
+      name: "arm",
+      pivot: [1, 0, 0],
+      offset: [0, 1, 0],
+      childObjects: [0],
+      childNodes: [],
+    },
+    { name: "model", childObjects: [], childNodes: [0] },
+  ]);
+  assert.deepStrictEqual(rootNodes, [1]);
+});
+
+Deno.test("a step in several lists writes one entry", () => {
+  const shared = add("shared", ball, white);
+  const { steps, objects } = document([
+    part("left", {}, [shared]),
+    part("right", {}, [shared]),
+  ]);
+  assert.deepStrictEqual(steps.length, 1);
+  assert.deepStrictEqual(objects, [
+    { name: "left", steps: [0] },
+    { name: "right", steps: [0] },
+  ]);
+});
+
+Deno.test("a part's list holds only steps and parts", () => {
+  assert.throws(() => part("arm", {}, [ball as never]), {
+    message: 'part "arm" list[0] must be a Step or a Part, not a Shape3d',
+  });
+  assert.throws(() => part("arm", { pivot: [0, 0, 0], turn: 1 } as never, []), {
+    message: 'part "arm" takes no option "turn"',
+  });
+});

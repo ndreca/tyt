@@ -1,0 +1,134 @@
+import assert from "node:assert/strict";
+import type { Entry } from "./entry.ts";
+import { material } from "./material.ts";
+import {
+  bands,
+  cells,
+  checker,
+  gradient,
+  grain,
+  noise,
+  type Pattern,
+  speckle,
+} from "./pattern.ts";
+import { add } from "./step.ts";
+import { ball, black, document, white } from "./test/tables.ts";
+
+const gray = material({ baseColor: "#808080" });
+
+const CASES: [string, () => Pattern, Entry][] = [
+  [
+    "bands",
+    () =>
+      bands([white, black], { axis: "x", period: 0.1, warp: 0.05, seed: 1 }),
+    {
+      kind: "bands",
+      materials: [0, 1],
+      axis: "x",
+      period: 0.1,
+      warp: 0.05,
+      seed: 1,
+    },
+  ],
+  [
+    "cells",
+    () => cells([white, black], { size: 0.15, seed: 7, border: gray }),
+    {
+      kind: "cells",
+      materials: [0, 1],
+      size: 0.15,
+      seed: 7,
+      border: 2,
+    },
+  ],
+  ["checker", () => checker([white, black], { size: 0.05 }), {
+    kind: "checker",
+    materials: [0, 1],
+    size: 0.05,
+  }],
+  [
+    "gradient",
+    () =>
+      gradient([white, black], {
+        axis: "y",
+        from: 0,
+        to: 1,
+        warp: 0.1,
+        seed: 2,
+      }),
+    {
+      kind: "gradient",
+      materials: [0, 1],
+      axis: "y",
+      from: 0,
+      to: 1,
+      warp: 0.1,
+      seed: 2,
+    },
+  ],
+  [
+    "grain",
+    () =>
+      grain([white, black], { axis: "y", period: 0.05, warp: 0.03, seed: 3 }),
+    {
+      kind: "grain",
+      materials: [0, 1],
+      axis: "y",
+      period: 0.05,
+      warp: 0.03,
+      seed: 3,
+    },
+  ],
+  ["noise", () => noise([white, black], { scale: 0.1, octaves: 3, seed: 4 }), {
+    kind: "noise",
+    materials: [0, 1],
+    scale: 0.1,
+    octaves: 3,
+    seed: 4,
+  }],
+  ["speckle", () => speckle(white, [black, gray], { density: 0.1, seed: 5 }), {
+    kind: "speckle",
+    base: 0,
+    accents: [1, 2],
+    density: 0.1,
+    seed: 5,
+  }],
+];
+
+for (const [call, pattern, entry] of CASES) {
+  Deno.test(`${call} writes its materials and options`, () => {
+    const { patterns } = document([add("shape", ball, pattern())]);
+    assert.deepStrictEqual(patterns, [entry]);
+  });
+}
+
+Deno.test("grain with one base writes the materials of shades(base)", () => {
+  const pattern = grain(white, { axis: "y", seed: 1 });
+  const { materials, patterns, shades } = document([
+    add("shape", ball, pattern),
+  ]);
+  assert.deepStrictEqual(materials, [
+    { kind: "material", properties: { baseColor: "#FFFFFF" } },
+    { kind: "shade", shades: 0, index: 0 },
+    { kind: "shade", shades: 0, index: 1 },
+    { kind: "shade", shades: 0, index: 2 },
+  ]);
+  assert.deepStrictEqual(shades, [{ base: 0, count: 3 }]);
+  assert.deepStrictEqual(patterns, [
+    { kind: "grain", materials: [1, 2, 3], axis: "y", seed: 1 },
+  ]);
+});
+
+Deno.test("speckle with one accent writes a list of one accent", () => {
+  const pattern = speckle(white, black, { density: 0.1, seed: 1 });
+  const { patterns } = document([add("shape", ball, pattern)]);
+  assert.deepStrictEqual(patterns, [
+    { kind: "speckle", base: 0, accents: [1], density: 0.1, seed: 1 },
+  ]);
+});
+
+Deno.test("a pattern's materials have to be materials", () => {
+  assert.throws(() => checker([white, "#000000" as never]), {
+    message: 'checker materials[1] must be a Material, not "#000000"',
+  });
+});

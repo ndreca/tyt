@@ -1,0 +1,71 @@
+import assert from "node:assert/strict";
+import type { Entry } from "./entry.ts";
+import { checker } from "./pattern.ts";
+import { add, carve, coat, paint, set, type Step } from "./step.ts";
+import { ball, disk, document, white } from "./test/tables.ts";
+
+const CASES: [string, () => Step, Entry][] = [
+  ["add", () => add("seat", ball, white), {
+    kind: "add",
+    name: "seat",
+    shape: 0,
+    material: 0,
+  }],
+  ["carve", () => carve("doorway", ball), {
+    kind: "carve",
+    name: "doorway",
+    shape: 0,
+  }],
+  [
+    "coat",
+    () => coat("snow", white, { sides: ["+y", "-x"], depth: 2, within: ball }),
+    {
+      kind: "coat",
+      name: "snow",
+      material: 0,
+      sides: ["+y", "-x"],
+      depth: 2,
+      within: 0,
+    },
+  ],
+  ["paint", () => paint("gilt", ball, checker([white])), {
+    kind: "paint",
+    name: "gilt",
+    shape: 0,
+    pattern: 0,
+  }],
+  ["set", () => set("eyes", [[0, 0, 0], [1, 1, 1]], white), {
+    kind: "set",
+    name: "eyes",
+    points: [[0, 0, 0], [1, 1, 1]],
+    material: 0,
+  }],
+];
+
+for (const [call, step, entry] of CASES) {
+  Deno.test(`${call} writes its name and arguments`, () => {
+    assert.deepStrictEqual(document([step()]).steps, [entry]);
+  });
+}
+
+Deno.test("set of one point writes a list of one point", () => {
+  assert.deepStrictEqual(document([set("eye", [1, 2, 3], white)]).steps, [
+    { kind: "set", name: "eye", points: [[1, 2, 3]], material: 0 },
+  ]);
+});
+
+Deno.test("a step's arguments have to fit its entry", () => {
+  assert.throws(() => add("seat", disk as never, white), {
+    message: 'add "seat" shape must be a Shape3d, not a Shape2d',
+  });
+  assert.throws(() => paint("gilt", ball, "gold" as never), {
+    message:
+      'paint "gilt" material must be a Material or a Pattern, not "gold"',
+  });
+  assert.throws(() => coat("snow", white, { side: ["+y"] } as never), {
+    message: 'coat "snow" takes no option "side"',
+  });
+  assert.throws(() => carve(3 as never, ball), {
+    message: "carve name must be a string, not 3",
+  });
+});

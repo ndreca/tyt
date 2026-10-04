@@ -226,8 +226,9 @@ skips the build voxelizes a stale `.sdfj`.
        through the sdfcore state
     4. voxsmith evaluates and samples the sdfcore state under an `sdf_doc`
        feature beside `mesh_doc`
-    5. vxl holds and embeds the builder's `.ts` files, the skill's workflow, and
-       the modeling API
+    5. `sdfj-builder` at `projects/utilities/sdfj-builder` holds the builder as
+       a TypeScript package. vxl embeds the builder's `.ts` files and holds the
+       skill's workflow and the modeling API
 17. The `.sdfj` format holds no library. The library is a JSON document of named
     materials that vxl embeds and `.vxlconfig` extends. `vxl sdf-doc build`
     copies a library material's properties into the document, and the document
