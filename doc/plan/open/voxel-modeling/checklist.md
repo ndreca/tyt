@@ -25,9 +25,8 @@ Code-level choices go in an `implementation-decisions.md` beside this file.
 
 ## Phase 1: pipeline
 
-The builder records models as `.sdfj`, and vxl voxelizes and renders them. A
-trial of about ten prompts then shows which operations Claude reaches for and
-where the loop fails.
+The builder records models as `.sdfj`, and vxl voxelizes and renders them.
+Trials then show which operations Claude reaches for and where the loop fails.
 
 - [x] **S0. Open questions.** Settle the README's open questions and fold the
       answers into the plan and the reference pages.
@@ -82,10 +81,10 @@ where the loop fails.
       `vxl integration skill print voxel-modeling` prints the workflow and then
       the modeling API as one `SKILL.md`. Move model evaluation to
       `doc/ref/sdf-doc/` and the sdfj format into the sdfj crate's `docs/`.
-- [ ] **S12. Trials.** Run about ten prompts through the skill, each in a fresh
-      session. Log each prompt in `trials.md` with the passes it took, the
-      failures, and the operations and report data Claude wanted and lacked. The
-      log also notes where a model's colors read flat.
+- [ ] **S12. Trials.** Run the prompts in `trials.md` through the skill, each in
+      a fresh session. Log each prompt in `trials.md` with the passes it took,
+      the failures, and the operations and report data Claude wanted and
+      lacked. The log also notes where a model's colors read flat.
 - [ ] **S13. Phase 2 design.** Write the phase 2 steps from the trials and
       revise the README.
 

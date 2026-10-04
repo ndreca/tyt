@@ -164,10 +164,10 @@ skips the build voxelizes a stale `.sdfj`.
    Node, Bun, or Deno. vxl embeds the builder, so an installed vxl needs no
    checkout. `vxl sdf-doc voxelize` checks the document and samples it through a
    voxsmith operation that follows model evaluation. The `materials` library,
-   the `review` profile, and the skill ship inside vxl. A trial of about ten
-   prompts then records which shapes and patterns Claude reaches for and where
-   the loop fails. The prompts run from a chair and a lantern to a treasure
-   chest, a sword, and a tree.
+   the `review` profile, and the skill ship inside vxl. Trials then record which
+   shapes and patterns Claude reaches for and where the loop fails. The
+   [prompts](trials.md#prompts) run from a chair to a small city and the lower
+   deck of a pirate ship.
 2. **Follow-ups.** The trials set the second phase: the operators and patterns
    Claude lacked, richer coloring, changes to the `.sdfj` format, and the
    contact sheet.

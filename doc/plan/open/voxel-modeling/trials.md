@@ -5,10 +5,10 @@ voxel-modeling skill.
 
 ## Running a trial
 
-Each trial runs in a fresh Claude Code session in its own directory outside the
-repository, such as `~/voxel-trials/chair`. A session inside the repository
-could read the builder and the docs in place of the skill. The directory holds
-the `SKILL.md` that the installed vxl printed, as the vxl
+Each trial runs in a fresh Claude Code session in `~/voxel-trials/<directory>`,
+outside the repository. A session inside the repository could read the builder
+and the docs in place of the skill. The directory holds the `SKILL.md` that the
+installed vxl printed, as the vxl
 [README](../../../../projects/utilities/vxl/README.md#models) shows, and a
 `.claude/settings.json` that allows `vxl` commands and edits.
 
@@ -23,13 +23,99 @@ Claude wanted and lacked, and where the model's colors read flat.
 
 ## Prompts
 
-1. make a voxel chair with oak and ornate jewels in the top
-2. make a voxel lantern with a candle glowing inside
-3. make a voxel treasure chest with the lid open and gold coins inside
-4. make a voxel sword with a gold hilt and a gem in the pommel
-5. make a voxel oak tree
-6. make a voxel stone well with a wooden roof and a bucket on a rope
-7. make a voxel robot whose head and arms can turn
-8. make a voxel mushroom cottage with a round door and windows
-9. make a voxel glass potion bottle with a cork and red potion inside
-10. make a voxel wooden cart with four wheels
+The prompts climb from single props to scenes and interiors.
+
+| #   | Directory      | Prompt                                                                                                                                                           |
+| --- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `chair`        | make a voxel chair with oak and ornate jewels in the top                                                                                                         |
+| 2   | `lantern`      | make a voxel lantern with a candle glowing inside                                                                                                                |
+| 3   | `chest`        | make a voxel treasure chest with the lid open and gold coins inside                                                                                              |
+| 4   | `sword`        | make a voxel sword with a gold hilt and a gem in the pommel                                                                                                      |
+| 5   | `tree`         | make a voxel oak tree                                                                                                                                            |
+| 6   | `well`         | make a voxel stone well with a wooden roof and a bucket on a rope                                                                                                |
+| 7   | `robot`        | make a voxel robot whose head and arms can turn                                                                                                                  |
+| 8   | `cottage`      | make a voxel mushroom cottage with a round door and windows                                                                                                      |
+| 9   | `potion`       | make a voxel glass potion bottle with a cork and red potion inside                                                                                               |
+| 10  | `cart`         | make a voxel wooden cart with four wheels                                                                                                                        |
+| 11  | `guitar`       | make a voxel acoustic guitar with a round sound hole and six strings                                                                                             |
+| 12  | `candelabra`   | make a voxel iron candelabra with a twisted square stem and five lit candles on curling arms                                                                     |
+| 13  | `knight`       | make a voxel knight character for my game, 32 voxels tall, in the pico-8 palette                                                                                 |
+| 14  | `pocket-watch` | make a voxel pocket watch on a chain with the gears showing                                                                                                      |
+| 15  | `dragon`       | model a voxel dragon curled up asleep on a pile of gold with its wings folded                                                                                    |
+| 16  | `bridge`       | make a voxel suspension bridge over a river with two stone towers and hanging cables                                                                             |
+| 17  | `chess-set`    | model a voxel chess set with every piece in its starting position                                                                                                |
+| 18  | `ramen-stand`  | make a cyberpunk voxel ramen stand with a neon sign that says ramen                                                                                              |
+| 19  | `dungeon-kit`  | make a voxel dungeon kit for my game: floor, wall, corner, and doorway tiles on a 2 m grid with the floors tagged walkable, then a small room built from the kit |
+| 20  | `crane`        | build a voxel construction crane whose cab turns and boom tilts, with a hook hanging on a cable                                                                  |
+| 21  | `fish-tank`    | make a voxel fish tank with fish, seaweed, gravel, bubbles, and a little castle inside                                                                           |
+| 22  | `wizard-tower` | build a voxel wizard tower with stairs spiraling up the outside and a crooked pointed roof                                                                       |
+| 23  | `log-cabin`    | make a voxel log cabin buried in snow with icicles on the roof and smoke from the chimney                                                                        |
+| 24  | `valley`       | model a voxel mountain valley with a river and a pine forest, under 300k voxels                                                                                  |
+| 25  | `village`      | build a voxel village of thatched cottages and a stone church around a little market square                                                                      |
+| 26  | `city`         | build a small voxel city with streets, tall buildings, a park, and street lights as one object for my game                                                       |
+| 27  | `dollhouse`    | build a voxel two-story house with the front wall cut away to show the furnished rooms                                                                           |
+| 28  | `living-room`  | make a cozy voxel living room with a fireplace, an armchair, a bookshelf full of books, and a rug                                                                |
+| 29  | `spaceship`    | make a voxel spaceship bridge with a captain's chair, a glowing radar screen, and a big window out to the stars                                                  |
+| 30  | `pirate-ship`  | make a voxel pirate ship interior below deck with cannons, hammocks, barrels, and a hanging lantern                                                              |
+
+## Stresses
+
+Prompts 11 to 30 each push on something the first ten leave alone:
+
+11. Six strings across a 5 cm neck need voxels of about 5 mm. The guitar then
+    runs about 200 voxels long against the skill's 16 to 64. The body takes 2D
+    booleans and stays hollow under a one-voxel top
+12. A twist reads only once the stem's section spans several cells. Bends or
+    torus arcs make the arms, and five arms repeat off the orthographic axes
+13. `--resolution world-y 32` meets the height with an unround voxel size that
+    breaks `const v`. The 16-color pico-8 palette rules out `shades` and tests
+    where the armor reads flat
+14. Millimeter voxels sit below every example in the skill, and gear teeth take
+    one cell each. Interlocked links share no cells, so a correct chain reports
+    a piece per link. Gold renders olive under the review lighting
+15. The dragon's anatomy has no sweep or skeleton to build on and comes from
+    `smoothUnion`, `roundCone`, and `bend`. The renders judge it by silhouette
+16. The cables hang in curves that no operation draws and take computed points.
+    Hangers of different lengths need a loop, and sloped one-voxel cables can
+    split into pieces. The bridge spans about 10:1 in square review frames
+17. A part keeps the materials of its steps, so each piece needs a part per
+    color. Five lathe profiles and a sculpted knight make 32 placements. White
+    pieces stand on light squares
+18. Lettering has no operation and comes from strokes a whole cell wide. The
+    sign has to read the right way round in the front view, and several
+    emissive colors have to stay distinct without bloom
+19. The walkable tag shows in neither the report nor the renders, and the log
+    checks the palette with `vxl vox-doc show`. Building the room from the kit
+    pushes the session toward a library or an import. Separate tiles read as
+    extra pieces on a correct kit
+20. Parts nest three or four deep, and their offsets and pivots add up. The
+    renders cannot show a joint turn, and the log checks each pivot in the voxj
+    nodes against its hinge
+21. Opaque fish and the castle inside solid water read `0 exposed` on a correct
+    model and render dark behind the water. Bubbles float as pieces. The glass
+    takes `#RRGGBBAA`
+22. A helix has no operation. A twist on a stack of treads makes one but breaks
+    the treads into fragments. A bend shapes the crooked roof
+23. `coat` lays the snow. The smoke floats on purpose against the second-piece
+    check. The library's snow and ice render nearly alike, and icicles can
+    vanish against the snow
+24. Solid terrain over about 200 m passes 300k voxels at 1 m and forces surface
+    fill, a coarser grid, or a shell. Displaced terrain leaves dozens of
+    one-voxel crumbs in the piece lines. The trees and the river have to meet a
+    surface the model cannot query
+25. A reused cottage part cannot turn to face the square. Copies repeat their
+    patterns exactly unless each copy takes its own seed. The church stands as
+    the one building that is no copy
+26. One voxel size has to serve a 100 m scene with sub-meter windows. The front
+    and right views hide the streets, and the report runs hundreds of lines.
+    "One object" pushes `--flatten objects`
+27. The prompt asks for the cutaway, which makes the dollhouse the control for
+    28 to 30. One voxel size has to stretch from the house down to chair legs
+28. Every review view looks from outside, and the session has to find a way to
+    show the room. The books need variety across copies
+29. The hull hides the bridge from every outside view. The stars float as
+    hundreds of pieces and inflate the bounds. The radar screen takes sectors
+    and arcs that have to read on a glowing panel
+30. A curved hull built as a shell of a union can leave inner walls. The
+    hammocks sag as one-cell sheets, and the cannons sit in carved ports. The
+    lantern lights nothing under the review lighting
