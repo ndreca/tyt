@@ -18,8 +18,17 @@ as it scales an [`object mesh`](../mesh/mesh.md) output.
 
 ## Surface
 
-The surface is the boundary faces between live and non-live cells, as
-`voxsurface` enumerates them. Faces are axis-aligned unit squares with flat
+The surface is the boundary between materials, read along a ray. In each
+placement the ray remembers the material of the cell it is inside: nothing
+before it enters the grid and nothing after it enters an empty cell.
+Entering a live cell whose material differs from the one the ray is inside
+is a surface hit through the face it entered. Entering a cell of the same
+material or an empty cell shades nothing, so there are no back faces. A ray
+that starts inside a cell leaves that cell's material before it can hit
+anything. Each placement walks on its own, and the hits merge by distance.
+A ray from
+outside the grid first hits the boundary between live and non-live cells
+that `voxsurface` enumerates. Faces are axis-aligned unit squares with flat
 normals. There is no smoothing, no bevel, and no sub-voxel detail.
 
 ## Materials
@@ -28,15 +37,36 @@ A voxel carries its effective palette material, in voxj's glTF vocabulary with
 glTF's defaults. The render shades `baseColor`, `metallic`, `roughness`,
 `emissiveColor`, `emissiveStrength`, and `occlusionStrength`. `ior` sets the
 dielectric reflectance at normal incidence, `((ior - 1) / (ior + 1))^2`: `0.04`
-at the default `1.5` and `1` at `0`. Every live voxel is opaque. `baseColor`'s
-alpha and `transmission` are range-checked and shade nothing.
+at the default `1.5` and `1` at `0`. `baseColor`'s alpha is the coverage, the
+share of a pixel the voxel's surface fills. `transmission` is the share of the
+diffuse light that passes through the surface.
 
 ## Shading
 
 Shading is glTF's metallic-roughness model in linear light: Lambert diffuse,
 GGX specular with Smith visibility and Schlick Fresnel, and the emissive term.
-The hemisphere term mixes sky and ground by the normal's +Y component, scaled
-by the occlusion and `occlusionStrength`.
+Both the direct and the hemisphere light scale the diffuse term by one minus
+`transmission`. The hemisphere term mixes sky and ground by the normal's +Y
+component, scaled by the occlusion and `occlusionStrength`.
+
+What continues past a hit is the material's pass, one factor per channel:
+
+```
+pass = (1 - alpha) + alpha * transmission * (1 - metallic) * (1 - F0) * baseColor
+```
+
+The first term is the part of the pixel the surface does not cover. The
+second is the light the covered part transmits: the dielectric share, less
+what reflects at normal incidence, tinted by the base color. An opaque
+material's pass is zero. The ray never bends. Transmission is glTF's
+thin-surface model without the volume extension: light passes straight
+through, tinted once per surface.
+
+A pixel walks its ray front to back with a throughput of one. At each hit
+the pixel adds `throughput * alpha * shade` to its light and `throughput *
+alpha * emission` to the bloom's emissive term, then multiplies the
+throughput by the pass. The walk ends at a zero throughput or when the ray leaves every
+grid. What remains is the pixel's transmittance.
 
 ## Lights
 
@@ -66,8 +96,11 @@ three adjacent cells. It has one implementation, in `voxsurface`: the
 reference shades with it and `object mesh` bakes it.
 
 A shadow is one grid ray toward the light. The ray runs to infinity for a
-directional light and ends at a point or spot light. A light samples it at
-one of three granularities:
+directional light and ends at a point or spot light. Its throughput starts
+at one and multiplies by the pass of each surface it meets, so a shadow is a
+color. A red pane throws a red shadow. A pane two voxels thick throws the
+shadow a thin one throws. Each light scales its contribution by what
+remains. A light samples the ray at one of three granularities:
 
 1. `per-pixel` casts the ray from the hit: a crisp diagonal edge across faces,
    the MagicaVoxel render and Teardown look
@@ -75,8 +108,8 @@ one of three granularities:
    staircase at voxel resolution, the look Minecraft's Vibrant Visuals snaps
    to
 3. `per-corner` casts it from each corner and blends the four bilinearly
-   across the face: a soft staircase, the vanilla Minecraft smooth-lighting
-   look with a sun
+   across the face, per channel: a soft staircase, the vanilla Minecraft
+   smooth-lighting look with a sun
 
 `none` turns a light's shadow off. `per-corner` is the default look. It reads
 as one look with the corner occlusion.
@@ -164,20 +197,35 @@ The pass runs in four steps:
 3. Averages the octaves and scales by the strength
 4. Adds the halo to every pixel
 
-A pixel no ray hit that the halo reaches takes the halo's peak channel,
-clamped to one, as its alpha and the halo over that alpha as its color.
-Compositing it over black gives the halo back.
+The halo adds to a pixel's light and scales the pixel's transmittance by one
+minus the halo's peak channel, clamped to one. A pixel no ray hit that the
+halo reaches comes out with the halo's peak as its alpha and the halo over
+that alpha as its color. Compositing that pixel over black gives the halo
+back.
 
 ## Output
 
-The image is linear light through the Khronos PBR Neutral tonemap, then the
-sRGB transfer to 8-bit RGBA with straight alpha. A pixel no ray hits is
-transparent, or the background color at full alpha. A pixel only the bloom
-reached composites over the background color, or keeps its alpha under
-`transparent`. PBR Neutral keeps base
-colors true until highlights compress, and a voxel palette is what a reviewer
-most needs to see unchanged. The default image is 1024 by 1024: square suits a
-single asset, and a reviewer's model downsamples anyway.
+A pixel carries two colors: the light that reached it, in linear radiance,
+and its transmittance, the share of what lies behind the scene that passes
+through per channel. A miss carries no light and full transmittance. An
+opaque hit carries its shade and none.
+
+The output derives one alpha from the pair: the larger of one minus the peak
+transmittance and the peak of the light, clamped to one. The light over that
+alpha runs through the Khronos PBR Neutral tonemap to give the color. The
+peak of the light keeps a highlight on clear glass from vanishing into a tiny
+alpha.
+Under `transparent` the sRGB transfer encodes that color at that alpha as
+8-bit RGBA with straight alpha. Under a background color the pixel is the
+tonemapped color at that alpha plus the background scaled by the
+transmittance, clamped to one, at full alpha. The background never passes
+through the tonemap, which would turn a white background grey behind clear
+glass. Red glass over white is red, and clear glass over white stays white.
+
+PBR Neutral keeps base colors true until highlights compress, and a voxel
+palette is what a reviewer most needs to see unchanged. The default image is
+1024 by 1024: square suits a single asset, and a reviewer's model downsamples
+anyway.
 
 ## Determinism
 

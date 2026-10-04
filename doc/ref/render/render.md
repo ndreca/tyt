@@ -87,8 +87,9 @@ mesh. A document with no objects errors. See
    - Default: `transparent`
    - Repeatable: no
 
-   What fills the pixels no ray hits. A color fills them at full alpha. A
-   shell reads a bare `#` as a comment, so quote the color.
+   What lies behind the scene. A color fills the pixels no ray hits at full
+   alpha and shows through transparent voxels. A shell reads a bare `#` as a
+   comment, so quote the color.
 
 7. `--occlusion <none | corner>`
    - Default: `corner`

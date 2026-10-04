@@ -1,5 +1,5 @@
-use crate::{RenderBloom, RenderImage};
-use ty_math::{TyLinSrgbF32, TyLinSrgbaF32};
+use crate::{RenderBloom, RenderImage, RenderPixel};
+use ty_math::TyLinSrgbF32;
 
 /// Rec. 709's luminance weights over linear sRGB.
 const LUMINANCE: TyLinSrgbF32 = TyLinSrgbF32::new(0.2126, 0.7152, 0.0722);
@@ -8,8 +8,7 @@ const LUMINANCE: TyLinSrgbF32 = TyLinSrgbF32::new(0.2126, 0.7152, 0.0722);
 const TAP_REACH: f64 = 3.0;
 
 /// Adds `bloom`'s halo over `emission` to `image` as the contract's bloom
-/// section lays it out. A miss pixel the halo reaches carries the halo as
-/// straight alpha, so compositing it over black gives the halo back.
+/// section lays it out.
 ///
 /// # Arguments
 /// * `emission` - one emissive term per pixel of `image` in row-major
@@ -64,21 +63,16 @@ pub fn apply_bloom(image: &mut RenderImage, emission: &[TyLinSrgbF32], bloom: Re
                 .pixel(x as u32, y as u32)
                 .expect("the pixel is within the image");
 
-            let lit = if pixel.alpha == 0.0 {
-                let alpha = halo.red.max(halo.green).max(halo.blue).min(1.0);
-                let color = halo / alpha;
+            let coverage = halo.red.max(halo.green).max(halo.blue).min(1.0);
 
-                TyLinSrgbaF32::new(color.red, color.green, color.blue, alpha)
-            } else {
-                TyLinSrgbaF32::new(
-                    pixel.red + halo.red,
-                    pixel.green + halo.green,
-                    pixel.blue + halo.blue,
-                    pixel.alpha,
-                )
-            };
-
-            image.set_pixel(x as u32, y as u32, lit);
+            image.set_pixel(
+                x as u32,
+                y as u32,
+                RenderPixel {
+                    light: pixel.light + halo,
+                    transmittance: pixel.transmittance * (1.0 - coverage),
+                },
+            );
         }
     }
 }
@@ -172,10 +166,10 @@ fn gaussian_kernel(sigma: f64) -> Vec<f32> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        RenderBloom, RenderImage,
-        bloom::{apply_bloom, gaussian_blur, gaussian_kernel, over_threshold},
+        RenderBloom, RenderImage, RenderPixel,
+        bloom::{BLACK, apply_bloom, gaussian_blur, gaussian_kernel, over_threshold},
     };
-    use ty_math::{TyLinSrgbF32, TyLinSrgbaF32};
+    use ty_math::TyLinSrgbF32;
 
     fn close(a: f32, b: f32) -> bool {
         (a - b).abs() < 1e-5
@@ -235,11 +229,21 @@ mod tests {
     }
 
     #[test]
-    fn the_halo_adds_to_hits_and_gives_misses_an_alpha() {
-        let mut image = RenderImage::new(7, 1);
-        image.set_pixel(3, 0, TyLinSrgbaF32::new(0.1, 0.1, 0.1, 1.0));
+    fn the_halo_adds_to_the_light_and_covers_by_its_peak() {
+        let hit = RenderPixel {
+            light: TyLinSrgbF32::new(0.1, 0.1, 0.1),
+            transmittance: BLACK,
+        };
+        let glass = RenderPixel {
+            light: BLACK,
+            transmittance: TyLinSrgbF32::new(0.5, 0.5, 0.5),
+        };
 
-        let mut emission = vec![TyLinSrgbF32::new(0.0, 0.0, 0.0); 7];
+        let mut image = RenderImage::new(7, 1);
+        image.set_pixel(3, 0, hit);
+        image.set_pixel(1, 0, glass);
+
+        let mut emission = vec![BLACK; 7];
         emission[3] = TyLinSrgbF32::new(8.0, 4.0, 0.0);
 
         apply_bloom(
@@ -252,21 +256,32 @@ mod tests {
             },
         );
 
-        // The hit keeps its alpha and brightens by the halo's center.
+        // The hit stays opaque and brightens by the halo's center.
         let center = image.pixel(3, 0).unwrap();
-        assert_eq!(center.alpha, 1.0);
-        assert!(center.red > 0.1 && center.green > 0.1 && center.blue == 0.1);
+        assert_eq!(center.transmittance, BLACK);
+        assert!(center.light.red > 0.1 && center.light.green > 0.1 && center.light.blue == 0.1);
 
-        // A neighbor takes the halo's peak as its alpha and the halo over
-        // that alpha as its color, so the two multiply back to the halo.
+        // A miss beside it takes the halo as its light and passes one minus
+        // the halo's peak.
         let beside = image.pixel(2, 0).unwrap();
-        assert!(beside.alpha > 0.0 && beside.alpha < 1.0, "{beside:?}");
-        assert!(close(beside.red, 1.0));
-        assert!(close(beside.green, 0.5));
-        assert_eq!(beside.blue, 0.0);
+        assert!(
+            beside.light.red > 0.0 && beside.light.red < 1.0,
+            "{beside:?}"
+        );
+        assert!(close(beside.light.green, beside.light.red / 2.0));
+        assert_eq!(beside.light.blue, 0.0);
+        assert!(close(beside.transmittance.red, 1.0 - beside.light.red));
+        assert_eq!(beside.transmittance.green, beside.transmittance.red);
+        assert_eq!(beside.transmittance.blue, beside.transmittance.red);
         assert_eq!(image.pixel(4, 0), Some(beside));
 
-        // A halo past one clamps the alpha and keeps its brightness.
+        // Glass passes its share of what the halo leaves.
+        let glass = image.pixel(1, 0).unwrap();
+        let miss = image.pixel(5, 0).unwrap();
+        assert_eq!(glass.light, miss.light);
+        assert!(close(glass.transmittance.red, miss.transmittance.red / 2.0));
+
+        // A halo past one covers the pixel and keeps its brightness.
         let mut bright = RenderImage::new(1, 1);
         apply_bloom(
             &mut bright,
@@ -278,11 +293,11 @@ mod tests {
             },
         );
         let pixel = bright.pixel(0, 0).unwrap();
-        assert_eq!(pixel.alpha, 1.0);
-        assert!(pixel.red > 1.0, "{pixel:?}");
+        assert_eq!(pixel.transmittance, BLACK);
+        assert!(pixel.light.red > 1.0, "{pixel:?}");
 
         let mut dark = RenderImage::new(7, 1);
-        dark.set_pixel(3, 0, TyLinSrgbaF32::new(0.1, 0.1, 0.1, 1.0));
+        dark.set_pixel(3, 0, hit);
         let before = dark.clone();
         apply_bloom(
             &mut dark,

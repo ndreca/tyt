@@ -94,9 +94,15 @@ let view = RenderView {
 ## Rays
 
 The `cpu` feature adds the rays. `RenderViewRays` gives the world ray
-through each pixel center of a view over an image. `cast_ray` marches a
-ray through every placement's grid to the nearest voxel and returns a
-`RenderHit` with:
+through each pixel center of a view over an image. `RenderRayWalk` marches
+a ray through every placement's grid and yields a `RenderHit` at each
+surface it crosses, nearest first, out to a distance. The surface is the
+boundary between materials. In each placement the ray remembers the
+material of the cell it is inside. Entering a live cell of another
+material is a hit. Entering a cell of the same material or an empty cell
+yields nothing, so a slab of one material shows one face and no back face.
+A ray that starts inside a cell leaves that cell's material before it can
+hit anything. `cast_ray` returns the walk's first hit. A hit carries:
 
 1. The placement
 2. The cell
@@ -104,13 +110,13 @@ ray through every placement's grid to the nearest voxel and returns a
 4. Where on the face the ray landed
 5. The distance
 
-A shadow ray is the same cast toward a light with a distance cap.
+A shadow ray is the same walk toward a light with a distance cap.
 
 ```rust
 let rays = RenderViewRays::new(&view, 1024, 1024);
 let ray = rays.ray(512, 512);
 
-if let Some(hit) = cast_ray(&scene, &ray, f64::INFINITY) {
+for hit in RenderRayWalk::new(&scene, &ray, f64::INFINITY) {
     let object_id = scene.placement(hit.placement_id)?.object_id;
     let occlusion = corner_occlusion(scene.object(object_id)?, &hit.face);
 }
@@ -131,12 +137,13 @@ emissive term. The light kinds reach a hit differently:
 4. A hemisphere light mixes sky and ground by the normal's +Y
 
 Under `RenderOcclusion::Corner`, the corner occlusion darkens the
-hemisphere light. A shadow is one grid ray toward the light. `RenderShadow`
-casts it per pixel, per face, or per corner, and blends the corner results
-across the face. A `RenderBloom` adds a halo over the emissive term before
-the tonemap: the part of each hit's emission over its threshold, blurred
-out to its radius and scaled by its strength, lands on every pixel. The
-default strength of `0` skips the pass.
+hemisphere light. A shadow is one grid ray toward the light that transmits
+by the pass of each surface it meets, so a red pane throws a red shadow.
+`RenderShadow` casts it per pixel, per face, or per corner, and blends the
+corner results across the face per channel. A `RenderBloom` adds a halo
+over the emissive term before the tonemap: the part of each hit's emission
+over its threshold, blurred out to its radius and scaled by its strength,
+lands on every pixel. The default strength of `0` skips the pass.
 
 ```rust
 let image = render(
@@ -151,15 +158,20 @@ let image = render(
 
 ## Images
 
-A `RenderImage` is a linear-light RGBA `f32` buffer, rows top to bottom.
+A `RenderImage` holds one `RenderPixel` per pixel, rows top to bottom: the
+light that reached it in linear radiance and its transmittance, the share
+of what lies behind the scene that passes through per channel. A miss has
+no light and full transmittance. An opaque hit has its shade and none.
 `RenderOcclusion` picks whether a render shades with the corner occlusion
 `voxsurface` computes.
 
 `RenderOutput` holds the 8-bit sRGB image a PNG stores.
-`RenderOutput::from_image` runs each hit through the Khronos PBR Neutral
-curve in `tonemap` and then the sRGB transfer. Each miss becomes
-transparent or the background color. A miss only the bloom reached
-composites over the background or keeps its alpha.
+`RenderOutput::from_image` takes the larger of one minus the peak
+transmittance and the peak of the light, clamped to one, as each pixel's
+alpha. It runs the light over that alpha through the Khronos PBR Neutral
+curve in `tonemap` and then the sRGB transfer. Under a background color it
+adds the background scaled by the transmittance after the tonemap and
+writes the pixel at full alpha.
 
 ```rust
 let output = RenderOutput::from_image(&image, None);

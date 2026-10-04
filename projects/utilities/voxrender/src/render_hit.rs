@@ -3,7 +3,8 @@ use branded_id::U32Id;
 use voxcore::BVoxVoxel;
 use voxsurface::SurfaceSpan;
 
-/// Where a ray first meets a voxel.
+/// One surface hit of a ray: the face through which it entered a live
+/// cell of a material other than the one it was inside.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct RenderHit {
     /// The placement the ray hit.

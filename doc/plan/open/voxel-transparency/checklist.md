@@ -34,7 +34,7 @@ code-level choices in [implementation-decisions.md](implementation-decisions.md)
          reflectance is `0.04` at `1.5` and `1` at `0`, and the goldens hold
       6. The crate README's materials section and the contract's Materials
          section describe the fields, with `ior`'s effect
-- [ ] **S2. The ray walk.** `cast_ray.rs` becomes a `RenderRayWalk`, an
+- [x] **S2. The ray walk.** `render_ray_walk.rs` holds `RenderRayWalk`, an
       iterator over `RenderHit`s in distance order, with `cast_ray` as its
       first hit within a distance.
       1. One DDA state per placement carries the material the ray is inside.
@@ -50,10 +50,11 @@ code-level choices in [implementation-decisions.md](implementation-decisions.md)
          `cast_ray` tests pass unchanged
       4. The crate README's rays section describes the walk. The contract's
          Surface section states the surface rule
-- [ ] **S3. The pixel walk.** `render` composites each pixel's walk front
+- [x] **S3. The pixel walk.** `render` composites each pixel's walk front
       to back into an image of light and transmittance.
-      1. `RenderImage`'s pixel becomes a pair of `TyLinSrgbF32`s, the light
-         and the transmittance. A miss has no light and full transmittance
+      1. `RenderImage`'s pixel becomes `RenderPixel`, a pair of
+         `TyLinSrgbF32`s, the light and the transmittance. A miss has no
+         light and full transmittance
       2. `shade_hit` scales the diffuse term by `1 - transmission` in
          `direct_radiance` and `hemisphere_radiance`, and returns the
          material's pass beside the color and the emission
@@ -77,7 +78,7 @@ code-level choices in [implementation-decisions.md](implementation-decisions.md)
          glass over white stays white, and every golden holds
       7. The contract's Shading and Output sections state the pass, the
          walk, and the output rules
-- [ ] **S4. Shadows.** `shadow_factor` returns a `TyLinSrgbF64`.
+- [x] **S4. Shadows.** `shadow_factor` returns a `TyLinSrgbF64`.
       1. The shadow ray walks `RenderRayWalk` and multiplies the pass of each
          hit until the throughput is zero or the ray reaches its distance cap
       2. `bilinear` blends per channel for `per-corner`

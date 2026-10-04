@@ -1,11 +1,14 @@
 use crate::{
     BRenderView, Error, RenderBloom, RenderHit, RenderImage, RenderLight, RenderMaterial,
-    RenderOcclusion, RenderRay, RenderScene, RenderShadow, RenderViewRays, Result, ShadowTarget,
-    apply_bloom, cast_ray,
+    RenderOcclusion, RenderPixel, RenderRay, RenderRayWalk, RenderScene, RenderShadow,
+    RenderViewRays, Result, ShadowTarget, apply_bloom,
 };
 use branded_id::U32Id;
-use std::f64::consts::PI;
-use ty_math::{TyLinSrgbF32, TyLinSrgbF64, TyLinSrgbaF32, TyVector3F64};
+use std::{
+    f64::consts::PI,
+    ops::{Add, Mul},
+};
+use ty_math::{TyLinSrgbF32, TyLinSrgbF64, TyVector3F64};
 use voxsurface::{SurfaceSpan, corner_occlusion};
 
 /// The GGX alpha floor that keeps a mirror's lobe finite.
@@ -22,12 +25,18 @@ const BIAS: f64 = 1e-4;
 /// face. It keeps a corner sample in front of the hit's cell.
 const INSET: f64 = 1e-3;
 
+const BLACK: TyLinSrgbF64 = TyLinSrgbF64::new(0.0, 0.0, 0.0);
+
+const WHITE: TyLinSrgbF64 = TyLinSrgbF64::new(1.0, 1.0, 1.0);
+
 /// Renders the view `view_id` of `scene` into a `width` by `height` image
 /// under every light of the scene. `occlusion` decides whether the corner
-/// occlusion darkens the hemisphere light. A pixel a ray hits is opaque. A
-/// pixel no ray hits stays transparent black until `bloom`'s halo reaches
-/// it. Errors if the view is not one of the scene's, a side is zero, or a
-/// bloom value is out of range.
+/// occlusion darkens the hemisphere light. Each pixel walks its ray front
+/// to back, adding each hit's shade at its coverage and passing the rest
+/// through by the material's pass. A pixel no ray hits carries no light and
+/// full transmittance until `bloom`'s halo reaches it. Errors if the view
+/// is not one of the scene's, a side is zero, or a bloom value is out of
+/// range.
 pub fn render(
     scene: &RenderScene,
     view_id: U32Id<BRenderView>,
@@ -50,28 +59,18 @@ pub fn render(
 
     for y in 0..height {
         for x in 0..width {
-            let ray = rays.ray(x, y);
+            let shade = shade_ray(scene, occlusion, &rays.ray(x, y));
 
-            if let Some(hit) = cast_ray(scene, &ray, f64::INFINITY) {
-                let shade = shade_hit(scene, occlusion, &ray, &hit);
+            image.set_pixel(
+                x,
+                y,
+                RenderPixel {
+                    light: shade.light.into_format(),
+                    transmittance: shade.transmittance.into_format(),
+                },
+            );
 
-                image.set_pixel(
-                    x,
-                    y,
-                    TyLinSrgbaF32::new(
-                        shade.color.red as f32,
-                        shade.color.green as f32,
-                        shade.color.blue as f32,
-                        1.0,
-                    ),
-                );
-
-                emission[y as usize * width as usize + x as usize] = TyLinSrgbF32::new(
-                    shade.emission.red as f32,
-                    shade.emission.green as f32,
-                    shade.emission.blue as f32,
-                );
-            }
+            emission[y as usize * width as usize + x as usize] = shade.emission.into_format();
         }
     }
 
@@ -106,6 +105,45 @@ fn check_bloom(bloom: RenderBloom) -> Result<()> {
     Ok(())
 }
 
+/// What a pixel's ray shades to.
+struct RayShade {
+    /// The light that reached the pixel through every hit, in linear
+    /// radiance.
+    light: TyLinSrgbF64,
+
+    /// The emissive term within `light`, which the bloom reads.
+    emission: TyLinSrgbF64,
+
+    /// The share of what lies behind the scene that passes through.
+    transmittance: TyLinSrgbF64,
+}
+
+/// The shade of `ray` through `scene`, front to back.
+fn shade_ray(scene: &RenderScene, occlusion: RenderOcclusion, ray: &RenderRay) -> RayShade {
+    let mut light = BLACK;
+    let mut emission = BLACK;
+    let mut throughput = WHITE;
+
+    for hit in RenderRayWalk::new(scene, ray, f64::INFINITY) {
+        let shade = shade_hit(scene, occlusion, ray, &hit);
+        let covered = throughput * shade.coverage;
+
+        light += covered * shade.color;
+        emission += covered * shade.emission;
+        throughput *= shade.pass;
+
+        if throughput == BLACK {
+            break;
+        }
+    }
+
+    RayShade {
+        light,
+        emission,
+        transmittance: throughput,
+    }
+}
+
 /// What a hit shades to.
 struct HitShade {
     /// The linear color, lit by every light plus the emission.
@@ -113,6 +151,12 @@ struct HitShade {
 
     /// The emissive term within `color`, which the bloom reads.
     emission: TyLinSrgbF64,
+
+    /// The share of the pixel the hit fills.
+    coverage: f64,
+
+    /// The share of the light behind the hit that continues, per channel.
+    pass: TyLinSrgbF64,
 }
 
 /// The shade of `hit` seen along `ray` under every light of `scene`.
@@ -132,14 +176,7 @@ fn shade_hit(
         .object(placement.object_id)
         .expect("a placement's object is one of the scene's");
 
-    let material = scene
-        .material(
-            object
-                .voxel_material(hit.voxel_id)
-                .expect("a hit lands on a live voxel"),
-        )
-        .expect("a voxel samples one of the scene's materials");
-
+    let material = hit_material(scene, hit);
     let transform = &placement.transform;
 
     let normal =
@@ -169,13 +206,13 @@ fn shade_hit(
                 let toward = rotation * TyVector3F64::Z;
                 let radiance = direct_radiance(material, normal, view, toward);
 
-                if radiance == TyLinSrgbF64::new(0.0, 0.0, 0.0) {
+                if radiance == BLACK {
                     continue;
                 }
 
                 let lit = shadow_factor(scene, hit, shadow, &ShadowTarget::Direction(toward));
 
-                color += radiance * light_color * (strength * lit);
+                color += radiance * light_color * lit * strength;
             }
 
             RenderLight::Point {
@@ -194,14 +231,14 @@ fn shade_hit(
 
                 let radiance = direct_radiance(material, normal, view, to_light / distance);
 
-                if radiance == TyLinSrgbF64::new(0.0, 0.0, 0.0) {
+                if radiance == BLACK {
                     continue;
                 }
 
                 let reach = point_attenuation(distance, range);
                 let lit = shadow_factor(scene, hit, shadow, &ShadowTarget::Position(position));
 
-                color += radiance * light_color * (strength * reach * lit);
+                color += radiance * light_color * lit * (strength * reach);
             }
 
             RenderLight::Spot {
@@ -224,7 +261,7 @@ fn shade_hit(
                 let toward = to_light / distance;
                 let radiance = direct_radiance(material, normal, view, toward);
 
-                if radiance == TyLinSrgbF64::new(0.0, 0.0, 0.0) {
+                if radiance == BLACK {
                     continue;
                 }
 
@@ -238,7 +275,7 @@ fn shade_hit(
 
                 let lit = shadow_factor(scene, hit, shadow, &ShadowTarget::Position(position));
 
-                color += radiance * light_color * (strength * reach * lit);
+                color += radiance * light_color * lit * (strength * reach);
             }
 
             RenderLight::Hemisphere {
@@ -251,7 +288,30 @@ fn shade_hit(
         }
     }
 
-    HitShade { color, emission }
+    HitShade {
+        color,
+        emission,
+        coverage: material.base_color.alpha,
+        pass: material_pass(material),
+    }
+}
+
+fn hit_material<'a>(scene: &'a RenderScene, hit: &RenderHit) -> &'a RenderMaterial {
+    let placement = scene
+        .placement(hit.placement_id)
+        .expect("a hit lands on one of the scene's placements");
+
+    let object = scene
+        .object(placement.object_id)
+        .expect("a placement's object is one of the scene's");
+
+    scene
+        .material(
+            object
+                .voxel_material(hit.voxel_id)
+                .expect("a hit lands on a live voxel"),
+        )
+        .expect("a voxel samples one of the scene's materials")
 }
 
 /// The light `material` reflects toward `view` from a unit radiance
@@ -273,7 +333,7 @@ fn direct_radiance(
     let n_dot_l = normal.dot(light);
 
     if n_dot_l <= 0.0 {
-        return TyLinSrgbF64::new(0.0, 0.0, 0.0);
+        return BLACK;
     }
 
     let n_dot_v = normal.dot(view).max(1e-4);
@@ -284,9 +344,8 @@ fn direct_radiance(
     let alpha = (material.roughness * material.roughness).max(MIN_ALPHA);
     let alpha2 = alpha * alpha;
 
-    let white = TyLinSrgbF64::new(1.0, 1.0, 1.0);
     let f0 = normal_reflectance(material);
-    let fresnel = f0 + (white - f0) * (1.0 - v_dot_h).powi(5);
+    let fresnel = f0 + (WHITE - f0) * (1.0 - v_dot_h).powi(5);
 
     let distribution = alpha2 / (PI * (n_dot_h * n_dot_h * (alpha2 - 1.0) + 1.0).powi(2));
 
@@ -294,7 +353,9 @@ fn direct_radiance(
         / (n_dot_l * (n_dot_v * n_dot_v * (1.0 - alpha2) + alpha2).sqrt()
             + n_dot_v * (n_dot_l * n_dot_l * (1.0 - alpha2) + alpha2).sqrt());
 
-    let diffuse = (white - fresnel) * material.base_color.color * ((1.0 - material.metallic) / PI);
+    let diffuse = (WHITE - fresnel)
+        * material.base_color.color
+        * ((1.0 - material.metallic) * (1.0 - material.transmission) / PI);
     let specular = fresnel * (distribution * visibility);
 
     (diffuse + specular) * n_dot_l
@@ -322,7 +383,8 @@ fn hemisphere_radiance(
     let ambient = (sky * up + ground * (1.0 - up)) * strength;
 
     let f0 = normal_reflectance(material);
-    let diffuse = material.base_color.color * (1.0 - material.metallic);
+    let diffuse =
+        material.base_color.color * ((1.0 - material.metallic) * (1.0 - material.transmission));
 
     let open = 1.0 - material.occlusion_strength * (1.0 - occlusion);
 
@@ -337,6 +399,17 @@ fn normal_reflectance(material: &RenderMaterial) -> TyLinSrgbF64 {
     let dielectric = TyLinSrgbF64::new(dielectric, dielectric, dielectric);
 
     dielectric * (1.0 - material.metallic) + material.base_color.color * material.metallic
+}
+
+/// The pass of `material`: the share of the light behind its surface that
+/// continues, per channel.
+fn material_pass(material: &RenderMaterial) -> TyLinSrgbF64 {
+    let alpha = material.base_color.alpha;
+    let transmitted = (WHITE - normal_reflectance(material))
+        * material.base_color.color
+        * (material.transmission * (1.0 - material.metallic));
+
+    WHITE * (1.0 - alpha) + transmitted * alpha
 }
 
 /// How much of a point light reaches `distance` meters out: the inverse
@@ -364,14 +437,14 @@ fn cone_attenuation(cosine: f64, inner: f64, outer: f64) -> f64 {
     (cosine * scale + offset).clamp(0.0, 1.0).powi(2)
 }
 
-/// How lit `hit` is by a light at `target`, from `0` in shadow to `1` in
-/// the open, with rays cast at the `shadow` granularity.
+/// How lit `hit` is by a light at `target`, per channel, from black in
+/// shadow to white in the open, with rays cast at the `shadow` granularity.
 fn shadow_factor(
     scene: &RenderScene,
     hit: &RenderHit,
     shadow: RenderShadow,
     target: &ShadowTarget,
-) -> f64 {
+) -> TyLinSrgbF64 {
     let placement = scene
         .placement(hit.placement_id)
         .expect("a hit lands on one of the scene's placements");
@@ -393,18 +466,23 @@ fn shadow_factor(
         };
 
         let ray = RenderRay { origin, direction };
+        let mut throughput = WHITE;
 
-        if cast_ray(scene, &ray, max_distance).is_some() {
-            0.0
-        } else {
-            1.0
+        for hit in RenderRayWalk::new(scene, &ray, max_distance) {
+            throughput *= material_pass(hit_material(scene, &hit));
+
+            if throughput == BLACK {
+                break;
+            }
         }
+
+        throughput
     };
 
     let inset = |along: f64| along.clamp(INSET, 1.0 - INSET);
 
     match shadow {
-        RenderShadow::None => 1.0,
+        RenderShadow::None => WHITE,
 
         RenderShadow::PerPixel => sample(hit.along.map(inset)),
 
@@ -442,11 +520,14 @@ fn face_point(face: &SurfaceSpan, along: [f64; 2], bias: f64) -> TyVector3F64 {
 /// * `values` - one value per corner, in the order of the face's
 ///   [`corners`](SurfaceSpan::corners).
 /// * `along` - the fraction across the face's `u` and `v`.
-fn bilinear(face: &SurfaceSpan, values: [f64; 4], along: [f64; 2]) -> f64 {
+fn bilinear<T>(face: &SurfaceSpan, values: [T; 4], along: [f64; 2]) -> T
+where
+    T: Add<Output = T> + Default + Mul<f64, Output = T>,
+{
     face.corners()
         .iter()
         .zip(values)
-        .map(|([uu, vv], value)| {
+        .fold(T::default(), |sum, ([uu, vv], value)| {
             let weight_u = if *uu == face.u0 {
                 1.0 - along[0]
             } else {
@@ -458,20 +539,20 @@ fn bilinear(face: &SurfaceSpan, values: [f64; 4], along: [f64; 2]) -> f64 {
                 along[1]
             };
 
-            value * weight_u * weight_v
+            sum + value * weight_u * weight_v
         })
-        .sum()
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{
-        Error, RenderBloom, RenderLight, RenderMaterial, RenderObject, RenderOcclusion,
-        RenderPlacement, RenderProjection, RenderRay, RenderScene, RenderShadow, RenderView,
-        ShadowTarget, cast_ray, fit_distance, render,
+        Error, RenderBloom, RenderHit, RenderLight, RenderMaterial, RenderObject, RenderOcclusion,
+        RenderPixel, RenderPlacement, RenderProjection, RenderRay, RenderScene, RenderShadow,
+        RenderView, ShadowTarget, cast_ray, fit_distance, render,
         render::{
-            bilinear, check_bloom, cone_attenuation, direct_radiance, hemisphere_radiance,
-            normal_reflectance, point_attenuation, shade_hit, shadow_factor,
+            BLACK, WHITE, bilinear, check_bloom, cone_attenuation, direct_radiance,
+            hemisphere_radiance, material_pass, normal_reflectance, point_attenuation, shade_hit,
+            shade_ray, shadow_factor,
         },
         test_utilities::{
             check_goldens, cube_scene, glow_scene, l_shape_scene, room_scene, solid_object,
@@ -480,13 +561,13 @@ mod tests {
     };
     use branded_id::U32Id;
     use ty_math::{
-        TyLinSrgbF64, TyLinSrgbaF64, TyPoseF64, TyQuaternionExt, TyQuaternionF64, TyTransformF64,
-        TyVector3Ext, TyVector3F64, TyVector3U32,
+        TyLinSrgbF32, TyLinSrgbF64, TyLinSrgbaF64, TyPoseF64, TyQuaternionExt, TyQuaternionF64,
+        TyTransformF64, TyVector3Ext, TyVector3F64, TyVector3U32,
     };
     use voxsurface::SurfaceSpan;
 
     #[test]
-    fn hits_are_opaque_and_misses_transparent() {
+    fn hits_block_what_lies_behind_and_misses_pass_it() {
         let mut scene = RenderScene::default();
         let material_id = scene.retain_material(RenderMaterial::default()).unwrap();
         let mut object = RenderObject::new("c".to_owned(), TyVector3U32::ONE).unwrap();
@@ -537,10 +618,10 @@ mod tests {
         .unwrap();
 
         let center = image.pixel(4, 4).unwrap();
-        assert_eq!(center.alpha, 1.0);
-        assert!(center.red > 0.0);
-        assert_eq!(image.pixel(0, 0).unwrap().alpha, 0.0);
-        assert_eq!(image.pixel(7, 7).unwrap().alpha, 0.0);
+        assert_eq!(center.transmittance, TyLinSrgbF32::new(0.0, 0.0, 0.0));
+        assert!(center.light.red > 0.0);
+        assert_eq!(image.pixel(0, 0), Some(RenderPixel::default()));
+        assert_eq!(image.pixel(7, 7), Some(RenderPixel::default()));
 
         assert_eq!(
             render(
@@ -697,6 +778,175 @@ mod tests {
         }
     }
 
+    /// A rough dielectric of `base_color`.
+    fn matte(base_color: TyLinSrgbaF64) -> RenderMaterial {
+        RenderMaterial {
+            base_color,
+            metallic: 0.0,
+            roughness: 1.0,
+            ..RenderMaterial::default()
+        }
+    }
+
+    /// A smooth dielectric of `base_color` at full transmission.
+    fn glass(base_color: TyLinSrgbaF64) -> RenderMaterial {
+        RenderMaterial {
+            roughness: 0.2,
+            transmission: 1.0,
+            ..matte(base_color)
+        }
+    }
+
+    /// A bar of one voxel per material along +X under a white hemisphere
+    /// light, and the ray that enters it from -X through the center of its
+    /// first voxel. Equal materials share one entry.
+    fn bar(materials: &[RenderMaterial]) -> (RenderScene, RenderRay) {
+        let mut scene = RenderScene::default();
+        let mut object = RenderObject::new(
+            "bar".to_owned(),
+            TyVector3U32::new(materials.len() as u32, 1, 1),
+        )
+        .unwrap();
+        let mut ids = Vec::new();
+
+        for (x, material) in materials.iter().enumerate() {
+            let material_id = match ids.iter().find(|(known, _)| known == material) {
+                Some((_, material_id)) => *material_id,
+
+                None => {
+                    let material_id = scene.retain_material(*material).unwrap();
+                    ids.push((*material, material_id));
+                    material_id
+                }
+            };
+
+            let voxel_id = object.voxel_id(TyVector3U32::new(x as u32, 0, 0)).unwrap();
+            object
+                .set_voxel_material(voxel_id, Some(material_id))
+                .unwrap();
+        }
+
+        let object_id = U32Id::from_u32(0);
+        scene.retain_object(object_id, object).unwrap();
+        scene
+            .retain_placement(RenderPlacement {
+                object_id,
+                transform: TyTransformF64::IDENTITY,
+            })
+            .unwrap();
+        scene
+            .retain_light(RenderLight::Hemisphere {
+                sky: WHITE,
+                ground: WHITE,
+                strength: 1.0,
+            })
+            .unwrap();
+
+        let ray = RenderRay {
+            origin: TyVector3F64::new(-1.0, 0.5, 0.5),
+            direction: TyVector3F64::X,
+        };
+
+        (scene, ray)
+    }
+
+    fn close(a: TyLinSrgbF64, b: TyLinSrgbF64) -> bool {
+        (a.red - b.red).abs() < 1e-9
+            && (a.green - b.green).abs() < 1e-9
+            && (a.blue - b.blue).abs() < 1e-9
+    }
+
+    #[test]
+    fn a_clear_pane_shows_the_wall_behind_it_through_one_highlight() {
+        let white = TyLinSrgbaF64::new(1.0, 1.0, 1.0, 1.0);
+        let red = TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0);
+
+        // The white sky lights a face by its diffuse color plus the 0.04
+        // reflectance. The pane reflects the 0.04 alone and passes 0.96.
+        let (pane, ray) = bar(&[glass(white)]);
+        let alone = shade_ray(&pane, RenderOcclusion::None, &ray);
+        assert!(
+            close(alone.light, TyLinSrgbF64::new(0.04, 0.04, 0.04)),
+            "{:?}",
+            alone.light
+        );
+        assert!(close(
+            alone.transmittance,
+            TyLinSrgbF64::new(0.96, 0.96, 0.96)
+        ));
+        assert_eq!(alone.emission, BLACK);
+
+        // The wall behind it shades to (1.04, 0.04, 0.04).
+        let (walled, _) = bar(&[glass(white), matte(red)]);
+        let through = shade_ray(&walled, RenderOcclusion::None, &ray);
+        assert!(
+            close(
+                through.light,
+                TyLinSrgbF64::new(0.04 + 0.96 * 1.04, 0.04 + 0.96 * 0.04, 0.04 + 0.96 * 0.04)
+            ),
+            "{:?}",
+            through.light
+        );
+        assert_eq!(through.transmittance, BLACK);
+    }
+
+    #[test]
+    fn a_pane_two_voxels_thick_shades_as_a_thin_one() {
+        let white = TyLinSrgbaF64::new(1.0, 1.0, 1.0, 1.0);
+        let red = TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0);
+
+        let (thin, ray) = bar(&[glass(white), matte(red)]);
+        let (thick, _) = bar(&[glass(white), glass(white), matte(red)]);
+
+        let thin = shade_ray(&thin, RenderOcclusion::None, &ray);
+        let thick = shade_ray(&thick, RenderOcclusion::None, &ray);
+        assert_eq!(thick.light, thin.light);
+        assert_eq!(thick.transmittance, thin.transmittance);
+    }
+
+    #[test]
+    fn a_half_alpha_voxel_averages_its_shade_and_the_wall() {
+        let blue = matte(TyLinSrgbaF64::new(0.0, 0.0, 1.0, 0.5));
+        let red = matte(TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0));
+
+        // Half of (0.04, 0.04, 1.04) plus half of (1.04, 0.04, 0.04).
+        let (walled, ray) = bar(&[blue, red]);
+        let shade = shade_ray(&walled, RenderOcclusion::None, &ray);
+        assert!(
+            close(shade.light, TyLinSrgbF64::new(0.54, 0.04, 0.54)),
+            "{:?}",
+            shade.light
+        );
+        assert_eq!(shade.transmittance, BLACK);
+
+        // Over nothing, the other half passes.
+        let (open, _) = bar(&[blue]);
+        let shade = shade_ray(&open, RenderOcclusion::None, &ray);
+        assert!(close(shade.light, TyLinSrgbF64::new(0.02, 0.02, 0.52)));
+        assert_eq!(shade.transmittance, TyLinSrgbF64::new(0.5, 0.5, 0.5));
+    }
+
+    #[test]
+    fn a_transmissive_emitter_adds_its_emission_at_its_coverage() {
+        let emitter = RenderMaterial {
+            emissive_color: TyLinSrgbF64::new(1.0, 0.5, 0.0),
+            emissive_strength: 2.0,
+            ..glass(TyLinSrgbaF64::new(1.0, 1.0, 1.0, 0.5))
+        };
+
+        let (scene, ray) = bar(&[emitter]);
+        let shade = shade_ray(&scene, RenderOcclusion::None, &ray);
+
+        assert_eq!(shade.emission, TyLinSrgbF64::new(1.0, 0.5, 0.0));
+        // Half the emission plus half the 0.04 reflectance.
+        assert!(close(shade.light, TyLinSrgbF64::new(1.02, 0.52, 0.02)));
+        // The uncovered half passes whole and the covered half passes 0.96.
+        assert!(close(
+            shade.transmittance,
+            TyLinSrgbF64::new(0.98, 0.98, 0.98)
+        ));
+    }
+
     #[test]
     fn emission_adds_and_a_light_behind_the_face_adds_nothing() {
         let mut scene = RenderScene::default();
@@ -799,6 +1049,81 @@ mod tests {
             normal_reflectance(&mirror),
             TyLinSrgbF64::new(1.0, 1.0, 1.0)
         );
+    }
+
+    #[test]
+    fn the_pass_is_the_uncovered_part_plus_what_the_covered_part_transmits() {
+        let white = TyLinSrgbaF64::new(1.0, 1.0, 1.0, 1.0);
+
+        assert_eq!(material_pass(&RenderMaterial::default()), BLACK);
+        assert_eq!(
+            material_pass(&matte(TyLinSrgbaF64::new(1.0, 1.0, 1.0, 0.0))),
+            WHITE
+        );
+        assert!(close(
+            material_pass(&glass(white)),
+            TyLinSrgbF64::new(0.96, 0.96, 0.96)
+        ));
+        assert!(close(
+            material_pass(&glass(TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0))),
+            TyLinSrgbF64::new(0.96, 0.0, 0.0)
+        ));
+        assert!(close(
+            material_pass(&glass(TyLinSrgbaF64::new(1.0, 1.0, 1.0, 0.5))),
+            TyLinSrgbF64::new(0.98, 0.98, 0.98)
+        ));
+
+        // A metal and a mirror reflect everything they cover.
+        assert_eq!(
+            material_pass(&RenderMaterial {
+                metallic: 1.0,
+                ..glass(white)
+            }),
+            BLACK
+        );
+        assert_eq!(
+            material_pass(&RenderMaterial {
+                ior: 0.0,
+                ..glass(white)
+            }),
+            BLACK
+        );
+    }
+
+    #[test]
+    fn transmission_takes_its_share_from_the_diffuse_term() {
+        let white = TyLinSrgbaF64::new(1.0, 1.0, 1.0, 1.0);
+        let normal = TyVector3F64::Y;
+        let radiance = |transmission| {
+            direct_radiance(
+                &RenderMaterial {
+                    transmission,
+                    ..matte(white)
+                },
+                normal,
+                normal,
+                normal,
+            )
+        };
+
+        let opaque = radiance(0.0);
+        let clear = radiance(1.0);
+        assert!(clear.red > 0.0 && clear.red < opaque.red);
+        assert!(close(radiance(0.5), (opaque + clear) * 0.5));
+
+        // The hemisphere light leaves the reflectance alone.
+        let ambient = hemisphere_radiance(
+            &RenderMaterial {
+                transmission: 1.0,
+                ..matte(white)
+            },
+            normal,
+            WHITE,
+            WHITE,
+            1.0,
+            1.0,
+        );
+        assert!(close(ambient, TyLinSrgbF64::new(0.04, 0.04, 0.04)));
     }
 
     #[test]
@@ -940,17 +1265,19 @@ mod tests {
         assert_eq!(ratio(6.5), 0.0);
     }
 
-    /// A 4 by 2 by 4 grid: a floor across `y = 0` and a wall one high along
-    /// `x = 3` on top of it.
-    fn walled() -> RenderScene {
+    /// A 4 by 2 by 4 grid: a floor across `y = 0` and a wall of `wall` one
+    /// high along `x = 3` on top of it.
+    fn walled(wall: RenderMaterial) -> RenderScene {
         let mut scene = RenderScene::default();
-        let material_id = scene.retain_material(RenderMaterial::default()).unwrap();
+        let floor_id = scene.retain_material(RenderMaterial::default()).unwrap();
+        let wall_id = scene.retain_material(wall).unwrap();
 
         let mut object = RenderObject::new("w".to_owned(), TyVector3U32::new(4, 2, 4)).unwrap();
         for x in 0..4 {
             for z in 0..4 {
                 for y in 0..(if x == 3 { 2 } else { 1 }) {
                     let voxel_id = object.voxel_id(TyVector3U32::new(x, y, z)).unwrap();
+                    let material_id = if y == 0 { floor_id } else { wall_id };
                     object
                         .set_voxel_material(voxel_id, Some(material_id))
                         .unwrap();
@@ -969,66 +1296,73 @@ mod tests {
         scene
     }
 
+    /// The light over the walled fixture: from +x at a slope of 0.7, so a
+    /// ray from the floor at `x` clears the wall's top at `y = 2` when
+    /// `x < 1.571`.
+    fn over_the_wall() -> ShadowTarget {
+        ShadowTarget::Direction(TyVector3F64::new(3.0, 2.1, 0.0).normalize())
+    }
+
+    /// The walled fixture's floor hit under a ray down at `x`.
+    fn floor_at(scene: &RenderScene, x: f64) -> RenderHit {
+        cast_ray(
+            scene,
+            &RenderRay {
+                origin: TyVector3F64::new(x, 5.0, 1.5),
+                direction: -TyVector3F64::Y,
+            },
+            f64::INFINITY,
+        )
+        .unwrap()
+    }
+
     #[test]
     fn a_wall_shadows_the_floor_behind_it_at_each_granularity() {
-        let scene = walled();
+        let scene = walled(RenderMaterial::default());
+        let target = over_the_wall();
 
-        // The light comes from +x at a slope of 0.7, so a ray from the
-        // floor at `x` clears the wall's top at `y = 2` when `x < 1.571`.
-        let target = ShadowTarget::Direction(TyVector3F64::new(3.0, 2.1, 0.0).normalize());
-
-        let hit_at = |x: f64| {
-            cast_ray(
-                &scene,
-                &RenderRay {
-                    origin: TyVector3F64::new(x, 5.0, 1.5),
-                    direction: -TyVector3F64::Y,
-                },
-                f64::INFINITY,
-            )
-            .unwrap()
-        };
-
-        let near = hit_at(1.25);
-        let far = hit_at(1.75);
+        let near = floor_at(&scene, 1.25);
+        let far = floor_at(&scene, 1.75);
         assert_eq!(near.along, [0.5, 0.25]);
         assert_eq!(far.along, [0.5, 0.75]);
 
         // Per pixel splits the face at the shadow's edge.
         assert_eq!(
             shadow_factor(&scene, &near, RenderShadow::PerPixel, &target),
-            1.0
+            WHITE
         );
         assert_eq!(
             shadow_factor(&scene, &far, RenderShadow::PerPixel, &target),
-            0.0
+            BLACK
         );
 
         // Per face reads the center, which the light clears.
         assert_eq!(
             shadow_factor(&scene, &far, RenderShadow::PerFace, &target),
-            1.0
+            WHITE
         );
 
         // Per corner blends the lit corners at x = 1 with the shadowed
         // corners at x = 2.
-        assert!(
-            (shadow_factor(&scene, &near, RenderShadow::PerCorner, &target) - 0.75).abs() < 1e-9
-        );
-        assert!(
-            (shadow_factor(&scene, &far, RenderShadow::PerCorner, &target) - 0.25).abs() < 1e-9
-        );
+        assert!(close(
+            shadow_factor(&scene, &near, RenderShadow::PerCorner, &target),
+            WHITE * 0.75
+        ));
+        assert!(close(
+            shadow_factor(&scene, &far, RenderShadow::PerCorner, &target),
+            WHITE * 0.25
+        ));
 
         assert_eq!(
             shadow_factor(&scene, &far, RenderShadow::None, &target),
-            1.0
+            WHITE
         );
 
         // The floor well in front of the wall is fully lit.
-        let open = hit_at(0.5);
+        let open = floor_at(&scene, 0.5);
         assert_eq!(
             shadow_factor(&scene, &open, RenderShadow::PerCorner, &target),
-            1.0
+            WHITE
         );
 
         // A point light's ray ends at the light. The wall beyond a light at
@@ -1036,12 +1370,160 @@ mod tests {
         let behind = ShadowTarget::Position(TyVector3F64::new(1.75, 1.5, 1.5));
         assert_eq!(
             shadow_factor(&scene, &far, RenderShadow::PerPixel, &behind),
-            1.0
+            WHITE
         );
         let beyond = ShadowTarget::Position(TyVector3F64::new(5.0, 1.5, 1.5));
         assert_eq!(
             shadow_factor(&scene, &far, RenderShadow::PerPixel, &beyond),
-            0.0
+            BLACK
+        );
+    }
+
+    #[test]
+    fn a_red_glass_wall_throws_a_red_shadow_that_blends_per_channel() {
+        let scene = walled(glass(TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0)));
+        let target = over_the_wall();
+        let red = TyLinSrgbF64::new(0.96, 0.0, 0.0);
+
+        let near = floor_at(&scene, 1.25);
+        let far = floor_at(&scene, 1.75);
+
+        assert!(close(
+            shadow_factor(&scene, &far, RenderShadow::PerPixel, &target),
+            red
+        ));
+        assert_eq!(
+            shadow_factor(&scene, &far, RenderShadow::PerFace, &target),
+            WHITE
+        );
+
+        // Three lit corners and one red: the green and blue fall to the
+        // lit share, the red almost holds.
+        assert!(close(
+            shadow_factor(&scene, &near, RenderShadow::PerCorner, &target),
+            WHITE * 0.75 + red * 0.25
+        ));
+        assert!(close(
+            shadow_factor(&scene, &far, RenderShadow::PerCorner, &target),
+            WHITE * 0.25 + red * 0.75
+        ));
+    }
+
+    /// A 1 by `2 + thickness` by 1 grid: a matte white floor at `y = 0` and
+    /// a pane of `pane` `thickness` voxels thick from `y = 2`, under a white
+    /// directional light straight down. Returns the scene and the ray down
+    /// onto the floor from the gap.
+    fn paned(pane: RenderMaterial, thickness: u32) -> (RenderScene, RenderRay) {
+        let mut scene = RenderScene::default();
+        let floor_id = scene
+            .retain_material(matte(TyLinSrgbaF64::new(1.0, 1.0, 1.0, 1.0)))
+            .unwrap();
+        let pane_id = scene.retain_material(pane).unwrap();
+
+        let mut object =
+            RenderObject::new("paned".to_owned(), TyVector3U32::new(1, 2 + thickness, 1)).unwrap();
+        object
+            .set_voxel_material(object.voxel_id(TyVector3U32::ZERO).unwrap(), Some(floor_id))
+            .unwrap();
+        for y in 2..2 + thickness {
+            let voxel_id = object.voxel_id(TyVector3U32::new(0, y, 0)).unwrap();
+            object.set_voxel_material(voxel_id, Some(pane_id)).unwrap();
+        }
+
+        let object_id = U32Id::from_u32(0);
+        scene.retain_object(object_id, object).unwrap();
+        scene
+            .retain_placement(RenderPlacement {
+                object_id,
+                transform: TyTransformF64::IDENTITY,
+            })
+            .unwrap();
+        scene
+            .retain_light(RenderLight::Directional {
+                rotation: TyQuaternionF64::from_look_direction(-TyVector3F64::Y, -TyVector3F64::Z)
+                    .unwrap(),
+                color: WHITE,
+                strength: 1.0,
+                shadow: RenderShadow::PerPixel,
+            })
+            .unwrap();
+
+        let ray = RenderRay {
+            origin: TyVector3F64::new(0.5, 1.5, 0.5),
+            direction: -TyVector3F64::Y,
+        };
+
+        (scene, ray)
+    }
+
+    #[test]
+    fn a_red_pane_throws_a_red_shadow_and_two_voxels_thick_throw_the_same() {
+        let red = glass(TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0));
+        let up = ShadowTarget::Direction(TyVector3F64::Y);
+
+        let (thin, ray) = paned(red, 1);
+        let hit = cast_ray(&thin, &ray, f64::INFINITY).unwrap();
+        assert_eq!(hit.distance, 0.5);
+        let shadow = shadow_factor(&thin, &hit, RenderShadow::PerPixel, &up);
+        assert!(
+            close(shadow, TyLinSrgbF64::new(0.96, 0.0, 0.0)),
+            "{shadow:?}"
+        );
+
+        // Every sample of the face lies under the pane.
+        assert_eq!(
+            shadow_factor(&thin, &hit, RenderShadow::PerFace, &up),
+            shadow
+        );
+        assert!(close(
+            shadow_factor(&thin, &hit, RenderShadow::PerCorner, &up),
+            shadow
+        ));
+
+        let (thick, ray) = paned(red, 2);
+        let hit = cast_ray(&thick, &ray, f64::INFINITY).unwrap();
+        assert_eq!(
+            shadow_factor(&thick, &hit, RenderShadow::PerPixel, &up),
+            shadow
+        );
+    }
+
+    #[test]
+    fn a_voxel_that_covers_nothing_casts_no_shadow_and_an_opaque_one_casts_black() {
+        let up = ShadowTarget::Direction(TyVector3F64::Y);
+
+        let (scene, ray) = paned(matte(TyLinSrgbaF64::new(1.0, 0.0, 0.0, 0.0)), 1);
+        let hit = cast_ray(&scene, &ray, f64::INFINITY).unwrap();
+        assert_eq!(
+            shadow_factor(&scene, &hit, RenderShadow::PerPixel, &up),
+            WHITE
+        );
+
+        let (scene, ray) = paned(matte(TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0)), 1);
+        let hit = cast_ray(&scene, &ray, f64::INFINITY).unwrap();
+        assert_eq!(
+            shadow_factor(&scene, &hit, RenderShadow::PerPixel, &up),
+            BLACK
+        );
+    }
+
+    #[test]
+    fn a_light_through_a_red_pane_lights_the_floor_red() {
+        let red = glass(TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0));
+        let (open, ray) = paned(red, 0);
+        let (shaded, _) = paned(red, 1);
+
+        let floor = |scene: &RenderScene| {
+            let hit = cast_ray(scene, &ray, f64::INFINITY).unwrap();
+            shade_hit(scene, RenderOcclusion::None, &ray, &hit).color
+        };
+
+        let lit = floor(&open);
+        assert!(lit.red > 0.0 && lit.red == lit.green);
+        let tinted = floor(&shaded);
+        assert!(
+            close(tinted, lit * TyLinSrgbF64::new(0.96, 0.0, 0.0)),
+            "{tinted:?}"
         );
     }
 
@@ -1151,26 +1633,30 @@ mod tests {
         assert_ne!(off, glow);
 
         // Down the middle column, the first hit is the strip's top edge.
+        let opaque = TyLinSrgbF32::new(0.0, 0.0, 0.0);
         let top = (0..64)
-            .find(|y| off.pixel(32, *y).unwrap().alpha == 1.0)
+            .find(|y| off.pixel(32, *y).unwrap().transmittance == opaque)
             .unwrap();
         assert!(top > 4, "{top}");
 
-        // The miss above it takes the halo, orange, as a translucent pixel.
+        // The miss above it takes the halo, orange, and passes the rest.
         let above = glow.pixel(32, top - 1).unwrap();
-        assert_eq!(off.pixel(32, top - 1).unwrap().alpha, 0.0);
-        assert!(above.alpha > 0.0 && above.alpha < 1.0, "{above:?}");
+        assert_eq!(off.pixel(32, top - 1), Some(RenderPixel::default()));
         assert!(
-            above.red > above.green && above.green > above.blue,
+            above.transmittance.red > 0.0 && above.transmittance.red < 1.0,
+            "{above:?}"
+        );
+        assert!(
+            above.light.red > above.light.green && above.light.green > above.light.blue,
             "{above:?}"
         );
 
-        assert!(glow.pixel(32, top - 2).unwrap().alpha < above.alpha);
-        assert_eq!(glow.pixel(0, 0).unwrap().alpha, 0.0);
+        assert!(glow.pixel(32, top - 2).unwrap().transmittance.red > above.transmittance.red);
+        assert_eq!(glow.pixel(0, 0), Some(RenderPixel::default()));
 
         let strip = glow.pixel(32, top).unwrap();
-        assert_eq!(strip.alpha, 1.0);
-        assert!(strip.red > off.pixel(32, top).unwrap().red);
+        assert_eq!(strip.transmittance, opaque);
+        assert!(strip.light.red > off.pixel(32, top).unwrap().light.red);
     }
 
     #[test]

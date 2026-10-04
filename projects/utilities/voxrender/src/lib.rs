@@ -26,6 +26,7 @@ mod render_material;
 mod render_object;
 mod render_occlusion;
 mod render_output;
+mod render_pixel;
 mod render_placement;
 mod render_projection;
 mod render_scene;
@@ -49,6 +50,7 @@ pub use render_material::*;
 pub use render_object::*;
 pub use render_occlusion::*;
 pub use render_output::*;
+pub use render_pixel::*;
 pub use render_placement::*;
 pub use render_projection::*;
 pub use render_scene::*;
@@ -82,6 +84,12 @@ mod render_ray;
 
 #[cfg(feature = "cpu")]
 pub use render_ray::*;
+
+#[cfg(feature = "cpu")]
+mod render_ray_walk;
+
+#[cfg(feature = "cpu")]
+pub use render_ray_walk::*;
 
 #[cfg(feature = "cpu")]
 mod render_view_rays;
