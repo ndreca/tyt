@@ -7,9 +7,9 @@ Code-level choices go in an `implementation-decisions.md` beside this file.
 
 - The builder only records the model. Every check the `.sdfj` document can carry
   runs in vxl. Every voxj document vxl writes passes `vxl vox-doc validate`.
-- The [modeling API](reference/modeling-api.md) and
-  [model evaluation](reference/model-evaluation.md) lead. A change to the
-  commands' surface or behavior lands in them in the same step.
+- The [modeling API](../../../../projects/utilities/vxl/docs/modeling-api.md)
+  and [model evaluation](../../../ref/sdf-doc/model-evaluation.md) lead. A
+  change to the commands' surface or behavior lands in them in the same step.
 - The builder has no dependencies and no install step. The builder runs under
   Node 24, Bun, and Deno and imports only `node:` modules and the builder's
   `.ts` files.
@@ -76,7 +76,7 @@ where the loop fails.
 - [x] **S10. Integration commands.** Move every workspace binary's `completion`
       command to `integration completion print`. Update the tyt-meta templates
       that scaffold new crates and the READMEs that show the command.
-- [ ] **S11. Skill.** Write the skill's workflow as the README lays it out. Move
+- [x] **S11. Skill.** Write the skill's workflow as the README lays it out. Move
       the workflow and the modeling API into vxl. The modeling API links to
       other pages by their repository URLs.
       `vxl integration skill print voxel-modeling` prints the workflow and then

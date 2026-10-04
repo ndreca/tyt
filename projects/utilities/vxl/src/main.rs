@@ -1,7 +1,7 @@
 use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::Shell;
 use std::{io, process};
-use vxl::{DependenciesImpl, Error, Vxl};
+use vxl::{AgentSkill, DependenciesImpl, Error, Vxl};
 
 /// A command-line tool for working with voxels.
 #[derive(Clone, Debug, Parser)]
@@ -27,6 +27,10 @@ enum Integration {
     /// Prints shell completions.
     #[command(name = "completion", subcommand)]
     Completion(Completion),
+
+    /// Prints agent skills.
+    #[command(name = "skill", subcommand)]
+    Skill(Skill),
 }
 
 /// The commands for shell completions.
@@ -42,11 +46,28 @@ enum Completion {
     },
 }
 
+/// The commands for agent skills.
+#[derive(Clone, Debug, Subcommand)]
+#[command(subcommand_value_name = "command")]
+enum Skill {
+    /// Prints a skill as a `SKILL.md`.
+    #[command(name = "print")]
+    Print {
+        /// The skill to print.
+        #[arg(value_name = "skill")]
+        skill: AgentSkill,
+    },
+}
+
 fn main() {
     let cli = Cli::parse();
     match cli.command {
         Command::Integration(Integration::Completion(Completion::Print { shell })) => {
             clap_complete::generate(shell, &mut Cli::command(), "vxl", &mut io::stdout());
+        }
+
+        Command::Integration(Integration::Skill(Skill::Print { skill })) => {
+            print!("{}", skill.skill_md());
         }
 
         Command::Vxl(cmd) => {

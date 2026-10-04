@@ -1,11 +1,12 @@
 # Model evaluation
 
-_Part of the [voxel modeling plan](../README.md)._
+_Part of the [voxel modeling plan](../../plan/open/voxel-modeling/README.md)._
 
 This page sets what vxl computes from a model. The
-[modeling API](modeling-api.md) lists the calls. Most formulas come from Inigo
-Quilez's MIT-licensed [articles](https://iquilezles.org/articles/). Each section
-links the articles it follows.
+[modeling API](../../../projects/utilities/vxl/docs/modeling-api.md) lists the
+calls. Most formulas come from Inigo Quilez's MIT-licensed
+[articles](https://iquilezles.org/articles/). Each section links the articles it
+follows.
 
 ## Pipeline
 
@@ -38,12 +39,12 @@ links the articles it follows.
 ## Settings
 
 Both commands merge their flags and profile as
-[`vxl mesh-doc voxelize`](../../vxl-commands/reference/mesh-doc/voxelize.md)
+[`vxl mesh-doc voxelize`](../../plan/open/vxl-commands/reference/mesh-doc/voxelize.md)
 does.
 
 1. `--profile` reads `sdfDoc.build.profiles` or `sdfDoc.voxelize.profiles`
    through the `.vxlconfig` cascade that
-   [`mesh-doc voxelize` profiles](../../vxl-commands/reference/mesh-doc/voxelize.md#profiles)
+   [`mesh-doc voxelize` profiles](../../plan/open/vxl-commands/reference/mesh-doc/voxelize.md#profiles)
    load. The cascade holds no built-in profiles. A name reads from the last file
    supplying it.
 2. A profile holds the flags by camel-case name with their command-line values.
@@ -62,8 +63,8 @@ does.
 ## The `.sdfj` document
 
 The builder records the model and computes nothing. The
-[sdfj format](sdfj-format.md) sets the document. vxl expands and checks every
-value when it voxelizes.
+[sdfj format](../../../projects/sdf-formats/sdfj/docs/sdf-json-file-format.md)
+sets the document. vxl expands and checks every value when it voxelizes.
 
 ## Libraries
 
@@ -77,8 +78,9 @@ value when it voxelizes.
 3. vxl's built-in layer embeds `materials`, which names a material for each name
    the modeling API lists.
 4. vxl reads each library the settings list and checks it by the
-   [sdfj format](sdfj-format.md#rules). The builder reads the libraries in list
-   order, and a later library wins a name.
+   [sdfj format](../../../projects/sdf-formats/sdfj/docs/sdf-json-file-format.md#rules).
+   The builder reads the libraries in list order, and a later library wins a
+   name.
 5. `lib` and `mat` read an entry the first time the model uses its name. One
    library entry gives one value however often the model uses the entry.
    Reading an entry also reads every entry it references.
@@ -619,8 +621,9 @@ it belongs to by its path of part names.
    `vxl mesh-doc voxelize` lists. `--voxel-size` reads above zero,
    `--resolution` takes a whole number above zero, and the two flags exclude
    each other. `--flatten nodes` and `--flatten objects` need `--frame world`.
-4. vxl reads the document by the [sdfj format](sdfj-format.md#rules) and checks
-   every entry's arguments.
+4. vxl reads the document by the
+   [sdfj format](../../../projects/sdf-formats/sdfj/docs/sdf-json-file-format.md#rules)
+   and checks every entry's arguments.
    - Radii, widths, thicknesses, sizes, scales, chamfers, periods, and `spread`
      are above zero, except that a `cone` end may take 0.
    - Counts, `octaves`, and `depth` are whole numbers above zero. An `ngon`'s

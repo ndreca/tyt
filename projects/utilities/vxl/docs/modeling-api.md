@@ -1,14 +1,13 @@
 # Modeling API
 
-_Part of the [voxel modeling plan](../README.md)._
-
 A model file describes a voxel model in TypeScript as signed distance functions
 measured in meters. Its code runs once and returns a list of steps.
 `vxl sdf-doc build` records the steps as an `.sdfj` document.
 `vxl sdf-doc voxelize` samples the `.sdfj` document on a voxel grid and writes
 voxj. This page lists everything a model file can use and stands alone as the
-context for writing one. [Model evaluation](model-evaluation.md) sets exactly
-what each call computes.
+context for writing one.
+[Model evaluation](https://github.com/tyleo/tyt/blob/main/doc/ref/sdf-doc/model-evaluation.md)
+sets exactly what each call computes.
 
 ## Running
 
@@ -34,8 +33,8 @@ vxl sdf-doc voxelize chair.sdfj
 
 `vxl sdf-doc voxelize` samples the document on a [voxel grid](#coordinates) and
 writes a voxj document. Its flags follow
-[`vxl mesh-doc voxelize`](../../vxl-commands/reference/mesh-doc/voxelize.md) and
-take the values that page lists:
+[`vxl mesh-doc voxelize`](https://github.com/tyleo/tyt/blob/main/doc/plan/open/vxl-commands/reference/mesh-doc/voxelize.md)
+and take the values that page lists:
 
 1. `[output]` sets the voxj document's path. The path defaults to the input's
    path with a `.voxj` extension, or `.voxjz` under `--format zip`
@@ -110,7 +109,7 @@ Either takes an optional `description`. Each flag key takes its flag's values.
 The output and the encoding flags stay on the command line. A flag on the
 command line overrides the profile, and either size flag replaces both
 `resolution` and `voxelSize`. The `.vxlconfig` files load in
-[`mesh-doc voxelize`'s cascade](../../vxl-commands/reference/mesh-doc/voxelize.md#profiles).
+[`mesh-doc voxelize`'s cascade](https://github.com/tyleo/tyt/blob/main/doc/plan/open/vxl-commands/reference/mesh-doc/voxelize.md#profiles).
 `vxl profile sdf-doc build list` and `vxl profile sdf-doc voxelize list` print
 the profiles.
 
@@ -597,7 +596,7 @@ type Value = boolean | number | string | number[] | IntValue | JsonValue;
    such as `mat.oak` or `mat.ruby`.
 2. `material` makes a material from the key/value properties a voxj palette
    holds. The eight listed properties follow voxj's
-   [glTF conventions](../../../../../projects/voxel-formats/voxj/docs/voxel-json-file-format.md#gltf-conventions)
+   [glTF conventions](https://github.com/tyleo/tyt/blob/main/projects/voxel-formats/voxj/docs/voxel-json-file-format.md#gltf-conventions)
    for their meanings, ranges, and defaults, except that `metallic` defaults
    to 0. The colors take sRGB hex: `#RRGGBB`, or `#RRGGBBAA` for a `baseColor`
    with alpha.
@@ -867,8 +866,9 @@ A second piece usually means a shape floats.
 Each command stops at its first error. A build error reports the failing call,
 the argument, and the value. A voxelize error reports the failing value and the
 failing step's path of part names. A step that writes no cell stops nothing and
-reads `0 cells` in the report. The [checks](model-evaluation.md#checks) list
-every error.
+reads `0 cells` in the report. The
+[checks](https://github.com/tyleo/tyt/blob/main/doc/ref/sdf-doc/model-evaluation.md#checks)
+list every error.
 
 ## Resolution
 

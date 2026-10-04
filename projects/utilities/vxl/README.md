@@ -133,3 +133,18 @@ vxl node set rotation scene.voxj --select house/door --rotation 0 37 0
 # Places the same door node under garage too.
 vxl node link scene.voxj --select house/door --select-parent garage
 ```
+
+## Models
+
+`sdf-doc build` records a voxel model written in TypeScript as an `.sdfj`
+document. `sdf-doc voxelize` samples the document into Voxel JSON. The
+[modeling API](docs/modeling-api.md) lists every call a model file can make.
+`integration skill print voxel-modeling` prints a skill that teaches an agent
+the modeling loop. The skill teaches the API of the vxl that printed the skill.
+Upgrading vxl takes a reprint.
+
+```sh
+# Installs the skill for Claude Code in the current project.
+mkdir -p .claude/skills/voxel-modeling
+vxl integration skill print voxel-modeling > .claude/skills/voxel-modeling/SKILL.md
+```

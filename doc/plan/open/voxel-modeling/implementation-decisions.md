@@ -276,3 +276,20 @@ land.
 2. Each command path runs nouns then a verb, as `vxl object voxels flip` does.
    `integration completion print` prints the completions, and
    `integration skill print` prints the skill
+
+## S11. Skill
+
+1. The modeling API moves to vxl's `docs/` and the workflow to vxl's
+   `skills/voxel-modeling/`. A published crate embeds only files inside the
+   crate's directory
+2. `AgentSkill` in vxl's library builds each skill's `SKILL.md`. The
+   frontmatter's `name` takes the skill's command-line value. `metadata` records
+   the vxl version
+3. A test checks that each link in a skill reaches one of the skill's headings
+   or an `https://` URL. The same test fails when two headings share an anchor
+   because the workflow and the modeling API land in one `SKILL.md`
+4. The workflow writes the pass on one line because Claude runs the line as
+   written. A flag per line would split the pass into separate shell commands
+5. The sdfj format moves to `docs/sdf-json-file-format.md` with the title SDF
+   Json File Format. The file name and title follow voxj's
+   `docs/voxel-json-file-format.md`

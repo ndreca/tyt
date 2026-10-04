@@ -1,11 +1,10 @@
-# sdfj format
-
-_Part of the [voxel modeling plan](../README.md)._
+# SDF Json File Format
 
 An `.sdfj` document records a model's calls as JSON. `vxl sdf-doc build` writes
 the document, and `vxl sdf-doc voxelize` reads it. The
-[modeling API](modeling-api.md) lists the calls.
-[Model evaluation](model-evaluation.md) sets what each entry computes.
+[modeling API](../../../utilities/vxl/docs/modeling-api.md) lists the calls.
+[Model evaluation](../../../../doc/ref/sdf-doc/model-evaluation.md) sets what
+each entry computes.
 
 ## Structure
 
@@ -236,7 +235,8 @@ their tables, and `parts` indexes `nodes`. One entry can take several names.
 
 The builder writes a name for each of the model's named exports, with each map
 in name order. An entry the model copies from a
-[library](modeling-api.md#libraries) keeps every name it holds there.
+[library](../../../utilities/vxl/docs/modeling-api.md#libraries) keeps every
+name it holds there.
 
 ```jsonc
 // export const walnut = material({ baseColor: "#5C4033" });
@@ -262,13 +262,15 @@ the [entries](#entries), and these rules:
    `childNodes`
 5. Every name in `names` points into its table
 
-The [checks](model-evaluation.md#checks) cover the arguments' values.
+The [checks](../../../../doc/ref/sdf-doc/model-evaluation.md#checks) cover the
+arguments' values.
 
 ## Examples
 
 ### Chair
 
-The legs and seat of the [chair](modeling-api.md#example):
+The legs and seat of the
+[chair](../../../utilities/vxl/docs/modeling-api.md#example):
 
 ```ts
 const oak = (axis: Axis, seed: number) => grain(mat.oak, { axis, seed });
@@ -341,7 +343,8 @@ Built with the `materials` library, `chair.sdfj` holds:
 
 Each `oak` call writes its own `shades` entry. The palette merges the identical
 shades when vxl voxelizes. `mat.oak` copies the `oak` entry from the
-[`materials`](modeling-api.md#the-materials-library) library with its name.
+[`materials`](../../../utilities/vxl/docs/modeling-api.md#the-materials-library)
+library with its name.
 
 ### Forest
 
@@ -452,6 +455,6 @@ Built with the `materials` library, `forest.sdfj` holds:
 ```
 
 Voxelizing writes a voxj node for each place.
-[Model evaluation](model-evaluation.md#the-voxj-document) sets which places
-share an object. Offsets add up: the rabbit under `tree.1` lands at
-`[-0.6, 0, 0.15]` with the path `forest/tree.1/rabbit.1/rabbit`.
+[Model evaluation](../../../../doc/ref/sdf-doc/model-evaluation.md#the-voxj-document)
+sets which places share an object. Offsets add up: the rabbit under `tree.1`
+lands at `[-0.6, 0, 0.15]` with the path `forest/tree.1/rabbit.1/rabbit`.

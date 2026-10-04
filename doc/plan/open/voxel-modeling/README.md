@@ -40,13 +40,15 @@ the loop hands back.
 
 Three pages specify the pipeline:
 
-1. The [modeling API](reference/modeling-api.md) lists every call a model file
-   can make, with its signature and its effect in a line or two. It stands alone
-   as the context an agent loads before writing a model.
-2. [Model evaluation](reference/model-evaluation.md) sets exactly what each call
-   computes, for the implementations to follow.
-3. The [sdfj format](reference/sdfj-format.md) sets the document the builder
-   writes and vxl reads.
+1. The [modeling API](../../../../projects/utilities/vxl/docs/modeling-api.md)
+   lists every call a model file can make, with its signature and its effect in
+   a line or two. It stands alone as the context an agent loads before writing a
+   model.
+2. [Model evaluation](../../../ref/sdf-doc/model-evaluation.md) sets exactly
+   what each call computes, for the implementations to follow.
+3. The
+   [sdfj format](../../../../projects/sdf-formats/sdfj/docs/sdf-json-file-format.md)
+   sets the document the builder writes and vxl reads.
 
 ## Shapes
 

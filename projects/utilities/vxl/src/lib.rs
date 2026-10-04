@@ -6,10 +6,12 @@
 pub mod commands;
 pub mod dependencies;
 
+mod agent_skill;
 mod error;
 mod result;
 mod vxl;
 
+pub use agent_skill::*;
 pub use dependencies::*;
 pub use error::*;
 pub use result::*;
