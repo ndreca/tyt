@@ -3,6 +3,7 @@
 mod cells_scene;
 mod check_goldens;
 mod cube_scene;
+mod glass_scene;
 mod glow_scene;
 mod l_shape_scene;
 mod lit_room;
@@ -15,6 +16,7 @@ mod two_placements_scene;
 pub(crate) use cells_scene::*;
 pub(crate) use check_goldens::*;
 pub(crate) use cube_scene::*;
+pub(crate) use glass_scene::*;
 pub(crate) use glow_scene::*;
 pub(crate) use l_shape_scene::*;
 pub(crate) use lit_room::*;

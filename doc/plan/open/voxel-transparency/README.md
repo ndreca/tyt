@@ -1,6 +1,7 @@
 # Voxel transparency plan
 
-Status: **open.** The design was settled 2026-10-02. The steps live in
+Status: **open.** The design was settled 2026-10-02 and revised 2026-10-03
+after the first review render. The steps live in
 [checklist.md](checklist.md), checked off as they land. Code-level choices are logged
 in [implementation-decisions.md](implementation-decisions.md). The
 [contract](../../../ref/render/contract.md) gains the rules below as the
@@ -84,13 +85,16 @@ A shadow ray walks the same surface and multiplies the passes of the hits
 it meets until the throughput is zero or it reaches the light. The result
 is a color, so a red pane throws a red shadow. `per-corner` blends the four
 corners per channel. A pane two voxels thick shadows like a thin one because
-its seam is internal.
+its seam is internal. A shadow ray that starts inside a material starts with
+that material's pass, since the light crossed its surface to reach the
+point. A floor under a pane is lit through the pane.
 
 ## Occlusion and bloom
 
-The corner occlusion keeps reading every live cell as solid, the rule
-`voxsurface` has and `object mesh` bakes. A transparent
-voxel's emission adds at its coverage and blooms as any emission does.
+The corner occlusion counts a cell as solid only when its material's pass
+is zero, so glass darkens nothing it encloses. `object mesh` bakes the rule
+over every live cell until the mesh step. A transparent voxel's emission
+adds at its coverage and blooms as any emission does.
 
 ## Output
 
@@ -115,6 +119,27 @@ halo on a miss has the halo's peak as its alpha and composites over the
 background as it does today. The background never passes through the
 tonemap, which would turn a white background grey behind clear glass.
 
+## The mesh
+
+`voxsurface` culls a face against any live neighbor and bakes the occlusion
+over every live cell, so a mesh of the glass asset has a hole in the wall
+behind the clear block and a dark crease around every glass cell. The last
+step teaches it transparency:
+
+1. A `SurfaceGrid` cell says whether it is opaque, from its material's
+   pass. voxrender's grid has the pass at hand, and `object mesh` reads it
+   from the palette beside the object
+2. The cull keeps a face between an opaque cell and a transparent one,
+   drops a face between two transparent cells of one material, the slab
+   rule, and keeps a face between different transparent materials
+3. The occlusion bake counts only opaque cells, the rule the reference
+   uses
+4. The glTF writer marks a material whose alpha is below one as blended,
+   if it does not already
+
+The reference and the mesh then agree on which cells occlude and which
+faces exist.
+
 ## Decisions
 
 1. Front faces only. The slab rule shades a material boundary once, the
@@ -131,13 +156,22 @@ tonemap, which would turn a white background grey behind clear glass.
 5. One pass factor serves the pixel walk and the shadow walk, so a surface
    shadows exactly as it transmits.
 6. Shadows are colors. A scalar shadow would grey a stained-glass window.
-7. Transparent cells occlude like solid ones, matching the mesh bake.
+7. Transparent cells do not occlude. A cell counts for the corner occlusion
+   when its pass is zero. The first review render showed the inside of a
+   clear block black under the earlier rule, which counted every live cell
+   as the mesh bake does.
 8. The image carries light and transmittance, not a straight alpha. A
    single alpha cannot carry a tint, and compositing the background before
    the tonemap would recolor it. The straight alpha is an output rule.
 9. The ray walk is a `voxrender` iterator over surface hits, one DDA per
    placement merged by distance. `cast_ray` stays as its first hit.
 10. No new flag or profile key. Transparency comes from the palette.
+11. A shadow ray starts with the pass of the material it starts inside. The
+    review render showed a voxel buried in red glass lit as if the glass
+    were not there. A camera ray still starts clean, so a view from inside
+    a cell sees out of it.
+12. The mesher learns transparency as this plan's last step, so the render
+    and the mesh agree again.
 
 ## Out of scope
 
@@ -149,7 +183,3 @@ tonemap, which would turn a white background grey behind clear glass.
    name. If MagicaVoxel stores that value offset from the index, reading
    `ior` rejects such files on range. The fix is the bridge's. No `.vox`
    fixture in the repo confirms either way.
-4. The mesher. `voxsurface` culls a face against any solid neighbor, so an
-   opaque wall behind a glass pane has no face in a mesh. `object mesh` and
-   the standalone tier need a transparency-aware cull before they can show
-   glass. The follow-ups plan notes it.

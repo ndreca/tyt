@@ -110,6 +110,24 @@ mod bloom;
 pub(crate) use bloom::*;
 
 #[cfg(feature = "cpu")]
+mod material_pass;
+
+#[cfg(feature = "cpu")]
+pub(crate) use material_pass::*;
+
+#[cfg(feature = "cpu")]
+mod normal_reflectance;
+
+#[cfg(feature = "cpu")]
+pub(crate) use normal_reflectance::*;
+
+#[cfg(feature = "cpu")]
+mod opaque_grid;
+
+#[cfg(feature = "cpu")]
+pub(crate) use opaque_grid::*;
+
+#[cfg(feature = "cpu")]
 mod shadow_target;
 
 #[cfg(feature = "cpu")]

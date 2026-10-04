@@ -1,7 +1,8 @@
 use crate::{
-    BRenderView, Error, RenderBloom, RenderHit, RenderImage, RenderLight, RenderMaterial,
-    RenderOcclusion, RenderPixel, RenderRay, RenderRayWalk, RenderScene, RenderShadow,
-    RenderViewRays, Result, ShadowTarget, apply_bloom,
+    BRenderView, Error, OpaqueGrid, RenderBloom, RenderHit, RenderImage, RenderLight,
+    RenderMaterial, RenderOcclusion, RenderPixel, RenderRay, RenderRayWalk, RenderScene,
+    RenderShadow, RenderViewRays, Result, ShadowTarget, apply_bloom, material_pass,
+    normal_reflectance,
 };
 use branded_id::U32Id;
 use std::{
@@ -187,9 +188,11 @@ fn shade_hit(
     let open = match occlusion {
         RenderOcclusion::None => 1.0,
 
-        RenderOcclusion::Corner => {
-            bilinear(&hit.face, corner_occlusion(object, &hit.face), hit.along)
-        }
+        RenderOcclusion::Corner => bilinear(
+            &hit.face,
+            corner_occlusion(&OpaqueGrid::new(scene, object), &hit.face),
+            hit.along,
+        ),
     };
 
     let emission = material.emissive_color * material.emissive_strength;
@@ -391,27 +394,6 @@ fn hemisphere_radiance(
     ambient * (diffuse + f0) * open
 }
 
-/// The reflectance of `material` at normal incidence. The dielectric share
-/// follows from the index of refraction as `((ior - 1) / (ior + 1))^2`.
-fn normal_reflectance(material: &RenderMaterial) -> TyLinSrgbF64 {
-    let ior = material.ior;
-    let dielectric = ((ior - 1.0) / (ior + 1.0)).powi(2);
-    let dielectric = TyLinSrgbF64::new(dielectric, dielectric, dielectric);
-
-    dielectric * (1.0 - material.metallic) + material.base_color.color * material.metallic
-}
-
-/// The pass of `material`: the share of the light behind its surface that
-/// continues, per channel.
-fn material_pass(material: &RenderMaterial) -> TyLinSrgbF64 {
-    let alpha = material.base_color.alpha;
-    let transmitted = (WHITE - normal_reflectance(material))
-        * material.base_color.color
-        * (material.transmission * (1.0 - material.metallic));
-
-    WHITE * (1.0 - alpha) + transmitted * alpha
-}
-
 /// How much of a point light reaches `distance` meters out: the inverse
 /// square, times glTF's smooth window that reaches zero at `range`.
 fn point_attenuation(distance: f64, range: Option<f64>) -> f64 {
@@ -466,9 +448,14 @@ fn shadow_factor(
         };
 
         let ray = RenderRay { origin, direction };
-        let mut throughput = WHITE;
+        let walk = RenderRayWalk::new(scene, &ray, max_distance);
+        let mut throughput = entry_pass(scene, &walk);
 
-        for hit in RenderRayWalk::new(scene, &ray, max_distance) {
+        if throughput == BLACK {
+            return BLACK;
+        }
+
+        for hit in walk {
             throughput *= material_pass(hit_material(scene, &hit));
 
             if throughput == BLACK {
@@ -499,6 +486,19 @@ fn shadow_factor(
             bilinear(&hit.face, values, hit.along)
         }
     }
+}
+
+/// What the light paid to enter the materials `walk` starts inside.
+fn entry_pass(scene: &RenderScene, walk: &RenderRayWalk) -> TyLinSrgbF64 {
+    walk.starts_inside()
+        .iter()
+        .fold(WHITE, |pass, &material_id| {
+            let material = scene
+                .material(material_id)
+                .expect("a voxel samples one of the scene's materials");
+
+            pass * material_pass(material)
+        })
 }
 
 /// The point on `face` at `along`, the fraction across its `u` and `v`,
@@ -547,16 +547,15 @@ where
 mod tests {
     use crate::{
         Error, RenderBloom, RenderHit, RenderLight, RenderMaterial, RenderObject, RenderOcclusion,
-        RenderPixel, RenderPlacement, RenderProjection, RenderRay, RenderScene, RenderShadow,
-        RenderView, ShadowTarget, cast_ray, fit_distance, render,
+        RenderPixel, RenderPlacement, RenderProjection, RenderRay, RenderRayWalk, RenderScene,
+        RenderShadow, RenderView, ShadowTarget, cast_ray, fit_distance, render,
         render::{
             BLACK, WHITE, bilinear, check_bloom, cone_attenuation, direct_radiance,
-            hemisphere_radiance, material_pass, normal_reflectance, point_attenuation, shade_hit,
-            shade_ray, shadow_factor,
+            hemisphere_radiance, point_attenuation, shade_hit, shade_ray, shadow_factor,
         },
         test_utilities::{
-            check_goldens, cube_scene, glow_scene, l_shape_scene, room_scene, solid_object,
-            spot_room_scene, two_placements_scene,
+            check_goldens, cube_scene, glass_scene, glow_scene, l_shape_scene, room_scene,
+            solid_object, spot_room_scene, two_placements_scene,
         },
     };
     use branded_id::U32Id;
@@ -1030,63 +1029,55 @@ mod tests {
     }
 
     #[test]
-    fn the_index_of_refraction_sets_the_dielectric_reflectance() {
-        let glass = RenderMaterial {
-            metallic: 0.0,
-            ..RenderMaterial::default()
-        };
-        let f0 = normal_reflectance(&glass);
-        assert!((f0.red - 0.04).abs() < 1e-12);
-        assert_eq!(f0.green, f0.red);
-        assert_eq!(f0.blue, f0.red);
+    fn glass_leaves_the_face_behind_it_open_to_the_sky() {
+        let white = TyLinSrgbaF64::new(1.0, 1.0, 1.0, 1.0);
 
-        let mirror = RenderMaterial {
-            metallic: 0.0,
-            ior: 0.0,
-            ..RenderMaterial::default()
+        // The face of a white voxel behind `front`, shaded with and without
+        // the corner occlusion.
+        let behind = |front: RenderMaterial| {
+            let (scene, ray) = bar(&[front, matte(white)]);
+            let hit = RenderRayWalk::new(&scene, &ray, f64::INFINITY)
+                .nth(1)
+                .unwrap();
+            assert_eq!(hit.distance, 2.0);
+
+            (
+                shade_hit(&scene, RenderOcclusion::Corner, &ray, &hit).color,
+                shade_hit(&scene, RenderOcclusion::None, &ray, &hit).color,
+            )
         };
-        assert_eq!(
-            normal_reflectance(&mirror),
-            TyLinSrgbF64::new(1.0, 1.0, 1.0)
-        );
+
+        let (corner, open) = behind(glass(white));
+        assert!(open.red > 0.0);
+        assert_eq!(corner, open);
+
+        let (corner, open) = behind(matte(TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0)));
+        assert!(open.red > 0.0);
+        assert_eq!(corner, BLACK);
     }
 
     #[test]
-    fn the_pass_is_the_uncovered_part_plus_what_the_covered_part_transmits() {
-        let white = TyLinSrgbaF64::new(1.0, 1.0, 1.0, 1.0);
+    fn a_shadow_ray_pays_the_glass_it_starts_inside_and_nothing_in_the_open() {
+        let (scene, ray) = bar(&[
+            glass(TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0)),
+            matte(TyLinSrgbaF64::new(1.0, 1.0, 1.0, 1.0)),
+        ]);
+        let away = ShadowTarget::Direction(-TyVector3F64::X);
+        let mut walk = RenderRayWalk::new(&scene, &ray, f64::INFINITY);
 
-        assert_eq!(material_pass(&RenderMaterial::default()), BLACK);
+        // The pane's face stands in the open.
+        let pane = walk.next().unwrap();
         assert_eq!(
-            material_pass(&matte(TyLinSrgbaF64::new(1.0, 1.0, 1.0, 0.0))),
+            shadow_factor(&scene, &pane, RenderShadow::PerPixel, &away),
             WHITE
         );
-        assert!(close(
-            material_pass(&glass(white)),
-            TyLinSrgbF64::new(0.96, 0.96, 0.96)
-        ));
-        assert!(close(
-            material_pass(&glass(TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0))),
-            TyLinSrgbF64::new(0.96, 0.0, 0.0)
-        ));
-        assert!(close(
-            material_pass(&glass(TyLinSrgbaF64::new(1.0, 1.0, 1.0, 0.5))),
-            TyLinSrgbF64::new(0.98, 0.98, 0.98)
-        ));
 
-        // A metal and a mirror reflect everything they cover.
-        assert_eq!(
-            material_pass(&RenderMaterial {
-                metallic: 1.0,
-                ..glass(white)
-            }),
-            BLACK
-        );
-        assert_eq!(
-            material_pass(&RenderMaterial {
-                ior: 0.0,
-                ..glass(white)
-            }),
-            BLACK
+        // The wall's face behind it starts inside the red glass.
+        let wall = walk.next().unwrap();
+        let shadow = shadow_factor(&scene, &wall, RenderShadow::PerPixel, &away);
+        assert!(
+            close(shadow, TyLinSrgbF64::new(0.96, 0.0, 0.0)),
+            "{shadow:?}"
         );
     }
 
@@ -1673,6 +1664,21 @@ mod tests {
                 include_bytes!("goldens/glow-per-face.png"),
                 include_bytes!("goldens/glow-per-corner.png"),
                 include_bytes!("goldens/glow-unoccluded.png"),
+            ],
+        );
+    }
+
+    #[test]
+    fn the_glass_matches_its_goldens() {
+        check_goldens(
+            "glass",
+            glass_scene,
+            RenderBloom::default(),
+            [
+                include_bytes!("goldens/glass-per-pixel.png"),
+                include_bytes!("goldens/glass-per-face.png"),
+                include_bytes!("goldens/glass-per-corner.png"),
+                include_bytes!("goldens/glass-unoccluded.png"),
             ],
         );
     }

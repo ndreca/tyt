@@ -87,3 +87,31 @@ they land.
   the voxel's footprint. The per-channel corner blend runs under the walled
   fixture's slanted light instead. The fixture takes the wall's material for
   that test.
+
+## S5. The glass fixture
+
+- `glass_scene` and `glass.voxj` share one layout, so the golden and the
+  review render show the same scene under different rigs. The floor is grey
+  and the wall blue, so the wall's tint through the clear block and the
+  pane's red shadow on the floor both read against neutral ground.
+- The fixture's sun comes from behind the pane at an elevation of 50
+  degrees. The pane's red shadow falls on the open floor in front of the
+  pane, where the view sees it beside the pane instead of through it.
+- The pane rises one voxel past the wall so its top row stands against the
+  empty background, where the output's derived alpha applies.
+- The asset is `raw-json`, one triple per voxel, so a reader can edit it by
+  hand. The review renders stay out of the repository, as the rendering
+  plan's did.
+
+## S6. The review's changes
+
+- A cell occludes when its pass is zero, not when its alpha is one and its
+  transmission zero. A metal at full transmission has a zero pass and
+  occludes, as it blocks the pixel walk.
+- `OpaqueGrid` wraps a render object and the scene for `corner_occlusion`.
+  The rule is voxrender's until S7 moves it into `voxsurface`.
+- `material_pass` and `normal_reflectance` get their own files because
+  `OpaqueGrid` and `render.rs` both call them.
+- The walk lists the materials it starts inside and the shadow walk pays
+  their passes. The pixel walk does not, so a view from inside a cell still
+  sees out of it.

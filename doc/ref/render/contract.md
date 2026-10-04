@@ -92,15 +92,18 @@ one occlusion switch. There are four kinds:
 
 The occlusion switch is `none` or `corner`. `corner` is the
 neighbor-occupancy rule voxel art uses, one value per face corner from the
-three adjacent cells. It has one implementation, in `voxsurface`: the
-reference shades with it and `object mesh` bakes it.
+three adjacent cells, implemented once in `voxsurface`. The reference counts
+a cell as occupied only when its material's pass is zero, so glass darkens
+nothing it encloses. `object mesh` bakes the rule over every live cell.
 
 A shadow is one grid ray toward the light. The ray runs to infinity for a
 directional light and ends at a point or spot light. Its throughput starts
-at one and multiplies by the pass of each surface it meets, so a shadow is a
-color. A red pane throws a red shadow. A pane two voxels thick throws the
-shadow a thin one throws. Each light scales its contribution by what
-remains. A light samples the ray at one of three granularities:
+at the pass of each material the ray starts inside, which the light crossed
+to reach the point, and multiplies by the pass of each surface it meets, so
+a shadow is a color. A red pane throws a red shadow. A pane two voxels thick
+throws the shadow a thin one throws. A floor under a pane is lit through
+it. Each light scales its contribution by what remains. A light samples the
+ray at one of three granularities:
 
 1. `per-pixel` casts the ray from the hit: a crisp diagonal edge across faces,
    the MagicaVoxel render and Teardown look

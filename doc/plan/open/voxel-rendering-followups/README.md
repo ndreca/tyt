@@ -23,10 +23,9 @@ reference casts, so `per-face` and `per-corner` shadows match the reference
 exactly. The desktop tier adds volume marching later. A tier turns off the
 contract features it cannot afford, and the reference renders that tier's
 golden images with the same features off. The crate name was free on
-crates.io as of 2026-09-27. `voxsurface` culls a face against any solid
-neighbor, so an opaque wall behind a glass pane has no face in its mesh. The
-tier and `object mesh` need a transparency-aware cull before they can show
-the glass the reference renders.
+crates.io as of 2026-09-27. The tier needs the transparency-aware cull the
+[voxel transparency plan](../voxel-transparency/README.md)'s mesh step
+gives `voxsurface` before it can show the glass the reference renders.
 
 ## Waiting for a reason
 

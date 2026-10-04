@@ -20,12 +20,14 @@ pub struct RenderRayWalk<'a> {
     walks: Vec<PlacementWalk<'a>>,
 
     max_distance: f64,
+
+    inside: Vec<U32Id<BRenderMaterial>>,
 }
 
 impl<'a> RenderRayWalk<'a> {
     /// The walk of `ray` through `scene` out to `max_distance`.
     pub fn new(scene: &'a RenderScene, ray: &RenderRay, max_distance: f64) -> Self {
-        let walks = scene
+        let walks: Vec<PlacementWalk> = scene
             .iter_placements()
             .filter_map(|(placement_id, placement)| {
                 let object = scene
@@ -36,10 +38,19 @@ impl<'a> RenderRayWalk<'a> {
             })
             .collect();
 
+        let inside = walks.iter().filter_map(|walk| walk.inside).collect();
+
         RenderRayWalk {
             walks,
             max_distance,
+            inside,
         }
+    }
+
+    /// The materials the ray starts inside, one per placement whose start
+    /// cell holds one.
+    pub fn starts_inside(&self) -> &[U32Id<BRenderMaterial>] {
+        &self.inside
     }
 }
 
@@ -377,6 +388,28 @@ mod tests {
         assert_eq!(layers_along_x(&scene, 0.5), [(2, 1.5)]);
         assert_eq!(layers_along_x(&scene, 1.5), [(2, 0.5)]);
         assert_eq!(layers_along_x(&scene, 2.5), []);
+    }
+
+    #[test]
+    fn the_walk_lists_the_materials_the_ray_starts_inside() {
+        let scene = cells_scene(
+            [1, 1, 1],
+            &[([0, 0, 0], 0)],
+            &[
+                TyTransformF64::IDENTITY,
+                TyTransformF64 {
+                    position: TyVector3F64::new(0.25, 0.0, 0.0),
+                    ..TyTransformF64::IDENTITY
+                },
+            ],
+        );
+        let (material_id, _) = scene.iter_materials().next().unwrap();
+
+        let inside = RenderRayWalk::new(&scene, &ray([0.5, 0.5, 0.5], [1.0, 0.0, 0.0]), 10.0);
+        assert_eq!(inside.starts_inside(), [material_id, material_id]);
+
+        let outside = RenderRayWalk::new(&scene, &ray([-1.0, 0.5, 0.5], [1.0, 0.0, 0.0]), 10.0);
+        assert!(outside.starts_inside().is_empty());
     }
 
     #[test]

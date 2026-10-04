@@ -88,7 +88,7 @@ code-level choices in [implementation-decisions.md](implementation-decisions.md)
          wall still blocks fully at every granularity, and the goldens hold
       5. The contract's Lights section states that a shadow ray transmits
          by the pass
-- [ ] **S5. The glass fixture.** A `glass_scene` under `test_utilities` and
+- [x] **S5. The glass fixture.** A `glass_scene` under `test_utilities` and
       a review render.
       1. The fixture: a floor, a red pane two voxels thick with the key light
          behind it so its tinted shadow falls on the floor, a clear block
@@ -99,3 +99,28 @@ code-level choices in [implementation-decisions.md](implementation-decisions.md)
          rendered under `studio` at the three granularities, and a look at
          the images. The submodule change is its own commit there
       3. The crate README's rendering section mentions transparency
+- [x] **S6. The review's changes.** The look at the glass renders changed
+      two rules.
+      1. `OpaqueGrid` reads an object's grid for the corner occlusion with a
+         cell solid only when its pass is zero. `material_pass` and
+         `normal_reflectance` move to their own files
+      2. `RenderRayWalk::starts_inside` lists the materials the ray starts
+         inside, and `shadow_factor` starts its throughput at their passes
+      3. Tests: a face behind glass keeps its sky and a face behind an opaque
+         voxel loses it, a shadow ray from a face inside red glass pays the
+         red pass and one in the open pays nothing, the glass goldens
+         regenerate, and every other golden holds
+      4. The contract's Lights section, the plan README, and the crate README
+         state both rules
+- [ ] **S7. The mesh.** `voxsurface` learns transparency so `object mesh`
+      agrees with the reference.
+      1. `SurfaceGrid` tells an opaque cell from a transparent one
+      2. The cull keeps a face against a transparent neighbor and drops the
+         seam inside one transparent material
+      3. `corner_occlusion` counts only opaque cells, and voxrender's
+         `OpaqueGrid` goes
+      4. `object mesh` builds its grid with the palette beside the object,
+         and the glTF writer blends a material whose alpha is below one
+      5. Tests over a glass bar and the glass asset meshed
+      6. The contract's Lights paragraph drops `object mesh`'s exception, and
+         the mesh docs mention transparency
