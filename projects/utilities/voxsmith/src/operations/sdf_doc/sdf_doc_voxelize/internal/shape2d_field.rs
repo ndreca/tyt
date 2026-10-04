@@ -1,5 +1,5 @@
 use crate::operations::sdf_doc::{
-    ArcSpan, Bounds2d, PointMap2d, SdfShapes, arc_distance, arch_distance, chamfer_rect_distance,
+    ArcSpan, Bounds2d, PointMap2d, ShapeSource, arc_distance, arch_distance, chamfer_rect_distance,
     ellipse_distance, exact_sin_cos, fold_to_direction, polygon_distance, polyline_distance,
     rect_distance, sector_distance, smooth_intersect_distance, smooth_union_distance,
     vesica_distance, whole_count,
@@ -452,7 +452,7 @@ impl Shape2dField {
 
     /// The signed distance of the shape at `point`. `shapes` holds the shapes
     /// the field references.
-    pub fn distance(&self, shapes: &SdfShapes, point: TyVector2F64) -> f64 {
+    pub fn distance(&self, shapes: &impl ShapeSource, point: TyVector2F64) -> f64 {
         match self {
             Shape2dField::Arc {
                 center,

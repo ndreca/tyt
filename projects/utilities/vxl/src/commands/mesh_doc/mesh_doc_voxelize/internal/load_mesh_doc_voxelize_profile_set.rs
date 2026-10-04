@@ -23,7 +23,7 @@ pub fn load_mesh_doc_voxelize_profile_set(
 #[cfg(test)]
 mod tests {
     use crate::{Cascade, commands::load_mesh_doc_voxelize_profile_set};
-    use voxsmith::operations::mesh_doc::GridResolution;
+    use voxsmith::utilities::GridResolution;
 
     #[test]
     fn the_layers_load_from_the_mesh_doc_voxelize_section() {

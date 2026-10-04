@@ -1,9 +1,9 @@
-use crate::operations::mesh_doc::ResolutionReference;
+use crate::utilities::ResolutionReference;
 
 /// How the voxel size is chosen.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum GridResolution {
-    /// The edge length of one voxel, in the mesh's units.
+    /// The edge length of one voxel, in the document's units.
     VoxelSize(f64),
 
     /// A reference side divided into `count` voxels.

@@ -1,5 +1,5 @@
 use crate::operations::sdf_doc::{
-    ArcSpan, BendMap, Bounds2d, Bounds3d, PointMap3d, SdfEvaluation, SdfShapes, align_rotation,
+    ArcSpan, BendMap, Bounds2d, Bounds3d, PointMap3d, SdfEvaluation, ShapeSource, align_rotation,
     axis_rotation, box_distance, box_frame_distance, cone_distance, ellipsoid_distance,
     exact_sin_cos, fbm, noise_seed, octahedron_distance, plane_axes, polygon_distance,
     pyramid_distance, rect_distance, round_cone_distance, side_direction,
@@ -678,7 +678,7 @@ impl Shape3dField {
 
     /// The shape's distance and frame position at `point`. `shapes` holds the
     /// shapes the field references.
-    pub fn evaluate(&self, shapes: &SdfShapes, point: TyVector3F64) -> SdfEvaluation {
+    pub fn evaluate(&self, shapes: &impl ShapeSource, point: TyVector3F64) -> SdfEvaluation {
         match self {
             Shape3dField::Bend { shape_id, map } => {
                 shapes.evaluate(*shape_id, map.child_point(point))

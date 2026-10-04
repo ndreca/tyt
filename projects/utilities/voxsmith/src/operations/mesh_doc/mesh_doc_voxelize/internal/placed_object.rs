@@ -1,4 +1,4 @@
-use crate::operations::mesh_doc::{VoxelFrame, VoxelScale};
+use crate::{operations::mesh_doc::VoxelScale, utilities::VoxelFrame};
 use branded_id::U32Id;
 use meshdoc::BMeshObject;
 use std::ops::Range;

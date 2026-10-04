@@ -1,6 +1,6 @@
 use crate::{CliValue, Error, PositiveF64, Result};
 use clap::{ArgGroup, Args};
-use voxsmith::operations::mesh_doc::{GridResolution, ResolutionReference};
+use voxsmith::utilities::{GridResolution, ResolutionReference};
 
 /// The `mesh-doc voxelize` voxel-size controls. Flattened onto the command,
 /// which takes at most one of the two flags.
@@ -63,7 +63,7 @@ impl GridResolutionOptions {
 mod tests {
     use crate::commands::GridResolutionOptions;
     use clap::Parser;
-    use voxsmith::operations::mesh_doc::{GridResolution, ResolutionReference};
+    use voxsmith::utilities::{GridResolution, ResolutionReference};
 
     /// A throwaway command flattening the grid-resolution options, so their flags
     /// parse as they do on `mesh-doc voxelize`.

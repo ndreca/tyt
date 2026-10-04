@@ -13,9 +13,10 @@ use voxconv::{
 use voxsmith::{
     dependencies::DependenciesImpl as VoxsmithDependenciesImpl,
     operations::mesh_doc::{
-        FillMode, GridResolution, MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelFrame,
-        VoxelScale, VoxelizeOptions, voxelize,
+        FillMode, MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelScale, VoxelizeOptions,
+        voxelize,
     },
+    utilities::{GridResolution, VoxelFrame},
 };
 
 /// Rasterizes a mesh into voxel objects, the inverse of `object mesh`.
@@ -240,8 +241,9 @@ mod tests {
         commands::{MeshDocVoxelize, MeshDocVoxelizeProfile},
     };
     use clap::Parser;
-    use voxsmith::operations::mesh_doc::{
-        FillMode, GridResolution, ResolutionReference, VoxelFrame, VoxelScale, VoxelizeOptions,
+    use voxsmith::{
+        operations::mesh_doc::{FillMode, VoxelScale, VoxelizeOptions},
+        utilities::{GridResolution, ResolutionReference, VoxelFrame},
     };
 
     /// The options a `mesh-doc voxelize` invocation of `args` resolves to over

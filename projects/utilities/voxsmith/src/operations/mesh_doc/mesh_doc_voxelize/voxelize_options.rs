@@ -1,5 +1,6 @@
-use crate::operations::mesh_doc::{
-    FillMode, GridResolution, MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelFrame, VoxelScale,
+use crate::{
+    operations::mesh_doc::{FillMode, MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelScale},
+    utilities::{GridResolution, VoxelFrame},
 };
 
 /// The options [`voxelize`](crate::operations::mesh_doc::voxelize()) voxelizes

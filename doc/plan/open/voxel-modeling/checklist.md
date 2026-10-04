@@ -51,14 +51,14 @@ where the loop fails.
 - [x] **S4. Shapes.** A voxsmith operation reads the `.sdfj` document and
       evaluates every shape, each with a test over a small grid against its
       distance in model evaluation.
-- [ ] **S5. Steps.** The sampling, the boxes' rounding and clamp, the grid, the
+- [x] **S5. Steps.** The sampling, the boxes' rounding and clamp, the grid, the
       five steps, the document checks, and parts with their grids, hierarchy,
       places, offsets, and frames. A test pins a box with corners on cell
       corners filling exactly its cells.
 - [ ] **S6. Materials.** The library as a JSON document vxl embeds, with
       properties for every name the modeling API lists. `vxl sdf-doc build`
-      hands the library to the builder. The named and custom properties,
-      `shades`, and the patterns.
+      hands the library to the builder. The named and custom properties with
+      their checks, `shades`, and the patterns.
 - [ ] **S7. Voxelize command.** `vxl sdf-doc voxelize` with the flags and
       profiles the modeling API lists, the voxj document, and the report under
       `--report`. `vxl profile sdf-doc voxelize list` lists the profiles.

@@ -139,3 +139,33 @@ land.
     distances to segments, arcs, and triangles, a box's clamped point, a ternary
     search over a round cone's spheres, or a dense sampling of an ellipse. Every
     point a shape covers lies inside the shape's box
+
+## S5. Steps
+
+1. `sample` runs the checks, settles the voxel size, and runs each part's steps
+   over its grid. `SdfSampling` holds the places depth first and the grids they
+   index. A cell holds its material or pattern and the step that last changed
+   the cell. For S7's report, each step records the count and the box of the
+   cells it wrote
+2. `sdf_doc` and `mesh_doc` share `GridResolution`, `ResolutionReference`, and
+   `VoxelFrame` from voxsmith's `utilities`, so neither feature turns on the
+   other. `ResolutionReference::side` measures a reference's side for both
+   voxelizers
+3. A 3D shape's box rounds out on its place's lattice: the box moves by the
+   place's shift, rounds, and moves back. Only a 3D shape's distance clamps to
+   its rounded box because a 2D profile's plane has no lattice to round to
+4. The fields evaluate their children through `ShapeSource`. `SdfShapes`
+   evaluates the formulas alone, and `LatticeShapes` clamps every level to the
+   rounded boxes
+5. A check error starts with the path of part names and the step name of the
+   first step that reaches the failing entry. An error about an entry no step
+   reaches starts with the entry's table and index instead
+6. The checks that read boxes run after `SdfShapes` prepares the shapes.
+   Preparing a bend reads its shape's box, so the check for a bounded bend shape
+   runs earlier and decides from the document alone whether a shape has a box
+7. The check reads a bend's half turn as the bent shape's whole span: the shape
+   spans at most `pi * radius` along `along`
+8. A polygon's check counts repeated neighboring points as one point. Two edges
+   that are not neighbors cross where they meet, and two neighboring edges cross
+   when they fold back along each other
+9. The material checks land with S6's material properties

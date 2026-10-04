@@ -1,0 +1,406 @@
+use crate::operations::sdf_doc::{ArgumentCheck, side_direction};
+use branded_id::IdVec;
+use sdfcore::{BSdfShape3d, SdfShape3d, SdfSide};
+use std::result::Result as StdResult;
+use ty_math::TyVector3F64;
+
+/// Checks the arguments of the 3D shape `shape`. `has_box` reads whether each
+/// shape has a box.
+pub fn check_shape3d(
+    shape: &SdfShape3d,
+    has_box: &IdVec<BSdfShape3d, bool>,
+) -> StdResult<(), String> {
+    match shape {
+        SdfShape3d::Bend {
+            shape_id,
+            along,
+            toward,
+            radius,
+            ..
+        } => {
+            let check = ArgumentCheck::new("bend");
+            check.above_zero("radius", *radius)?;
+            check.expect(
+                side_direction(*toward).0 != *along,
+                "toward",
+                &format!("on another axis than along {along}"),
+                side_name(*toward),
+            )?;
+            check.expect(
+                has_box[shape_id.to_usize_id()],
+                "shape",
+                "bounded",
+                "a shape that reaches without end",
+            )
+        }
+
+        SdfShape3d::Box { min, max, round } => {
+            let check = ArgumentCheck::new("box");
+            check.corners(*min, *max)?;
+
+            match round {
+                Some(round) => {
+                    let most = (*max - *min).min_element() / 2.0;
+                    check.above_zero("round", *round)?;
+                    check.expect(
+                        *round <= most,
+                        "round",
+                        &format!("at most half the shortest side, {most}"),
+                        round,
+                    )
+                }
+
+                None => Ok(()),
+            }
+        }
+
+        SdfShape3d::BoxFrame {
+            min,
+            max,
+            thickness,
+        } => {
+            let check = ArgumentCheck::new("boxFrame");
+            check.corners(*min, *max)?;
+            check.above_zero("thickness", *thickness)
+        }
+
+        SdfShape3d::Capsule { a, b, radius } => {
+            let check = ArgumentCheck::new("capsule");
+            check.above_zero("radius", *radius)?;
+            ends(check, *a, *b)
+        }
+
+        SdfShape3d::Cone {
+            a,
+            b,
+            radius_a,
+            radius_b,
+        } => {
+            let check = ArgumentCheck::new("cone");
+            check.at_least_zero("radiusA", *radius_a)?;
+            check.at_least_zero("radiusB", *radius_b)?;
+            ends(check, *a, *b)
+        }
+
+        SdfShape3d::Cylinder {
+            a,
+            b,
+            radius,
+            round,
+        } => {
+            let check = ArgumentCheck::new("cylinder");
+            check.above_zero("radius", *radius)?;
+            ends(check, *a, *b)?;
+
+            match round {
+                Some(round) => {
+                    let most = radius.min(a.distance(*b) / 2.0);
+                    check.above_zero("round", *round)?;
+                    check.expect(
+                        *round <= most,
+                        "round",
+                        &format!("at most the radius and half the length, {most}"),
+                        round,
+                    )
+                }
+
+                None => Ok(()),
+            }
+        }
+
+        SdfShape3d::Displace {
+            amplitude,
+            scale,
+            octaves,
+            seed,
+            ..
+        } => {
+            let check = ArgumentCheck::new("displace");
+            check.at_least_zero("amplitude", *amplitude)?;
+            check.above_zero("scale", *scale)?;
+
+            if let Some(octaves) = octaves {
+                check.whole_above_zero("octaves", *octaves)?;
+            }
+
+            check.seed(*seed)
+        }
+
+        SdfShape3d::Elongate { lengths, .. } => {
+            let check = ArgumentCheck::new("elongate");
+            let written = format!("[{}, {}, {}]", lengths.x, lengths.y, lengths.z);
+            check.expect(
+                lengths.cmpge(TyVector3F64::ZERO).all(),
+                "lengths",
+                "zero or more on each axis",
+                &written,
+            )?;
+            check.expect(
+                lengths.cmpgt(TyVector3F64::ZERO).any(),
+                "lengths",
+                "above zero on at least one axis",
+                &written,
+            )
+        }
+
+        SdfShape3d::Ellipsoid { radii, .. } => {
+            ArgumentCheck::new("ellipsoid").each_above_zero("radii", *radii)
+        }
+
+        SdfShape3d::Extrude { from, to, .. } => ArgumentCheck::new("extrude").range(*from, *to),
+
+        SdfShape3d::HalfSpace { .. }
+        | SdfShape3d::Mirror { .. }
+        | SdfShape3d::Offset { .. }
+        | SdfShape3d::Revolve { .. }
+        | SdfShape3d::Rotate { .. }
+        | SdfShape3d::Subtract { .. }
+        | SdfShape3d::Translate { .. }
+        | SdfShape3d::Twist { .. } => Ok(()),
+
+        SdfShape3d::Intersect { shape_ids } => {
+            ArgumentCheck::new("intersect").count("shapes", shape_ids.len(), 1)
+        }
+
+        SdfShape3d::Lathe { points, .. } => {
+            ArgumentCheck::new("lathe").count("points", points.len(), 2)
+        }
+
+        SdfShape3d::Octahedron { radius, .. } => {
+            ArgumentCheck::new("octahedron").above_zero("radius", *radius)
+        }
+
+        SdfShape3d::Orient { from, to, .. } => {
+            let check = ArgumentCheck::new("orient");
+            check.expect(from.length() > 0.0, "from", "a direction", "a zero vector")?;
+            check.expect(to.length() > 0.0, "to", "a direction", "a zero vector")?;
+            check.expect(
+                1.0 + from.normalize().dot(to.normalize()) > 0.0,
+                "to",
+                "a direction other than the opposite of from",
+                format!("[{}, {}, {}]", to.x, to.y, to.z),
+            )
+        }
+
+        SdfShape3d::Pyramid { width, height, .. } => {
+            let check = ArgumentCheck::new("pyramid");
+            check.above_zero("width", *width)?;
+            check.above_zero("height", *height)
+        }
+
+        SdfShape3d::Repeat { count, .. } => {
+            let check = ArgumentCheck::new("repeat");
+
+            for value in count.to_array() {
+                check.whole_above_zero("count", value)?;
+            }
+
+            Ok(())
+        }
+
+        SdfShape3d::RepeatPolar { count, .. } => {
+            ArgumentCheck::new("repeatPolar").whole_above_zero("count", *count)
+        }
+
+        SdfShape3d::RoundCone {
+            a,
+            b,
+            radius_a,
+            radius_b,
+        } => {
+            let check = ArgumentCheck::new("roundCone");
+            check.above_zero("radiusA", *radius_a)?;
+            check.above_zero("radiusB", *radius_b)?;
+            ends(check, *a, *b)?;
+
+            let length = a.distance(*b);
+            check.expect(
+                (radius_a - radius_b).abs() < length,
+                "radiusB",
+                &format!("within {length} of radiusA {radius_a}"),
+                radius_b,
+            )
+        }
+
+        SdfShape3d::Scale { factor, .. } => {
+            ArgumentCheck::new("scale").each_above_zero("factor", *factor)
+        }
+
+        SdfShape3d::Shell { thickness, .. } => {
+            ArgumentCheck::new("shell").above_zero("thickness", *thickness)
+        }
+
+        SdfShape3d::SmoothIntersect { radius, shape_ids } => {
+            let check = ArgumentCheck::new("smoothIntersect");
+            check.above_zero("radius", *radius)?;
+            check.count("shapes", shape_ids.len(), 1)
+        }
+
+        SdfShape3d::SmoothSubtract { radius, .. } => {
+            ArgumentCheck::new("smoothSubtract").above_zero("radius", *radius)
+        }
+
+        SdfShape3d::SmoothUnion { radius, shape_ids } => {
+            let check = ArgumentCheck::new("smoothUnion");
+            check.above_zero("radius", *radius)?;
+            check.count("shapes", shape_ids.len(), 1)
+        }
+
+        SdfShape3d::Sphere { radius, .. } => {
+            ArgumentCheck::new("sphere").above_zero("radius", *radius)
+        }
+
+        SdfShape3d::Torus {
+            ring_radius,
+            tube_radius,
+            from,
+            to,
+            ..
+        } => {
+            let check = ArgumentCheck::new("torus");
+            check.above_zero("ringRadius", *ring_radius)?;
+            check.above_zero("tubeRadius", *tube_radius)?;
+
+            match (from, to) {
+                (Some(from), Some(to)) => {
+                    check.range(*from, *to)?;
+                    check.expect(
+                        to - from <= 360.0,
+                        "to",
+                        &format!("at most 360 past from {from}"),
+                        to,
+                    )
+                }
+
+                (None, None) => Ok(()),
+
+                (Some(from), None) => Err(check.fail(
+                    "to",
+                    "given with from",
+                    format!("left out beside from {from}"),
+                )),
+
+                (None, Some(to)) => {
+                    Err(check.fail("from", "given with to", format!("left out beside to {to}")))
+                }
+            }
+        }
+
+        SdfShape3d::Union { shape_ids } => {
+            ArgumentCheck::new("union").count("shapes", shape_ids.len(), 1)
+        }
+    }
+}
+
+/// Errors unless the ends `a` and `b` differ.
+fn ends(check: ArgumentCheck, a: TyVector3F64, b: TyVector3F64) -> StdResult<(), String> {
+    check.expect(
+        a != b,
+        "b",
+        "another point than a",
+        format!("[{}, {}, {}]", b.x, b.y, b.z),
+    )
+}
+
+/// `side` as the modeling API writes it.
+fn side_name(side: SdfSide) -> &'static str {
+    match side {
+        SdfSide::NegativeX => "-x",
+        SdfSide::NegativeY => "-y",
+        SdfSide::NegativeZ => "-z",
+        SdfSide::PositiveX => "+x",
+        SdfSide::PositiveY => "+y",
+        SdfSide::PositiveZ => "+z",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::operations::sdf_doc::check_shape3d;
+    use branded_id::{IdVec, U32Id};
+    use sdfcore::{SdfShape3d, SdfSide};
+    use ty_math::{TyAxis3, TyVector3F64};
+
+    fn check(shape: SdfShape3d) -> Result<(), String> {
+        check_shape3d(&shape, &IdVec::from_vec(vec![true, false]))
+    }
+
+    #[test]
+    fn a_cut_torus_takes_both_angles_within_a_turn() {
+        let torus = |from, to| SdfShape3d::Torus {
+            center: TyVector3F64::ZERO,
+            ring_radius: 1.0,
+            tube_radius: 0.25,
+            axis: None,
+            from,
+            to,
+        };
+
+        assert!(check(torus(Some(0.0), Some(360.0))).is_ok());
+        assert_eq!(
+            check(torus(Some(30.0), None)),
+            Err("torus to must be given with from, not left out beside from 30".to_string())
+        );
+        assert_eq!(
+            check(torus(Some(30.0), Some(400.0))),
+            Err("torus to must be at most 360 past from 30, not 400".to_string())
+        );
+    }
+
+    #[test]
+    fn a_bend_turns_toward_another_axis_and_a_bounded_shape() {
+        let bend = |shape, toward| SdfShape3d::Bend {
+            shape_id: U32Id::from_u32(shape),
+            along: TyAxis3::X,
+            toward,
+            radius: 1.0,
+            pivot: None,
+        };
+
+        assert!(check(bend(0, SdfSide::PositiveY)).is_ok());
+        assert_eq!(
+            check(bend(0, SdfSide::NegativeX)),
+            Err("bend toward must be on another axis than along x, not -x".to_string())
+        );
+        assert_eq!(
+            check(bend(1, SdfSide::PositiveY)),
+            Err("bend shape must be bounded, not a shape that reaches without end".to_string())
+        );
+    }
+
+    #[test]
+    fn orient_takes_two_directions_that_do_not_oppose() {
+        let orient = |to| SdfShape3d::Orient {
+            shape_id: U32Id::from_u32(0),
+            from: TyVector3F64::Y,
+            to,
+            pivot: None,
+        };
+
+        assert!(check(orient(TyVector3F64::X)).is_ok());
+        assert!(check(orient(TyVector3F64::ZERO)).is_err());
+        assert_eq!(
+            check(orient(TyVector3F64::new(0.0, -2.0, 0.0))),
+            Err(
+                "orient to must be a direction other than the opposite of from, not [0, -2, 0]"
+                    .to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn a_round_cone_tapers_less_than_its_length() {
+        let round_cone = |radius_b| SdfShape3d::RoundCone {
+            a: TyVector3F64::ZERO,
+            b: TyVector3F64::new(0.0, 1.0, 0.0),
+            radius_a: 0.5,
+            radius_b,
+        };
+
+        assert!(check(round_cone(1.25)).is_ok());
+        assert_eq!(
+            check(round_cone(1.5)),
+            Err("roundCone radiusB must be within 1 of radiusA 0.5, not 1.5".to_string())
+        );
+    }
+}

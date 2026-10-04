@@ -3,8 +3,9 @@ use crate::{
     commands::ResolutionEntry,
 };
 use serde::Deserialize;
-use voxsmith::operations::mesh_doc::{
-    FillMode, GridResolution, MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelFrame, VoxelScale,
+use voxsmith::{
+    operations::mesh_doc::{FillMode, MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelScale},
+    utilities::{GridResolution, VoxelFrame},
 };
 
 /// A `mesh-doc voxelize` profile, each element mirroring a flag.
@@ -69,9 +70,11 @@ impl MeshDocVoxelizeProfile {
 #[cfg(test)]
 mod tests {
     use crate::{NamedCliValue, NoneOr, Rgba, commands::MeshDocVoxelizeProfile};
-    use voxsmith::operations::mesh_doc::{
-        FillMode, GridResolution, MaterialMode, OutOfRangeProperty, ResolutionReference,
-        SurfaceMode, VoxelFrame, VoxelScale,
+    use voxsmith::{
+        operations::mesh_doc::{
+            FillMode, MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelScale,
+        },
+        utilities::{GridResolution, ResolutionReference, VoxelFrame},
     };
 
     /// The profile `json` defines.

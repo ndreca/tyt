@@ -336,9 +336,11 @@ amplitude of the last.
 ## Bounds
 
 Every shape carries an axis-aligned box that holds every point where `d <= 0`.
-Once the sampling settles, the box's min corner rounds down and its max corner
-rounds up to the lattice's cell corners. Every shape's distance then takes the
-larger of its formula's value and the signed distance to its box.
+Once the sampling settles, each 3D shape's box rounds out to the lattice. The
+rounding takes the box moved by `o`: its min corner rounds down and its max
+corner rounds up to the cell corners. Every 3D shape's distance then takes the
+larger of its formula's value and the signed distance to its rounded box. A 2D
+shape's box only feeds the boxes built from it.
 
 The clamp leaves every sign alone and changes an exact distance nowhere. The
 clamp also confines the points where `d <= r` to the box grown by `r`. The
@@ -613,7 +615,8 @@ it belongs to by its path of part names.
    gives it one kind.
 6. Over the sampling and the grid, every `add` shape has a box, and a
    `--resolution` reference side reads above zero. Each part's grid stays within
-   2^27 cells, and no `bend` reaches past half a turn of its arc.
+   2^27 cells. No `bend` reaches past half a turn of its arc: its shape's box
+   spans at most `pi * radius` along `along`.
 7. While the steps run, no distance reads NaN, and no `set` lists the same point
    twice.
 8. At the end, the model holds a live cell.

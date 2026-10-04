@@ -1,7 +1,7 @@
 use crate::NamedCliValue;
 use serde::Deserialize;
 use std::num::NonZeroU32;
-use voxsmith::operations::mesh_doc::{GridResolution, ResolutionReference};
+use voxsmith::utilities::{GridResolution, ResolutionReference};
 
 /// A profile's `--resolution`.
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq)]

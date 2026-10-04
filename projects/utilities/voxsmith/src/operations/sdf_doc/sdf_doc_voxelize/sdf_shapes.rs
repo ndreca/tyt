@@ -1,4 +1,6 @@
-use crate::operations::sdf_doc::{Bounds2d, Bounds3d, SdfEvaluation, Shape2dField, Shape3dField};
+use crate::operations::sdf_doc::{
+    Bounds2d, Bounds3d, SdfEvaluation, Shape2dField, Shape3dField, ShapeSource,
+};
 use branded_id::{IdVec, U32Id};
 use sdfcore::{BSdfShape2d, BSdfShape3d, SdfMain};
 use ty_math::{TyVector2F64, TyVector3F64};
@@ -55,8 +57,39 @@ impl SdfShapes {
         self.shapes3d[shape3d_id.to_usize_id()].evaluate(self, point)
     }
 
+    /// The box around the 3D shape at `shape3d_id`, before any rounding, or
+    /// `None` for a shape that reaches without end.
+    pub(crate) fn bounds3d(&self, shape3d_id: U32Id<BSdfShape3d>) -> Option<Bounds3d> {
+        self.bounds3d[shape3d_id.to_usize_id()]
+    }
+
+    /// Each 3D shape's box, before any rounding.
+    pub(crate) fn all_bounds3d(&self) -> &IdVec<BSdfShape3d, Option<Bounds3d>> {
+        &self.bounds3d
+    }
+
     /// The signed distance of the 2D shape at `shape2d_id` at `point`.
     pub(crate) fn distance2d(&self, shape2d_id: U32Id<BSdfShape2d>, point: TyVector2F64) -> f64 {
         self.shapes2d[shape2d_id.to_usize_id()].distance(self, point)
+    }
+
+    /// The field of the 3D shape at `shape3d_id`.
+    pub(crate) fn field3d(&self, shape3d_id: U32Id<BSdfShape3d>) -> &Shape3dField {
+        &self.shapes3d[shape3d_id.to_usize_id()]
+    }
+
+    /// The field of the 2D shape at `shape2d_id`.
+    pub(crate) fn field2d(&self, shape2d_id: U32Id<BSdfShape2d>) -> &Shape2dField {
+        &self.shapes2d[shape2d_id.to_usize_id()]
+    }
+}
+
+impl ShapeSource for SdfShapes {
+    fn evaluate(&self, shape3d_id: U32Id<BSdfShape3d>, point: TyVector3F64) -> SdfEvaluation {
+        SdfShapes::evaluate(self, shape3d_id, point)
+    }
+
+    fn distance2d(&self, shape2d_id: U32Id<BSdfShape2d>, point: TyVector2F64) -> f64 {
+        SdfShapes::distance2d(self, shape2d_id, point)
     }
 }

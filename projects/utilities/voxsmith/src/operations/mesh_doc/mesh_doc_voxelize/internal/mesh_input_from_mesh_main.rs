@@ -1,9 +1,8 @@
 use crate::{
     Error, Result,
     dependencies::mesh_doc::DecodeImage,
-    operations::mesh_doc::{
-        MeshInput, MeshTriangle, PlacedObject, PlacedPrimitive, VoxelFrame, VoxelScale,
-    },
+    operations::mesh_doc::{MeshInput, MeshTriangle, PlacedObject, PlacedPrimitive, VoxelScale},
+    utilities::VoxelFrame,
 };
 use branded_id::{IdVec, U32Id};
 use meshdoc::{
@@ -219,9 +218,9 @@ mod tests {
     use crate::{
         dependencies::DependenciesImpl,
         operations::mesh_doc::{
-            VoxelFrame, VoxelScale, box_main, box_primitive, document_of,
-            mesh_input_from_mesh_main, png_rgba,
+            VoxelScale, box_main, box_primitive, document_of, mesh_input_from_mesh_main, png_rgba,
         },
+        utilities::VoxelFrame,
     };
     use branded_id::U32Id;
     use meshdoc::{

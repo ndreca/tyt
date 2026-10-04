@@ -12,6 +12,7 @@ mod rect_reference;
 mod segment_distance2d;
 mod segment_distance3d;
 mod shapes_of;
+mod single_part_main;
 mod triangle_distance;
 
 pub(crate) use arc_curve_distance::*;
@@ -26,4 +27,5 @@ pub(crate) use rect_reference::*;
 pub(crate) use segment_distance2d::*;
 pub(crate) use segment_distance3d::*;
 pub(crate) use shapes_of::*;
+pub(crate) use single_part_main::*;
 pub(crate) use triangle_distance::*;

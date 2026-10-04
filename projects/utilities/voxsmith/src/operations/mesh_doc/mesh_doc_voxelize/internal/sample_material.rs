@@ -322,9 +322,10 @@ mod tests {
     use crate::{
         dependencies::DependenciesImpl,
         operations::mesh_doc::{
-            GridSpace, VoxelFrame, VoxelScale, document_of, mesh_input_from_mesh_main, png_rgba,
+            GridSpace, VoxelScale, document_of, mesh_input_from_mesh_main, png_rgba,
             sample_material, triangle_of, voxelize_triangles,
         },
+        utilities::VoxelFrame,
     };
     use branded_id::U32Id;
     use meshdoc::{

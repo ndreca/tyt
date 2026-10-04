@@ -2,10 +2,10 @@ use crate::{
     Error, Result,
     operations::mesh_doc::{
         FillMode, GridSpace, MaterialMode, MeshInput, MeshTriangle, OutOfRangeProperty,
-        SurfaceMode, VoxelFrame, VoxelGrid, VoxelMaterial, VoxelizeOptions, sample_material,
+        SurfaceMode, VoxelGrid, VoxelMaterial, VoxelizeOptions, sample_material,
         voxelize_triangles,
     },
-    utilities::{check_material_property_ranges, check_material_range},
+    utilities::{VoxelFrame, check_material_property_ranges, check_material_range},
 };
 use branded_id::{IdVec, IteratorExt, U32Id};
 use meshdoc::{

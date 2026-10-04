@@ -2,10 +2,9 @@ use crate::{
     Error, Result,
     dependencies::mesh_doc::DecodeImage,
     operations::mesh_doc::{
-        GridResolution, MeshInput, ResolutionReference, VoxelScale, VoxelizeOptions,
-        mesh_input_from_mesh_main, voxelize_mesh,
+        MeshInput, VoxelScale, VoxelizeOptions, mesh_input_from_mesh_main, voxelize_mesh,
     },
-    utilities::order_palette_colors,
+    utilities::{GridResolution, order_palette_colors},
 };
 use meshdoc::{MeshExt, MeshMain};
 use ty_math::TyVector3F64;
@@ -88,7 +87,7 @@ fn resolve_voxel_size(input: &MeshInput<'_>, options: &VoxelizeOptions) -> Resul
         .expect("an object with bounds gives the mesh bounds")
         .size();
 
-    let side = reference_side(world, &objects, reference);
+    let side = reference.side(world, &objects);
 
     if side <= 0.0 {
         return Err(Error::invalid(format!(
@@ -99,110 +98,15 @@ fn resolve_voxel_size(input: &MeshInput<'_>, options: &VoxelizeOptions) -> Resul
     Ok(side / f64::from(count.max(1)))
 }
 
-/// The side `reference` measures over the `world` extent and each object's,
-/// or zero when it has none.
-fn reference_side(
-    world: TyVector3F64,
-    objects: &[TyVector3F64],
-    reference: ResolutionReference,
-) -> f64 {
-    let axis = |extent: TyVector3F64, axis: usize| extent.to_array()[axis];
-    let longest_of = |extent: TyVector3F64| extent.to_array().into_iter().fold(0.0, f64::max);
-    let shortest_of = |extent: TyVector3F64| shortest_positive(extent.to_array());
-    let longest_object = |side: &dyn Fn(TyVector3F64) -> f64| {
-        objects
-            .iter()
-            .map(|&extent| side(extent))
-            .fold(0.0, f64::max)
-    };
-    let shortest_object = |side: &dyn Fn(TyVector3F64) -> f64| {
-        shortest_positive(objects.iter().map(|&extent| side(extent)))
-    };
-
-    match reference {
-        ResolutionReference::LongestWorld => longest_of(world),
-        ResolutionReference::ShortestWorld => shortest_of(world),
-        ResolutionReference::WorldX => axis(world, 0),
-        ResolutionReference::WorldY => axis(world, 1),
-        ResolutionReference::WorldZ => axis(world, 2),
-        ResolutionReference::LongestObject => longest_object(&longest_of),
-        ResolutionReference::ShortestObject => shortest_object(&shortest_of),
-        ResolutionReference::LongestObjectX => longest_object(&|extent| axis(extent, 0)),
-        ResolutionReference::LongestObjectY => longest_object(&|extent| axis(extent, 1)),
-        ResolutionReference::LongestObjectZ => longest_object(&|extent| axis(extent, 2)),
-        ResolutionReference::ShortestObjectX => shortest_object(&|extent| axis(extent, 0)),
-        ResolutionReference::ShortestObjectY => shortest_object(&|extent| axis(extent, 1)),
-        ResolutionReference::ShortestObjectZ => shortest_object(&|extent| axis(extent, 2)),
-    }
-}
-
-/// The smallest positive side, or zero when none is positive.
-fn shortest_positive(sides: impl IntoIterator<Item = f64>) -> f64 {
-    sides
-        .into_iter()
-        .filter(|&side| side > 0.0)
-        .fold(0.0, |shortest, side| {
-            if shortest > 0.0 {
-                shortest.min(side)
-            } else {
-                side
-            }
-        })
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::operations::mesh_doc::{
-        ResolutionReference, mesh_doc_voxelize::voxelize::reference_side,
-    };
-    use ty_math::TyVector3F64;
-
-    /// The extent `(x, y, z)`.
-    fn extent(x: f64, y: f64, z: f64) -> TyVector3F64 {
-        TyVector3F64::new(x, y, z)
-    }
-
-    /// Every reference's side over a world of `[3, 2, 0]` holding objects of
-    /// `[3, 1, 0]` and `[2, 2, 0]`.
-    fn side(reference: ResolutionReference) -> f64 {
-        reference_side(
-            extent(3.0, 2.0, 0.0),
-            &[extent(3.0, 1.0, 0.0), extent(2.0, 2.0, 0.0)],
-            reference,
-        )
-    }
-
-    #[test]
-    fn world_references_measure_the_whole_and_skip_flat_sides_for_shortest() {
-        assert_eq!(side(ResolutionReference::LongestWorld), 3.0);
-        assert_eq!(side(ResolutionReference::ShortestWorld), 2.0);
-        assert_eq!(side(ResolutionReference::WorldX), 3.0);
-        assert_eq!(side(ResolutionReference::WorldY), 2.0);
-        assert_eq!(side(ResolutionReference::WorldZ), 0.0);
-    }
-
-    #[test]
-    fn object_references_take_the_extreme_across_objects() {
-        assert_eq!(side(ResolutionReference::LongestObject), 3.0);
-        assert_eq!(side(ResolutionReference::ShortestObject), 1.0);
-        assert_eq!(side(ResolutionReference::LongestObjectX), 3.0);
-        assert_eq!(side(ResolutionReference::ShortestObjectX), 2.0);
-        assert_eq!(side(ResolutionReference::LongestObjectY), 2.0);
-        assert_eq!(side(ResolutionReference::ShortestObjectY), 1.0);
-        assert_eq!(side(ResolutionReference::LongestObjectZ), 0.0);
-        assert_eq!(side(ResolutionReference::ShortestObjectZ), 0.0);
-    }
-}
-
 #[cfg(all(test, feature = "impl"))]
 mod document_tests {
     use crate::{
         dependencies::DependenciesImpl,
         operations::mesh_doc::{
-            FillMode, GridResolution, MaterialMode, OutOfRangeProperty, ResolutionReference,
-            SurfaceMode, VoxelFrame, VoxelScale, VoxelizeOptions, box_main, box_primitive,
-            document_of, png_rgba, triangle_of, voxelize,
+            FillMode, MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelScale, VoxelizeOptions,
+            box_main, box_primitive, document_of, png_rgba, triangle_of, voxelize,
         },
+        utilities::{GridResolution, ResolutionReference, VoxelFrame},
     };
     use branded_id::U32Id;
     use meshdoc::{

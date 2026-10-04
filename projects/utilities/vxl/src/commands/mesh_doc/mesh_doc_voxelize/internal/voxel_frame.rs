@@ -1,5 +1,5 @@
 use crate::CliValue;
-use voxsmith::operations::mesh_doc::VoxelFrame;
+use voxsmith::utilities::VoxelFrame;
 
 impl CliValue for VoxelFrame {
     const VARIANTS: &'static [Self] = &[VoxelFrame::World, VoxelFrame::Local];

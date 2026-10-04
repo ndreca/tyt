@@ -4,27 +4,33 @@
 
 mod check_material_property_ranges;
 mod check_material_range;
+mod grid_resolution;
 mod id_selector;
 mod order_palette_colors;
 mod placing_nodes;
 mod property_names;
 mod quantize;
+mod resolution_reference;
 mod resolve_palette_selectors;
 mod select_nodes;
 mod select_objects;
 mod vector_component;
+mod voxel_frame;
 
 pub use check_material_property_ranges::*;
 pub use check_material_range::*;
+pub use grid_resolution::*;
 pub use id_selector::*;
 pub use order_palette_colors::*;
 pub use placing_nodes::*;
 pub use property_names::*;
 pub use quantize::*;
+pub use resolution_reference::*;
 pub use resolve_palette_selectors::*;
 pub use select_nodes::*;
 pub use select_objects::*;
 pub use vector_component::*;
+pub use voxel_frame::*;
 
 // Internal API
 
