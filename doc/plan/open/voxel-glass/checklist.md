@@ -14,15 +14,16 @@ code-level choices in [implementation-decisions.md](implementation-decisions.md)
 
 ## Steps
 
-- [ ] **S1. Transparent output.** `RenderOutput::from_image` solves the
+- [x] **S1. Transparent output.** `RenderOutput::from_image` solves the
       transparent PNG to be exact over white for sRGB blending.
       1. The coverage and the layer stay as they are, and the background
          branch is unchanged
       2. The transparent branch derives `W`, `t`, the alpha, and the color
          as the README says
-      3. Tests: an opaque pixel and a miss encode as today, red glass laid
-         over white in sRGB values matches `Some(white)` within a level,
-         and clear glass moves by at most two levels
+      3. Tests: an opaque pixel and a miss encode as today. Red glass,
+         clear glass, a pane, a highlight, and a halo laid over white in
+         sRGB values match `Some(white)` within a level. A colorless
+         transmittance `T` gives an alpha of `1 - T`
       4. The goldens regenerate with a list of what moved
       5. The contract's Output section and the crate README's Images
          section state the rule

@@ -182,10 +182,11 @@ no light and full transmittance. An opaque hit has its shade and none.
 `RenderOutput` holds the 8-bit sRGB image a PNG stores.
 `RenderOutput::from_image` takes the larger of one minus the peak
 transmittance and the peak of the light, clamped to one, as each pixel's
-alpha. It runs the light over that alpha through the Khronos PBR Neutral
-curve in `tonemap` and then the sRGB transfer. Under a background color it
-adds the background scaled by the transmittance after the tonemap and
-writes the pixel at full alpha.
+coverage. It runs the light over that coverage through the Khronos PBR
+Neutral curve in `tonemap` and scales it back by the coverage. Under a
+background color it adds the background scaled by the transmittance and
+writes the pixel in sRGB at full alpha. Without a background color it solves
+the pixel to be exact over white for a viewer that blends sRGB values.
 
 ```rust
 let output = RenderOutput::from_image(&image, None);

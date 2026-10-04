@@ -234,17 +234,34 @@ and its transmittance, the share of what lies behind the scene that passes
 through per channel. A miss carries no light and full transmittance. An
 opaque hit carries its shade and none.
 
-The output derives one alpha from the pair: the larger of one minus the peak
-transmittance and the peak of the light, clamped to one. The light over that
-alpha runs through the Khronos PBR Neutral tonemap to give the color. The
-peak of the light keeps a highlight on clear glass from vanishing into a tiny
-alpha.
-Under `transparent` the sRGB transfer encodes that color at that alpha as
-8-bit RGBA with straight alpha. Under a background color the pixel is the
-tonemapped color at that alpha plus the background scaled by the
-transmittance, clamped to one, at full alpha. The background never passes
-through the tonemap, which would turn a white background grey behind clear
-glass. Red glass over white is red, and clear glass over white stays white.
+The output derives a coverage from the pair: the larger of one minus the
+peak transmittance and the peak of the light, clamped to one. The light over
+that coverage runs through the Khronos PBR Neutral tonemap. Scaling the
+result by the coverage gives the pixel's layer. The peak of the light keeps a
+highlight on clear glass from vanishing into a tiny coverage.
+
+Under a background color the output adds the background scaled by the
+transmittance to the layer, clamps the sum to one, and writes it at full
+alpha. The background never passes through the tonemap because the tonemap
+would turn a white background grey behind clear glass. Red glass over white
+is red, and clear glass over white stays white.
+
+Under `transparent` the output writes 8-bit RGBA with straight alpha. It
+solves each pixel to be exact over white for a viewer that blends sRGB
+values, as browsers and image editors do. Per channel, `W` is the sRGB
+encoding of the layer plus the transmittance, clamped to one: the pixel over
+white. The transparency `t` is the smaller of the peak transmittance and the
+least channel of `W`:
+
+```
+alpha = 1 - t
+color = (W - t) / alpha, in sRGB values, or 0 at a zero alpha
+```
+
+An opaque pixel has a `t` of zero and keeps the layer's color at full alpha.
+A miss has a `t` of one. Colored glass keeps its tint over any backdrop. Over
+a dark backdrop colored glass reads brighter than it should because one alpha
+cannot be exact over two backdrops.
 
 PBR Neutral keeps base colors true until highlights compress, and a voxel
 palette is what a reviewer most needs to see unchanged. The default image is

@@ -101,9 +101,9 @@ color = (W - t) / alpha, in sRGB values, or 0 at a zero alpha
 The rule matches today's wherever the transmittance is zero: an opaque
 pixel has a `t` of zero and the layer's color at full alpha. A miss has a
 `t` of one. Over white in a browser every pixel matches `--background
-white`. Colorless transmittance, as in clear glass and bloom halos, moves by
-a level or two. Colored glass keeps its tint. Over a dark backdrop it reads
-brighter than it should, because one alpha cannot be exact over two
+white`. Bloom halos and clear glass also read closer to exact over black
+than today. Colored glass keeps its tint. Over a dark backdrop colored glass
+reads brighter than it should because one alpha cannot be exact over two
 backdrops.
 
 ## The mesh
