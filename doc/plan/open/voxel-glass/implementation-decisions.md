@@ -44,3 +44,26 @@ they land.
 - `bar_scene`, `matte`, and `glass` moved from the render tests to
   `test_utilities`. The walk tests share them.
 - Only the four `glass` goldens moved. The others hold byte for byte.
+
+## S3. Fresnel by angle
+
+- voxrender's `material_pass` takes the cosine and restates voxcore's
+  formula with `F` in place of `F0`. A test holds `material_pass` to
+  voxcore's at normal incidence. voxcore's `pass` is unchanged because the
+  mesher reads it.
+- `transmitted_reflectance` owns `F`. The pass and the hemisphere term both
+  read it.
+- Both walks take the cosine in world space against the shading normal. A
+  shadow ray takes a directional light's direction, or the direction from
+  the ray's world origin to a point or spot light.
+- The hemisphere term splits `F0` between the shares: the transmitted share
+  reflects `F` along the mirror direction, and the rest reflects `F0` along
+  the normal. With no transmitted share the term matches today's to the bit.
+- `is_opaque` keeps reading normal incidence because a pass that is zero
+  there is zero at every angle a ray can cross a face at.
+- In the review's hero view the key light grazes the red pillar's side at a
+  cosine of 0.024. That wall passes 0.27 of the red where it passed 0.92.
+  The pillar's shadow on the floor behind it darkens. The shadow's per-corner
+  staircase now shows through the pillar.
+- Only the four `glass` goldens moved, by up to 21 levels. The others hold
+  byte for byte.

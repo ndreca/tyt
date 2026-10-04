@@ -3,14 +3,14 @@ use crate::{
     RenderGridRay, RenderHit, RenderImage, RenderLight, RenderMaterial, RenderOcclusion,
     RenderPixel, RenderRay, RenderRayWalk, RenderScene, RenderShadow, RenderViewRays, Result,
     SHADOW_INSET_BITS, ShadowTarget, apply_bloom, grid_point, grid_vector, material_pass,
-    normal_reflectance, quantize_direction, quantize_point,
+    normal_reflectance, quantize_direction, quantize_point, transmitted_reflectance,
 };
 use branded_id::U32Id;
 use std::{
     f64::consts::PI,
     ops::{Add, Mul},
 };
-use ty_math::{TyLinSrgbF32, TyLinSrgbF64, TyVector3F64};
+use ty_math::{TyLinSrgbF32, TyLinSrgbF64, TyTransformF64, TyVector3F64};
 use voxsurface::{SurfaceSpan, corner_occlusion, inner_corner_occlusion};
 
 /// The GGX alpha floor that keeps a mirror's lobe finite.
@@ -201,9 +201,7 @@ fn shade_hit(
     // the material.
     let facing = if hit.exit { -1.0 } else { 1.0 };
 
-    let normal = (transform.rotation * (hit.face.normal().as_dvec3() / transform.scale))
-        .normalize()
-        * facing;
+    let normal = world_normal(transform, &hit.face) * facing;
     let view = -ray.direction;
     let point = ray.origin + ray.direction * hit.distance;
 
@@ -314,7 +312,7 @@ fn shade_hit(
                 ground,
                 strength,
             } => {
-                color += hemisphere_radiance(material, normal, sky, ground, strength, open);
+                color += hemisphere_radiance(material, normal, view, sky, ground, strength, open);
             }
         }
     }
@@ -323,8 +321,12 @@ fn shade_hit(
         color,
         emission,
         coverage: material.base_color.alpha,
-        pass: material_pass(material),
+        pass: material_pass(material, normal.dot(view)),
     })
+}
+
+fn world_normal(transform: &TyTransformF64, face: &SurfaceSpan) -> TyVector3F64 {
+    (transform.rotation * (face.normal().as_dvec3() / transform.scale)).normalize()
 }
 
 fn hit_material<'a>(scene: &'a RenderScene, hit: &RenderHit) -> &'a RenderMaterial {
@@ -393,25 +395,32 @@ fn direct_radiance(
 }
 
 /// The light `material` reflects from a hemisphere light, darkened toward
-/// `occlusion` by the material's occlusion strength. The ambient light
-/// reflects off the diffuse color plus the normal-incidence reflectance,
-/// which gives a metal a reflection in its base color.
+/// `occlusion` by the material's occlusion strength. The normal-incidence
+/// reflectance gives a metal a reflection in its base color.
 ///
 /// # Arguments
-/// * `normal` - the surface's unit normal, whose world +Y mixes `sky`
-///   above with `ground` below.
+/// * `normal` - the surface's unit normal.
+/// * `view` - the unit direction toward the viewer.
 /// * `occlusion` - the corner occlusion, from `0` fully occluded to `1`
 ///   open.
 fn hemisphere_radiance(
     material: &RenderMaterial,
     normal: TyVector3F64,
+    view: TyVector3F64,
     sky: TyLinSrgbF64,
     ground: TyLinSrgbF64,
     strength: f64,
     occlusion: f64,
 ) -> TyLinSrgbF64 {
-    let up = (normal.y + 1.0) / 2.0;
-    let ambient = (sky * up + ground * (1.0 - up)) * strength;
+    let ambient = |direction: TyVector3F64| {
+        let up = (direction.y + 1.0) / 2.0;
+
+        (sky * up + ground * (1.0 - up)) * strength
+    };
+
+    let cosine = normal.dot(view);
+    let mirror = normal * (2.0 * cosine) - view;
+    let transmitted = material.transmission * (1.0 - material.metallic);
 
     let f0 = normal_reflectance(material);
     let diffuse =
@@ -419,7 +428,9 @@ fn hemisphere_radiance(
 
     let open = 1.0 - material.occlusion_strength * (1.0 - occlusion);
 
-    ambient * (diffuse + f0) * open
+    (ambient(normal) * (diffuse + f0 * (1.0 - transmitted))
+        + ambient(mirror) * transmitted_reflectance(material, cosine) * transmitted)
+        * open
 }
 
 /// How much of a point light reaches `distance` meters out: the inverse
@@ -455,9 +466,28 @@ fn shadow_factor(
     shadow: RenderShadow,
     target: &ShadowTarget,
 ) -> Result<TyLinSrgbF64> {
+    let placement = scene
+        .placement(hit.placement_id)
+        .expect("a hit lands on one of the scene's placements");
+
     let sample = |across: [i64; 2]| {
         let origin = face_origin(&hit.face, across);
-        let walk = RenderRayWalk::new(scene, shadow_rays(scene, hit.placement_id, origin, target)?);
+
+        let world = placement
+            .transform
+            .transform_point(TyVector3F64::from_array(
+                origin.map(|coordinate| coordinate as f64 / ONE as f64),
+            ));
+
+        let direction = match *target {
+            ShadowTarget::Direction(direction) => direction,
+            ShadowTarget::Position(position) => (position - world).normalize(),
+        };
+
+        let walk = RenderRayWalk::new(
+            scene,
+            shadow_rays(scene, hit.placement_id, origin, world, target)?,
+        );
         let mut throughput = entry_pass(scene, &walk);
 
         if throughput == BLACK {
@@ -465,7 +495,13 @@ fn shadow_factor(
         }
 
         for hit in walk {
-            throughput *= material_pass(hit_material(scene, &hit));
+            let transform = &scene
+                .placement(hit.placement_id)
+                .expect("a hit lands on one of the scene's placements")
+                .transform;
+            let cosine = world_normal(transform, &hit.face).dot(direction).abs();
+
+            throughput *= material_pass(hit_material(scene, &hit), cosine);
 
             if throughput == BLACK {
                 break;
@@ -505,23 +541,15 @@ fn shadow_factor(
 }
 
 /// One ray per placement toward `target` from `origin`, a fixed point in
-/// `placement_id`'s grid. Other grids get the origin through world space.
+/// `placement_id`'s grid. Other grids get the origin from `world`, the same
+/// point in world space.
 fn shadow_rays(
     scene: &RenderScene,
     placement_id: U32Id<BRenderPlacement>,
     origin: [i64; 3],
+    world: TyVector3F64,
     target: &ShadowTarget,
 ) -> Result<Vec<RenderGridRay>> {
-    let placement = scene
-        .placement(placement_id)
-        .expect("a hit lands on one of the scene's placements");
-
-    let world = placement
-        .transform
-        .transform_point(TyVector3F64::from_array(
-            origin.map(|coordinate| coordinate as f64 / ONE as f64),
-        ));
-
     scene
         .iter_placements()
         .map(|(other_id, other)| {
@@ -552,7 +580,9 @@ fn shadow_rays(
         .collect()
 }
 
-/// What the light paid to enter the materials `walk` starts inside.
+/// What the light paid to enter the materials `walk` starts inside. The light
+/// pays each pass at normal incidence because the faces it entered by are
+/// unknown.
 fn entry_pass(scene: &RenderScene, walk: &RenderRayWalk) -> TyLinSrgbF64 {
     walk.starts_inside()
         .iter()
@@ -561,7 +591,7 @@ fn entry_pass(scene: &RenderScene, walk: &RenderRayWalk) -> TyLinSrgbF64 {
                 .material(material_id)
                 .expect("a voxel samples one of the scene's materials");
 
-            pass * material_pass(material)
+            pass * material_pass(material, 1.0)
         })
 }
 
@@ -611,7 +641,7 @@ mod tests {
     use crate::{
         Error, RenderBloom, RenderHit, RenderLight, RenderMaterial, RenderObject, RenderOcclusion,
         RenderPixel, RenderPlacement, RenderProjection, RenderRay, RenderRayWalk, RenderScene,
-        RenderShadow, RenderView, ShadowTarget, cast_ray, fit_distance, render,
+        RenderShadow, RenderView, ShadowTarget, cast_ray, fit_distance, material_pass, render,
         render::{
             BLACK, RayShade, WHITE, bilinear, check_bloom, cone_attenuation, direct_radiance,
             hemisphere_radiance, point_attenuation, shade_hit, shade_ray, shadow_factor,
@@ -620,6 +650,7 @@ mod tests {
             bar_scene, check_goldens, cube_scene, glass, glass_scene, glow_scene, l_shape_scene,
             matte, room_scene, solid_object, spot_room_scene, two_placements_scene,
         },
+        transmitted_reflectance,
     };
     use branded_id::U32Id;
     use ty_math::{
@@ -1023,6 +1054,27 @@ mod tests {
     }
 
     #[test]
+    fn a_pane_seen_at_an_angle_passes_less_and_reflects_more() {
+        let clear = glass(TyLinSrgbaF64::new(1.0, 1.0, 1.0, 1.0));
+        let (pane, head_on) = bar_scene(&[clear]);
+
+        // The ray enters by the -X face and leaves by the +Z face, each at a
+        // cosine of 0.707. The white sky reflects alike in every direction.
+        let oblique = RenderRay {
+            origin: TyVector3F64::new(-0.5, 0.5, 0.0),
+            direction: TyVector3F64::new(1.0, 0.0, 1.0).normalize(),
+        };
+        let cosine = 0.5f64.sqrt();
+        let pass = material_pass(&clear, cosine);
+        let fresnel = transmitted_reflectance(&clear, cosine);
+
+        let shade = ray_shade(&pane, &oblique);
+        assert!(close(shade.transmittance, pass * pass));
+        assert!(close(shade.light, fresnel + pass * fresnel));
+        assert!(shade.transmittance.red < ray_shade(&pane, &head_on).transmittance.red);
+    }
+
+    #[test]
     fn a_half_alpha_voxel_averages_its_shade_and_the_wall() {
         let blue = matte(TyLinSrgbaF64::new(0.0, 0.0, 1.0, 0.5));
         let red = matte(TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0));
@@ -1240,6 +1292,7 @@ mod tests {
                 ..matte(white)
             },
             normal,
+            normal,
             WHITE,
             WHITE,
             1.0,
@@ -1257,22 +1310,56 @@ mod tests {
         let sky = TyLinSrgbF64::new(1.0, 1.0, 1.0);
         let ground = TyLinSrgbF64::new(0.0, 0.0, 0.0);
 
-        let top = hemisphere_radiance(&white, TyVector3F64::Y, sky, ground, 1.0, 1.0);
-        let side = hemisphere_radiance(&white, TyVector3F64::X, sky, ground, 1.0, 1.0);
-        let bottom = hemisphere_radiance(&white, -TyVector3F64::Y, sky, ground, 1.0, 1.0);
+        let ambient = |material: &RenderMaterial, normal: TyVector3F64, occlusion| {
+            hemisphere_radiance(material, normal, normal, sky, ground, 1.0, occlusion)
+        };
+
+        let top = ambient(&white, TyVector3F64::Y, 1.0);
+        let side = ambient(&white, TyVector3F64::X, 1.0);
+        let bottom = ambient(&white, -TyVector3F64::Y, 1.0);
         assert!((top.red - 1.04).abs() < 1e-9);
         assert!((side.red - 0.52).abs() < 1e-9);
         assert_eq!(bottom.red, 0.0);
 
-        let closed = hemisphere_radiance(&white, TyVector3F64::Y, sky, ground, 1.0, 0.0);
+        // A material without transmission mixes by its normal from every
+        // view.
+        let oblique = TyVector3F64::new(1.0, 1.0, 0.0).normalize();
+        assert_eq!(
+            hemisphere_radiance(&white, TyVector3F64::X, oblique, sky, ground, 1.0, 1.0),
+            side
+        );
+
+        let closed = ambient(&white, TyVector3F64::Y, 0.0);
         assert_eq!(closed.red, 0.0);
 
         let half_strength = RenderMaterial {
             occlusion_strength: 0.5,
             ..white
         };
-        let softened = hemisphere_radiance(&half_strength, TyVector3F64::Y, sky, ground, 1.0, 0.0);
+        let softened = ambient(&half_strength, TyVector3F64::Y, 0.0);
         assert!((softened.red - 0.52).abs() < 1e-9);
+    }
+
+    #[test]
+    fn glass_reflects_the_hemisphere_along_the_mirror_direction() {
+        let clear = glass(TyLinSrgbaF64::new(1.0, 1.0, 1.0, 1.0));
+        let normal = TyVector3F64::X;
+        let ambient =
+            |view: TyVector3F64| hemisphere_radiance(&clear, normal, view, WHITE, BLACK, 1.0, 1.0);
+
+        // Head on, the mirror direction is the normal, which sees half sky.
+        assert!(close(ambient(normal), WHITE * 0.02));
+
+        // Seen from below, the mirror direction looks up into the sky. Seen
+        // from above, it looks down at the ground.
+        let below = TyVector3F64::new(1.0, -1.0, 0.0).normalize();
+        let above = TyVector3F64::new(1.0, 1.0, 0.0).normalize();
+        let fresnel = transmitted_reflectance(&clear, normal.dot(below));
+        let up = (1.0 + 0.5f64.sqrt()) / 2.0;
+
+        assert!(fresnel.red > 0.04);
+        assert!(close(ambient(below), fresnel * up));
+        assert!(close(ambient(above), fresnel * (1.0 - up)));
     }
 
     #[test]
@@ -1505,11 +1592,17 @@ mod tests {
 
     #[test]
     fn a_red_glass_wall_throws_a_red_shadow_that_blends_per_channel() {
-        let scene = walled(glass(TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0)));
+        let wall = glass(TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0));
+        let scene = walled(wall);
         let target = over_the_wall();
 
-        // Each of the wall's faces passes 0.96 of the red.
-        let red = TyLinSrgbF64::new(0.96 * 0.96, 0.0, 0.0);
+        // The ray enters the wall's side and leaves by its top. Each face
+        // passes the red at the ray's cosine to it.
+        let ShadowTarget::Direction(direction) = target else {
+            unreachable!();
+        };
+        let red = material_pass(&wall, direction.x) * material_pass(&wall, direction.y);
+        assert!(red.red < 0.96 * 0.96, "{red:?}");
 
         let near = floor_at(&scene, 1.25);
         let far = floor_at(&scene, 1.75);

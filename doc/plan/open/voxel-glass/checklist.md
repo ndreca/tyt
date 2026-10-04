@@ -44,7 +44,7 @@ code-level choices in [implementation-decisions.md](implementation-decisions.md)
       5. The goldens regenerate with a list of what moved
       6. The contract's Surface and Shading sections and the crate README's
          Rays section state exits
-- [ ] **S3. Fresnel by angle.** The transmitted share takes Schlick's
+- [x] **S3. Fresnel by angle.** The transmitted share takes Schlick's
       Fresnel on the ray's cosine, capped by the roughness.
       1. The pass takes the cosine. A ray that starts inside a material
          takes the pass at normal incidence, and opacity stays the pass at

@@ -141,26 +141,29 @@ emissive term. The light kinds reach a hit differently:
    cutoff at its range
 3. A spot light falls off as a point light does, times glTF's cone falloff
    between its inner and outer angles
-4. A hemisphere light mixes sky and ground by the normal's +Y
+4. A hemisphere light mixes sky and ground by the +Y of the normal, or of
+   the view's mirror direction for the transmitted share
 
-Under `RenderOcclusion::Corner`, the corner occlusion darkens the
-hemisphere light. It counts only the cells whose material passes no light,
-so glass darkens nothing it encloses. An exit shades with its normal turned
-back into the material it leaves. `inner_corner_occlusion` reads the exit's
-occlusion on that side. A shadow is one grid ray toward the
-light. It starts with the pass of the material it starts inside and
-transmits by the pass of each surface it meets, so a red pane throws a red
-shadow. `RenderShadow` casts it per pixel, per face, or per corner, and
-blends the corner results across the face per channel. A `RenderBloom` adds
-a halo over the emissive term before the tonemap: the part of each hit's
-emission over its threshold, blurred out to its radius and scaled by its
-strength, lands on every pixel. The default strength of `0` skips the pass.
+Under `RenderOcclusion::Corner`, the corner occlusion darkens the hemisphere
+light. It counts only the cells whose material passes no light, so glass
+darkens nothing it encloses. An exit shades with its normal turned back into
+the material it leaves. `inner_corner_occlusion` reads the exit's occlusion
+on that side. A shadow is one grid ray toward the light. It starts with the
+pass of the material it starts inside and transmits by the pass of each
+surface it meets, so a red pane throws a red shadow. `RenderShadow` casts it
+per pixel, per face, or per corner, and blends the corner results across the
+face per channel. A `RenderBloom` adds a halo over the emissive term before
+the tonemap: the part of each hit's emission over its threshold, blurred out
+to its radius and scaled by its strength, lands on every pixel. The default
+strength of `0` skips the pass.
 
 A pixel walks its ray front to back, adding each hit's shade at its base
 color's alpha and passing the rest through by the material's pass, the share
-of the light behind the surface that `transmission` lets through. Glass
-shows what lies behind it and tints at each wall. Touching voxels of one
-glass read as one slab.
+of the light behind the surface that `transmission` lets through. The pass
+loses Schlick's Fresnel on the ray's cosine to the face, so glass passes
+less and reflects more of the hemisphere toward grazing. Glass shows what
+lies behind it and tints at each wall. Touching voxels of one glass read as
+one slab.
 
 ```rust
 let image = render(

@@ -177,6 +177,12 @@ mod shadow_target;
 #[cfg(feature = "cpu")]
 pub(crate) use shadow_target::*;
 
+#[cfg(feature = "cpu")]
+mod transmitted_reflectance;
+
+#[cfg(feature = "cpu")]
+pub(crate) use transmitted_reflectance::*;
+
 // Test support
 
 #[cfg(all(test, feature = "cpu"))]

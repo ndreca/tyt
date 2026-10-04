@@ -69,19 +69,26 @@ Both the direct and the hemisphere light scale the diffuse term by one minus
 `transmission`. The hemisphere term mixes sky and ground by the normal's +Y
 component, scaled by the occlusion and `occlusionStrength`.
 
-What continues past a hit is the material's pass, one factor per channel:
+What continues past a hit is the material's pass, one factor per channel.
+The transmitted share loses Schlick's Fresnel `F` on the cosine between the
+ray and the face normal in world space. The roughness caps the rise of `F`
+toward grazing:
 
 ```
-pass = (1 - alpha) + alpha * transmission * (1 - metallic) * (1 - F0) * baseColor
+F = F0 + (max(1 - roughness, F0) - F0) * (1 - cos)^5
+pass = (1 - alpha) + alpha * transmission * (1 - metallic) * (1 - F) * baseColor
 ```
 
 The first term is the part of the pixel the surface does not cover. The
 second is the light the covered part transmits: the dielectric share, less
-what reflects at normal incidence, tinted by the base color. An opaque
-material's pass is zero. The ray never bends. Transmission is glTF's
-thin-surface model without the volume extension: light passes straight
-through, tinted once at each surface it crosses. A pane tints at its near
-and far walls.
+what reflects, tinted by the base color. The transmitted share reflects `F`
+of the hemisphere light. That reflection mixes sky and ground by the +Y of
+the view's mirror direction. A ray that starts inside a material pays the
+material's pass at normal incidence because the face the ray entered by is
+unknown. An opaque material's pass is zero. The ray never bends.
+Transmission is glTF's thin-surface model without the volume extension:
+light passes straight through, tinted once at each surface it crosses. A
+pane tints at its near and far walls.
 
 An exit shades as an entry does, with its normal turned back along the ray
 into the material it leaves. The lights that reach it cross that material.
@@ -89,8 +96,9 @@ into the material it leaves. The lights that reach it cross that material.
 A pixel walks its ray front to back with a throughput of one. At each hit
 the pixel adds `throughput * alpha * shade` to its light and `throughput *
 alpha * emission` to the bloom's emissive term, then multiplies the
-throughput by the pass. The walk ends at a zero throughput or when the ray leaves every
-grid. What remains is the pixel's transmittance.
+throughput by the pass at the view ray's cosine. The walk ends at a zero
+throughput or when the ray leaves every grid. What remains is the pixel's
+transmittance.
 
 ## Lights
 
@@ -121,18 +129,18 @@ three adjacent cells, implemented once in `voxsurface` for the reference and
 is zero, so glass darkens nothing it encloses. An exit's corners read the
 cells on its material's side of the face.
 
-A shadow is one grid ray toward the light. The ray starts on the face's
-plane, which the boundary rule puts in the cell in front of a lit face. It
-runs to infinity for a directional light. Toward a point or spot light its
-direction is the integer offset to the light, shifted right until it fits,
-and it ends in the cell it reaches at the light's coordinate on the axis it
-travels farthest. Its throughput starts at the pass of each material the ray
-starts inside, which the light crossed to reach the point, and multiplies by
-the pass of each surface it meets, so a shadow is a color. A red pane throws
-a red shadow tinted at both its walls. A pane two voxels thick throws the
-shadow a thin one throws. A floor under a pane is lit through it. Each light
-scales its contribution by what remains. A light samples the ray at one of
-three granularities:
+A shadow is one grid ray toward the light. The ray starts on the face's plane,
+which the boundary rule puts in the cell in front of a lit face. It runs to
+infinity for a directional light. Toward a point or spot light its direction
+is the integer offset to the light, shifted right until it fits, and it ends
+in the cell it reaches at the light's coordinate on the axis it travels
+farthest. Its throughput starts at the pass of each material the ray starts
+inside, which the light crossed to reach the point. At each surface the ray
+meets, the throughput multiplies by the pass at the shadow ray's cosine, so a
+shadow is a color. A red pane throws a red shadow tinted at both its walls. A
+pane two voxels thick throws the shadow a thin one throws. A floor under a
+pane is lit through it. Each light scales its contribution by what remains. A
+light samples the ray at one of three granularities:
 
 1. `per-pixel` casts the ray from the hit, rounded to fixed point: a crisp
    diagonal edge across faces, the MagicaVoxel render and Teardown look

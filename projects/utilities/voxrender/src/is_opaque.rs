@@ -1,7 +1,7 @@
 use crate::{RenderMaterial, material_pass};
 use ty_math::TyLinSrgbF64;
 
-/// Whether `material` passes no light.
+/// Whether `material` passes no light at normal incidence.
 pub fn is_opaque(material: &RenderMaterial) -> bool {
-    material_pass(material) == TyLinSrgbF64::new(0.0, 0.0, 0.0)
+    material_pass(material, 1.0) == TyLinSrgbF64::new(0.0, 0.0, 0.0)
 }
