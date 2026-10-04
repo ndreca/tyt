@@ -136,6 +136,12 @@ mod grid_vector;
 pub(crate) use grid_vector::*;
 
 #[cfg(feature = "cpu")]
+mod is_opaque;
+
+#[cfg(feature = "cpu")]
+pub(crate) use is_opaque::*;
+
+#[cfg(feature = "cpu")]
 mod material_pass;
 
 #[cfg(feature = "cpu")]

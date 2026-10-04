@@ -60,8 +60,9 @@ let keyed = mesh_grid_keyed(
 order of the span's `corners`: `1` fully open. Each of the three opaque
 cells beside the corner in the layer the face looks into closes a third, and
 both cells along the face's edges together close it fully. A transparent
-cell closes nothing. `mesh_occlusion` applies it to every quad of a mesh,
-one value per vertex.
+cell closes nothing. `inner_corner_occlusion` reads the same corners seen
+from inside the span's cells, in their own layer. `mesh_occlusion` applies
+`corner_occlusion` to every quad of a mesh, one value per vertex.
 
 ```rust
 let occlusion = mesh_occlusion(&object, &mesh);

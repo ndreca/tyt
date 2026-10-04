@@ -20,16 +20,24 @@ as it scales an [`object mesh`](../mesh/mesh.md) output.
 
 The surface is the boundary between materials, read along a ray. In each
 placement the ray remembers the material of the cell it is inside: nothing
-before it enters the grid and nothing after it enters an empty cell.
-Entering a live cell whose material differs from the one the ray is inside
-is a surface hit through the face it entered. Entering a cell of the same
-material or an empty cell shades nothing, so there are no back faces. A ray
-that starts inside a cell leaves that cell's material before it can hit
-anything. Each placement walks on its own, and the hits merge by distance,
-ties in placement order. A ray from outside the grid first hits the boundary
-between live and non-live cells that `voxsurface` enumerates. Faces are
-axis-aligned unit squares with flat normals. There is no smoothing, no
-bevel, and no sub-voxel detail.
+before it enters the grid and nothing after it enters an empty cell. The ray
+meets the surface two ways:
+
+1. Entering a live cell whose material differs from the one the ray is
+   inside is an entry through the face it entered by
+2. Leaving a material for an empty cell, the outside of the grid, or a live
+   cell of another material that is not opaque is an exit through the face
+   it leaves by. Leaving for an opaque cell is no exit. The opaque cell's
+   entry is the only hit on that face
+
+An exit comes before the entry at the same face. Cells of one material have
+no seam between them, so a slab shows its near and far faces. A ray that
+starts inside a cell leaves that cell's material without an exit. A view from
+inside a voxel sees out of it. Each placement walks on its own, and the hits
+merge by distance, ties in placement order. A ray from outside the grid first
+hits the boundary between live and non-live cells that `voxsurface`
+enumerates. Faces are axis-aligned unit squares with flat normals. There is
+no smoothing, no bevel, and no sub-voxel detail.
 
 The walk runs in integers so every renderer makes the same choices. A ray
 enters each placement's walk quantized into its grid: a fixed-point origin
@@ -72,7 +80,11 @@ second is the light the covered part transmits: the dielectric share, less
 what reflects at normal incidence, tinted by the base color. An opaque
 material's pass is zero. The ray never bends. Transmission is glTF's
 thin-surface model without the volume extension: light passes straight
-through, tinted once per surface.
+through, tinted once at each surface it crosses. A pane tints at its near
+and far walls.
+
+An exit shades as an entry does, with its normal turned back along the ray
+into the material it leaves. The lights that reach it cross that material.
 
 A pixel walks its ray front to back with a throughput of one. At each hit
 the pixel adds `throughput * alpha * shade` to its light and `throughput *
@@ -106,20 +118,21 @@ The occlusion switch is `none` or `corner`. `corner` is the
 neighbor-occupancy rule voxel art uses, one value per face corner from the
 three adjacent cells, implemented once in `voxsurface` for the reference and
 `object mesh` alike. A cell counts as occupied only when its material's pass
-is zero, so glass darkens nothing it encloses.
+is zero, so glass darkens nothing it encloses. An exit's corners read the
+cells on its material's side of the face.
 
 A shadow is one grid ray toward the light. The ray starts on the face's
 plane, which the boundary rule puts in the cell in front of a lit face. It
 runs to infinity for a directional light. Toward a point or spot light its
 direction is the integer offset to the light, shifted right until it fits,
 and it ends in the cell it reaches at the light's coordinate on the axis it
-travels farthest. Its throughput starts
-at the pass of each material the ray starts inside, which the light crossed
-to reach the point, and multiplies by the pass of each surface it meets, so
-a shadow is a color. A red pane throws a red shadow. A pane two voxels thick
-throws the shadow a thin one throws. A floor under a pane is lit through
-it. Each light scales its contribution by what remains. A light samples the
-ray at one of three granularities:
+travels farthest. Its throughput starts at the pass of each material the ray
+starts inside, which the light crossed to reach the point, and multiplies by
+the pass of each surface it meets, so a shadow is a color. A red pane throws
+a red shadow tinted at both its walls. A pane two voxels thick throws the
+shadow a thin one throws. A floor under a pane is lit through it. Each light
+scales its contribution by what remains. A light samples the ray at one of
+three granularities:
 
 1. `per-pixel` casts the ray from the hit, rounded to fixed point: a crisp
    diagonal edge across faces, the MagicaVoxel render and Teardown look

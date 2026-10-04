@@ -27,7 +27,7 @@ code-level choices in [implementation-decisions.md](implementation-decisions.md)
       4. The goldens regenerate with a list of what moved
       5. The contract's Output section and the crate README's Images
          section state the rule
-- [ ] **S2. Exits.** `RenderRayWalk` yields an exit where the ray leaves a
+- [x] **S2. Exits.** `RenderRayWalk` yields an exit where the ray leaves a
       material for an empty cell, the outside of the grid, or a material
       that is not opaque.
       1. A `RenderHit` says whether it is an exit. An exit's face is the one

@@ -1,10 +1,8 @@
-use crate::{RenderMaterial, RenderObject, RenderScene, material_pass};
+use crate::{RenderMaterial, RenderObject, RenderScene, is_opaque};
 use branded_id::U32Id;
-use ty_math::{TyLinSrgbF64, TyVector3U32};
+use ty_math::TyVector3U32;
 use voxcore::BVoxVoxel;
 use voxsurface::SurfaceGrid;
-
-const BLACK: TyLinSrgbF64 = TyLinSrgbF64::new(0.0, 0.0, 0.0);
 
 /// A render object's grid read with its scene's materials: a cell is opaque
 /// where its material's pass is zero, and two cells are of one material
@@ -46,7 +44,7 @@ impl SurfaceGrid for RenderGrid<'_> {
     }
 
     fn is_opaque(&self, cell: Self::Cell) -> bool {
-        material_pass(self.material(cell)) == BLACK
+        is_opaque(self.material(cell))
     }
 
     fn shares_material(&self, cell: Self::Cell, other: Self::Cell) -> bool {
