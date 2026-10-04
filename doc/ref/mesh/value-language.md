@@ -2,13 +2,19 @@
 
 _Part of the [mesh plan](README.md)._
 
-The expression language behind `vxl object mesh`'s material values. A binding,
-`name = expr`, defines a named value, and a run gathers every binding it is
-given into one [program](#programs). The writer and slot flags listed in
+The expression language behind `vxl object mesh`'s material values and
+`vxl palette edit`'s property writes. A binding, `name = expr`, defines a named
+value, and a run gathers every binding it is given into one
+[program](#programs). The writer and slot flags listed in
 [`vxl object mesh`](mesh.md#options) take expressions too, landing the results
 in images, JSON files, and the mesh's material. Each property of the
 [effective palette](mesh.md#the-palette-atlas) that the program or an
 expression reads enters the program as a name.
+
+[`vxl palette edit`](../../plan/open/palette-edit/README.md) runs the same
+language over one palette at a time. The program sees no geometry, so only the
+plain and swatch rungs of the [ladder](#domains) exist. The `--write-property`
+flags write the results back into the palette's properties.
 
 A value sits on three axes, each with a section below:
 
@@ -176,8 +182,10 @@ number infers from the expression around it, so `mod(voxelPosition.y, 2)` reads
 `2` as `u32`. A destination that takes one number type also supplies context.
 A material factor, a PNG, `COLOR_0`, and every `srgb` value take `f64`, so
 `--write-material-slot-value 0 metallicFactor 1` writes `1.0`. A linear JSON
-entry or custom attribute writes any number type and supplies none. A literal
-nothing types errors, and a suffix fixes it.
+entry or custom attribute writes any number type and supplies none. A
+`palette edit` write to a float property takes `f64`, and one to an int property
+takes `u32`. A write adding a property supplies none. A literal nothing types
+errors, and a suffix fixes it.
 
 The conversions are explicit and componentwise. `f64(e)` takes any unsigned
 value exactly. `u8(e)`, `u16(e)`, and `u32(e)` widen an unsigned value

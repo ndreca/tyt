@@ -13,16 +13,19 @@ These hold across the commands and match the existing `vox-doc to` commands.
 3. Settable booleans follow the `--ext` style: a bare flag means `true`, an
    explicit `--flag false` turns it off, and the option has a default.
 4. Palette addressing differs by command. [`palette list`](palette/list.md)
-   takes repeatable positional index filters such as `1` or `1-5`.
+   takes repeatable positional index filters such as `1`, `1-5`, or `*`.
    [`palette show`](palette/show.md) takes a repeatable
    `--property <palette> <property> <presentation> <reading>` selector,
    defaulting to the whole-document wildcard `'*' '*' auto auto`, and extends
    `--property` with the `<key>.component` grammar to read one component of a
    vector through either alias set (`.r`/`.g`/`.b`/`.a` or
-   `.x`/`.y`/`.z`/`.w`). The mutating `quantize` and `remap` address a
-   palette with `--index` (default `0`) and `--property` (default
-   `baseColor`), operate on a whole property, and reject a component.
-   Property keys are the glTF vocabulary names such as `baseColor`.
+   `.x`/`.y`/`.z`/`.w`). The mutating `edit`, `quantize`, and `remap` select
+   palettes with `--index` under the
+   [palette selection](../../palette-edit/README.md#palette-selection) rule.
+   `--index` takes a repeatable id, `a-b` range, or `*` and defaults to `*`.
+   `quantize` and `remap` compare `--property` (default `baseColor`), operate
+   on a whole property, and reject a component. Property keys are the glTF
+   vocabulary names such as `baseColor`.
 5. The read-only reports render with `--layout`, every command drawing its
    values from one shared vocabulary whose prefix names the output family:
    `box-hierarchy` and `box-tables` draw with box glyphs, `json-compact` and
@@ -35,10 +38,10 @@ These hold across the commands and match the existing `vox-doc to` commands.
    `json-pretty`, and `md-tables` (its default); `vox-doc show` adds
    `box-tables` to those three, and [`palette list`](palette/list.md) adds
    `box-hierarchy` (its default) and `box-tables`. `profile object mesh list`,
-   `profile object voxels quantize list`, `profile palette quantize list`, and
-   `profile palette show list` offer `box-hierarchy` (their default),
-   `box-tables`, `json-compact`, `json-pretty`, `md-lists`, `md-tables`, or
-   `text-rows`.
+   `profile object voxels quantize list`, `profile palette edit list`,
+   `profile palette quantize list`, and `profile palette show list` offer
+   `box-hierarchy` (their default), `box-tables`, `json-compact`,
+   `json-pretty`, `md-lists`, `md-tables`, or `text-rows`.
 6. Every profile takes an optional one-line `description`. The profile `list`
    commands print it beside the profile's name unless
    `--show-descriptions false` turns it off.

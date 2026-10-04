@@ -75,7 +75,7 @@ The design is in the [README](README.md). Check steps off as they land.
       `load_palette_quantize_profile_set` loads `quantize`.
       `profile palette edit list` mirrors
       `profile/profile_palette/profile_palette_quantize/`.
-- [ ] **S7. Docs.** Extend the vxl README's Palettes section. Its quantize
+- [x] **S7. Docs.** Extend the vxl README's Palettes section. Its quantize
       example now reaches every palette. The
       [vxl-commands README](../vxl-commands/README.md#commands) command list
       links `palette edit` here. Item 4 of

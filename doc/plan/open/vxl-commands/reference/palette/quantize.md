@@ -3,11 +3,11 @@
 *Part of [`vxl palette`](README.md) in the [Vxl Command-Line Reference](../../README.md).*
 
 ```
-vxl palette quantize <input> [output] --max-materials <n> [--index 0] [--property baseColor] [options]
+vxl palette quantize <input> [output] --max-materials <n> [--index <palettes>]... [--property baseColor] [options]
 ```
 
-Reduces a palette to at most `--max-materials` materials and rewrites every
-layer that references the palette.
+Reduces each selected palette to at most `--max-materials` materials and
+rewrites every layer that references it.
 
 The command reads any voxel document and writes Voxel JSON. The candidates are
 the materials some voxel samples, each weighted by its voxel count. A material
@@ -15,7 +15,9 @@ no voxel samples is dropped.
 
 1. `--max-materials <n>` (required unless a profile sets it): the most materials
    the palette keeps.
-2. `--index <n>` (default `0`): which palette to quantize.
+2. `--index <palettes>` (default `*`): which palettes to quantize under the
+   [palette selection](../../../palette-edit/README.md#palette-selection) rule.
+   Each palette reduces separately. A palette no live voxel samples errors.
 3. `--property <key>` (default `baseColor`): which property to cluster on. The
    palette has to bind it.
 4. `--interpret-property` `auto` | `linear-color` | `srgb-color` | `numeric`

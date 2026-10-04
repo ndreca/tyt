@@ -64,14 +64,18 @@ Every command sits under the noun it addresses, then its verb.
 - [`vxl node`](../../closed/vxl-object-commands/README.md#vxl-node): edit nodes
   and hierarchy edges.
 - [`vxl node list`](reference/node/README.md): print the scene graph.
-- [`vxl palette`](reference/palette/README.md): list, show, quantize, and remap
-  palettes.
+- [`vxl palette`](reference/palette/README.md): list, show, edit, quantize, and
+  remap palettes.
+- [`vxl palette edit`](../palette-edit/README.md): write palette properties from
+  value-language expressions.
 - [`vxl profile object mesh list`](../../../ref/mesh/profile-language.md#loading):
   list the profiles `object mesh --profile` can apply.
 - [`vxl profile object render list`](../../../ref/render/profile-language.md#loading):
   list the profiles `object render --profile` can apply.
 - [`vxl profile object voxels quantize list`](reference/object/voxels/quantize.md#profiles):
   list the profiles `object voxels quantize --profile` can apply.
+- [`vxl profile palette edit list`](../palette-edit/README.md#profiles): list
+  the profiles `palette edit --profile` can apply.
 - [`vxl profile palette quantize list`](reference/palette/quantize.md#profiles):
   list the profiles `palette quantize --profile` can apply.
 - [`vxl profile palette show list`](reference/palette/show.md#profiles): list

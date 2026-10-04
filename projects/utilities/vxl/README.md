@@ -4,12 +4,13 @@ A command-line tool for working with voxels.
 
 ## Editing
 
-The `object`, `node`, and `palette quantize` commands edit a document. Each
-reads any format voxconv reads and writes Voxel JSON beside the input by default.
-`object mesh` writes a mesh instead. `node list` only prints the scene graph.
-`--select` takes a hierarchy-path glob. `--select-index` takes an id, an `a-b`
-range, or `*`. Both repeat and pick what the command acts on. `--select-parent` and
-`--select-parent-index` pick the one node at the parent end of an edge.
+The `object`, `node`, `palette edit`, and `palette quantize` commands edit a
+document. Each reads any format voxconv reads and writes Voxel JSON beside the
+input by default. `object mesh` writes a mesh instead. `node list` only prints
+the scene graph. `--select` takes a hierarchy-path glob. `--select-index` takes
+an id, an `a-b` range, or `*`. Both repeat and pick what the command acts on.
+`--select-parent` and `--select-parent-index` pick the one node at the parent
+end of an edge.
 
 ```sh
 # Reads Voxel Max and writes scene.voxj beside it.
@@ -80,18 +81,38 @@ vxl object voxels quantize scene.voxj --select crate --max-materials 16 --partit
 
 ## Palettes
 
-`palette list` and `palette show` print palettes. `palette quantize` reduces a
-palette to at most `--max-materials` materials and snaps every voxel sampling
-it. Each cluster collapses onto its most-sampled material, and a merged voxel
-takes that whole material. Clustering runs on `--property`, `baseColor` by
-default. `--partition` keeps materials apart unless they agree on a property.
-Materials no voxel samples drop. Both quantize commands take `--profile`, which
-applies flags saved in a `.vxlconfig` under `palette.quantize.profiles` or
-`object.voxels.quantize.profiles`. `vxl profile palette quantize list` and
-`vxl profile object voxels quantize list` print them.
+`palette list` and `palette show` print palettes. `palette edit` and
+`palette quantize` act on each palette `--index` selects. `--index` takes an id,
+an `a-b` range, or `*`. The flag repeats and defaults to `*`.
+
+`palette edit` runs a [value-language](../../../doc/ref/mesh/value-language.md)
+program over each palette. Each property the program reads enters as a swatch
+array holding one entry per material. `--value` adds bindings to the program.
+`--write-property` writes an expression's result into a property and adds the
+property when the palette lacks it. A bare whole number written to a float
+property reads as `f64`. Every selected palette evaluates before any write
+lands, so an error leaves the document untouched.
+
+`palette quantize` reduces each palette to at most `--max-materials` materials
+and snaps every voxel sampling it. Each cluster collapses onto its most-sampled
+material, and a merged voxel takes that whole material. Clustering runs on
+`--property`, `baseColor` by default. `--partition` keeps materials apart unless
+they agree on a property. Materials no voxel samples drop. A palette no voxel
+samples errors.
+
+`palette edit` and both quantize commands take `--profile`, which applies flags
+saved in a `.vxlconfig` under `palette.edit.profiles`,
+`palette.quantize.profiles`, or `object.voxels.quantize.profiles`.
+`vxl profile palette edit list`, `vxl profile palette quantize list`, and
+`vxl profile object voxels quantize list` print the profiles.
 
 ```sh
-# Reduces the first palette to Voxel Max's 255 colors.
+# Gives rusty materials roughness 0.9 in every palette.
+vxl palette edit scene.voxj \
+  --value 'rust = tag == "rust"' \
+  --write-property roughness 'mix(roughness, 0.9, rust)'
+
+# Reduces every palette to Voxel Max's 255 colors.
 vxl palette quantize scene.voxj --max-materials 255
 ```
 

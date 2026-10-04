@@ -26,11 +26,16 @@ its own format or a bare palette JSON.
    `runtimeState`. The target is its palette at `--target-index`.
 2. `--target-index <n>` (default `0`): which palette is the target. Indexes the
    `--target` file's array when `--target` is given, otherwise a palette in the
-   input document itself. Without `--target` it must name a palette other than
-   the `--index` one being remapped.
+   input document itself. Without `--target`, the
+   [palette selection](../../../palette-edit/README.md#palette-selection)
+   must leave the target out, so an in-document remap selects its sources with
+   explicit `--index` values.
 3. `--target-property <key>` (default `baseColor`): the property compared
    when finding the nearest entry, in the target.
-4. `--index <n>` (default `0`): which palette in the input to remap from.
+4. `--index <palettes>` (default `*`): which palettes in the input to remap from
+   under the
+   [palette selection](../../../palette-edit/README.md#palette-selection)
+   rule. Each palette snaps onto the target.
 5. `--property <key>` (default `baseColor`): which property in the input
    to compare.
 6. `--space` `oklab` | `lab` | `srgb` (default `oklab`): distance metric for the

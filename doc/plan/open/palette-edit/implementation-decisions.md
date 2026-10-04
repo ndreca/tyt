@@ -145,3 +145,13 @@ they land.
 - The mesh writers' `srgb` encode evaluates the curve as `p + 0.055 * (p - 1)`
   instead of `palette`'s `1.055 * p - 0.055`. The two agree within an epsilon.
   Only the new form writes `1.0` as `1.0` instead of `0.9999999999999999`.
+
+## S7. Docs
+
+- The vxl-commands command list links `palette edit` and
+  `profile palette edit list` to this plan. `palette/README.md` lists
+  `palette edit`. Conventions item 5 adds `profile palette edit list` to the
+  profile listings.
+- `quantize.md` item 2 states the unsampled-palette error. `remap.md` item 2
+  states rule 5's in-document target rule.
+- The value-language reference states the literal context of a palette write.
