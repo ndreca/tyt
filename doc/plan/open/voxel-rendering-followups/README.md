@@ -8,9 +8,9 @@ checklist, and its decisions log when it starts.
 
 ## Transparency
 
-Alpha, `transmission`, and `ior`. Started 2026-10-02 as the
-[voxel transparency plan](../voxel-transparency/README.md), which settles
-what a transparent voxel is and adds it to the reference.
+Alpha, `transmission`, and `ior`. Built as the
+[voxel transparency plan](../../closed/voxel-transparency/README.md), closed
+2026-10-04 with the reference, the mesher, and the `glass` profile done.
 
 ## `voxrender-wgpu`
 
@@ -23,9 +23,9 @@ reference casts, so `per-face` and `per-corner` shadows match the reference
 exactly. The desktop tier adds volume marching later. A tier turns off the
 contract features it cannot afford, and the reference renders that tier's
 golden images with the same features off. The crate name was free on
-crates.io as of 2026-09-27. The tier needs the transparency-aware cull the
-[voxel transparency plan](../voxel-transparency/README.md)'s mesh step
-gives `voxsurface` before it can show the glass the reference renders.
+crates.io as of 2026-09-27. `voxsurface`'s cull knows transparency since the
+[voxel transparency plan](../../closed/voxel-transparency/README.md), so the
+tier can show the glass the reference renders.
 
 ## Waiting for a reason
 

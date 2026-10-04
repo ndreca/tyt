@@ -1,11 +1,13 @@
 # Voxel transparency plan
 
-Status: **open.** The design was settled 2026-10-02 and revised 2026-10-03
-after the first review render. The steps live in
-[checklist.md](checklist.md), checked off as they land. Code-level choices are logged
-in [implementation-decisions.md](implementation-decisions.md). The
-[contract](../../../ref/render/contract.md) gains the rules below as the
-steps land. The [follow-ups plan](../voxel-rendering-followups/README.md)
+Status: **closed.** The design was settled 2026-10-02 and revised 2026-10-03
+after the first review render. The steps landed on main from 2026-10-02 to
+2026-10-04, ending with the `glass` profile in `6738d864`. The steps lived in
+[checklist.md](checklist.md). Code-level choices are logged in
+[implementation-decisions.md](implementation-decisions.md). The
+[contract](../../../ref/render/contract.md) holds the render rules. The
+[mesh reference](../../../ref/mesh/README.md) holds the cull and the `glass`
+profile. The [follow-ups plan](../../open/voxel-rendering-followups/README.md)
 points here.
 
 ## Goal
