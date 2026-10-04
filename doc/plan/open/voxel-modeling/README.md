@@ -134,7 +134,7 @@ exists. vxl prints the skill as one `SKILL.md`:
 
 ```sh
 mkdir -p .claude/skills/voxel-modeling
-vxl integration print-skill voxel-modeling > .claude/skills/voxel-modeling/SKILL.md
+vxl integration skill print voxel-modeling > .claude/skills/voxel-modeling/SKILL.md
 ```
 
 `SKILL.md` holds the workflow, then the modeling API with its example model. One
@@ -143,7 +143,7 @@ file loses nothing because Claude reads the whole API every pass. A skill under
 that printed it. Upgrading vxl takes a reprint.
 
 `vxl integration` gathers the commands that print a file for another tool.
-`vxl integration print-completions <shell>` takes over from `vxl completion`.
+`vxl integration completion print <shell>` takes over from `vxl completion`.
 Every other binary in the workspace follows. `--help` lists the shells and
 skills each command takes.
 
@@ -214,8 +214,8 @@ skips the build voxelizes a stale `.sdfj`.
 14. vxl ships the skill and prints it to stdout. The caller picks where the
     skill lands. The printed skill teaches the API of the vxl that printed it.
 15. In every binary of the workspace, `integration` gathers the commands that
-    print a file for another tool. `integration print-completions` takes over
-    from `completion`. `vxl integration print-skill` prints the skill.
+    print a file for another tool. `integration completion print` takes over
+    from `completion`. `vxl integration skill print` prints the skill.
 16. The SDF crates follow the voxel and mesh families. The family keeps that
     structure even with `.sdfj` as its one format. The crates stay thin because
     voxsmith does the work.

@@ -14,22 +14,40 @@ struct Cli {
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, Subcommand)]
 enum Command {
-    /// Generate shell completions.
-    #[command(name = "completion")]
-    Completion {
-        /// The shell to generate completions for.
-        #[arg(value_name = "shell")]
-        shell: Shell,
-    },
+    /// Prints files for other tools.
+    #[command(name = "integration", subcommand)]
+    Integration(Integration),
 
     #[command(flatten)]
     Tyt(Tyt),
 }
 
+/// The commands that print a file for another tool.
+#[derive(Clone, Debug, Subcommand)]
+#[command(subcommand_value_name = "command")]
+enum Integration {
+    /// Prints shell completions.
+    #[command(name = "completion", subcommand)]
+    Completion(Completion),
+}
+
+/// The commands for shell completions.
+#[derive(Clone, Debug, Subcommand)]
+#[command(subcommand_value_name = "command")]
+enum Completion {
+    /// Prints the completions for a shell.
+    #[command(name = "print")]
+    Print {
+        /// The shell to print completions for.
+        #[arg(value_name = "shell")]
+        shell: Shell,
+    },
+}
+
 fn main() {
     let cli = Cli::parse();
     match cli.command {
-        Command::Completion { shell } => {
+        Command::Integration(Integration::Completion(Completion::Print { shell })) => {
             clap_complete::generate(shell, &mut Cli::command(), "tyt", &mut io::stdout());
         }
 

@@ -39,7 +39,7 @@ tyt fbx hierarchy model.fbx                   # Print the object hierarchy of an
 tyt fs find "*.png"                           # Find files with .gitignore style patterns
 tyt image pixelate input.png 8                # Pixelate an image
 tyt material create-mse out --prefix my-tex   # Pack an MSE texture from material maps
-tyt completion zsh                            # Generate shell completions
+tyt integration completion print zsh          # Print shell completions
 ```
 
 Run `tyt <command> --help` for full details on any subcommand:
@@ -64,35 +64,35 @@ Options:
 
 ### Shell completions
 
-`tyt completion <shell>` prints completions to stdout. Install them for your shell:
+`tyt integration completion print <shell>` prints completions to stdout. Install the completions for your shell:
 
 ```sh
 # Bash (bash-completion v2 user-local)
 mkdir -p ~/.local/share/bash-completion/completions
-tyt completion bash > ~/.local/share/bash-completion/completions/tyt
+tyt integration completion print bash > ~/.local/share/bash-completion/completions/tyt
 
 # Zsh
 mkdir -p ~/.zsh/completions
-tyt completion zsh > ~/.zsh/completions/_tyt
+tyt integration completion print zsh > ~/.zsh/completions/_tyt
 # Then ensure this is in your .zshrc *before* compinit:
 #   fpath=("$HOME/.zsh/completions" $fpath)
 
 # Zsh (Oh My Zsh)
 mkdir -p ~/.oh-my-zsh/custom/completions
-tyt completion zsh > ~/.oh-my-zsh/custom/completions/_tyt
+tyt integration completion print zsh > ~/.oh-my-zsh/custom/completions/_tyt
 # If completions don't show up, ensure this is in your .zshrc *before* compinit:
 #   fpath=("$HOME/.oh-my-zsh/custom/completions" $fpath)
 
 # Fish
 mkdir -p ~/.config/fish/completions
-tyt completion fish > ~/.config/fish/completions/tyt.fish
+tyt integration completion print fish > ~/.config/fish/completions/tyt.fish
 
 # PowerShell
 # recommended: keep completions in a separate file and dot-source it from your $PROFILE
 $dir = Join-Path $HOME ".config\powershell"
 New-Item -ItemType Directory -Force -Path $dir | Out-Null
 
-tyt completion powershell | Set-Content -Encoding UTF8 (Join-Path $dir "tyt-completions.ps1")
+tyt integration completion print powershell | Set-Content -Encoding UTF8 (Join-Path $dir "tyt-completions.ps1")
 
 if (!(Test-Path $PROFILE)) { New-Item -ItemType File -Force -Path $PROFILE | Out-Null }
 $line = ". `"$dir\tyt-completions.ps1`""

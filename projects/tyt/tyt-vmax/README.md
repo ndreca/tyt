@@ -19,7 +19,7 @@ vmax rename-node my-scene.vmax "Cube*" "Box"                   # Rename matching
 vmax to-voxj my-scene.vmax > my-scene.voxj                     # Convert to Voxel Json
 vmax to-voxj my-scene.vmax --format zip > my-scene.voxjz       # Convert to compressed Voxel Json
 vmax to-voxj my-scene.vmax --optimize size > my-scene.voxj     # Pick the smallest encodings
-vmax completion zsh                                            # Generate shell completions
+vmax integration completion print zsh                          # Print shell completions
 ```
 
 `to-voxj` writes the document to stdout. `--format` selects the form (`json`,
@@ -34,7 +34,7 @@ Run `vmax <command> --help` for full details on any subcommand:
 Usage: vmax <command>
 
 Commands:
-  completion   Generate shell completions
+  integration  Prints files for other tools
   hierarchy    Prints the Voxel Max hierarchy as a tree, optionally filtered to selected nodes and their subtrees
   pack         Packs a .vmax directory by stripping history files
   rename-node  Renames nodes in the Voxel Max scene hierarchy matching a selection pattern

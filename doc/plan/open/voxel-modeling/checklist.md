@@ -73,13 +73,13 @@ where the loop fails.
       views under the default `studio` rig. The render profile language's
       built-ins list `review`. The brightest library material keeps its shading
       short of white.
-- [ ] **S10. Integration commands.** Move every workspace binary's `completion`
-      command to `integration print-completions`. Update the tyt-meta templates
+- [x] **S10. Integration commands.** Move every workspace binary's `completion`
+      command to `integration completion print`. Update the tyt-meta templates
       that scaffold new crates and the READMEs that show the command.
 - [ ] **S11. Skill.** Write the skill's workflow as the README lays it out. Move
       the workflow and the modeling API into vxl. The modeling API links to
       other pages by their repository URLs.
-      `vxl integration print-skill voxel-modeling` prints the workflow and then
+      `vxl integration skill print voxel-modeling` prints the workflow and then
       the modeling API as one `SKILL.md`. Move model evaluation to
       `doc/ref/sdf-doc/` and the sdfj format into the sdfj crate's `docs/`.
 - [ ] **S12. Trials.** Run about ten prompts through the skill, each in a fresh

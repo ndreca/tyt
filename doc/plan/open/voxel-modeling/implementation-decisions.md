@@ -268,3 +268,11 @@ land.
    under `review` each library material's lightest default shade renders
    brighter than the material at every pixel. A shade at the tonemap's ceiling
    would render no brighter. The library passes unchanged
+
+## S10. Integration commands
+
+1. Each binary declares its `Integration` enum in `main.rs` beside `Command`
+   because the binaries share no crate that depends on clap
+2. Each command path runs nouns then a verb, as `vxl object voxels flip` does.
+   `integration completion print` prints the completions, and
+   `integration skill print` prints the skill
