@@ -16,8 +16,8 @@ no voxel samples is dropped.
 1. `--max-materials <n>` (required unless a profile sets it): the most materials
    the palette keeps.
 2. `--index <palettes>` (default `*`): which palettes to quantize under the
-   [palette selection](../../../palette-edit/README.md#palette-selection) rule.
-   Each palette reduces separately. A palette no live voxel samples errors.
+   [palette selection](../../../../closed/palette-edit/README.md#palette-selection)
+   rule. Each palette reduces separately. A palette no live voxel samples errors.
 3. `--property <key>` (default `baseColor`): which property to cluster on. The
    palette has to bind it.
 4. `--interpret-property` `auto` | `linear-color` | `srgb-color` | `numeric`

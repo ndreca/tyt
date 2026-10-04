@@ -77,13 +77,13 @@ The design is in the [README](README.md). Check steps off as they land.
       `profile/profile_palette/profile_palette_quantize/`.
 - [x] **S7. Docs.** Extend the vxl README's Palettes section. Its quantize
       example now reaches every palette. The
-      [vxl-commands README](../vxl-commands/README.md#commands) command list
+      [vxl-commands README](../../open/vxl-commands/README.md#commands) command list
       links `palette edit` here. Item 4 of
-      [conventions.md](../vxl-commands/reference/conventions.md) takes the
+      [conventions.md](../../open/vxl-commands/reference/conventions.md) takes the
       [palette selection](README.md#palette-selection) rule.
-      [palette/README.md](../vxl-commands/reference/palette/README.md),
-      item 2 of [quantize.md](../vxl-commands/reference/palette/quantize.md),
+      [palette/README.md](../../open/vxl-commands/reference/palette/README.md),
+      item 2 of [quantize.md](../../open/vxl-commands/reference/palette/quantize.md),
       and items 2 and 4 of
-      [remap.md](../vxl-commands/reference/palette/remap.md) point to it.
+      [remap.md](../../open/vxl-commands/reference/palette/remap.md) point to it.
       The intro of `doc/ref/mesh/value-language.md` mentions `palette edit`
       beside `object mesh`.

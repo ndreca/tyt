@@ -324,7 +324,7 @@ read commands so they are settled once and shared:
    its content the way the document forms are, shared with `remap`.
 3. One shared JSON envelope across `list`, `show`, `node list`,
    `vox-doc validate`, and `vox-doc show`. Settled by the
-   [treegrid plan](../../../treegrid/README.md) as the record envelope above,
+   [treegrid plan](../../../../closed/treegrid/README.md) as the record envelope above,
    which `show` now emits; the remaining read commands adopt it as they migrate
    to the shared renderer.
 

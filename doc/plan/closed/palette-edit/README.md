@@ -1,7 +1,8 @@
 # vxl palette edit
 
-Status: **open.** The design was settled 2026-10-01. Nothing is built yet. The
-steps live in [checklist.md](checklist.md). Code-level choices are logged in
+Status: **closed.** The design was settled 2026-10-01. Steps S1 through S7
+landed on main by 2026-10-03, ending with the docs in `930fc161`. The steps
+lived in [checklist.md](checklist.md). Code-level choices are logged in
 [implementation-decisions.md](implementation-decisions.md).
 
 ## Model
@@ -81,7 +82,7 @@ Each usage follows `vxl <command> <input> [output]`. `<palettes>` takes `#`,
 | `palette edit`              | `[--index <palettes>]... [--profile <profile>]... [--value <bindings>]... [--values-from <profile>]... [--write-property <dst-property> <src-expr>]...` | S6   |
 | `profile palette edit list` | the flags of the other profile lists                                                                                                                    | S6   |
 | `palette quantize`          | `[--index <palettes>]...`, every other flag unchanged                                                                                                   | S4   |
-| `palette remap`             | `[--index <palettes>]...`, built from the [vxl-commands checklist](../vxl-commands/checklist.md)                                                        | S7   |
+| `palette remap`             | `[--index <palettes>]...`, built from the [vxl-commands checklist](../../open/vxl-commands/checklist.md)                                                        | S7   |
 
 ## Profiles
 

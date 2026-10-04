@@ -11,7 +11,7 @@ in images, JSON files, and the mesh's material. Each property of the
 [effective palette](mesh.md#the-palette-atlas) that the program or an
 expression reads enters the program as a name.
 
-[`vxl palette edit`](../../plan/open/palette-edit/README.md) runs the same
+[`vxl palette edit`](../../plan/closed/palette-edit/README.md) runs the same
 language over one palette at a time. The program sees no geometry, so only the
 plain and swatch rungs of the [ladder](#domains) exist. The `--write-property`
 flags write the results back into the palette's properties.

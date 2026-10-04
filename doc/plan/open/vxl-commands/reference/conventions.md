@@ -21,7 +21,7 @@ These hold across the commands and match the existing `vox-doc to` commands.
    vector through either alias set (`.r`/`.g`/`.b`/`.a` or
    `.x`/`.y`/`.z`/`.w`). The mutating `edit`, `quantize`, and `remap` select
    palettes with `--index` under the
-   [palette selection](../../palette-edit/README.md#palette-selection) rule.
+   [palette selection](../../../closed/palette-edit/README.md#palette-selection) rule.
    `--index` takes a repeatable id, `a-b` range, or `*` and defaults to `*`.
    `quantize` and `remap` compare `--property` (default `baseColor`), operate
    on a whole property, and reject a component. Property keys are the glTF
