@@ -2,6 +2,109 @@
 
 A command-line tool for working with voxels.
 
+## Install
+
+### Rust
+
+[rustup](https://rustup.rs) installs Rust and Cargo. On Windows, the rustup site
+offers `rustup-init.exe` in place of this command:
+
+```sh
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+### vxl
+
+vxl installs from [crates.io](https://crates.io/crates/vxl):
+
+```sh
+cargo install vxl --features bin
+```
+
+The `bin` feature builds the `vxl` binary. The same command upgrades vxl.
+
+### Node
+
+`sdf-doc build` runs model files under [Node](https://nodejs.org) 24 or later.
+`--runtime bun` and `--runtime deno` run the model files under
+[Bun](https://bun.sh) or [Deno](https://deno.com) instead. The skill's passes
+run under Node.
+
+### Shell completions
+
+`vxl integration completion print <shell>` prints completions to stdout:
+
+```sh
+# Bash (bash-completion v2 user-local)
+mkdir -p ~/.local/share/bash-completion/completions
+vxl integration completion print bash > ~/.local/share/bash-completion/completions/vxl
+
+# Zsh
+mkdir -p ~/.zsh/completions
+vxl integration completion print zsh > ~/.zsh/completions/_vxl
+# Then ensure this is in your .zshrc *before* compinit:
+#   fpath=("$HOME/.zsh/completions" $fpath)
+
+# Zsh (Oh My Zsh)
+mkdir -p ~/.oh-my-zsh/custom/completions
+vxl integration completion print zsh > ~/.oh-my-zsh/custom/completions/_vxl
+# If completions don't show up, ensure this is in your .zshrc *before* compinit:
+#   fpath=("$HOME/.oh-my-zsh/custom/completions" $fpath)
+
+# Fish
+mkdir -p ~/.config/fish/completions
+vxl integration completion print fish > ~/.config/fish/completions/vxl.fish
+
+# PowerShell
+# recommended: keep completions in a separate file and dot-source it from your $PROFILE
+$dir = Join-Path $HOME ".config\powershell"
+New-Item -ItemType Directory -Force -Path $dir | Out-Null
+
+vxl integration completion print powershell | Set-Content -Encoding UTF8 (Join-Path $dir "vxl-completions.ps1")
+
+if (!(Test-Path $PROFILE)) { New-Item -ItemType File -Force -Path $PROFILE | Out-Null }
+$line = ". `"$dir\vxl-completions.ps1`""
+if (-not (Select-String -Quiet -Path $PROFILE -Pattern [regex]::Escape($line))) {
+  Add-Content -Path $PROFILE -Value $line
+}
+```
+
+### Claude Code skill
+
+The `voxel-modeling` skill teaches [Claude Code](https://claude.com/claude-code)
+to build voxel models with vxl:
+
+```sh
+# Installs the skill for every project.
+mkdir -p ~/.claude/skills/voxel-modeling
+vxl integration skill print voxel-modeling > ~/.claude/skills/voxel-modeling/SKILL.md
+```
+
+A project's `.claude/skills` folder holds the skill for that project alone. The
+skill teaches the API of the vxl that printed it. Upgrading vxl takes a reprint.
+
+## Modeling with Claude Code
+
+A session with the skill writes a model file, voxelizes it, reviews the renders,
+and revises the model until it matches the prompt. The session can also export
+the model as a glTF mesh. A prompt such as "Make a voxel treasure chest about 60
+cm wide and export it as a glb" leaves `chest.ts`, `chest.sdfj`, `chest.voxj`,
+the review PNGs, and `chest.glb` in the working folder.
+
+A permission rule in the project's `.claude/settings.json` lets the session run
+vxl without asking each time:
+
+```json
+{
+  "permissions": {
+    "allow": ["Bash(vxl:*)"]
+  }
+}
+```
+
+`sdf-doc build` runs the model file as a program, so the rule also lets the
+session run the code it writes.
+
 ## Editing
 
 The `object`, `node`, `palette edit`, and `palette quantize` commands edit a
@@ -139,12 +242,16 @@ vxl node link scene.voxj --select house/door --select-parent garage
 `sdf-doc build` records a voxel model written in TypeScript as an `.sdfj`
 document. `sdf-doc voxelize` samples the document into Voxel JSON. The
 [modeling API](docs/modeling-api.md) lists every call a model file can make.
-`integration skill print voxel-modeling` prints a skill that teaches an agent
-the modeling loop. The skill teaches the API of the vxl that printed the skill.
-Upgrading vxl takes a reprint.
+[Modeling with Claude Code](#modeling-with-claude-code) sets up the skill that
+runs these commands for an agent.
 
 ```sh
-# Installs the skill for Claude Code in the current project.
-mkdir -p .claude/skills/voxel-modeling
-vxl integration skill print voxel-modeling > .claude/skills/voxel-modeling/SKILL.md
+# Records chair.ts as chair.sdfj with the built-in materials.
+vxl sdf-doc build chair.ts --library materials
+
+# Writes chair.voxj at 2.5 cm per voxel and prints the report.
+vxl sdf-doc voxelize chair.sdfj --voxel-size 0.025 --report
+
+# Writes chair.glb with the materials baked into textures.
+vxl object mesh chair.voxj --profile pbr
 ```

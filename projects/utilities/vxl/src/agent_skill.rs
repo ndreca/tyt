@@ -17,8 +17,9 @@ impl AgentSkill {
                 "Builds a voxel model from a prompt with vxl. Writes a TypeScript \
                  model file of shapes and materials in meters, voxelizes the model, \
                  renders review views, and revises the file until the model matches \
-                 the prompt. Use when asked to make, model, or build a voxel model, \
-                 prop, or scene.",
+                 the prompt. Exports the model as a glTF mesh when asked. Use when \
+                 asked to make, model, or build a voxel model, prop, or scene, or an \
+                 .sdfj, .voxj, glTF, or .glb file of one.",
                 [
                     include_str!("../skills/voxel-modeling/workflow.md"),
                     include_str!("../docs/modeling-api.md"),

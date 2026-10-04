@@ -42,6 +42,8 @@ approval.
 7. **Detail and paint.** Later edits replace boxes with the shapes the forms
    need, cut openings, add the small details, and paint with materials and
    patterns. Each edit changes a few steps
+8. **Export.** A prompt that asks for a mesh gets one from [one more
+   command](#exporting-a-mesh) after the last pass
 
 ## Checks
 
@@ -101,3 +103,28 @@ vxl object render room.voxj
    rotation and cannot re-aim `hero` alone
 3. `--select` renders the matched parts alone. `--view-select <view> <glob>`
    keeps the whole model and frames the view on the matched parts
+
+## Exporting a mesh
+
+Every pass leaves the `.sdfj` and `.voxj` documents beside the model file. When
+the prompt asks for a mesh, a glTF, or a `.glb` file, one more command writes
+the mesh from the `.voxj` document:
+
+```sh
+# chair.glb with the materials baked into textures
+vxl object mesh chair.voxj
+  --profile pbr
+
+# chair.glb with the gems, ice, and water kept transparent
+vxl object mesh chair.voxj
+  --profile glass
+```
+
+1. `pbr` bakes each material's color, metalness, roughness, and glow into
+   textures
+2. `glass` replaces `pbr` for a model with a transparent material. The gems,
+   `ice`, `water`, and any material with `transmission` or a `baseColor` alpha
+   below 1 are transparent
+3. `--to gltf` writes a text `chair.gltf` with the textures embedded
+
+The mesh keeps the model's size in meters and its parts as nodes.
