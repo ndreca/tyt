@@ -103,3 +103,39 @@ land.
 6. A stand-in for `node` tests the run because `cargo test` runs without a
    JavaScript runtime installed. At S3, Node 24.15 and Deno 2.9 ran the builder
    through vxl by hand. Bun was not installed
+
+## S4. Shapes
+
+1. voxsmith's `sdf_doc` feature holds `SdfShapes`, which prepares every shape of
+   an `SdfMain` once and evaluates a 3D shape's distance and frame position at
+   a point. A 2D shape evaluates only through an `extrude` or a `revolve`
+2. `SdfShapes` expects arguments that pass model evaluation's checks, which land
+   at S5. Until then an argument a check rejects can panic with the check's
+   rule
+3. Every shape's box lands at S4 because a bend reads its child's box. A bend
+   reads the box before rounding, which keeps a bent shape the same at every
+   voxel size. S5 rounds the boxes and clamps the distances to them
+4. The noise lands at S4 because `displace` reads it. The hash chains the
+   lowbias32 mixer over the seed and the coordinates. A test measures `sigma1`
+   again over 200 thousand points
+5. The pyramid formula measures only to the slanted faces. Inside near the base
+   it reads too deep, and below the base it measures to the nearest edge. The
+   pyramid measures to the base square at or below the base plane and takes the
+   nearer of the faces and the base inside
+6. A lathe closes its outline with the outline's mirror image across the axis.
+   An edge along the axis would read each point near the axis as near the
+   surface, and a `shell` would keep a rod down the middle
+7. A cut torus measures past its end to the end point directly. The capped
+   torus formula takes the square root of a difference, which rounding can push
+   below zero on the ring
+8. A polygon edge with no length measures to its one point. A lathe's outline
+   repeats a point that lies on the axis
+9. Mirror copies run in binary order with x as the low bit, and repeat copies
+   run with x outermost. A tie between copies goes to the earlier copy, which
+   sets the frame position
+10. glam's `length` sums the squares in coordinate order, as model evaluation's
+    arithmetic asks
+11. Each shape's test checks a grid against a reference computed another way:
+    distances to segments, arcs, and triangles, a box's clamped point, a ternary
+    search over a round cone's spheres, or a dense sampling of an ellipse. Every
+    point a shape covers lies inside the shape's box

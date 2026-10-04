@@ -147,11 +147,13 @@ unless its line says otherwise.
      the round cone formula.
 5. `torus` gives `length([k - ringRadius, v]) - tubeRadius` about its axis. A
    cut torus turns the plane so the arc's middle lies on +v and folds u to
-   `abs(u)`. A point past the arc's end then measures to the ring's end point by
-   the capped torus formula.
+   `abs(u)`. A point past the arc's end then measures to the ring's end point.
 6. `octahedron` uses the exact octahedron formula and not the bound.
 7. `pyramid` evaluates the unit-base pyramid at `(p - baseCenter) / width` with
-   height `height / width` and multiplies the result by `width`.
+   height `height / width` and multiplies the result by `width`. The pyramid
+   formula measures to the slanted faces. At or below the base plane the
+   distance runs to the base square instead, and inside it takes the nearer of
+   the faces and the base.
 8. `ellipsoid` gives a bound from the
    [ellipsoid article](https://iquilezles.org/articles/ellipsoids/). With
    `q = p - center`, `k0 = length(q / radii)`, and
@@ -203,15 +205,18 @@ In the plane:
 
 ### From 2D to 3D
 
-An exact profile gives an exact solid.
+An exact profile gives an exact extrusion. A revolution stays exact when its
+profile keeps clear of the axis or is symmetric about it, and reads short near
+the axis otherwise.
 
 1. `extrude` combines the profile's distance `d2` with the distance `h` to the
    slab between `from` and `to` as
    `min(max(d2, h), 0) + length([max(d2, 0), max(h, 0)])`.
 2. `revolve` evaluates the profile at `[k, v]`, with `k` the point's distance
    from the axis and `v` its position along the axis from `center`.
-3. `lathe` revolves the `polygon` of its points, opened by `[0, h0]` and closed
-   by `[0, hn]` for its first and last heights.
+3. `lathe` revolves the `polygon` of its points followed by their mirror images
+   across the axis in reverse order. The outline closes across the axis at its
+   first and last heights, and no edge runs along the axis.
 
 ### Booleans
 
@@ -278,8 +283,8 @@ evaluates the child.
 `bend` maps each point back to the unbent shape:
 
 1. The arc's center `C` sits `radius` from `pivot` toward `toward`.
-2. The middle of the child's box along `along` bends to the direction `m` from
-   `C`. The angle from the direction of `pivot` to `m` is
+2. The middle of the child's box along `along`, before the box rounds to the
+   lattice, bends to the direction `m` from `C`. The angle from the direction of `pivot` to `m` is
    `phiM = (middle - pivot) / radius` and runs positive toward +`along`.
 3. With `u` the point's offset from `C` in the bend plane, the point's angle is
    `phiM` plus the signed angle from `m` to `u`. The signed angle takes the
@@ -303,20 +308,27 @@ amplitude of the last.
 
 1. The gradient noise blends its eight lattice corners with the quintic
    `t * t * t * (t * (t * 6 - 15) + 10)` and sums the corner terms in the
-   article's expanded order. An integer hash picks each corner's gradient from
-   twelve unit directions: `[+-1, +-1, 0]`, `[+-1, 0, +-1]`, and
-   `[0, +-1, +-1]`, each divided by `sqrt(2)`.
+   article's expanded order. Each corner takes the direction at its hash modulo
+   12 among `[1, 1, 0]`, `[-1, 1, 0]`, `[1, -1, 0]`, `[-1, -1, 0]`,
+   `[1, 0, 1]`, `[-1, 0, 1]`, `[1, 0, -1]`, `[-1, 0, -1]`, `[0, 1, 1]`,
+   `[0, -1, 1]`, `[0, 1, -1]`, and `[0, -1, -1]`, each divided by `sqrt(2)`.
 2. The hash runs on 32-bit unsigned integers with wrapping multiplication. The
    hash reads the seed and the lattice coordinates as 32-bit two's-complement
-   integers. Octave `i` hashes with `seed + i`.
+   integers. Octave `i` hashes with `seed + i`. The hash starts at
+   `lowbias32(seed)` and folds in each coordinate in x, y, z order as
+   `lowbias32(hash ^ coordinate)`. The
+   [lowbias32](https://github.com/skeeto/hash-prospector) mixer XORs the value
+   with itself shifted right by 16, multiplies by `0x7feb352d`, XORs with a
+   shift by 15, multiplies by `0x846ca68b`, and XORs with a shift by 16.
 3. Each octave after the first turns the point by the rotation with rows
    `[0, 0.8, 0.6]`, `[-0.8, 0.36, -0.48]`, and `[-0.6, -0.48, 0.64]` before
    doubling it. Gradient noise reads zero at every lattice point, and the turn
    keeps the octaves' lattices from lining up.
    [More noise](https://iquilezles.org/articles/morenoise/) explains the effect.
 4. The raw sum `s` has the standard deviation
-   `sigma = sigma1 * sqrt(sum of the squared amplitudes)`, with `sigma1` a
-   constant measured once over many points. `fbm` returns the algebraic
+   `sigma = sigma1 * sqrt(sum of the squared amplitudes)`. `sigma1` reads
+   0.1816, the deviation of one layer measured over 20 million points spread
+   evenly through the lattice. `fbm` returns the algebraic
    [sigmoid](https://iquilezles.org/articles/sigmoids/) `x / sqrt(1 + x * x)` of
    `x = 0.8 * s / sigma`. The sigmoid spreads the values about evenly across
    `(-1, 1)`.
@@ -569,7 +581,8 @@ it belongs to by its path of part names.
    - Radii, widths, thicknesses, sizes, scales, chamfers, and periods are above
      zero, except that a `cone` end may take 0.
    - Counts, `octaves`, and `depth` are whole numbers above zero. An `ngon`'s
-     `sides` is at least 3 and a `star`'s `points` at least 2.
+     `sides` is at least 3 and a `star`'s `points` at least 2. A seed is a
+     whole number from `-2^31` to `2^31 - 1`.
    - A pattern's `materials` and a `speckle`'s `accents` hold at least one
      material. A `union`, an `intersect`, and their smooth variants hold at
      least one shape. A `polygon` lists at least 3 points, and a `polyline` and
@@ -588,10 +601,11 @@ it belongs to by its path of part names.
      radii differ by less than the distance between its ends.
    - A `star`'s inner radius stays below its outer radius, and an `arch` stands
      at least half its width tall. An `arc`, a `sector`, and a cut `torus` span
-     at most 360 degrees.
+     at most 360 degrees. A `torus` takes both `from` and `to` or neither.
    - `orient` takes two directions of nonzero length that do not point opposite
      ways. An `elongate` stretches at least one axis, and its `center` lies
-     inside its shape's box along each axis it stretches.
+     inside its shape's box along each axis it stretches. A `bend`'s `along`
+     and `toward` lie on different axes, and its shape has a box.
    - A `polygon` outline never crosses itself.
 5. Over the document, every step has a non-empty name no other step in its list
    shares, and every part has a non-empty name no other part in its list shares.

@@ -2311,6 +2311,7 @@ dependencies = [
  "meshdoc",
  "pathspec",
  "png",
+ "sdfcore",
  "serde_json",
  "treegrid",
  "treeselect",

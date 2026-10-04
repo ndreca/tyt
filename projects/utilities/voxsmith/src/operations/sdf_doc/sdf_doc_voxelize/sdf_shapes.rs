@@ -1,0 +1,62 @@
+use crate::operations::sdf_doc::{Bounds2d, Bounds3d, SdfEvaluation, Shape2dField, Shape3dField};
+use branded_id::{IdVec, U32Id};
+use sdfcore::{BSdfShape2d, BSdfShape3d, SdfMain};
+use ty_math::{TyVector2F64, TyVector3F64};
+
+/// A model's shapes, ready to evaluate at any point by model evaluation's
+/// distances.
+#[derive(Clone, Debug)]
+pub struct SdfShapes {
+    shapes3d: IdVec<BSdfShape3d, Shape3dField>,
+
+    bounds3d: IdVec<BSdfShape3d, Option<Bounds3d>>,
+
+    shapes2d: IdVec<BSdfShape2d, Shape2dField>,
+
+    bounds2d: IdVec<BSdfShape2d, Bounds2d>,
+}
+
+impl SdfShapes {
+    /// The shapes of `main`, with every sine and cosine model evaluation takes
+    /// once already computed.
+    ///
+    /// # Panics
+    ///
+    /// When a shape's arguments fail model evaluation's checks.
+    pub fn new(main: &SdfMain) -> Self {
+        let state = main.state();
+
+        let mut shapes = Self {
+            shapes3d: IdVec::with_capacity(state.shapes3d.len()),
+            bounds3d: IdVec::with_capacity(state.shapes3d.len()),
+            shapes2d: IdVec::with_capacity(state.shapes2d.len()),
+            bounds2d: IdVec::with_capacity(state.shapes2d.len()),
+        };
+
+        for shape in state.shapes2d.iter() {
+            let field = Shape2dField::new(shape);
+            shapes.bounds2d.push(field.bounds(&shapes.bounds2d));
+            shapes.shapes2d.push(field);
+        }
+
+        for shape in state.shapes3d.iter() {
+            let field = Shape3dField::new(shape, &shapes.bounds3d);
+            shapes
+                .bounds3d
+                .push(field.bounds(&shapes.bounds3d, &shapes.bounds2d));
+            shapes.shapes3d.push(field);
+        }
+
+        shapes
+    }
+
+    /// The shape at `shape3d_id` evaluated at `point`.
+    pub fn evaluate(&self, shape3d_id: U32Id<BSdfShape3d>, point: TyVector3F64) -> SdfEvaluation {
+        self.shapes3d[shape3d_id.to_usize_id()].evaluate(self, point)
+    }
+
+    /// The signed distance of the 2D shape at `shape2d_id` at `point`.
+    pub(crate) fn distance2d(&self, shape2d_id: U32Id<BSdfShape2d>, point: TyVector2F64) -> f64 {
+        self.shapes2d[shape2d_id.to_usize_id()].distance(self, point)
+    }
+}

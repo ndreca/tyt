@@ -17,5 +17,8 @@ pub mod palette;
 #[cfg(feature = "profile")]
 pub mod profile;
 
+#[cfg(feature = "sdf_doc")]
+pub mod sdf_doc;
+
 #[cfg(feature = "vox_doc")]
 pub mod vox_doc;

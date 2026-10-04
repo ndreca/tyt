@@ -524,7 +524,8 @@ interface Shape3d {
 `offset` and `shell` measure true thickness on:
 
 1. Every primitive but `ellipsoid` and `boxFrame`
-2. Extrusions and revolutions of 2D primitives
+2. Extrusions of 2D primitives, and revolutions of 2D primitives that keep
+   clear of the axis or are symmetric about it
 3. An `intersect` or a `subtract` of such shapes
 4. Such shapes moved, rotated, or scaled uniformly
 

@@ -3,9 +3,10 @@
 //! Utilities for working with voxels.
 //!
 //! Every operation runs over voxcore's [`VoxMain`](voxcore::VoxMain) and never
-//! sees a file format or the filesystem. The file formats live in voxconv and
-//! meshconv. `operations` holds a module per vxl command group, each behind a
-//! feature of the same name. `utilities` holds what the operations share.
+//! sees a file format or the filesystem. The file formats live in voxconv,
+//! meshconv, and sdfconv. `operations` holds a module per vxl command group,
+//! each behind a feature of the same name. `utilities` holds what the
+//! operations share.
 //! The caller supplies the operations' image codecs through `dependencies`.
 //! [`DependenciesImpl`](dependencies::DependenciesImpl), behind the `impl`
 //! feature, binds them over `png` and `zune-jpeg`.
