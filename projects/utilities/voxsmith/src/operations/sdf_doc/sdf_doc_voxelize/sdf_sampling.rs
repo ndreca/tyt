@@ -1,4 +1,6 @@
-use crate::operations::sdf_doc::{SdfGrid, SdfPlace};
+use crate::operations::sdf_doc::{SdfGrid, SdfMaterialProperties, SdfPlace};
+use branded_id::IdVec;
+use sdfcore::BSdfMaterial;
 
 /// A model's parts sampled into grids of cells.
 #[derive(Clone, Debug, PartialEq)]
@@ -12,4 +14,7 @@ pub struct SdfSampling {
 
     /// The grids the places index.
     pub grids: Vec<SdfGrid>,
+
+    /// The properties of each material of the model.
+    pub materials: IdVec<BSdfMaterial, SdfMaterialProperties>,
 }

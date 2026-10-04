@@ -2,7 +2,7 @@ use crate::{
     Error, Result,
     operations::sdf_doc::{
         EntryPaths, SdfSampleOptions, SdfSampling, SdfShapes, check_document, check_shape_boxes,
-        collect_places, sample_grid, sample_voxel_size,
+        collect_places, resolve_materials, sample_grid, sample_voxel_size,
     },
     utilities::VoxelFrame,
 };
@@ -18,6 +18,7 @@ pub fn sample(main: &SdfMain, options: &SdfSampleOptions) -> Result<SdfSampling>
     let paths = EntryPaths::new(state, &places);
 
     check_document(state, &places, &paths)?;
+    let materials = resolve_materials(state, &paths)?;
 
     let shapes = SdfShapes::new(main);
     check_shape_boxes(state, &shapes, &paths)?;
@@ -77,6 +78,7 @@ pub fn sample(main: &SdfMain, options: &SdfSampleOptions) -> Result<SdfSampling>
         voxel_size,
         places,
         grids,
+        materials,
     })
 }
 
@@ -88,8 +90,8 @@ mod tests {
     };
     use branded_id::{IdVec, U32Id};
     use sdfcore::{
-        SdfMain, SdfMaterial, SdfNode, SdfObject, SdfShape3d, SdfSide, SdfState, SdfStep,
-        SdfStepMaterial,
+        SdfMain, SdfMaterial, SdfNode, SdfObject, SdfPattern, SdfShape3d, SdfSide, SdfState,
+        SdfStep, SdfStepMaterial,
     };
     use std::f64::consts::PI;
     use ty_math::{TyAxis3, TyVector3F64, TyVector3I32};
@@ -216,7 +218,7 @@ mod tests {
         let cell = |x, y, z| *grid.cell(TyVector3I32::new(x, y, z)).unwrap();
         assert_eq!(
             (cell(3, 0, 0).material, cell(3, 0, 0).step),
-            (Some(material(0)), Some(0))
+            (Some(U32Id::from_u32(0)), Some(0))
         );
         assert_eq!(
             (cell(0, 0, 3).material, cell(0, 0, 3).step),
@@ -224,15 +226,15 @@ mod tests {
         );
         assert_eq!(
             (cell(0, 0, 0).material, cell(0, 0, 0).step),
-            (Some(material(1)), Some(2))
+            (Some(U32Id::from_u32(1)), Some(2))
         );
         assert_eq!(
             (cell(3, 3, 1).material, cell(3, 3, 1).step),
-            (Some(material(1)), Some(3))
+            (Some(U32Id::from_u32(1)), Some(3))
         );
         assert_eq!(
             (cell(5, 0, 0).material, cell(5, 0, 0).step),
-            (Some(material(1)), Some(4))
+            (Some(U32Id::from_u32(1)), Some(4))
         );
         assert_eq!((cell(4, 0, 0).material, cell(4, 0, 0).step), (None, None));
     }
@@ -257,6 +259,107 @@ mod tests {
             let sampling = sample(&main, &at_size(1.0)).unwrap();
             assert_eq!(sampling.grids[0].steps[1].written, written);
         }
+    }
+
+    /// Two-material `bands` across x, one cell thick.
+    fn bands() -> SdfPattern {
+        SdfPattern::Bands {
+            material_ids: vec![U32Id::from_u32(0), U32Id::from_u32(1)],
+            axis: TyAxis3::X,
+            period: None,
+            warp: None,
+            seed: None,
+        }
+    }
+
+    #[test]
+    fn a_pattern_reads_the_frame_its_shape_was_built_in() {
+        let mut state = single_part_main(
+            vec![
+                cuboid([0.0, 0.0, 0.0], [4.0, 1.0, 1.0]),
+                SdfShape3d::Translate {
+                    shape_id: U32Id::from_u32(0),
+                    offset: TyVector3F64::new(1.0, 2.0, 0.0),
+                },
+            ],
+            Vec::new(),
+        )
+        .state()
+        .clone();
+        state.patterns = IdVec::from_vec(vec![bands()]);
+        state.steps = IdVec::from_vec(vec![
+            SdfStep::Add {
+                name: "low".to_string(),
+                shape_id: U32Id::from_u32(0),
+                material: SdfStepMaterial::Pattern(U32Id::from_u32(0)),
+            },
+            SdfStep::Add {
+                name: "high".to_string(),
+                shape_id: U32Id::from_u32(1),
+                material: SdfStepMaterial::Pattern(U32Id::from_u32(0)),
+            },
+        ]);
+        state.objects.as_mut_vec()[0].step_ids = vec![U32Id::from_u32(0), U32Id::from_u32(1)];
+        let main = SdfMain::new(state).unwrap();
+
+        let sampling = sample(&main, &at_size(1.0)).unwrap();
+        let material = |x, y| {
+            sampling.grids[0]
+                .cell(TyVector3I32::new(x, y, 0))
+                .unwrap()
+                .material
+                .unwrap()
+                .to_u32()
+        };
+
+        assert_eq!([material(0, 0), material(1, 0), material(2, 0)], [0, 1, 0]);
+        assert_eq!([material(1, 2), material(2, 2), material(3, 2)], [0, 1, 0]);
+    }
+
+    #[test]
+    fn a_set_pattern_reads_the_cell_center_before_the_offsets() {
+        let main = SdfMain::new(SdfState {
+            materials: IdVec::from_vec(vec![
+                SdfMaterial::Material {
+                    properties: Vec::new(),
+                };
+                2
+            ]),
+            patterns: IdVec::from_vec(vec![bands()]),
+            steps: IdVec::from_vec(vec![SdfStep::Set {
+                name: "stud".to_string(),
+                points: vec![TyVector3F64::new(0.5, 0.5, 0.5)],
+                material: SdfStepMaterial::Pattern(U32Id::from_u32(0)),
+            }]),
+            objects: IdVec::from_vec(vec![SdfObject {
+                name: "moved".to_string(),
+                step_ids: vec![U32Id::from_u32(0)],
+            }]),
+            nodes: IdVec::from_vec(vec![
+                SdfNode {
+                    name: "moved".to_string(),
+                    pivot: None,
+                    offset: Some(TyVector3F64::new(1.0, 0.0, 0.0)),
+                    child_object_ids: vec![U32Id::from_u32(0)],
+                    child_node_ids: Vec::new(),
+                },
+                SdfNode {
+                    name: "model".to_string(),
+                    pivot: None,
+                    offset: None,
+                    child_object_ids: Vec::new(),
+                    child_node_ids: vec![U32Id::from_u32(0)],
+                },
+            ]),
+            root_node_ids: vec![U32Id::from_u32(1)],
+            ..SdfState::default()
+        })
+        .unwrap();
+
+        let sampling = sample(&main, &at_size(1.0)).unwrap();
+        let cell = sampling.grids[0].cell(TyVector3I32::new(1, 0, 0)).unwrap();
+
+        assert_eq!(cell.material, Some(U32Id::from_u32(0)));
     }
 
     /// A model whose root part holds the parts `a` and `b`, which both place

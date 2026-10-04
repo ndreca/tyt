@@ -673,8 +673,9 @@ function checker(materials: Material[], options?: { size?: number }): Pattern;
 ```
 
 A pattern picks one of its materials per cell and never blends them. The palette
-then stays as small as the material lists. A seed always gives the same picks. A
-length a pattern leaves out counts cells at any voxel size.
+then stays as small as the material lists. A seed always gives the same picks,
+and a seed left out reads 0. A length a pattern leaves out counts cells at any
+voxel size.
 
 1. `bands` slices space across `axis` into slabs `period` thick and cycles
    through `materials` in order. `warp` bends the slabs by up to that much
@@ -684,10 +685,11 @@ length a pattern leaves out counts cells at any voxel size.
    `shades(base)`. The `axis` runs along the wood's length.
 3. `gradient` splits `from` to `to` along `axis` into equal spans that take the
    materials in order. Cells before `from` take the first material and cells
-   past `to` the last.
+   past `to` the last. `warp` bends the spans as it bends `bands` and defaults
+   to 0.
 4. `noise` splits fractal noise with features about `scale` across into value
    ranges that take the materials in order. Each material covers about an equal
-   share of the cells.
+   share of the cells. `octaves` defaults to 4.
 5. `cells` breaks space into irregular cells about `size` across that each take
    a random pick. `border` fills a seam one grid cell wide between the cells for
    cobblestone and mortar.

@@ -1,12 +1,15 @@
 use crate::{
     Error, Result,
     operations::sdf_doc::{
-        Bounds3d, LatticeShapes, SdfCell, SdfGrid, SdfShapes, SdfStepRecord, ShapeSource,
-        side_direction, whole_count,
+        Bounds3d, LatticeShapes, SdfCell, SdfEvaluation, SdfGrid, SdfShapes, SdfStepRecord,
+        ShapeSource, pattern_material, side_direction, whole_count,
     },
 };
-use branded_id::U32Id;
-use sdfcore::{BSdfObject, BSdfShape3d, SdfSide, SdfState, SdfStep, SdfStepMaterial};
+use branded_id::{IdVec, U32Id};
+use sdfcore::{
+    BSdfMaterial, BSdfObject, BSdfPattern, BSdfShape3d, SdfPattern, SdfSide, SdfState, SdfStep,
+    SdfStepMaterial,
+};
 use std::result::Result as StdResult;
 use ty_math::{TyVector3F64, TyVector3I32, TyVector3U32};
 
@@ -94,6 +97,7 @@ pub fn sample_grid(
 
         let mut run = StepRun {
             lattice: &lattice,
+            patterns: &state.patterns,
             grid: &mut grid,
             step: index as u32,
             voxel_size,
@@ -115,6 +119,8 @@ pub fn sample_grid(
 struct StepRun<'a, 'b> {
     lattice: &'a LatticeShapes<'b>,
 
+    patterns: &'a IdVec<BSdfPattern, SdfPattern>,
+
     grid: &'a mut SdfGrid,
 
     step: u32,
@@ -133,15 +139,18 @@ impl StepRun<'_, '_> {
                 shape_id, material, ..
             } => {
                 for cell in self.cells_within(self.lattice.cells(*shape_id)) {
-                    if self.covers(*shape_id, cell)? {
-                        self.write(cell, Some(*material));
+                    let evaluation = self.evaluate(*shape_id, cell)?;
+
+                    if evaluation.distance <= 0.0 {
+                        let material_id = self.pick(*material, evaluation.frame_position, cell);
+                        self.write(cell, Some(material_id));
                     }
                 }
             }
 
             SdfStep::Carve { shape_id, .. } => {
                 for cell in self.cells_within(self.lattice.cells(*shape_id)) {
-                    if self.is_live(cell) && self.covers(*shape_id, cell)? {
+                    if self.is_live(cell) && self.evaluate(*shape_id, cell)?.distance <= 0.0 {
                         self.write(cell, None);
                     }
                 }
@@ -184,12 +193,13 @@ impl StepRun<'_, '_> {
                     });
 
                     let within = match within_id {
-                        Some(within_id) => self.covers(*within_id, cell)?,
+                        Some(within_id) => self.evaluate(*within_id, cell)?.distance <= 0.0,
                         None => true,
                     };
 
                     if reaches_empty && within {
-                        self.write(cell, Some(*material));
+                        let material_id = self.pick(*material, self.center(cell), cell);
+                        self.write(cell, Some(material_id));
                     }
                 }
             }
@@ -198,8 +208,15 @@ impl StepRun<'_, '_> {
                 shape_id, material, ..
             } => {
                 for cell in self.cells_within(self.lattice.cells(*shape_id)) {
-                    if self.is_live(cell) && self.covers(*shape_id, cell)? {
-                        self.write(cell, Some(*material));
+                    if !self.is_live(cell) {
+                        continue;
+                    }
+
+                    let evaluation = self.evaluate(*shape_id, cell)?;
+
+                    if evaluation.distance <= 0.0 {
+                        let material_id = self.pick(*material, evaluation.frame_position, cell);
+                        self.write(cell, Some(material_id));
                     }
                 }
             }
@@ -209,7 +226,8 @@ impl StepRun<'_, '_> {
             } => {
                 for point in points {
                     let cell = ((*point + self.shift) / self.voxel_size).floor().as_ivec3();
-                    self.write(cell, Some(*material));
+                    let material_id = self.pick(*material, self.center(cell), cell);
+                    self.write(cell, Some(material_id));
                 }
             }
         }
@@ -240,26 +258,50 @@ impl StepRun<'_, '_> {
             .collect()
     }
 
-    /// Whether the shape at `shape3d_id` covers the center of `cell`.
-    fn covers(
+    /// The shape at `shape3d_id` evaluated at the center of `cell`. Errors on a
+    /// distance that reads NaN.
+    fn evaluate(
         &self,
         shape3d_id: U32Id<BSdfShape3d>,
         cell: TyVector3I32,
-    ) -> StdResult<bool, String> {
-        let center = (cell.as_dvec3() + 0.5) * self.voxel_size;
-        let distance = self
-            .lattice
-            .evaluate(shape3d_id, center - self.shift)
-            .distance;
+    ) -> StdResult<SdfEvaluation, String> {
+        let center = self.center(cell);
+        let evaluation = self.lattice.evaluate(shape3d_id, center);
 
-        if distance.is_nan() {
+        if evaluation.distance.is_nan() {
             return Err(format!(
                 "distance must be a number, not NaN at [{}, {}, {}]",
                 center.x, center.y, center.z
             ));
         }
 
-        Ok(distance <= 0.0)
+        Ok(evaluation)
+    }
+
+    /// The center of `cell` where the shapes evaluate, moved back by the
+    /// shift.
+    fn center(&self, cell: TyVector3I32) -> TyVector3F64 {
+        (cell.as_dvec3() + 0.5) * self.voxel_size - self.shift
+    }
+
+    /// The material `material` writes into `cell` at the frame position
+    /// `frame_position`.
+    fn pick(
+        &self,
+        material: SdfStepMaterial,
+        frame_position: TyVector3F64,
+        cell: TyVector3I32,
+    ) -> U32Id<BSdfMaterial> {
+        match material {
+            SdfStepMaterial::Material(material_id) => material_id,
+
+            SdfStepMaterial::Pattern(pattern_id) => pattern_material(
+                &self.patterns[pattern_id.to_usize_id()],
+                frame_position,
+                cell,
+                self.voxel_size,
+            ),
+        }
     }
 
     /// Whether `cell` holds a material.
@@ -270,7 +312,7 @@ impl StepRun<'_, '_> {
     }
 
     /// Writes `material` into `cell` and records the cell once for the step.
-    fn write(&mut self, cell: TyVector3I32, material: Option<SdfStepMaterial>) {
+    fn write(&mut self, cell: TyVector3I32, material: Option<U32Id<BSdfMaterial>>) {
         let index = self
             .grid
             .index(cell)

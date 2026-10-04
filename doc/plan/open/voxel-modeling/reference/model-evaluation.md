@@ -435,28 +435,33 @@ the frame of the primitive that decides the distance.
    operand's frame position.
 4. `extrude` and `revolve` pass on their 3D point from before the plane mapping.
 
-A `coat` or a `set` pattern reads the cell's center in world coordinates.
+A `coat` or a `set` pattern reads the cell's center as a primitive returns it:
+`[i + 0.5, j + 0.5, k + 0.5] * g - o`.
 
 ## Patterns
 
 In the formulas below, `q` is the frame position, `n` counts the materials, and
 `mod` takes the floored remainder. Every `fbm` and hash runs on the pattern's
-seed.
+seed, and a seed left out reads 0. Every `fbm` sums 4 octaves unless a `noise`
+sets `octaves`. `hash(x, ...)` folds its whole-number arguments into the
+[noise](#noise) hash in order. `unit(h)` computes `h / 2^32`.
 
 1. `bands` computes `s = q[axis] + warp * fbm(q / (4 * period))`, and the cell
    takes material `mod(floor(s / period), n)`.
-2. `grain` computes the same `s`, and slab `floor(s / period)` takes the
-   material its hash picks.
+2. `grain` computes the same `s`, and the cell takes material
+   `mod(hash(floor(s / period)), n)`.
 3. `gradient` computes
    `t = (q[axis] + warp * fbm(q / ((to - from) / 4)) - from) / (to - from)`, and
    the cell takes material `floor(t * n)` held within `[0, n - 1]`.
 4. `noise` computes `t = (fbm(q / scale) + 1) / 2`, and the cell takes material
    `floor(t * n)` held within `[0, n - 1]`.
-5. `cells` works in lattice units of `size`. Each lattice cube holds one feature
-   point at a hashed position inside the cube.
+5. `cells` works in lattice units of `size`. The lattice cube `c` holds one
+   feature point at
+   `c + [unit(hash(c, 0)), unit(hash(c, 1)), unit(hash(c, 2))]`.
    - The search for the nearest feature point scans the 27 cubes around the
-     cell's cube in raster order, and the first strict minimum wins. That
-     point's hash picks the cell's material.
+     cell's cube in raster order with x outermost, and the first strict minimum
+     wins. The nearest point's cube `c` gives the cell material
+     `mod(hash(c, 3), n)`.
    - With `a` the offset from the cell to the nearest point, `border` takes the
      cell when another point at offset `b` among the 125 cubes around the
      nearest point's cube gives
@@ -465,8 +470,9 @@ seed.
      derives this distance.
    - Each offset adds its cube's offset and its jitter before subtracting the
      cell's position within the cell's cube.
-6. `speckle` hashes the cell's indices `[i, j, k]`. One hash gives the cell an
-   accent with probability `density`, and a second picks the accent.
+6. `speckle` reads the cell's indices `[i, j, k]`. The cell takes an accent when
+   `unit(hash(i, j, k, 0))` reads below `density`. With `m` accents, the cell
+   takes accent `mod(hash(i, j, k, 1), m)`.
 7. `checker` gives the cell material
    `mod(floor(q[0] / size) + floor(q[1] / size) + floor(q[2] / size), n)`.
 
@@ -489,9 +495,11 @@ A pattern length left out takes its default count of cells times `g`.
    built-in library. Each `.vxlconfig` in the cascade can add a name or replace
    one at `sdfDoc.library`. `mat` copies a name's properties into the `.sdfj`
    document as the model builds.
-5. `shades` converts the base color to Oklab, steps its lightness by `spread`
-   around the middle shade, and converts back. Every other property and the
-   alpha carry over.
+5. `shades` converts the base color to
+   [Oklab](https://bottosson.github.io/posts/oklab/), steps its lightness, and
+   converts back. Shade `i` of `count` steps the lightness by
+   `(i - (count - 1) / 2) * spread`. A step of 0 keeps the base color. Every
+   other property and the alpha carry over.
 6. Two materials with identical properties merge into one palette material.
 
 ## The voxj document
@@ -580,8 +588,8 @@ it belongs to by its path of part names.
    each other. `--flatten` needs `--frame world`.
 4. vxl reads the document by the [sdfj format](sdfj-format.md#rules) and checks
    every entry's arguments.
-   - Radii, widths, thicknesses, sizes, scales, chamfers, and periods are above
-     zero, except that a `cone` end may take 0.
+   - Radii, widths, thicknesses, sizes, scales, chamfers, periods, and `spread`
+     are above zero, except that a `cone` end may take 0.
    - Counts, `octaves`, and `depth` are whole numbers above zero. An `ngon`'s
      `sides` is at least 3 and a `star`'s `points` at least 2. A seed is a
      whole number from `-2^31` to `2^31 - 1`.

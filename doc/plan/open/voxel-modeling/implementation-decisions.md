@@ -99,7 +99,7 @@ land.
 4. The builder writes the document inside the temporary directory. vxl then
    writes the output through `WriteFile`, which creates missing directories for
    every command's output
-5. vxl passes an empty library until S6 embeds one
+5. vxl passes an empty library until S7 adds libraries
 6. A stand-in for `node` tests the run because `cargo test` runs without a
    JavaScript runtime installed. At S3, Node 24.15 and Deno 2.9 ran the builder
    through vxl by hand. Bun was not installed
@@ -145,7 +145,7 @@ land.
 1. `sample` runs the checks, settles the voxel size, and runs each part's steps
    over its grid. `SdfSampling` holds the places depth first and the grids they
    index. A cell holds its material or pattern and the step that last changed
-   the cell. For S7's report, each step records the count and the box of the
+   the cell. For S8's report, each step records the count and the box of the
    cells it wrote
 2. `sdf_doc` and `mesh_doc` share `GridResolution`, `ResolutionReference`, and
    `VoxelFrame` from voxsmith's `utilities`, so neither feature turns on the
@@ -169,3 +169,28 @@ land.
    that are not neighbors cross where they meet, and two neighboring edges cross
    when they fold back along each other
 9. The material checks land with S6's material properties
+
+## S6. Materials
+
+1. `resolve_materials` turns every material into `SdfMaterialProperties` before
+   the sampling: the named properties in linear light or at their defaults, and
+   every custom property the model's materials set. A material that leaves a
+   custom property out holds the kind's empty value for S8's palette
+2. A cell holds the material its step picked. A pattern picks from the
+   evaluation that decides whether the step writes the cell
+3. A `coat` or a `set` pattern reads the frame position a primitive returns:
+   the cell's center minus the place's shift. A part placed twice under
+   `--frame world` then patterns every step alike at both places
+4. A hash picks material `hash mod n`. `cells` and `speckle` add a channel
+   coordinate to draw independent numbers for one cube or cell. A seed left out
+   reads 0. A pattern's `fbm` sums the 4 octaves `displace` defaults to
+5. `shades` converts through Bjorn Ottosson's published matrices. A step of 0
+   skips the conversion because the matrices round-trip only to about 1e-8. A
+   base channel at 0 or 1 would otherwise come back outside the gamut
+6. The checks hold `spread` above zero. A zero spread repeats the base, and a
+   negative spread runs the shades from lightest to darkest
+7. The named ranges come from meshdoc's material vocabulary. `normalScale` and
+   `alphaCutoff` count as custom properties because the modeling API leaves
+   them out
+8. The kind check reads every material in the document, whether a step reaches
+   the material or not

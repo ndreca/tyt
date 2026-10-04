@@ -1,13 +1,18 @@
 use crate::operations::sdf_doc::{SdfPlace, shape2d_references, shape3d_references};
 use branded_id::{IdVec, U32Id};
 use sdfcore::{
-    BSdfPattern, BSdfShape2d, BSdfShape3d, BSdfStep, SdfEntryId, SdfState, SdfStep, SdfStepMaterial,
+    BSdfMaterial, BSdfPattern, BSdfShades, BSdfShape2d, BSdfShape3d, BSdfStep, SdfEntryId,
+    SdfMaterial, SdfPattern, SdfState, SdfStep, SdfStepMaterial,
 };
 
 /// The path of part names and step name of the first step that reaches each
 /// entry. An error about an entry starts with the entry's path.
 #[derive(Clone, Debug, Default)]
 pub struct EntryPaths {
+    materials: IdVec<BSdfMaterial, Option<String>>,
+
+    shades: IdVec<BSdfShades, Option<String>>,
+
     shapes3d: IdVec<BSdfShape3d, Option<String>>,
 
     shapes2d: IdVec<BSdfShape2d, Option<String>>,
@@ -21,6 +26,8 @@ impl EntryPaths {
     /// The paths of the entries of `state`, whose places are `places`.
     pub fn new(state: &SdfState, places: &[SdfPlace]) -> Self {
         let mut paths = Self {
+            materials: state.materials.iter().map(|_| None).collect(),
+            shades: state.shades.iter().map(|_| None).collect(),
             shapes3d: state.shapes3d.iter().map(|_| None).collect(),
             shapes2d: state.shapes2d.iter().map(|_| None).collect(),
             patterns: state.patterns.iter().map(|_| None).collect(),
@@ -58,9 +65,23 @@ impl EntryPaths {
                         paths.reach3d(state, shape_id, &path);
                     }
 
-                    if let Some(SdfStepMaterial::Pattern(pattern_id)) = material {
-                        paths.patterns[pattern_id.to_usize_id()]
-                            .get_or_insert_with(|| path.clone());
+                    match material {
+                        Some(SdfStepMaterial::Material(material_id)) => {
+                            paths.reach_material(state, material_id, &path);
+                        }
+
+                        Some(SdfStepMaterial::Pattern(pattern_id)) => {
+                            paths.patterns[pattern_id.to_usize_id()]
+                                .get_or_insert_with(|| path.clone());
+
+                            let pattern = &state.patterns[pattern_id.to_usize_id()];
+
+                            for material_id in pattern_material_ids(pattern) {
+                                paths.reach_material(state, material_id, &path);
+                            }
+                        }
+
+                        None => {}
                     }
 
                     paths.steps[step_id.to_usize_id()].get_or_insert(path);
@@ -69,6 +90,22 @@ impl EntryPaths {
         }
 
         paths
+    }
+
+    /// Where an error about the material at `material_id` points.
+    pub fn material(&self, material_id: U32Id<BSdfMaterial>) -> String {
+        located(
+            &self.materials[material_id.to_usize_id()],
+            SdfEntryId::Material(material_id),
+        )
+    }
+
+    /// Where an error about the `shades` call at `shades_id` points.
+    pub fn shades(&self, shades_id: U32Id<BSdfShades>) -> String {
+        located(
+            &self.shades[shades_id.to_usize_id()],
+            SdfEntryId::Shades(shades_id),
+        )
     }
 
     /// Where an error about the 3D shape at `shape3d_id` points.
@@ -101,6 +138,25 @@ impl EntryPaths {
             &self.steps[step_id.to_usize_id()],
             SdfEntryId::Step(step_id),
         )
+    }
+
+    /// Records `path` for the material at `material_id` and, for a shade, its
+    /// `shades` call and base material, unless an earlier step reached them.
+    fn reach_material(&mut self, state: &SdfState, material_id: U32Id<BSdfMaterial>, path: &str) {
+        let entry = &mut self.materials[material_id.to_usize_id()];
+
+        if entry.is_some() {
+            return;
+        }
+
+        *entry = Some(path.to_string());
+
+        if let SdfMaterial::Shade { shades_id, .. } = &state.materials[material_id.to_usize_id()] {
+            self.shades[shades_id.to_usize_id()].get_or_insert_with(|| path.to_string());
+
+            let base_id = state.shades[shades_id.to_usize_id()].base_id;
+            self.reach_material(state, base_id, path);
+        }
     }
 
     /// Records `path` for the 3D shape at `shape3d_id` and the shapes it
@@ -139,6 +195,32 @@ impl EntryPaths {
         for shape_id in shape2d_references(&state.shapes2d[shape2d_id.to_usize_id()]) {
             self.reach2d(state, shape_id, path);
         }
+    }
+}
+
+/// The materials `pattern` picks among.
+fn pattern_material_ids(pattern: &SdfPattern) -> Vec<U32Id<BSdfMaterial>> {
+    match pattern {
+        SdfPattern::Bands { material_ids, .. }
+        | SdfPattern::Checker { material_ids, .. }
+        | SdfPattern::Gradient { material_ids, .. }
+        | SdfPattern::Grain { material_ids, .. }
+        | SdfPattern::Noise { material_ids, .. } => material_ids.clone(),
+
+        SdfPattern::Cells {
+            material_ids,
+            border_id,
+            ..
+        } => material_ids.iter().chain(border_id).copied().collect(),
+
+        SdfPattern::Speckle {
+            base_id,
+            accent_ids,
+            ..
+        } => [*base_id]
+            .into_iter()
+            .chain(accent_ids.iter().copied())
+            .collect(),
     }
 }
 

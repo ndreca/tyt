@@ -14,7 +14,7 @@ person can run the same loop by hand.
 
 ## The loop
 
-1. **Author.** Claude writes a model file against the builder library.
+1. **Author.** Claude writes a model file against the modeling API.
 2. **Voxelize.** `vxl sdf-doc build` records the model as an `.sdfj` document.
    `vxl sdf-doc voxelize` samples the document into voxj and prints a report.
 3. **Review.** `vxl object render` draws the review views as PNGs. Claude reads
@@ -76,8 +76,8 @@ A material holds voxj properties as key/value pairs. voxj's glTF vocabulary
 gives the named properties, and any other name adds a custom property. A step
 takes a library material, a custom material, or a pattern. A pattern picks one
 material per cell and never blends colors. The palette then stays small. A
-library name means one look in every model. The library ships in vxl. A
-`.vxlconfig` can add or replace names through the cascade.
+library name means one look in every model. vxl ships the `materials` library,
+and a `.vxlconfig` can define more libraries through the cascade.
 
 A pattern reads coordinates in the frame its shape was built in, and grain
 therefore runs along each leg however the leg turns. Painting belongs in the
@@ -158,11 +158,11 @@ skips the build voxelizes a stale `.sdfj`.
    and vxl does the rest in Rust. `vxl sdf-doc build` runs the builder under
    Node, Bun, or Deno. vxl embeds the builder, so an installed vxl needs no
    checkout. `vxl sdf-doc voxelize` checks the document and samples it through a
-   voxsmith operation that follows model evaluation. The library, the `review`
-   profile, and the skill ship inside vxl. A trial of about ten prompts then
-   records which shapes and patterns Claude reaches for and where the loop
-   fails. The prompts run from a chair and a lantern to a treasure chest, a
-   sword, and a tree.
+   voxsmith operation that follows model evaluation. The `materials` library,
+   the `review` profile, and the skill ship inside vxl. A trial of about ten
+   prompts then records which shapes and patterns Claude reaches for and where
+   the loop fails. The prompts run from a chair and a lantern to a treasure
+   chest, a sword, and a tree.
 2. **Follow-ups.** The trials set the second phase: the operators and patterns
    Claude lacked, richer coloring, changes to the `.sdfj` format, and the
    contact sheet.
@@ -229,10 +229,23 @@ skips the build voxelizes a stale `.sdfj`.
     5. `sdfj-builder` at `projects/utilities/sdfj-builder` holds the builder as
        a TypeScript package. vxl embeds the builder's `.ts` files and holds the
        skill's workflow and the modeling API
-17. The `.sdfj` format holds no library. The library is a JSON document of named
-    materials that vxl embeds and `.vxlconfig` extends. `vxl sdf-doc build`
-    copies a library material's properties into the document, and the document
-    stands alone.
+17. A library shares named entries between models. A library holds an `.sdfj`
+    document whose `names` table maps names to the document's entries.
+    1. The builder writes a name for each of the model's named exports. Every
+       built document can then serve as a library. A named export holding an
+       array errors
+    2. A model reads library entries through `lib`, with `mat` for the
+       materials. Using an entry copies the entry and every entry it references
+       into the model's document at fresh indices under the same names. The
+       document then stands alone
+    3. `sdfDoc.build.libraries` in `.vxlconfig` defines libraries by name.
+       `files` holds each library as an `.sdfj` `path`, and `embedded` holds
+       each library as an inline `document`. A layer replaces an earlier
+       layer's library of the same name in either group. vxl's built-in layer
+       embeds `materials`
+    4. A build profile's `libraries` and `--library` list libraries by name.
+       When two listed libraries hold one name, the later library wins. A build
+       with neither reads no library
 18. A step or a part can sit in several lists, as a voxj node can sit under
     several parents. Each place writes a node. `--frame world` moves each
     place's shapes by its offsets before sampling and keeps every part on one

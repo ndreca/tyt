@@ -55,37 +55,43 @@ where the loop fails.
       five steps, the document checks, and parts with their grids, hierarchy,
       places, offsets, and frames. A test pins a box with corners on cell
       corners filling exactly its cells.
-- [ ] **S6. Materials.** The library as a JSON document vxl embeds, with
-      properties for every name the modeling API lists. `vxl sdf-doc build`
-      hands the library to the builder. The named and custom properties with
-      their checks, `shades`, and the patterns.
-- [ ] **S7. Voxelize command.** `vxl sdf-doc voxelize` with the flags and
+- [x] **S6. Materials.** The named and custom properties with their checks,
+      `shades`, and the patterns.
+- [ ] **S7. Libraries.** Libraries as [decision 17](README.md#decisions) sets
+      them:
+  1. The `names` table in sdfj, sdfcore, and the bridge
+  2. The builder writing names, reading the libraries vxl hands it, and copying
+     the entries a model uses
+  3. `sdfDoc.build.libraries`, the build profiles' `libraries`, and `--library`
+  4. vxl's built-in `materials` library with properties for every name the
+     modeling API lists. A test checks every material with its default `shades`
+- [ ] **S8. Voxelize command.** `vxl sdf-doc voxelize` with the flags and
       profiles the modeling API lists, the voxj document, and the report under
       `--report`. `vxl profile sdf-doc voxelize list` lists the profiles.
-- [ ] **S8. Review profile.** A built-in `review` render profile imports the
+- [ ] **S9. Review profile.** A built-in `review` render profile imports the
       built-in `hero` view and adds orthographic `front`, `right`, and `top`
       views under the default `studio` rig. The render profile language's
       built-ins list `review`. The brightest library material keeps its shading
       short of white.
-- [ ] **S9. Integration commands.** Move every workspace binary's `completion`
+- [ ] **S10. Integration commands.** Move every workspace binary's `completion`
       command to `integration print-completions`. Update the tyt-meta templates
       that scaffold new crates and the READMEs that show the command.
-- [ ] **S10. Skill.** Write the skill's workflow as the README lays it out. Move
+- [ ] **S11. Skill.** Write the skill's workflow as the README lays it out. Move
       the workflow and the modeling API into vxl. The modeling API links to
       other pages by their repository URLs.
       `vxl integration print-skill voxel-modeling` prints the workflow and then
       the modeling API as one `SKILL.md`. Move model evaluation to
       `doc/ref/sdf-doc/` and the sdfj format into the sdfj crate's `docs/`.
-- [ ] **S11. Trials.** Run about ten prompts through the skill, each in a fresh
+- [ ] **S12. Trials.** Run about ten prompts through the skill, each in a fresh
       session. Log each prompt in `trials.md` with the passes it took, the
       failures, and the operations and report data Claude wanted and lacked. The
       log also notes where a model's colors read flat.
-- [ ] **S12. Phase 2 design.** Write the phase 2 steps from the trials and
+- [ ] **S13. Phase 2 design.** Write the phase 2 steps from the trials and
       revise the README.
 
 ## Phase 2: follow-ups
 
-S12 writes phase 2's steps from the trials. Known so far:
+S13 writes phase 2's steps from the trials. Known so far:
 
 1. The operators and patterns Claude reached for and lacked
 2. The `.sdfj` changes those operators need
@@ -107,3 +113,4 @@ S12 writes phase 2's steps from the trials. Known so far:
       coat across both parts
    2. A rotation on parts that turns the part's shapes at any angle before
       sampling
+6. A `typescript` library group whose sources vxl builds before the model

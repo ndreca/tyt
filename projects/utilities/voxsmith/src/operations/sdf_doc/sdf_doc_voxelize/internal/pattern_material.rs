@@ -1,0 +1,429 @@
+use crate::operations::sdf_doc::{fbm, lattice_hash, noise_seed, whole_count};
+use branded_id::U32Id;
+use sdfcore::{BSdfMaterial, SdfPattern};
+use ty_math::{TyVector3F64, TyVector3I32};
+
+/// The octaves a pattern's noise sums when the model leaves them out.
+const DEFAULT_OCTAVES: u32 = 4;
+
+/// The range a hash spans, as a divisor that maps it into `[0, 1)`.
+const HASH_RANGE: f64 = 4_294_967_296.0;
+
+/// The material `pattern` picks for the cell at the lattice index `cell`,
+/// whose frame position reads `q`, on the lattice of cells `voxel_size`
+/// across.
+pub fn pattern_material(
+    pattern: &SdfPattern,
+    q: TyVector3F64,
+    cell: TyVector3I32,
+    voxel_size: f64,
+) -> U32Id<BSdfMaterial> {
+    let seed_of = |seed: Option<f64>| seed.map_or(0, noise_seed);
+    let warped = |axis: usize, warp: f64, scale: f64, seed: u32| {
+        q[axis] + warp * fbm(q / scale, DEFAULT_OCTAVES, seed)
+    };
+
+    match pattern {
+        SdfPattern::Bands {
+            material_ids,
+            axis,
+            period,
+            warp,
+            seed,
+        } => {
+            let period = period.unwrap_or(voxel_size);
+            let s = warped(
+                axis.index(),
+                warp.unwrap_or(0.0),
+                4.0 * period,
+                seed_of(*seed),
+            );
+            cycled(material_ids, (s / period).floor())
+        }
+
+        SdfPattern::Cells {
+            material_ids,
+            size,
+            seed,
+            border_id,
+        } => cells_material(
+            material_ids,
+            *border_id,
+            *size,
+            noise_seed(*seed),
+            q,
+            voxel_size,
+        ),
+
+        SdfPattern::Checker { material_ids, size } => {
+            let size = size.unwrap_or(voxel_size);
+            cycled(material_ids, (q / size).floor().element_sum())
+        }
+
+        SdfPattern::Gradient {
+            material_ids,
+            axis,
+            from,
+            to,
+            warp,
+            seed,
+        } => {
+            let s = warped(
+                axis.index(),
+                warp.unwrap_or(0.0),
+                (to - from) / 4.0,
+                seed_of(*seed),
+            );
+            spanned(material_ids, (s - from) / (to - from))
+        }
+
+        SdfPattern::Grain {
+            material_ids,
+            axis,
+            period,
+            warp,
+            seed,
+        } => {
+            let period = period.unwrap_or(2.0 * voxel_size);
+            let seed = noise_seed(*seed);
+            let s = warped(
+                axis.index(),
+                warp.unwrap_or(1.5 * voxel_size),
+                4.0 * period,
+                seed,
+            );
+            picked(
+                material_ids,
+                lattice_hash(seed, &[lattice_coordinate((s / period).floor())]),
+            )
+        }
+
+        SdfPattern::Noise {
+            material_ids,
+            scale,
+            octaves,
+            seed,
+        } => {
+            let octaves = octaves.map_or(DEFAULT_OCTAVES, whole_count);
+            let t = (fbm(q / *scale, octaves, noise_seed(*seed)) + 1.0) / 2.0;
+            spanned(material_ids, t)
+        }
+
+        SdfPattern::Speckle {
+            base_id,
+            accent_ids,
+            density,
+            seed,
+        } => {
+            let seed = noise_seed(*seed);
+            let hash = |channel: i32| lattice_hash(seed, &[cell.x, cell.y, cell.z, channel]);
+
+            if unit(hash(0)) < *density {
+                picked(accent_ids, hash(1))
+            } else {
+                *base_id
+            }
+        }
+    }
+}
+
+/// The material of `material_ids` that `index` reaches when it cycles
+/// through them in order.
+fn cycled(material_ids: &[U32Id<BSdfMaterial>], index: f64) -> U32Id<BSdfMaterial> {
+    material_ids[index.rem_euclid(material_ids.len() as f64) as usize]
+}
+
+/// The material of `material_ids` whose equal span of `[0, 1]` holds `t`, with
+/// the first material before the spans and the last past them.
+fn spanned(material_ids: &[U32Id<BSdfMaterial>], t: f64) -> U32Id<BSdfMaterial> {
+    let last = material_ids.len() - 1;
+    let index = (t * material_ids.len() as f64).floor();
+
+    material_ids[index.clamp(0.0, last as f64) as usize]
+}
+
+/// The material of `material_ids` that `hash` picks.
+fn picked(material_ids: &[U32Id<BSdfMaterial>], hash: u32) -> U32Id<BSdfMaterial> {
+    material_ids[hash as usize % material_ids.len()]
+}
+
+/// `hash` mapped into `[0, 1)`.
+fn unit(hash: u32) -> f64 {
+    f64::from(hash) / HASH_RANGE
+}
+
+/// The whole number `value` as the 32-bit two's-complement coordinate the
+/// hash reads.
+fn lattice_coordinate(value: f64) -> i32 {
+    value as i64 as i32
+}
+
+/// The material a `cells` pattern picks at the frame position `q`. Each
+/// lattice cube `size` wide holds one feature point, and the cell takes the
+/// nearest point's pick, or `border_id` within half a voxel of the seam
+/// between two points' cells.
+fn cells_material(
+    material_ids: &[U32Id<BSdfMaterial>],
+    border_id: Option<U32Id<BSdfMaterial>>,
+    size: f64,
+    seed: u32,
+    q: TyVector3F64,
+    voxel_size: f64,
+) -> U32Id<BSdfMaterial> {
+    let p = q / size;
+    let floor = p.floor();
+    let within = p - floor;
+    let cube = [floor.x, floor.y, floor.z].map(lattice_coordinate);
+
+    let hash = |offset: TyVector3I32, channel: i32| {
+        lattice_hash(
+            seed,
+            &[
+                cube[0].wrapping_add(offset.x),
+                cube[1].wrapping_add(offset.y),
+                cube[2].wrapping_add(offset.z),
+                channel,
+            ],
+        )
+    };
+
+    // The offset from the cell to the feature point of the cube at `offset`.
+    let point = |offset: TyVector3I32| {
+        let jitter = TyVector3F64::new(
+            unit(hash(offset, 0)),
+            unit(hash(offset, 1)),
+            unit(hash(offset, 2)),
+        );
+        offset.as_dvec3() + jitter - within
+    };
+
+    let mut nearest_offset = TyVector3I32::ZERO;
+    let mut nearest = point(nearest_offset);
+    let mut nearest_distance = f64::INFINITY;
+
+    for offset in cube_offsets(1) {
+        let r = point(offset);
+        let distance = r.dot(r);
+
+        if distance < nearest_distance {
+            nearest_offset = offset;
+            nearest = r;
+            nearest_distance = distance;
+        }
+    }
+
+    if let Some(border_id) = border_id {
+        for offset in cube_offsets(2) {
+            let offset = nearest_offset + offset;
+
+            if offset == nearest_offset {
+                continue;
+            }
+
+            let r = point(offset);
+            let seam = ((nearest + r) / 2.0).dot((r - nearest).normalize());
+
+            if size * seam <= voxel_size / 2.0 {
+                return border_id;
+            }
+        }
+    }
+
+    picked(material_ids, hash(nearest_offset, 3))
+}
+
+/// The offsets to the cubes within `reach` cubes of a cube on each axis, in
+/// raster order with x outermost.
+fn cube_offsets(reach: i32) -> impl Iterator<Item = TyVector3I32> {
+    (-reach..=reach).flat_map(move |x| {
+        (-reach..=reach)
+            .flat_map(move |y| (-reach..=reach).map(move |z| TyVector3I32::new(x, y, z)))
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::operations::sdf_doc::pattern_material;
+    use branded_id::U32Id;
+    use sdfcore::{BSdfMaterial, SdfPattern};
+    use ty_math::{TyAxis3, TyVector3F64, TyVector3I32};
+
+    /// The materials `0` to `count - 1`.
+    fn materials(count: u32) -> Vec<U32Id<BSdfMaterial>> {
+        (0..count).map(U32Id::from_u32).collect()
+    }
+
+    /// The index of the material `pattern` picks at `q` in the cell `cell` on a
+    /// lattice of 0.1 cells.
+    fn pick(pattern: &SdfPattern, q: TyVector3F64, cell: TyVector3I32) -> u32 {
+        pattern_material(pattern, q, cell, 0.1).to_u32()
+    }
+
+    /// The index of the material `pattern` picks at `q`, in whichever cell.
+    fn pick_at(pattern: &SdfPattern, x: f64, y: f64, z: f64) -> u32 {
+        pick(pattern, TyVector3F64::new(x, y, z), TyVector3I32::ZERO)
+    }
+
+    #[test]
+    fn bands_cycle_through_the_materials_one_cell_thick_by_default() {
+        let bands = SdfPattern::Bands {
+            material_ids: materials(3),
+            axis: TyAxis3::Y,
+            period: None,
+            warp: None,
+            seed: None,
+        };
+
+        let picks: Vec<u32> = (-2..5)
+            .map(|cell| pick_at(&bands, 0.3, (f64::from(cell) + 0.5) * 0.1, 0.7))
+            .collect();
+        assert_eq!(picks, [1, 2, 0, 1, 2, 0, 1]);
+    }
+
+    #[test]
+    fn a_warp_bends_the_bands() {
+        let bands = |warp: Option<f64>| SdfPattern::Bands {
+            material_ids: materials(2),
+            axis: TyAxis3::X,
+            period: Some(0.5),
+            warp,
+            seed: Some(4.0),
+        };
+
+        let straight: Vec<u32> = (0..50)
+            .map(|step| pick_at(&bands(None), 0.25, f64::from(step) * 0.1, 0.0))
+            .collect();
+        let bent: Vec<u32> = (0..50)
+            .map(|step| pick_at(&bands(Some(1.0)), 0.25, f64::from(step) * 0.1, 0.0))
+            .collect();
+
+        assert!(straight.iter().all(|pick| *pick == 0));
+        assert!(bent.contains(&1));
+    }
+
+    #[test]
+    fn a_grain_slab_takes_one_hashed_pick() {
+        let grain = SdfPattern::Grain {
+            material_ids: materials(5),
+            axis: TyAxis3::Z,
+            period: Some(1.0),
+            warp: Some(0.0),
+            seed: 2.0,
+        };
+
+        let slab = |z: f64| {
+            (0..10)
+                .map(|step| pick_at(&grain, f64::from(step) * 0.3, -1.0, z))
+                .collect::<Vec<_>>()
+        };
+        let first = slab(0.5);
+        assert!(first.iter().all(|pick| *pick == first[0]));
+
+        let picks: Vec<u32> = (0..20)
+            .map(|step| pick_at(&grain, 0.0, 0.0, f64::from(step) + 0.5))
+            .collect();
+        assert!(picks.iter().any(|pick| *pick != picks[0]));
+    }
+
+    #[test]
+    fn a_gradient_holds_its_ends_past_the_range() {
+        let gradient = SdfPattern::Gradient {
+            material_ids: materials(4),
+            axis: TyAxis3::X,
+            from: 0.0,
+            to: 2.0,
+            warp: None,
+            seed: None,
+        };
+
+        let picks: Vec<u32> = [-1.0, 0.1, 0.6, 1.1, 1.9, 3.0]
+            .iter()
+            .map(|x| pick_at(&gradient, *x, 0.0, 0.0))
+            .collect();
+        assert_eq!(picks, [0, 0, 1, 2, 3, 3]);
+    }
+
+    #[test]
+    fn noise_spreads_the_cells_across_the_materials() {
+        let noise = SdfPattern::Noise {
+            material_ids: materials(3),
+            scale: 0.5,
+            octaves: None,
+            seed: 11.0,
+        };
+
+        let mut counts = [0; 3];
+        for index in 0..3000 {
+            let t = f64::from(index);
+            counts[pick_at(&noise, t * 0.0731, t * 0.0377, t * 0.0519) as usize] += 1;
+        }
+
+        assert!(counts.iter().all(|count| *count > 600), "{counts:?}");
+    }
+
+    #[test]
+    fn checker_alternates_over_cubes_one_cell_wide_by_default() {
+        let checker = SdfPattern::Checker {
+            material_ids: materials(2),
+            size: None,
+        };
+
+        assert_eq!(pick_at(&checker, 0.05, 0.05, 0.05), 0);
+        assert_eq!(pick_at(&checker, 0.15, 0.05, 0.05), 1);
+        assert_eq!(pick_at(&checker, 0.15, 0.15, 0.05), 0);
+        assert_eq!(pick_at(&checker, -0.05, 0.05, 0.05), 1);
+    }
+
+    #[test]
+    fn speckle_reads_the_cell_and_its_density() {
+        let speckle = |density: f64| SdfPattern::Speckle {
+            base_id: U32Id::from_u32(9),
+            accent_ids: materials(2),
+            density,
+            seed: 5.0,
+        };
+
+        let accents = |density: f64| {
+            (0..1000)
+                .filter(|index| {
+                    let cell = TyVector3I32::new(*index, -index, 3);
+                    pick(&speckle(density), TyVector3F64::ZERO, cell) != 9
+                })
+                .count()
+        };
+
+        assert_eq!(accents(0.0), 0);
+        assert_eq!(accents(1.0), 1000);
+        assert!((200..300).contains(&accents(0.25)));
+
+        let cell = TyVector3I32::new(4, 5, 6);
+        assert_eq!(
+            pick(&speckle(0.5), TyVector3F64::new(1.0, 2.0, 3.0), cell),
+            pick(&speckle(0.5), TyVector3F64::new(-7.0, 0.0, 9.0), cell)
+        );
+    }
+
+    #[test]
+    fn cells_pick_per_feature_point_and_border_the_seams() {
+        let cells = |border: bool| SdfPattern::Cells {
+            material_ids: materials(8),
+            size: 1.0,
+            seed: 3.0,
+            border_id: border.then(|| U32Id::from_u32(99)),
+        };
+
+        let line: Vec<u32> = (0..400)
+            .map(|step| pick_at(&cells(false), f64::from(step) * 0.01, 0.37, 0.61))
+            .collect();
+        let changes = line.windows(2).filter(|pair| pair[0] != pair[1]).count();
+        assert!(changes >= 2, "{line:?}");
+
+        let bordered: Vec<u32> = (0..400)
+            .map(|step| pick_at(&cells(true), f64::from(step) * 0.01, 0.37, 0.61))
+            .collect();
+        assert!(bordered.contains(&99));
+        for (plain, border) in line.iter().zip(&bordered) {
+            assert!(border == plain || *border == 99);
+        }
+    }
+}
