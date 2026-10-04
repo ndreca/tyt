@@ -42,13 +42,16 @@ let bounds = scene.subject_bounds(&placement_ids)?;
 ## Materials
 
 A `RenderMaterial` carries the shaded properties in linear light: the base
-color, metalness, roughness, the emissive color and its strength, and the
-occlusion strength. Every voxel is opaque. The default is glTF's: opaque
-white, fully metallic and rough, with no emission.
+color with its coverage alpha, metalness, roughness, transmission, the index
+of refraction, the emissive color and its strength, and the occlusion
+strength. The default is glTF's: opaque white, fully metallic and rough, with
+no transmission or emission. The index of refraction sets the dielectric
+reflectance. Every voxel renders opaque: the alpha and the transmission
+are range-checked and shade nothing.
 
 ```rust
 let brass = RenderMaterial {
-    base_color: TyLinSrgbF64::new(0.8, 0.6, 0.2),
+    base_color: TyLinSrgbaF64::new(0.8, 0.6, 0.2, 1.0),
     roughness: 0.4,
     ..RenderMaterial::default()
 };

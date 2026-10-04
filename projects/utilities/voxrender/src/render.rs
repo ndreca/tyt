@@ -11,9 +11,6 @@ use voxsurface::{SurfaceSpan, corner_occlusion};
 /// The GGX alpha floor that keeps a mirror's lobe finite.
 const MIN_ALPHA: f64 = 1e-3;
 
-/// The reflectance floor of a dielectric at normal incidence.
-const DIELECTRIC_F0: f64 = 0.04;
-
 /// glTF's floor under the gap between a spot's cone cosines. It keeps a cone
 /// whose angles sit a rounding apart finite.
 const MIN_CONE_WIDTH: f64 = 1e-3;
@@ -297,7 +294,7 @@ fn direct_radiance(
         / (n_dot_l * (n_dot_v * n_dot_v * (1.0 - alpha2) + alpha2).sqrt()
             + n_dot_v * (n_dot_l * n_dot_l * (1.0 - alpha2) + alpha2).sqrt());
 
-    let diffuse = (white - fresnel) * material.base_color * ((1.0 - material.metallic) / PI);
+    let diffuse = (white - fresnel) * material.base_color.color * ((1.0 - material.metallic) / PI);
     let specular = fresnel * (distribution * visibility);
 
     (diffuse + specular) * n_dot_l
@@ -325,18 +322,21 @@ fn hemisphere_radiance(
     let ambient = (sky * up + ground * (1.0 - up)) * strength;
 
     let f0 = normal_reflectance(material);
-    let diffuse = material.base_color * (1.0 - material.metallic);
+    let diffuse = material.base_color.color * (1.0 - material.metallic);
 
     let open = 1.0 - material.occlusion_strength * (1.0 - occlusion);
 
     ambient * (diffuse + f0) * open
 }
 
-/// The reflectance of `material` at normal incidence.
+/// The reflectance of `material` at normal incidence. The dielectric share
+/// follows from the index of refraction as `((ior - 1) / (ior + 1))^2`.
 fn normal_reflectance(material: &RenderMaterial) -> TyLinSrgbF64 {
-    let dielectric = TyLinSrgbF64::new(DIELECTRIC_F0, DIELECTRIC_F0, DIELECTRIC_F0);
+    let ior = material.ior;
+    let dielectric = ((ior - 1.0) / (ior + 1.0)).powi(2);
+    let dielectric = TyLinSrgbF64::new(dielectric, dielectric, dielectric);
 
-    dielectric * (1.0 - material.metallic) + material.base_color * material.metallic
+    dielectric * (1.0 - material.metallic) + material.base_color.color * material.metallic
 }
 
 /// How much of a point light reaches `distance` meters out: the inverse
@@ -471,7 +471,7 @@ mod tests {
         ShadowTarget, cast_ray, fit_distance, render,
         render::{
             bilinear, check_bloom, cone_attenuation, direct_radiance, hemisphere_radiance,
-            point_attenuation, shade_hit, shadow_factor,
+            normal_reflectance, point_attenuation, shade_hit, shadow_factor,
         },
         test_utilities::{
             check_goldens, cube_scene, glow_scene, l_shape_scene, room_scene, solid_object,
@@ -480,8 +480,8 @@ mod tests {
     };
     use branded_id::U32Id;
     use ty_math::{
-        TyLinSrgbF64, TyPoseF64, TyQuaternionExt, TyQuaternionF64, TyTransformF64, TyVector3Ext,
-        TyVector3F64, TyVector3U32,
+        TyLinSrgbF64, TyLinSrgbaF64, TyPoseF64, TyQuaternionExt, TyQuaternionF64, TyTransformF64,
+        TyVector3Ext, TyVector3F64, TyVector3U32,
     };
     use voxsurface::SurfaceSpan;
 
@@ -747,7 +747,7 @@ mod tests {
     #[test]
     fn light_behind_the_surface_is_black_and_a_metal_reflects_its_own_color() {
         let rough = RenderMaterial {
-            base_color: TyLinSrgbF64::new(0.5, 0.5, 0.5),
+            base_color: TyLinSrgbaF64::new(0.5, 0.5, 0.5, 1.0),
             metallic: 0.0,
             ..RenderMaterial::default()
         };
@@ -768,7 +768,7 @@ mod tests {
         assert!(overhead.red.is_finite());
 
         let red_metal = RenderMaterial {
-            base_color: TyLinSrgbF64::new(1.0, 0.0, 0.0),
+            base_color: TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0),
             metallic: 1.0,
             roughness: 0.3,
             ..RenderMaterial::default()
@@ -777,6 +777,28 @@ mod tests {
         assert!(shine.red > 0.0);
         assert_eq!(shine.green, 0.0);
         assert_eq!(shine.blue, 0.0);
+    }
+
+    #[test]
+    fn the_index_of_refraction_sets_the_dielectric_reflectance() {
+        let glass = RenderMaterial {
+            metallic: 0.0,
+            ..RenderMaterial::default()
+        };
+        let f0 = normal_reflectance(&glass);
+        assert!((f0.red - 0.04).abs() < 1e-12);
+        assert_eq!(f0.green, f0.red);
+        assert_eq!(f0.blue, f0.red);
+
+        let mirror = RenderMaterial {
+            metallic: 0.0,
+            ior: 0.0,
+            ..RenderMaterial::default()
+        };
+        assert_eq!(
+            normal_reflectance(&mirror),
+            TyLinSrgbF64::new(1.0, 1.0, 1.0)
+        );
     }
 
     #[test]

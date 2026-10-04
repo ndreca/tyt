@@ -4,8 +4,8 @@ use crate::{
 };
 use branded_id::U32Id;
 use ty_math::{
-    TyLinSrgbF64, TyQuaternionExt, TyQuaternionF64, TyTransformF64, TyVector3Ext, TyVector3F64,
-    TyVector3U32,
+    TyLinSrgbF64, TyLinSrgbaF64, TyQuaternionExt, TyQuaternionF64, TyTransformF64, TyVector3Ext,
+    TyVector3F64, TyVector3U32,
 };
 
 /// One slab placed twice: flat on the ground, and above it turned 45
@@ -16,7 +16,7 @@ pub fn two_placements_scene(shadow: RenderShadow) -> RenderScene {
 
     let material_id = scene
         .retain_material(RenderMaterial {
-            base_color: TyLinSrgbF64::new(0.3, 0.6, 0.8),
+            base_color: TyLinSrgbaF64::new(0.3, 0.6, 0.8, 1.0),
             metallic: 0.0,
             roughness: 0.5,
             ..RenderMaterial::default()

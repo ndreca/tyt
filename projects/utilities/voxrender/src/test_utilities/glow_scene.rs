@@ -4,8 +4,8 @@ use crate::{
 };
 use branded_id::U32Id;
 use ty_math::{
-    TyLinSrgbF64, TyQuaternionExt, TyQuaternionF64, TyTransformF64, TyVector3Ext, TyVector3F64,
-    TyVector3U32,
+    TyLinSrgbF64, TyLinSrgbaF64, TyQuaternionExt, TyQuaternionF64, TyTransformF64, TyVector3Ext,
+    TyVector3F64, TyVector3U32,
 };
 
 /// A dark plate whose top row glows orange at four times glTF's emissive
@@ -16,7 +16,7 @@ pub fn glow_scene(shadow: RenderShadow) -> RenderScene {
 
     let dark_id = scene
         .retain_material(RenderMaterial {
-            base_color: TyLinSrgbF64::new(0.12, 0.12, 0.14),
+            base_color: TyLinSrgbaF64::new(0.12, 0.12, 0.14, 1.0),
             metallic: 0.0,
             roughness: 0.8,
             ..RenderMaterial::default()
@@ -25,7 +25,7 @@ pub fn glow_scene(shadow: RenderShadow) -> RenderScene {
 
     let glowing_id = scene
         .retain_material(RenderMaterial {
-            base_color: TyLinSrgbF64::new(0.2, 0.1, 0.05),
+            base_color: TyLinSrgbaF64::new(0.2, 0.1, 0.05, 1.0),
             metallic: 0.0,
             roughness: 0.8,
             emissive_color: TyLinSrgbF64::new(1.0, 0.55, 0.2),

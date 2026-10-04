@@ -3,7 +3,7 @@ use crate::{
     test_utilities::{orbit_view, solid_object},
 };
 use branded_id::U32Id;
-use ty_math::{TyLinSrgbF64, TyTransformF64, TyVector3F64, TyVector3U32};
+use ty_math::{TyLinSrgbF64, TyLinSrgbaF64, TyTransformF64, TyVector3F64, TyVector3U32};
 
 /// A floor with two walls meeting in a corner and a pillar on the floor,
 /// under `key` and a dim hemisphere light, seen from above the open corner.
@@ -12,7 +12,7 @@ pub fn lit_room(key: RenderLight) -> RenderScene {
 
     let material_id = scene
         .retain_material(RenderMaterial {
-            base_color: TyLinSrgbF64::new(0.75, 0.7, 0.6),
+            base_color: TyLinSrgbaF64::new(0.75, 0.7, 0.6, 1.0),
             metallic: 0.0,
             roughness: 0.9,
             ..RenderMaterial::default()

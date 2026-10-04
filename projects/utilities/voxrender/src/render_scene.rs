@@ -8,15 +8,16 @@ use std::{
     f64::consts::{FRAC_PI_2, PI},
 };
 use ty_math::{
-    TyBoundsF64, TyLinSrgbF64, TyQuaternionExt, TyQuaternionF64, TyTransformF64, TyVector3F64,
-    TyVector3I32, UNIT_ROTATION_TOLERANCE,
+    TyBoundsF64, TyLinSrgbF64, TyLinSrgbaF64, TyQuaternionExt, TyQuaternionF64, TyTransformF64,
+    TyVector3F64, TyVector3I32, UNIT_ROTATION_TOLERANCE,
 };
 use voxcore::{
     BVoxEffectiveProperty, BVoxHierarchyNode, BVoxObject, BVoxValuePoolValue, BVoxVoxel,
     VoxEffectivePalette, VoxExt, VoxMain, VoxValuePool,
     color::ColorValues,
     material::{
-        BASE_COLOR, EMISSIVE_COLOR, EMISSIVE_STRENGTH, METALLIC, OCCLUSION_STRENGTH, ROUGHNESS,
+        BASE_COLOR, EMISSIVE_COLOR, EMISSIVE_STRENGTH, IOR, METALLIC, OCCLUSION_STRENGTH,
+        ROUGHNESS, TRANSMISSION,
     },
 };
 
@@ -86,29 +87,52 @@ impl RenderScene {
                 .map(|voxel_id| (voxel_id, RenderMaterial::default()))
                 .collect();
 
-            fill_color(&effective, BASE_COLOR, &mut voxels, |material| {
-                &mut material.base_color
+            fill_color(&effective, BASE_COLOR, &mut voxels, |material, color| {
+                material.base_color = color;
             })?;
 
-            fill_scalar(&effective, METALLIC, &mut voxels, |material| {
-                &mut material.metallic
+            fill_scalar(&effective, METALLIC, &mut voxels, |material, value| {
+                material.metallic = value;
             })?;
 
-            fill_scalar(&effective, ROUGHNESS, &mut voxels, |material| {
-                &mut material.roughness
+            fill_scalar(&effective, ROUGHNESS, &mut voxels, |material, value| {
+                material.roughness = value;
             })?;
 
-            fill_color(&effective, EMISSIVE_COLOR, &mut voxels, |material| {
-                &mut material.emissive_color
+            fill_scalar(&effective, TRANSMISSION, &mut voxels, |material, value| {
+                material.transmission = value;
             })?;
 
-            fill_scalar(&effective, EMISSIVE_STRENGTH, &mut voxels, |material| {
-                &mut material.emissive_strength
+            fill_scalar(&effective, IOR, &mut voxels, |material, value| {
+                material.ior = value;
             })?;
 
-            fill_scalar(&effective, OCCLUSION_STRENGTH, &mut voxels, |material| {
-                &mut material.occlusion_strength
-            })?;
+            fill_color(
+                &effective,
+                EMISSIVE_COLOR,
+                &mut voxels,
+                |material, color| {
+                    material.emissive_color = color.color;
+                },
+            )?;
+
+            fill_scalar(
+                &effective,
+                EMISSIVE_STRENGTH,
+                &mut voxels,
+                |material, value| {
+                    material.emissive_strength = value;
+                },
+            )?;
+
+            fill_scalar(
+                &effective,
+                OCCLUSION_STRENGTH,
+                &mut voxels,
+                |material, value| {
+                    material.occlusion_strength = value;
+                },
+            )?;
 
             let mut render_object = RenderObject::new(object.name().to_owned(), object.bounds())?;
 
@@ -544,11 +568,22 @@ fn is_unit_rotation(rotation: TyQuaternionF64) -> bool {
     rotation.is_normalized_within(UNIT_ROTATION_TOLERANCE)
 }
 
+/// Whether `value` is the vocabulary's `0` or a finite index of refraction
+/// of `1` or more.
+fn is_refractive_index(value: f64) -> bool {
+    value == 0.0 || (value.is_finite() && value >= 1.0)
+}
+
 fn check_material(material: &RenderMaterial) -> Result<()> {
     let checks = [
-        (BASE_COLOR, is_unit_color(material.base_color)),
+        (
+            BASE_COLOR,
+            is_unit_color(material.base_color.color) && is_unit(material.base_color.alpha),
+        ),
         (METALLIC, is_unit(material.metallic)),
         (ROUGHNESS, is_unit(material.roughness)),
+        (TRANSMISSION, is_unit(material.transmission)),
+        (IOR, is_refractive_index(material.ior)),
         (EMISSIVE_COLOR, is_unit_color(material.emissive_color)),
         (
             EMISSIVE_STRENGTH,
@@ -717,9 +752,8 @@ fn check_view(view: &RenderView) -> Result<()> {
     Ok(())
 }
 
-/// A material's six values by their bits, the key that deduplicates the
-/// table.
-type MaterialKey = [u64; 10];
+/// A material's values by their bits, the key that deduplicates the table.
+type MaterialKey = [u64; 13];
 
 /// Places every flattened object under `node_id`, itself under `parent`,
 /// the world transform of its parent path, then walks its child nodes in
@@ -785,13 +819,13 @@ fn placement_transform(
 }
 
 /// Fills color property `property` into each voxel's material through
-/// `field`. Drops the alpha. Leaves the default where `effective` does not
-/// supply it. Errors when its value pool holds no colors.
+/// `set`. Leaves the default where `effective` does not supply it. Errors
+/// when its value pool holds no colors.
 fn fill_color(
     effective: &VoxEffectivePalette<'_>,
     property: &str,
     voxels: &mut [(U32Id<BVoxVoxel>, RenderMaterial)],
-    field: fn(&mut RenderMaterial) -> &mut TyLinSrgbF64,
+    set: fn(&mut RenderMaterial, TyLinSrgbaF64),
 ) -> Result<()> {
     let Some(property_id) = effective.property_id_by_name(property) else {
         return Ok(());
@@ -808,20 +842,20 @@ fn fill_color(
             .lin_srgba_f64(voxel_value_id(effective, *voxel_id, property_id))
             .expect("a material draws one of its property's values");
 
-        *field(material) = TyLinSrgbF64::new(color.red, color.green, color.blue);
+        set(material, color);
     }
 
     Ok(())
 }
 
 /// Fills scalar property `property` into each voxel's material through
-/// `field`. Leaves the default where `effective` does not supply it. Errors
+/// `set`. Leaves the default where `effective` does not supply it. Errors
 /// when its value pool holds no floats.
 fn fill_scalar(
     effective: &VoxEffectivePalette<'_>,
     property: &str,
     voxels: &mut [(U32Id<BVoxVoxel>, RenderMaterial)],
-    field: fn(&mut RenderMaterial) -> &mut f64,
+    set: fn(&mut RenderMaterial, f64),
 ) -> Result<()> {
     let Some(property_id) = effective.property_id_by_name(property) else {
         return Ok(());
@@ -834,9 +868,11 @@ fn fill_scalar(
         })?;
 
     for (voxel_id, material) in voxels {
-        *field(material) = *values
+        let value = *values
             .get(voxel_value_id(effective, *voxel_id, property_id))
             .expect("a material draws one of its property's values");
+
+        set(material, value);
     }
 
     Ok(())
@@ -869,8 +905,11 @@ fn material_key(material: &RenderMaterial) -> MaterialKey {
         material.base_color.red,
         material.base_color.green,
         material.base_color.blue,
+        material.base_color.alpha,
         material.metallic,
         material.roughness,
+        material.transmission,
+        material.ior,
         material.emissive_color.red,
         material.emissive_color.green,
         material.emissive_color.blue,
@@ -889,12 +928,12 @@ mod tests {
     use branded_id::{IdRange, U32Id};
     use std::f64::consts::{FRAC_PI_2, PI};
     use ty_math::{
-        TyLinSrgbF64, TyPoseF64, TyQuaternionF64, TyTransformF64, TyVector3F64, TyVector3I32,
-        TyVector3U32,
+        TyLinSrgbF64, TyLinSrgbaF64, TyPoseF64, TyQuaternionF64, TyTransformF64, TyVector3F64,
+        TyVector3I32, TyVector3U32,
     };
     use voxcore::{
         BVoxObject, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette, VoxValuePool,
-        material::{BASE_COLOR, METALLIC},
+        material::{BASE_COLOR, IOR, METALLIC, TRANSMISSION},
     };
 
     fn white() -> TyLinSrgbF64 {
@@ -997,11 +1036,22 @@ mod tests {
         let mut scene = RenderScene::default();
 
         let too_bright = RenderMaterial {
-            base_color: TyLinSrgbF64::new(1.5, 0.0, 0.0),
+            base_color: TyLinSrgbaF64::new(1.5, 0.0, 0.0, 1.0),
             ..RenderMaterial::default()
         };
         assert_eq!(
             scene.retain_material(too_bright),
+            Err(Error::MaterialOutOfRange {
+                property: BASE_COLOR.to_owned()
+            })
+        );
+
+        let over_covered = RenderMaterial {
+            base_color: TyLinSrgbaF64::new(0.0, 0.0, 0.0, 1.5),
+            ..RenderMaterial::default()
+        };
+        assert_eq!(
+            scene.retain_material(over_covered),
             Err(Error::MaterialOutOfRange {
                 property: BASE_COLOR.to_owned()
             })
@@ -1017,6 +1067,38 @@ mod tests {
                 property: METALLIC.to_owned()
             })
         );
+
+        let over_transmitted = RenderMaterial {
+            transmission: 1.5,
+            ..RenderMaterial::default()
+        };
+        assert_eq!(
+            scene.retain_material(over_transmitted),
+            Err(Error::MaterialOutOfRange {
+                property: TRANSMISSION.to_owned()
+            })
+        );
+
+        for ior in [0.5, -1.0, f64::INFINITY, f64::NAN] {
+            let refracts_oddly = RenderMaterial {
+                ior,
+                ..RenderMaterial::default()
+            };
+            assert_eq!(
+                scene.retain_material(refracts_oddly),
+                Err(Error::MaterialOutOfRange {
+                    property: IOR.to_owned()
+                })
+            );
+        }
+
+        for ior in [0.0, 1.0] {
+            let refracts = RenderMaterial {
+                ior,
+                ..RenderMaterial::default()
+            };
+            scene.retain_material(refracts).unwrap();
+        }
     }
 
     #[test]
@@ -1377,7 +1459,7 @@ mod tests {
         assert_eq!(
             scene.material(red_id),
             Some(&RenderMaterial {
-                base_color: TyLinSrgbF64::new(1.0, 0.0, 0.0),
+                base_color: TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0),
                 metallic: 0.0,
                 ..RenderMaterial::default()
             })
@@ -1386,6 +1468,81 @@ mod tests {
         let lone = scene.object(lone_id).unwrap();
         let voxel_id = lone.voxel_id(TyVector3U32::ZERO).unwrap();
         assert_eq!(lone.voxel_material(voxel_id), Some(blue_id));
+    }
+
+    #[test]
+    fn a_transparent_palette_resolves_and_each_of_its_values_splits_the_table() {
+        let mut main: VoxMain = VoxMain::default();
+        let colors = main.retain_value_pool(
+            VoxValuePool::vec_4_float(vec![[1.0, 0.0, 0.0, 1.0], [1.0, 0.0, 0.0, 0.5]]).unwrap(),
+        );
+        let transmissions = main.retain_value_pool(VoxValuePool::float(vec![0.0, 1.0]).unwrap());
+        let iors = main.retain_value_pool(VoxValuePool::float(vec![1.5, 0.0]).unwrap());
+
+        let mut palette = VoxPalette::default();
+        palette
+            .retain_property(BASE_COLOR.to_owned(), colors)
+            .unwrap();
+        palette
+            .retain_property(TRANSMISSION.to_owned(), transmissions)
+            .unwrap();
+        palette.retain_property(IOR.to_owned(), iors).unwrap();
+
+        // The first material is opaque red. Each of the others changes one
+        // value of it.
+        let first = U32Id::from_u32(0);
+        let second = U32Id::from_u32(1);
+        let material_ids: Vec<_> = [
+            [first, first, first],
+            [second, first, first],
+            [first, second, first],
+            [first, first, second],
+        ]
+        .into_iter()
+        .map(|value_ids| palette.retain_material(value_ids.to_vec()).unwrap())
+        .collect();
+        let palette_id = main.retain_palette(palette).unwrap();
+
+        let mut bar = VoxObject::new("bar".to_owned(), TyVector3U32::new(4, 1, 1)).unwrap();
+        bar.retain_layer(palette_id).unwrap();
+        for (x, &material_id) in (0..).zip(&material_ids) {
+            let voxel_id = bar.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap();
+            bar.retain_voxel(voxel_id, &[material_id]).unwrap();
+        }
+        let bar_id = main.retain_object(bar).unwrap();
+
+        let scene = RenderScene::from_vox_main(&main, &[bar_id], 1.0).unwrap();
+        assert_eq!(scene.material_count(), 4);
+
+        let bar = scene.object(bar_id).unwrap();
+        let material_at = |x| {
+            let voxel_id = bar.voxel_id(TyVector3U32::new(x, 0, 0)).unwrap();
+
+            *scene
+                .material(bar.voxel_material(voxel_id).unwrap())
+                .unwrap()
+        };
+        let red = RenderMaterial {
+            base_color: TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0),
+            ..RenderMaterial::default()
+        };
+
+        assert_eq!(material_at(0), red);
+        assert_eq!(
+            material_at(1),
+            RenderMaterial {
+                base_color: TyLinSrgbaF64::new(1.0, 0.0, 0.0, 0.5),
+                ..red
+            }
+        );
+        assert_eq!(
+            material_at(2),
+            RenderMaterial {
+                transmission: 1.0,
+                ..red
+            }
+        );
+        assert_eq!(material_at(3), RenderMaterial { ior: 0.0, ..red });
     }
 
     #[test]

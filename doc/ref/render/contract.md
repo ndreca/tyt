@@ -26,8 +26,10 @@ normals. There is no smoothing, no bevel, and no sub-voxel detail.
 
 A voxel carries its effective palette material, in voxj's glTF vocabulary with
 glTF's defaults. The render shades `baseColor`, `metallic`, `roughness`,
-`emissiveColor`, `emissiveStrength`, and `occlusionStrength`. Every live voxel
-is opaque. Alpha, `transmission`, and `ior` have no effect.
+`emissiveColor`, `emissiveStrength`, and `occlusionStrength`. `ior` sets the
+dielectric reflectance at normal incidence, `((ior - 1) / (ior + 1))^2`: `0.04`
+at the default `1.5` and `1` at `0`. Every live voxel is opaque. `baseColor`'s
+alpha and `transmission` are range-checked and shade nothing.
 
 ## Shading
 

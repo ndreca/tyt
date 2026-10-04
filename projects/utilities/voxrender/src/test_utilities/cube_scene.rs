@@ -4,8 +4,8 @@ use crate::{
 };
 use branded_id::U32Id;
 use ty_math::{
-    TyLinSrgbF64, TyQuaternionExt, TyQuaternionF64, TyTransformF64, TyVector3Ext, TyVector3F64,
-    TyVector3U32,
+    TyLinSrgbF64, TyLinSrgbaF64, TyQuaternionExt, TyQuaternionF64, TyTransformF64, TyVector3Ext,
+    TyVector3F64, TyVector3U32,
 };
 
 /// One rough dielectric cube lit by a sun from the front-left-top with
@@ -15,7 +15,7 @@ pub fn cube_scene(shadow: RenderShadow) -> RenderScene {
 
     let material_id = scene
         .retain_material(RenderMaterial {
-            base_color: TyLinSrgbF64::new(0.8, 0.5, 0.2),
+            base_color: TyLinSrgbaF64::new(0.8, 0.5, 0.2, 1.0),
             metallic: 0.0,
             roughness: 0.6,
             ..RenderMaterial::default()
