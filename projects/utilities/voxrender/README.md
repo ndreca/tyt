@@ -46,8 +46,7 @@ color with its coverage alpha, metalness, roughness, transmission, the index
 of refraction, the emissive color and its strength, and the occlusion
 strength. The default is glTF's: opaque white, fully metallic and rough, with
 no transmission or emission. The index of refraction sets the dielectric
-reflectance. Every voxel renders opaque: the alpha and the transmission
-are range-checked and shade nothing.
+reflectance.
 
 ```rust
 let brass = RenderMaterial {
