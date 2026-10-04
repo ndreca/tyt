@@ -1,6 +1,6 @@
 use crate::{
-    operations::mesh_doc::{FillMode, MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelScale},
-    utilities::{GridResolution, VoxelFrame},
+    operations::mesh_doc::{MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelScale},
+    utilities::{FillMode, FlattenMode, GridResolution, VoxelFrame},
 };
 
 /// The options [`voxelize`](crate::operations::mesh_doc::voxelize()) voxelizes
@@ -15,6 +15,10 @@ pub struct VoxelizeOptions {
 
     /// What happens to a placing node's scale.
     pub scale: VoxelScale,
+
+    /// How much of the hierarchy the document flattens. Flattening needs the
+    /// world frame and a baked scale.
+    pub flatten: FlattenMode,
 
     /// How the surface decides which cells it occupies.
     pub surface_mode: SurfaceMode,

@@ -14,6 +14,10 @@ use meshconv::{
     ForwardDependencies as ForwardMeshDependencies, ListDir as MeshListDir,
     ReadFile as MeshReadFile, WriteFile as MeshWriteFile,
 };
+use sdfconv::{
+    DependenciesImpl as SdfconvDependenciesImpl, ForwardDependencies as ForwardSdfDependencies,
+    ReadFile as SdfReadFile,
+};
 #[cfg(unix)]
 use std::mem;
 use std::{
@@ -74,6 +78,20 @@ impl MeshListDir for DependenciesImpl {
 impl MeshWriteFile for DependenciesImpl {
     fn write_file(&self, path: &Path, bytes: &[u8]) -> IOResult<()> {
         WriteFile::write_file(self, path, bytes)
+    }
+}
+
+impl ForwardSdfDependencies for DependenciesImpl {
+    type Target = SdfconvDependenciesImpl;
+
+    fn target(&self) -> &SdfconvDependenciesImpl {
+        &SdfconvDependenciesImpl
+    }
+}
+
+impl SdfReadFile for DependenciesImpl {
+    fn read_file(&self, path: &Path) -> IOResult<Vec<u8>> {
+        ReadFile::read_file(self, path)
     }
 }
 

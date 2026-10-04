@@ -530,14 +530,17 @@ A pattern length left out takes its default count of cells times `g`.
 2. Under `--frame world`, each place of a part writes one object holding the
    place's live cells. Under `--frame local`, each part writes one object
    holding the part's live cells, and every place shares the object. Under
-   `--flatten`, each root part writes one object holding every live cell at or
-   below the root part. Where two parts cover one cell, the part placed later
-   wins. An object takes its part's name. The object's `bounds` wrap its cells
-   tightly. A grid with no live cell writes no object.
+   `--flatten objects`, each root part writes one object holding every live cell
+   at or below the root part instead. Where two parts cover one cell, the part
+   placed later wins. An object takes its part's name. The object's `bounds`
+   wrap its cells tightly. A grid with no live cell writes no object.
 3. Each place of a part writes a node named after the part, and the nodes nest
    as the places do. Every node below a root node takes the position
    `(pivot - parentPivot) / g`, the identity rotation, and a scale of 1. Each
-   pivot there sits where the offsets on its path move it.
+   pivot there sits where the offsets on its path move it. Under
+   `--flatten nodes` or `--flatten objects`, only the root parts write nodes. A
+   root part's node then places every object at or below the root part as the
+   root part's own.
 4. With `f = -(pivot + o) / g` and the pivot in the part's frame, a part's node
    places the part's object with an `origin` of the object's min cell index plus
    `f` when `f` is whole on every axis. Otherwise a child node named `voxels` at
@@ -572,20 +575,24 @@ A pattern length left out takes its default count of cells times `g`.
    outside the part's grid count as empty. A step's size and bounds cover the
    cells the step wrote.
 3. A part line's count, size, and bounds cover the part's live cells at that
-   place. A part reads `detached` when its parent has live cells and none of the
-   part's cells meets a parent cell, either in the same position or across a
-   face. The model's line and the pieces cover the cells the placed parts cover
-   together.
+   place. A part with live cells reads `detached` when its parent has live cells
+   and none of the part's cells meets a parent cell, either in the same position
+   or across a face. The model's line and the pieces cover the cells the placed
+   parts cover together.
 4. Pieces are the face-connected groups of the cells the placed parts cover. The
    report numbers the pieces from the largest. Among pieces of one size, the
    piece whose first cell comes first in a raster scan with x outermost takes
    the lower number. With more than one piece, the report ends with a line per
    piece that lists the steps behind the piece's cells in list order. A step
-   name that repeats across lists takes its path of part names.
+   name that repeats across lists takes its path of part names. The path leaves
+   out a lone root part.
 5. A size counts cells along x, y, and z. Bounds run in meters from the min
-   cell's min corner to the max cell's max corner. The report rounds meters to
-   six decimals, drops trailing zeros, and prints `-0` as `0`. The report pads
-   the fields of consecutive lines of one kind and depth into columns.
+   cell's min corner to the max cell's max corner. A line over no cells leaves
+   out its size and bounds. The report rounds meters to six decimals, drops
+   trailing zeros, and prints `-0` as `0`.
+6. A count of one takes a singular label, such as `1 cell`. The report pads the
+   fields of consecutive lines of one kind and depth into columns and aligns
+   the counts right.
 
 ## Checks
 
@@ -611,7 +618,7 @@ it belongs to by its path of part names.
 3. `vxl sdf-doc voxelize` checks its flags and profile against the values
    `vxl mesh-doc voxelize` lists. `--voxel-size` reads above zero,
    `--resolution` takes a whole number above zero, and the two flags exclude
-   each other. `--flatten` needs `--frame world`.
+   each other. `--flatten nodes` and `--flatten objects` need `--frame world`.
 4. vxl reads the document by the [sdfj format](sdfj-format.md#rules) and checks
    every entry's arguments.
    - Radii, widths, thicknesses, sizes, scales, chamfers, periods, and `spread`
@@ -649,8 +656,9 @@ it belongs to by its path of part names.
    gives it one kind.
 6. Over the sampling and the grid, every `add` shape has a box, and a
    `--resolution` reference side reads above zero. Each part's grid stays within
-   2^27 cells. No `bend` reaches past half a turn of its arc: its shape's box
-   spans at most `pi * radius` along `along`.
+   2^27 cells, and so does each root part's object under `--flatten objects`. No
+   `bend` reaches past half a turn of its arc: its shape's box spans at most
+   `pi * radius` along `along`.
 7. While the steps run, no distance reads NaN, and no `set` lists the same point
    twice.
 8. At the end, the model holds a live cell.

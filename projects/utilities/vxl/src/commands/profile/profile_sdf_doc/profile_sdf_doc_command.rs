@@ -1,4 +1,7 @@
-use crate::{Dependencies, Result, commands::ProfileSdfDocBuild};
+use crate::{
+    Dependencies, Result,
+    commands::{ProfileSdfDocBuild, ProfileSdfDocVoxelize},
+};
 use clap::Subcommand;
 
 /// The `profile sdf-doc` command group.
@@ -7,6 +10,9 @@ use clap::Subcommand;
 pub enum ProfileSdfDocCommand {
     #[command(name = "build")]
     ProfileSdfDocBuild(ProfileSdfDocBuild),
+
+    #[command(name = "voxelize")]
+    ProfileSdfDocVoxelize(ProfileSdfDocVoxelize),
 }
 
 impl ProfileSdfDocCommand {
@@ -14,6 +20,7 @@ impl ProfileSdfDocCommand {
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             ProfileSdfDocCommand::ProfileSdfDocBuild(build) => build.execute(dependencies),
+            ProfileSdfDocCommand::ProfileSdfDocVoxelize(voxelize) => voxelize.execute(dependencies),
         }
     }
 }

@@ -225,5 +225,35 @@ land.
     text parses through the code every `.vxlconfig` layer takes. A comment
     beside each material shows the material's name
 11. Nothing prints a library's `description` yet
-12. vxl's tests take voxsmith's `sdf_doc` feature to sample every built-in
-    material with its default `shades`
+12. A vxl test samples every built-in material with its default `shades`
+
+## S8. Voxelize command
+
+1. voxsmith splits a run in three: `sample` makes the grids, `to_vox_main`
+   writes them as a `VoxMain`, and `report` writes the report's text. vxl
+   samples a second time under the world frame only for `--report` beside
+   `--frame local`
+2. `SdfSampling` records the frame the grids were sampled under.
+   `to_vox_main` errors on flattening local grids, and `report` errors on local
+   grids
+3. `FillMode` moves to voxsmith's `utilities` beside `VoxelFrame`, and the new
+   `FlattenMode` joins them. vxl's help for `--fill-mode` and `--flatten` reads
+   for meshes and models alike
+4. `mesh-doc voxelize` takes `--flatten` too. A mesh's root nodes stand in for
+   the root parts. The mesh voxelizer merges the objects before it builds the
+   palette, so a material only an overwritten cell held stays out
+5. Under `--frame world` and `--scale bake`, a mesh node's scale drops its
+   placement's mirroring because the world grid already holds it. Before S8, a
+   mirrored placement landed mirrored twice
+6. A component of `f` counts as whole within `1e-9` of a whole number because
+   the division by `g` rounds
+7. An object takes its origin from its first place. A later place with another
+   `f` places the object through a `voxels` node at the difference. Only a
+   document whose nodes share an object across pivots meets this. The objects
+   of one place at one offset share one `voxels` node
+8. A step line shows the step's name alone because the part lines above it give
+   the path. Only the piece lines take paths
+9. vxl's `Dependencies` gains sdfconv's traits because vxl reads the `.sdfj`
+   document through sdfconv. vxl takes voxsmith's `sdf_doc` feature
+10. Both voxelize commands share `GridResolutionOptions` and read a profile's
+    `resolution` and `voxelSize` through `profile_grid_resolution`

@@ -2345,6 +2345,7 @@ dependencies = [
  "libc",
  "meshconv",
  "meshdoc",
+ "sdfconv",
  "sdfj",
  "sdfj-builder",
  "sdfj-codec",

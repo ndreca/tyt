@@ -2,7 +2,7 @@ use crate::{CliValue, Error, PositiveF64, Result};
 use clap::{ArgGroup, Args};
 use voxsmith::utilities::{GridResolution, ResolutionReference};
 
-/// The `mesh-doc voxelize` voxel-size controls. Flattened onto the command,
+/// The voxelize commands' voxel-size controls. Flattened onto each command,
 /// which takes at most one of the two flags.
 #[derive(Clone, Debug, Args)]
 #[command(group(
@@ -10,9 +10,9 @@ use voxsmith::utilities::{GridResolution, ResolutionReference};
 ))]
 pub struct GridResolutionOptions {
     /// Voxel count `n` along a reference side. The voxel size is that side
-    /// divided by `n`. World references measure every object together.
-    /// Object references take the longest or shortest object. `<reference>`
-    /// is one of:
+    /// divided by `n`. World references measure the whole model. Object
+    /// references take the longest or shortest object. `<reference>` is one
+    /// of:
     ///
     /// 1. `longest-world` | `shortest-world`
     /// 2. `world-x` | `world-y` | `world-z`

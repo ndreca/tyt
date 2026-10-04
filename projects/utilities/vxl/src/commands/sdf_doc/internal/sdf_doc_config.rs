@@ -1,4 +1,4 @@
-use crate::commands::SdfDocBuildConfig;
+use crate::commands::{SdfDocBuildConfig, SdfDocVoxelizeConfig};
 use serde::Deserialize;
 
 /// The `sdfDoc` section of a `.vxlconfig` layer, which holds an entry per
@@ -7,6 +7,8 @@ use serde::Deserialize;
 #[serde(default, deny_unknown_fields)]
 pub struct SdfDocConfig {
     pub(crate) build: SdfDocBuildConfig,
+
+    pub(crate) voxelize: SdfDocVoxelizeConfig,
 }
 
 #[cfg(test)]

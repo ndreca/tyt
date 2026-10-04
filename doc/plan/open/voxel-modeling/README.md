@@ -100,8 +100,9 @@ and turning the node turns the part about its joint. `--select` can then pick a
 part by its path. A step reaches only its own part's cells, and parts can
 overlap. A part can sit in several lists, and an `offset` moves each place. The
 default `--frame world` samples every place on one lattice, and `--frame local`
-voxelizes a part once for all its places to share. `--flatten` merges the parts
-back into one object.
+voxelizes a part once for all its places to share. `--flatten nodes` gathers the
+parts' objects under one node, and `--flatten objects` merges the parts back
+into one object.
 
 ## Review
 

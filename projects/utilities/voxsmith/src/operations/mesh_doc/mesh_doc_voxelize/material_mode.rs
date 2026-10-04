@@ -1,5 +1,5 @@
 /// Where each voxelized voxel's color and material come from. Independent of
-/// [`FillMode`](crate::operations::mesh_doc::FillMode), which chooses the
+/// [`FillMode`](crate::utilities::FillMode), which chooses the
 /// geometry.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MaterialMode {

@@ -44,7 +44,7 @@ pub fn mesh_input_from_mesh_main<'a, D: DecodeImage, T: MeshExt>(
     };
 
     for &root_id in state.root_hierarchy_node_ids() {
-        walk.node(root_id, &TyTransformF64::default())?;
+        walk.node(root_id, root_id, &TyTransformF64::default())?;
     }
 
     Ok(walk.input)
@@ -64,10 +64,16 @@ struct Walk<'a, 'd, D> {
 }
 
 impl<'a, D: DecodeImage> Walk<'a, '_, D> {
-    /// Appends a placed object for each object `node_id` places, its
-    /// triangles in the grid frame under the world transform `parent`
-    /// composed with the node's, then recurses into the children.
-    fn node(&mut self, node_id: U32Id<BMeshHierarchyNode>, parent: &TyTransformF64) -> Result<()> {
+    /// Appends a placed object for each object `node_id` places below the root
+    /// node `root_id`, its triangles in the grid frame under the world
+    /// transform `parent` composed with the node's, then recurses into the
+    /// children.
+    fn node(
+        &mut self,
+        node_id: U32Id<BMeshHierarchyNode>,
+        root_id: U32Id<BMeshHierarchyNode>,
+        parent: &TyTransformF64,
+    ) -> Result<()> {
         let state = self.state;
 
         let node = state
@@ -92,6 +98,7 @@ impl<'a, D: DecodeImage> Walk<'a, '_, D> {
                 mesh_object_id: object_id,
                 object_name: object.name().to_owned(),
                 node_name: node.name.clone(),
+                root_node_id: root_id,
                 range: start..self.input.triangles.len(),
                 world,
                 world_bounds: TyBoundsF64::from_points(world_points),
@@ -99,7 +106,7 @@ impl<'a, D: DecodeImage> Walk<'a, '_, D> {
         }
 
         for &child_id in &node.child_node_ids {
-            self.node(child_id, &world)?;
+            self.node(child_id, root_id, &world)?;
         }
 
         Ok(())

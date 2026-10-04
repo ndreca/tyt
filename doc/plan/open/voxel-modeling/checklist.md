@@ -65,7 +65,7 @@ where the loop fails.
   3. `sdfDoc.build.libraries`, the build profiles' `libraries`, and `--library`
   4. vxl's built-in `materials` library with properties for every name the
      modeling API lists. A test checks every material with its default `shades`
-- [ ] **S8. Voxelize command.** `vxl sdf-doc voxelize` with the flags and
+- [x] **S8. Voxelize command.** `vxl sdf-doc voxelize` with the flags and
       profiles the modeling API lists, the voxj document, and the report under
       `--report`. `vxl profile sdf-doc voxelize list` lists the profiles.
 - [ ] **S9. Review profile.** A built-in `review` render profile imports the

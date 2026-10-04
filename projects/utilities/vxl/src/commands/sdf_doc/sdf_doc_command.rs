@@ -1,4 +1,7 @@
-use crate::{Dependencies, Result, commands::SdfDocBuild};
+use crate::{
+    Dependencies, Result,
+    commands::{SdfDocBuild, SdfDocVoxelize},
+};
 use clap::Subcommand;
 
 /// The `sdf-doc` command group.
@@ -7,6 +10,9 @@ use clap::Subcommand;
 pub enum SdfDocCommand {
     #[command(name = "build")]
     SdfDocBuild(SdfDocBuild),
+
+    #[command(name = "voxelize")]
+    SdfDocVoxelize(SdfDocVoxelize),
 }
 
 impl SdfDocCommand {
@@ -14,6 +20,7 @@ impl SdfDocCommand {
     pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
         match self {
             SdfDocCommand::SdfDocBuild(build) => build.execute(dependencies),
+            SdfDocCommand::SdfDocVoxelize(voxelize) => voxelize.execute(dependencies),
         }
     }
 }

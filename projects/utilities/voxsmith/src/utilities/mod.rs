@@ -4,6 +4,8 @@
 
 mod check_material_property_ranges;
 mod check_material_range;
+mod fill_mode;
+mod flatten_mode;
 mod grid_resolution;
 mod id_selector;
 mod order_palette_colors;
@@ -19,6 +21,8 @@ mod voxel_frame;
 
 pub use check_material_property_ranges::*;
 pub use check_material_range::*;
+pub use fill_mode::*;
+pub use flatten_mode::*;
 pub use grid_resolution::*;
 pub use id_selector::*;
 pub use order_palette_colors::*;

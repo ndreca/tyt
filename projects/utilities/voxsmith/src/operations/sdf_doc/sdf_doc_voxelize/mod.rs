@@ -1,5 +1,6 @@
 // Public API
 
+mod report;
 mod sample;
 mod sdf_cell;
 mod sdf_cell_bounds;
@@ -12,7 +13,10 @@ mod sdf_sample_options;
 mod sdf_sampling;
 mod sdf_shapes;
 mod sdf_step_record;
+mod sdf_vox_main_options;
+mod to_vox_main;
 
+pub use report::*;
 pub use sample::*;
 pub use sdf_cell::*;
 pub use sdf_cell_bounds::*;
@@ -25,6 +29,8 @@ pub use sdf_sample_options::*;
 pub use sdf_sampling::*;
 pub use sdf_shapes::*;
 pub use sdf_step_record::*;
+pub use sdf_vox_main_options::*;
+pub use to_vox_main::*;
 
 // Internal API
 

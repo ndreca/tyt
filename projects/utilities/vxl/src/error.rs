@@ -1,5 +1,6 @@
 use clap::{Error as ClapError, error::ErrorKind};
 use meshconv::Error as MeshconvError;
+use sdfconv::Error as SdfconvError;
 use std::{
     error::Error as StdError,
     fmt::{Display, Formatter, Result as FmtResult},
@@ -61,6 +62,12 @@ impl From<VoxconvError> for Error {
 
 impl From<MeshconvError> for Error {
     fn from(e: MeshconvError) -> Self {
+        Error::IO(IOError::other(e))
+    }
+}
+
+impl From<SdfconvError> for Error {
+    fn from(e: SdfconvError) -> Self {
         Error::IO(IOError::other(e))
     }
 }

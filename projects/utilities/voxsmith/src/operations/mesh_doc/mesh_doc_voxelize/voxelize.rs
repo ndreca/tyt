@@ -4,7 +4,7 @@ use crate::{
     operations::mesh_doc::{
         MeshInput, VoxelScale, VoxelizeOptions, mesh_input_from_mesh_main, voxelize_mesh,
     },
-    utilities::{GridResolution, order_palette_colors},
+    utilities::{FlattenMode, GridResolution, VoxelFrame, order_palette_colors},
 };
 use meshdoc::{MeshExt, MeshMain};
 use ty_math::TyVector3F64;
@@ -16,13 +16,22 @@ use voxcore::VoxMain;
 /// canonical palette holding every sampled material: colors in material order,
 /// ids compacted. `dependencies` decodes the document's images for per-texel
 /// sampling. Errors when the document places no object, an object has no
-/// triangle geometry, the resolution's reference side has no extent, or a world
-/// reference is asked for under a kept scale.
+/// triangle geometry, the resolution's reference side has no extent, a world
+/// reference is asked for under a kept scale, or a flattening is asked for
+/// outside the world frame and a baked scale.
 pub fn voxelize<D: DecodeImage, T: MeshExt>(
     dependencies: &D,
     main: &MeshMain<T>,
     options: &VoxelizeOptions,
 ) -> Result<VoxMain> {
+    if options.flatten != FlattenMode::None
+        && (options.frame != VoxelFrame::World || options.scale != VoxelScale::Bake)
+    {
+        return Err(Error::invalid(
+            "flatten must voxelize under the world frame and a baked scale",
+        ));
+    }
+
     let input = mesh_input_from_mesh_main(dependencies, main, options.frame, options.scale)?;
 
     if input.objects.is_empty() {
@@ -103,10 +112,10 @@ mod document_tests {
     use crate::{
         dependencies::DependenciesImpl,
         operations::mesh_doc::{
-            FillMode, MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelScale, VoxelizeOptions,
-            box_main, box_primitive, document_of, png_rgba, triangle_of, voxelize,
+            MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelScale, VoxelizeOptions, box_main,
+            box_primitive, document_of, png_rgba, triangle_of, voxelize,
         },
-        utilities::{GridResolution, ResolutionReference, VoxelFrame},
+        utilities::{FillMode, FlattenMode, GridResolution, ResolutionReference, VoxelFrame},
     };
     use branded_id::U32Id;
     use meshdoc::{
@@ -334,6 +343,7 @@ mod document_tests {
             resolution: GridResolution::VoxelSize(meters),
             frame: VoxelFrame::World,
             scale: VoxelScale::Bake,
+            flatten: FlattenMode::None,
             surface_mode,
             fill_mode,
             material_mode,
@@ -545,6 +555,181 @@ mod document_tests {
         main.set_root_hierarchy_node_ids(vec![left, right]).unwrap();
         main.validate().unwrap();
         main
+    }
+
+    #[test]
+    fn a_mirrored_placement_lands_where_its_node_places_it() {
+        let document = document_of(
+            MeshMain::default(),
+            box_primitive(1.0, 1.0, 1.0),
+            Some("box"),
+            TyTransformF64 {
+                position: TyVector3F64::new(3.0, 0.0, 0.0),
+                scale: TyVector3F64::new(-1.0, 1.0, 1.0),
+                ..TyTransformF64::IDENTITY
+            },
+        );
+
+        for frame in [VoxelFrame::World, VoxelFrame::Local] {
+            let main = run(
+                &document,
+                &VoxelizeOptions {
+                    frame,
+                    ..solid(MaterialMode::Flat)
+                },
+            );
+            let (_, node) = main.iter_hierarchy_nodes().next().unwrap();
+            let (_, object) = main.iter_objects().next().unwrap();
+            let center = node
+                .transform
+                .transform_point(object.origin().as_dvec3() + 0.5);
+
+            assert_eq!(center, TyVector3F64::new(2.5, 0.5, 0.5), "{frame:?}");
+        }
+    }
+
+    /// A document whose root node `Scene` places a red `Cover` box at the
+    /// origin, then a default `Crate` box over it, then a `Crate` box at
+    /// `x = 2`.
+    fn covered_scene() -> MeshMain<()> {
+        let mut main = MeshMain::default();
+        let red = main
+            .retain_material(MeshMaterial {
+                base_color_factor: TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0),
+                ..Default::default()
+            })
+            .unwrap();
+
+        let mut cover = MeshObject::new("Cover".to_owned());
+        let mut primitive = box_primitive(1.0, 1.0, 1.0);
+        primitive.set_material_id(Some(red));
+        cover.retain_primitive(primitive);
+        let cover_id = main.retain_object(cover).unwrap();
+
+        let mut crate_object = MeshObject::new("Crate".to_owned());
+        crate_object.retain_primitive(box_primitive(1.0, 1.0, 1.0));
+        let crate_id = main.retain_object(crate_object).unwrap();
+
+        let mut place = |name: &str, x: f64, object_id| {
+            main.retain_hierarchy_node(MeshHierarchyNode {
+                name: name.to_owned(),
+                transform: TyTransformF64 {
+                    position: TyVector3F64::new(x, 0.0, 0.0),
+                    ..Default::default()
+                },
+                child_object_ids: vec![object_id],
+                ..Default::default()
+            })
+            .unwrap()
+        };
+        let children = vec![
+            place("cover", 0.0, cover_id),
+            place("left", 0.0, crate_id),
+            place("right", 2.0, crate_id),
+        ];
+
+        let scene = main
+            .retain_hierarchy_node(MeshHierarchyNode {
+                name: "Scene".to_owned(),
+                child_node_ids: children,
+                ..Default::default()
+            })
+            .unwrap();
+        main.set_root_hierarchy_node_ids(vec![scene]).unwrap();
+        main.validate().unwrap();
+        main
+    }
+
+    /// Each node's name with its child objects' names, origins, and live
+    /// voxels.
+    fn flattened(main: &VoxMain) -> Vec<String> {
+        main.iter_hierarchy_nodes()
+            .map(|(_, node)| {
+                let objects: Vec<String> = node
+                    .child_object_ids
+                    .iter()
+                    .map(|object_id| {
+                        let object = main.object(*object_id).unwrap();
+                        let origin = object.origin();
+                        format!(
+                            "{} at [{}, {}, {}] with {}",
+                            object.name(),
+                            origin.x,
+                            origin.y,
+                            origin.z,
+                            object.live_count()
+                        )
+                    })
+                    .collect();
+                format!("{}: {objects:?}", node.name)
+            })
+            .collect()
+    }
+
+    #[test]
+    fn flattening_nodes_gathers_each_root_node_objects_under_one_node() {
+        let main = run(
+            &covered_scene(),
+            &VoxelizeOptions {
+                flatten: FlattenMode::Nodes,
+                ..solid(MaterialMode::Auto)
+            },
+        );
+
+        assert_eq!(
+            flattened(&main),
+            [
+                r#"Scene: ["Cover at [0, 0, 0] with 1", "Crate at [0, 0, 0] with 1", "Crate at [2, 0, 0] with 1"]"#
+            ]
+        );
+        assert_eq!(main.root_hierarchy_node_ids().len(), 1);
+        assert_eq!(main.iter_palettes().next().unwrap().1.material_count(), 2);
+    }
+
+    #[test]
+    fn flattening_objects_merges_each_root_node_into_one_object() {
+        let main = run(
+            &covered_scene(),
+            &VoxelizeOptions {
+                flatten: FlattenMode::Objects,
+                ..solid(MaterialMode::Auto)
+            },
+        );
+
+        assert_eq!(
+            flattened(&main),
+            [r#"Scene: ["Scene at [0, 0, 0] with 2"]"#]
+        );
+
+        // The later crate covers the red cover. The cover's material then stays
+        // out of the palette.
+        assert_eq!(main.iter_palettes().next().unwrap().1.material_count(), 1);
+        assert_eq!(voxel_hex(&main, TyVector3U32::new(0, 0, 0)), "#FFFFFFFF");
+    }
+
+    #[test]
+    fn flattening_needs_the_world_frame_and_a_baked_scale() {
+        for (frame, scale) in [
+            (VoxelFrame::Local, VoxelScale::Bake),
+            (VoxelFrame::World, VoxelScale::Keep),
+        ] {
+            let error = voxelize(
+                &DependenciesImpl,
+                &covered_scene(),
+                &VoxelizeOptions {
+                    frame,
+                    scale,
+                    flatten: FlattenMode::Nodes,
+                    ..solid(MaterialMode::Auto)
+                },
+            )
+            .unwrap_err();
+
+            assert_eq!(
+                error.to_string(),
+                "flatten must voxelize under the world frame and a baked scale"
+            );
+        }
     }
 
     #[test]

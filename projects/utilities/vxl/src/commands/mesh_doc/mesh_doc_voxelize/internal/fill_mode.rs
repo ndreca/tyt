@@ -1,5 +1,5 @@
 use crate::CliValue;
-use voxsmith::operations::mesh_doc::FillMode;
+use voxsmith::utilities::FillMode;
 
 impl CliValue for FillMode {
     const VARIANTS: &'static [Self] = &[FillMode::Solid, FillMode::Surface];
@@ -13,14 +13,9 @@ impl CliValue for FillMode {
 
     fn help(self) -> &'static str {
         match self {
-            FillMode::Solid => {
-                "Rasterize the surface and flood-fill the volume it encloses, producing a filled \
-                 body. Expects a watertight mesh"
-            }
+            FillMode::Solid => "Fill the body's whole volume. A mesh has to be watertight",
 
-            FillMode::Surface => {
-                "Rasterize only the voxels the triangles pass through, leaving a hollow shell"
-            }
+            FillMode::Surface => "Keep only a hollow shell of the voxels on the body's surface",
         }
     }
 }

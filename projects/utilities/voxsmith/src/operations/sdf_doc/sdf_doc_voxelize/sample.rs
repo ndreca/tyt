@@ -76,6 +76,7 @@ pub fn sample(main: &SdfMain, options: &SdfSampleOptions) -> Result<SdfSampling>
 
     Ok(SdfSampling {
         voxel_size,
+        frame: options.frame,
         places,
         grids,
         materials,
@@ -85,7 +86,9 @@ pub fn sample(main: &SdfMain, options: &SdfSampleOptions) -> Result<SdfSampling>
 #[cfg(test)]
 mod tests {
     use crate::{
-        operations::sdf_doc::{SdfSampleOptions, SdfSampling, sample, single_part_main},
+        operations::sdf_doc::{
+            SdfSampleOptions, SdfSampling, sample, shared_leaf_main, single_part_main,
+        },
         utilities::{GridResolution, ResolutionReference, VoxelFrame},
     };
     use branded_id::{IdVec, U32Id};
@@ -360,40 +363,6 @@ mod tests {
         let cell = sampling.grids[0].cell(TyVector3I32::new(1, 0, 0)).unwrap();
 
         assert_eq!(cell.material, Some(U32Id::from_u32(0)));
-    }
-
-    /// A model whose root part holds the parts `a` and `b`, which both place
-    /// the part `leaf` and its unit box.
-    fn shared_leaf_main() -> SdfMain {
-        let node =
-            |name: &str, offset: Option<[f64; 3]>, objects: Vec<u32>, nodes: Vec<u32>| SdfNode {
-                name: name.to_string(),
-                pivot: Some(TyVector3F64::new(0.5, 0.0, 0.0)),
-                offset: offset.map(TyVector3F64::from_array),
-                child_object_ids: objects.into_iter().map(U32Id::from_u32).collect(),
-                child_node_ids: nodes.into_iter().map(U32Id::from_u32).collect(),
-            };
-
-        SdfMain::new(SdfState {
-            shapes3d: IdVec::from_vec(vec![cuboid([0.0, 0.0, 0.0], [1.0, 1.0, 1.0])]),
-            materials: IdVec::from_vec(vec![SdfMaterial::Material {
-                properties: Vec::new(),
-            }]),
-            steps: IdVec::from_vec(vec![add("cube", 0, 0)]),
-            objects: IdVec::from_vec(vec![SdfObject {
-                name: "leaf".to_string(),
-                step_ids: vec![U32Id::from_u32(0)],
-            }]),
-            nodes: IdVec::from_vec(vec![
-                node("leaf", None, vec![0], Vec::new()),
-                node("a", Some([2.0, 0.0, 0.0]), Vec::new(), vec![0]),
-                node("b", Some([0.0, 0.25, 0.0]), Vec::new(), vec![0]),
-                node("model", None, Vec::new(), vec![1, 2]),
-            ]),
-            root_node_ids: vec![U32Id::from_u32(3)],
-            ..SdfState::default()
-        })
-        .unwrap()
     }
 
     #[test]

@@ -13,10 +13,9 @@ use voxconv::{
 use voxsmith::{
     dependencies::DependenciesImpl as VoxsmithDependenciesImpl,
     operations::mesh_doc::{
-        FillMode, MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelScale, VoxelizeOptions,
-        voxelize,
+        MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelScale, VoxelizeOptions, voxelize,
     },
-    utilities::{GridResolution, VoxelFrame},
+    utilities::{FillMode, FlattenMode, GridResolution, VoxelFrame},
 };
 
 /// Rasterizes a mesh into voxel objects, the inverse of `object mesh`.
@@ -43,6 +42,15 @@ pub struct MeshDocVoxelize {
     /// rejected.
     #[arg(value_name = "scale", long, value_parser = cli_value_parser::<VoxelScale>())]
     scale: Option<VoxelScale>,
+
+    /// How much of the hierarchy the document flattens, `none` when omitted.
+    /// Flattening needs `--frame world` and `--scale bake`.
+    #[arg(
+        value_name = "flatten",
+        long,
+        value_parser = cli_value_parser::<FlattenMode>()
+    )]
+    flatten: Option<FlattenMode>,
 
     /// How the mesh fills the grid, independent of `--material-mode`. `solid`
     /// when omitted.
@@ -171,6 +179,10 @@ impl MeshDocVoxelize {
                 .scale
                 .or(profile.scale.map(|named| named.0))
                 .unwrap_or(VoxelScale::Bake),
+            flatten: self
+                .flatten
+                .or(profile.flatten.map(|named| named.0))
+                .unwrap_or(FlattenMode::None),
             surface_mode: self
                 .surface_mode
                 .or(profile.surface_mode.map(|named| named.0))
@@ -197,6 +209,7 @@ impl MeshDocVoxelize {
 
         validate_fill_color(&options)?;
         validate_reference(&options)?;
+        validate_flatten(&options)?;
 
         Ok(options)
     }
@@ -234,6 +247,21 @@ fn validate_reference(options: &VoxelizeOptions) -> Result<()> {
     Ok(())
 }
 
+/// Rejects a `--flatten` outside `--frame world` and `--scale bake`. The
+/// objects share no one grid there.
+fn validate_flatten(options: &VoxelizeOptions) -> Result<()> {
+    if options.flatten != FlattenMode::None
+        && (options.frame != VoxelFrame::World || options.scale != VoxelScale::Bake)
+    {
+        return Err(Error::usage(format!(
+            "--flatten {} needs --frame world and --scale bake",
+            options.flatten.name()
+        )));
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
@@ -242,8 +270,8 @@ mod tests {
     };
     use clap::Parser;
     use voxsmith::{
-        operations::mesh_doc::{FillMode, VoxelScale, VoxelizeOptions},
-        utilities::{GridResolution, ResolutionReference, VoxelFrame},
+        operations::mesh_doc::{VoxelScale, VoxelizeOptions},
+        utilities::{FillMode, FlattenMode, GridResolution, ResolutionReference, VoxelFrame},
     };
 
     /// The options a `mesh-doc voxelize` invocation of `args` resolves to over
@@ -334,6 +362,31 @@ mod tests {
             &MeshDocVoxelizeProfile::default(),
         );
         assert!(object.is_ok());
+    }
+
+    #[test]
+    fn flattening_needs_the_world_frame_and_a_baked_scale() {
+        assert_eq!(
+            resolve(&["--flatten", "objects"]).unwrap().flatten,
+            FlattenMode::Objects
+        );
+        assert_eq!(resolve(&[]).unwrap().flatten, FlattenMode::None);
+
+        for args in [
+            &["--flatten", "nodes", "--frame", "local"][..],
+            &["--flatten", "nodes", "--scale", "keep"][..],
+        ] {
+            let error = resolve_over(
+                &[&["--voxel-size", "0.5"][..], args].concat(),
+                &MeshDocVoxelizeProfile::default(),
+            )
+            .unwrap_err()
+            .to_string();
+            assert!(
+                error.contains("--flatten nodes needs --frame world and --scale bake"),
+                "{error}"
+            );
+        }
     }
 
     #[test]

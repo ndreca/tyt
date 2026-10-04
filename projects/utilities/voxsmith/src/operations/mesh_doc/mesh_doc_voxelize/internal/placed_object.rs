@@ -1,6 +1,6 @@
 use crate::{operations::mesh_doc::VoxelScale, utilities::VoxelFrame};
 use branded_id::U32Id;
-use meshdoc::BMeshObject;
+use meshdoc::{BMeshHierarchyNode, BMeshObject};
 use std::ops::Range;
 use ty_math::{TyBoundsF64, TyTransformF64, TyVector3F64};
 
@@ -15,6 +15,9 @@ pub struct PlacedObject {
 
     /// The placing node's name, empty when it has none.
     pub node_name: String,
+
+    /// The root node the placing node sits at or below.
+    pub root_node_id: U32Id<BMeshHierarchyNode>,
 
     /// The placement's triangles within the mesh's triangle list, in the
     /// grid frame.
@@ -62,9 +65,11 @@ impl PlacedObject {
     ) -> TyTransformF64 {
         let size = TyVector3F64::splat(voxel_size);
 
-        let scale = match scale {
-            VoxelScale::Bake => size * self.world.scale.signum(),
-            VoxelScale::Keep => size * self.world.scale,
+        // A world grid under a baked scale already holds the node's mirroring.
+        let scale = match (frame, scale) {
+            (VoxelFrame::World, VoxelScale::Bake) => size,
+            (VoxelFrame::Local, VoxelScale::Bake) => size * self.world.scale.signum(),
+            (_, VoxelScale::Keep) => size * self.world.scale,
         };
 
         match frame {

@@ -1,11 +1,11 @@
 use crate::{
-    Error, NamedCliValue, NoneOr, PositiveF64, Profile, ProfileDescription, Result, Rgba,
-    commands::ResolutionEntry,
+    NamedCliValue, NoneOr, PositiveF64, Profile, ProfileDescription, Result, Rgba,
+    commands::{ResolutionEntry, profile_grid_resolution},
 };
 use serde::Deserialize;
 use voxsmith::{
-    operations::mesh_doc::{FillMode, MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelScale},
-    utilities::{GridResolution, VoxelFrame},
+    operations::mesh_doc::{MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelScale},
+    utilities::{FillMode, FlattenMode, GridResolution, VoxelFrame},
 };
 
 /// A `mesh-doc voxelize` profile, each element mirroring a flag.
@@ -26,6 +26,9 @@ pub struct MeshDocVoxelizeProfile {
 
     /// Mirrors `--scale`.
     pub(crate) scale: Option<NamedCliValue<VoxelScale>>,
+
+    /// Mirrors `--flatten`.
+    pub(crate) flatten: Option<NamedCliValue<FlattenMode>>,
 
     /// Mirrors `--fill-mode`.
     pub(crate) fill_mode: Option<NamedCliValue<FillMode>>,
@@ -53,17 +56,7 @@ impl MeshDocVoxelizeProfile {
     /// The grid resolution `resolution` or `voxelSize` sets. Errors when the
     /// profile sets both.
     pub(crate) fn grid_resolution(&self) -> Result<Option<GridResolution>> {
-        match (self.resolution, self.voxel_size) {
-            (Some(_), Some(_)) => Err(Error::usage(
-                "a profile sets `resolution` or `voxelSize`, not both",
-            )),
-
-            (Some(resolution), None) => Ok(Some(resolution.into())),
-
-            (None, Some(size)) => Ok(Some(GridResolution::VoxelSize(size.0))),
-
-            (None, None) => Ok(None),
-        }
+        profile_grid_resolution(self.resolution, self.voxel_size)
     }
 }
 
@@ -71,10 +64,8 @@ impl MeshDocVoxelizeProfile {
 mod tests {
     use crate::{NamedCliValue, NoneOr, Rgba, commands::MeshDocVoxelizeProfile};
     use voxsmith::{
-        operations::mesh_doc::{
-            FillMode, MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelScale,
-        },
-        utilities::{GridResolution, ResolutionReference, VoxelFrame},
+        operations::mesh_doc::{MaterialMode, OutOfRangeProperty, SurfaceMode, VoxelScale},
+        utilities::{FillMode, FlattenMode, GridResolution, ResolutionReference, VoxelFrame},
     };
 
     /// The profile `json` defines.
@@ -89,6 +80,7 @@ mod tests {
                 "resolution": { "reference": "longest-object", "count": 32 },
                 "frame": "local",
                 "scale": "keep",
+                "flatten": "nodes",
                 "fillMode": "surface",
                 "surfaceMode": "triangle-cover",
                 "materialMode": "flat",
@@ -106,6 +98,7 @@ mod tests {
         );
         assert_eq!(profile.frame, Some(NamedCliValue(VoxelFrame::Local)));
         assert_eq!(profile.scale, Some(NamedCliValue(VoxelScale::Keep)));
+        assert_eq!(profile.flatten, Some(NamedCliValue(FlattenMode::Nodes)));
         assert_eq!(profile.fill_mode, Some(NamedCliValue(FillMode::Surface)));
         assert_eq!(
             profile.surface_mode,

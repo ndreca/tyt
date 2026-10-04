@@ -47,8 +47,10 @@ take the values that page lists:
 5. `--frame world` samples every [part](#parts) on one lattice and writes an
    object for each place. `--frame local` voxelizes each part once, and every
    place shares the part's object. `--frame` defaults to `world`
-6. `--flatten` writes a model's parts as one object and needs `--frame world`.
-   `--flatten false` turns flattening off
+6. `--flatten nodes` writes a model's parts as objects under one node, and
+   `--flatten objects` writes the parts as one object. Either needs
+   `--frame world`.
+   The default `--flatten none` writes a node for each place
 7. `--report` prints the [report](#report), and `--report false` turns it off
 8. `--profile <profile>` applies saved flags from a [profile](#profiles)
 9. `--format`, `--encoding-preset`, `--position-encoding`, and
@@ -89,7 +91,7 @@ models can then share one profile's settings:
         },
         "icons": {
           "resolution": { "reference": "longest-world", "count": 16 },
-          "flatten": true,
+          "flatten": "objects",
         },
       },
     },
@@ -854,8 +856,8 @@ figure.voxj  392 voxels of 0.025 m  3 pieces  28x10x4  [-0.35, 0.3, -0.05] .. [0
       part  hand.R  8 voxels  2x2x2  [-0.35, 0.5, -0.025] .. [-0.3, 0.55, 0.025]  detached
         add  R hand  8 cells  8 kept  8 exposed  2x2x2  [-0.35, 0.5, -0.025] .. [-0.3, 0.55, 0.025]
   piece 1  376 voxels  22x10x4  [-0.275, 0.3, -0.05] .. [0.275, 0.55, 0.05]  from torso, L arm, R arm
-  piece 2    8 voxels  2x2x2    [-0.35, 0.5, -0.025] .. [-0.3, 0.55, 0.025]   from R hand
-  piece 3    8 voxels  2x2x2    [0.3, 0.5, -0.025] .. [0.35, 0.55, 0.025]     from L hand
+  piece 2    8 voxels  2x2x2    [-0.35, 0.5, -0.025] .. [-0.3, 0.55, 0.025]  from R hand
+  piece 3    8 voxels  2x2x2    [0.3, 0.5, -0.025] .. [0.35, 0.55, 0.025]    from L hand
 ```
 
 A second piece usually means a shape floats.

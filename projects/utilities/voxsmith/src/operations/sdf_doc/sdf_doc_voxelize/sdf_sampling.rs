@@ -1,4 +1,7 @@
-use crate::operations::sdf_doc::{SdfGrid, SdfMaterialProperties, SdfPlace};
+use crate::{
+    operations::sdf_doc::{SdfGrid, SdfMaterialProperties, SdfPlace},
+    utilities::VoxelFrame,
+};
 use branded_id::IdVec;
 use sdfcore::BSdfMaterial;
 
@@ -7,6 +10,9 @@ use sdfcore::BSdfMaterial;
 pub struct SdfSampling {
     /// The edge length of one cell, in meters.
     pub voxel_size: f64,
+
+    /// The frame the grids were sampled in.
+    pub frame: VoxelFrame,
 
     /// Every place of every part, each before its children, from the first
     /// root part.

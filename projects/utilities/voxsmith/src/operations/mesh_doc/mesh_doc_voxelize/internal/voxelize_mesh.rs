@@ -1,24 +1,28 @@
 use crate::{
     Error, Result,
     operations::mesh_doc::{
-        FillMode, GridSpace, MaterialMode, MeshInput, MeshTriangle, OutOfRangeProperty,
-        SurfaceMode, VoxelGrid, VoxelMaterial, VoxelizeOptions, sample_material,
-        voxelize_triangles,
+        GridSpace, MaterialMode, MeshInput, MeshTriangle, OutOfRangeProperty, SurfaceMode,
+        VoxelGrid, VoxelMaterial, VoxelizeOptions, sample_material, voxelize_triangles,
     },
-    utilities::{VoxelFrame, check_material_property_ranges, check_material_range},
+    utilities::{
+        FillMode, FlattenMode, VoxelFrame, check_material_property_ranges, check_material_range,
+    },
 };
 use branded_id::{IdVec, IteratorExt, U32Id};
 use meshdoc::{
-    BMeshObject,
+    BMeshHierarchyNode, BMeshObject,
     material::{COLOR_RANGE, MaterialRange, scalar_range},
 };
 use std::{
     collections::{HashMap, VecDeque},
     hash::Hash,
 };
-use ty_math::{TyLinSrgbF64, TyLinSrgbaF64, TySrgbaU8, TyVector3F64, TyVector3U32};
+use ty_math::{
+    TyLinSrgbF64, TyLinSrgbaF64, TySrgbaU8, TyTransformF64, TyVector3F64, TyVector3I32,
+    TyVector3U32,
+};
 use voxcore::{
-    BVoxMaterial, BVoxValuePoolValue, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette,
+    BVoxMaterial, BVoxValuePoolValue, BVoxVoxel, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette,
     VoxValuePool,
     color::lin_srgba_f64_from_srgba_u8,
     material::{
@@ -51,15 +55,13 @@ pub fn voxelize_mesh(
 ) -> Result<VoxMain> {
     let fallback_name = options.fallback_name.as_deref();
 
-    // Rasterize each object onto its own grid, every cell's material into one
-    // list so the objects share one palette. `sources[i]` is the rasterized
+    // Rasterize each object onto its own grid. `sources[i]` is the rasterized
     // grid placement `i` shows.
-    let mut rasterized: Vec<(usize, GridSpace)> = Vec::new();
+    let mut rasterized: Vec<RasterizedObject> = Vec::new();
     let mut sources: Vec<usize> = Vec::with_capacity(mesh.objects.len());
     let mut shared: HashMap<(U32Id<BMeshObject>, [u64; 3]), usize> = HashMap::new();
-    let mut cell_materials = Vec::new();
 
-    for (index, placed) in mesh.objects.iter().enumerate() {
+    for placed in &mesh.objects {
         let size = TyVector3F64::splat(voxel_size) / placed.grid_unit(options.frame, options.scale);
 
         if options.frame == VoxelFrame::Local {
@@ -95,17 +97,68 @@ pub fn voxelize_mesh(
             options.fill_mode == FillMode::Solid,
         );
 
-        cell_materials.extend(resolve_materials(
-            mesh,
-            triangles,
-            &grid,
-            &space,
-            options.material_mode,
-            options.fill_color,
-        ));
-
-        rasterized.push((index, space));
+        rasterized.push(RasterizedObject {
+            name: placed.name(fallback_name).to_owned(),
+            min_cell: space.min_cell(),
+            counts,
+            cells: resolve_materials(
+                mesh,
+                triangles,
+                &grid,
+                &space,
+                options.material_mode,
+                options.fill_color,
+            ),
+        });
     }
+
+    let roots: Vec<U32Id<BMeshHierarchyNode>> = mesh
+        .objects
+        .iter()
+        .map(|placed| placed.root_node_id)
+        .fold(Vec::new(), |mut roots, root_id| {
+            if !roots.contains(&root_id) {
+                roots.push(root_id);
+            }
+            roots
+        });
+
+    let root_name = |root_id: U32Id<BMeshHierarchyNode>| {
+        mesh.state
+            .hierarchy_node(root_id)
+            .expect("a placed object sits below one of the document's roots")
+            .name
+            .as_str()
+    };
+
+    // Merging before the palette leaves no palette material that only an
+    // overwritten cell held.
+    if options.flatten == FlattenMode::Objects {
+        rasterized = roots
+            .iter()
+            .map(|&root_id| {
+                let name = [root_name(root_id), fallback_name.unwrap_or_default()]
+                    .into_iter()
+                    .find(|name| !name.is_empty())
+                    .unwrap_or_default()
+                    .to_owned();
+
+                merge(
+                    name,
+                    mesh.objects
+                        .iter()
+                        .zip(&sources)
+                        .filter(|(placed, _)| placed.root_node_id == root_id)
+                        .map(|(_, &source)| &rasterized[source]),
+                )
+            })
+            .collect::<Result<_>>()?;
+    }
+
+    let cell_materials: Vec<Option<VoxelMaterial>> = rasterized
+        .iter()
+        .flat_map(|object| object.cells.iter().copied())
+        .collect();
 
     let mut main = VoxMain::default();
 
@@ -117,16 +170,15 @@ pub fn voxelize_mesh(
     let mut object_ids = Vec::with_capacity(rasterized.len());
     let mut next = 0;
 
-    for &(index, ref space) in &rasterized {
-        let counts = space.counts();
-        let cells = counts.x as usize * counts.y as usize * counts.z as usize;
-        let samples = &sample_ids[next..next + cells];
-        next += cells;
+    for rasterized_object in &rasterized {
+        let counts = rasterized_object.counts;
+        let samples = &sample_ids[next..next + rasterized_object.cells.len()];
+        next += rasterized_object.cells.len();
 
-        let name = mesh.objects[index].name(fallback_name).to_owned();
-        let mut object = VoxObject::new(name, counts).map_err(|_| grid_too_large(counts))?;
+        let mut object = VoxObject::new(rasterized_object.name.clone(), counts)
+            .map_err(|_| grid_too_large(counts))?;
 
-        object.set_origin(space.min_cell());
+        object.set_origin(rasterized_object.min_cell);
         object
             .retain_layer(palette_id)
             .expect("a fresh object has no live voxel");
@@ -142,14 +194,45 @@ pub fn voxelize_mesh(
         object_ids.push(main.retain_object(object)?);
     }
 
-    for (placed, &source) in mesh.objects.iter().zip(&sources) {
-        let node = VoxHierarchyNode {
-            name: placed.node_name.clone(),
-            transform: placed.node_transform(voxel_size, options.frame, options.scale),
-            child_object_ids: vec![object_ids[source]],
-            ..Default::default()
-        };
+    let nodes: Vec<VoxHierarchyNode> = match options.flatten {
+        FlattenMode::None => mesh
+            .objects
+            .iter()
+            .zip(&sources)
+            .map(|(placed, &source)| VoxHierarchyNode {
+                name: placed.node_name.clone(),
+                transform: placed.node_transform(voxel_size, options.frame, options.scale),
+                child_object_ids: vec![object_ids[source]],
+                ..Default::default()
+            })
+            .collect(),
 
+        FlattenMode::Nodes | FlattenMode::Objects => roots
+            .iter()
+            .enumerate()
+            .map(|(root_index, &root_id)| VoxHierarchyNode {
+                name: root_name(root_id).to_owned(),
+                transform: TyTransformF64 {
+                    scale: TyVector3F64::splat(voxel_size),
+                    ..TyTransformF64::IDENTITY
+                },
+                child_object_ids: match options.flatten {
+                    FlattenMode::Objects => vec![object_ids[root_index]],
+
+                    _ => mesh
+                        .objects
+                        .iter()
+                        .zip(&sources)
+                        .filter(|(placed, _)| placed.root_node_id == root_id)
+                        .map(|(_, &source)| object_ids[source])
+                        .collect(),
+                },
+                ..Default::default()
+            })
+            .collect(),
+    };
+
+    for node in nodes {
         let node_id = main.retain_hierarchy_node(node)?;
 
         main.push_root_hierarchy_node_id(node_id)?;
@@ -160,6 +243,71 @@ pub fn voxelize_mesh(
     check_material_property_ranges(&main)?;
 
     Ok(main)
+}
+
+/// One object's grid before it joins the document.
+struct RasterizedObject {
+    name: String,
+
+    /// The lattice index of the grid's least cell.
+    min_cell: TyVector3I32,
+
+    /// The cells along each axis.
+    counts: TyVector3U32,
+
+    /// The material of each cell in a raster with x outermost, or `None` for
+    /// an empty cell.
+    cells: Vec<Option<VoxelMaterial>>,
+}
+
+/// One object named `name` holding the filled cells of `objects`, which share
+/// one lattice. A later object wins a cell. Errors when the merged grid
+/// exceeds voxcore's dense-grid limit.
+fn merge<'a>(
+    name: String,
+    objects: impl Iterator<Item = &'a RasterizedObject> + Clone,
+) -> Result<RasterizedObject> {
+    let min_cell = objects
+        .clone()
+        .map(|object| object.min_cell)
+        .reduce(TyVector3I32::min)
+        .expect("a root places an object");
+    let max_cell = objects
+        .clone()
+        .map(|object| object.min_cell + object.counts.as_ivec3())
+        .reduce(TyVector3I32::max)
+        .expect("a root places an object");
+    let counts = (max_cell - min_cell).as_uvec3();
+
+    if VoxObject::volume_of(counts) > VoxObject::MAX_GRID_CELLS {
+        return Err(grid_too_large(counts));
+    }
+
+    let mut cells: IdVec<BVoxVoxel, Option<VoxelMaterial>> =
+        IdVec::from_vec(vec![None; VoxObject::volume_of(counts) as usize]);
+
+    for object in objects {
+        for (voxel_id, material) in object.cells.iter().enumerate_ids() {
+            let Some(material) = material else {
+                continue;
+            };
+
+            let position = VoxObject::raster_position(object.counts, voxel_id)
+                .expect("a cell lies inside its grid");
+            let merged = (object.min_cell - min_cell).as_uvec3() + position;
+            let merged_id = VoxObject::raster_id(counts, merged)
+                .expect("an object's cell lies inside the merged grid");
+
+            cells[merged_id.to_usize_id()] = Some(*material);
+        }
+    }
+
+    Ok(RasterizedObject {
+        name,
+        min_cell,
+        counts,
+        cells: cells.into_vec(),
+    })
 }
 
 /// The material of every filled cell under `material_mode`.

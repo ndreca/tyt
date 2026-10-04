@@ -72,11 +72,19 @@ object.
    Under `--frame local`, `bake` shares a repeated object only between
    placements at the same scale, since the scale sets its grid; `keep` shares
    it across every placement.
-6. `--fill-mode` `solid` | `surface` (default `solid`): how the mesh fills the
+6. `--flatten` `none` | `nodes` | `objects` (default `none`): how much of the
+   hierarchy the output flattens. `none` writes a root node for each placed
+   object. `nodes` writes a root node for each mesh root node. That node takes
+   the mesh root node's name and holds every object placed at or below the mesh
+   root node on one grid. `objects` writes one object there instead. The object
+   takes the mesh root node's name, else the input file stem. Where two
+   placements cover one voxel, the one placed later wins. Flattening needs
+   `--frame world` and `--scale bake`.
+7. `--fill-mode` `solid` | `surface` (default `solid`): how the mesh fills the
    grid. `solid` rasterizes the surface and flood-fills the volume it encloses,
    producing a filled body, and expects a watertight mesh. `surface` rasterizes
    only the voxels the triangles pass through, leaving a hollow shell.
-7. `--material-mode` `auto` | `per-primitive` | `per-texel` | `flat` (default
+8. `--material-mode` `auto` | `per-primitive` | `per-texel` | `flat` (default
    `auto`): where each voxel's color and material come from. `--fill-mode` sets
    the geometry; this sets the color, the two are independent.
    1. `per-primitive` reads each mesh material's flat factors (`baseColorFactor`,
@@ -95,7 +103,7 @@ object.
    [`object mesh`](../../../../../ref/mesh/mesh.md) bakes back, `baseColor`,
    `metallic`, `roughness`, `emissiveColor`, `emissiveStrength`, and
    `occlusionStrength`, so a voxelized model round-trips through `object mesh`.
-8. `--fill-color <#RRGGBBAA>`: the color of voxels that have no sampled surface,
+9. `--fill-color <#RRGGBBAA>`: the color of voxels that have no sampled surface,
    omitted for the default. Its role depends on `--material-mode`:
 
    |                            | `--fill-color` omitted                        | `--fill-color #RRGGBBAA`             |
@@ -106,8 +114,8 @@ object.
    Only the interior voxels a `--fill-mode solid` body invents have no surface; a
    hollow `--fill-mode surface` shell is all surface, so under the sampling modes
    a set `--fill-color` is rejected there.
-9. `--profile <profile>`: apply a saved voxelize recipe. See
-   [Profiles](#profiles).
+10. `--profile <profile>`: apply a saved voxelize recipe. See
+    [Profiles](#profiles).
 
 `mesh-doc voxelize` writes a voxel-json document and shares `vox-doc to voxj`'s
 encoding options: `--format`, `--encoding-preset`, `--position-encoding`, and
@@ -146,10 +154,11 @@ merged set grouped by the file supplying each name.
 
 A profile holds the voxelize flags by camel-case name with their command-line
 values: `resolution` as an object of `reference` and `count`, `voxelSize`,
-`frame`, `scale`, `fillMode`, `surfaceMode`, `materialMode`, `fillColor`, and
-`outOfRangeProperty`. A profile sets `resolution` or `voxelSize`, not both.
-`--from`, the output, and the encoding options stay on the command line because
-they describe the files. An unknown key or value errors when the profiles load.
+`frame`, `scale`, `flatten`, `fillMode`, `surfaceMode`, `materialMode`,
+`fillColor`, and `outOfRangeProperty`. A profile sets `resolution` or
+`voxelSize`, not both. `--from`, the output, and the encoding options stay on
+the command line because they describe the files. An unknown key or value errors
+when the profiles load.
 
 A run applies at most one profile. A flag on the command line overrides the
 value the profile sets. Either `--resolution` or `--voxel-size` replaces the

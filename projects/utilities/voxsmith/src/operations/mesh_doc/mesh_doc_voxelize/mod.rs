@@ -1,7 +1,6 @@
 // Public API
 
 mod decoded_image;
-mod fill_mode;
 mod material_mode;
 mod out_of_range_property;
 mod surface_mode;
@@ -10,7 +9,6 @@ mod voxelize;
 mod voxelize_options;
 
 pub use decoded_image::*;
-pub use fill_mode::*;
 pub use material_mode::*;
 pub use out_of_range_property::*;
 pub use surface_mode::*;
