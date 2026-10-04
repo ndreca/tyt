@@ -436,6 +436,15 @@ when a profile loads, so the built-ins take the same schema by construction:
     "description": "The hero view and the four sides",
     "viewsFrom": ["hero", "front", "right", "back", "left"],
   },
+  "review": {
+    "description": "The hero view and orthographic front, right, and top views",
+    "viewsFrom": ["hero", "front", "right", "top"],
+    "views": {
+      "front": { "projection": "orthographic" },
+      "right": { "projection": "orthographic" },
+      "top": { "projection": "orthographic" },
+    },
+  },
 
   // The key light's offset gives a box three distinct shades. The shadow
   // takes the default granularity.
@@ -491,7 +500,8 @@ The seven view profiles each hold one orbit view at `fit`, named for the
 profile, so `--profile front --profile top` renders `front` and `top` in one
 run. `top` and `bottom` look along the up axis, where -Z is up, so the front
 sits at the bottom of the image. `turnaround` imports five of them and holds
-nothing else.
+nothing else. `review` imports `hero`, `front`, `right`, and `top` and makes
+the three sides orthographic for checking proportions.
 
 `studio` is one key light in the `camera` frame, from the upper left of
 whoever is looking, over a hemisphere light. A light in the `camera` frame

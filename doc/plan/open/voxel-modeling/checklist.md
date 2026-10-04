@@ -68,7 +68,7 @@ where the loop fails.
 - [x] **S8. Voxelize command.** `vxl sdf-doc voxelize` with the flags and
       profiles the modeling API lists, the voxj document, and the report under
       `--report`. `vxl profile sdf-doc voxelize list` lists the profiles.
-- [ ] **S9. Review profile.** A built-in `review` render profile imports the
+- [x] **S9. Review profile.** A built-in `review` render profile imports the
       built-in `hero` view and adds orthographic `front`, `right`, and `top`
       views under the default `studio` rig. The render profile language's
       built-ins list `review`. The brightest library material keeps its shading

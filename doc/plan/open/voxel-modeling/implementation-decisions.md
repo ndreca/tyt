@@ -257,3 +257,14 @@ land.
    document through sdfconv. vxl takes voxsmith's `sdf_doc` feature
 10. Both voxelize commands share `GridResolutionOptions` and read a profile's
     `resolution` and `voxelSize` through `profile_grid_resolution`
+
+## S9. Review profile
+
+1. `review` imports `front`, `right`, and `top` beside `hero` and sets only the
+   three sides' projection
+2. The PBR Neutral tonemap never writes 255. Under `studio`, a white base color
+   can also render dimmer than a warm near-white one, so neither 255 nor a
+   white material can stand for white in a test. A test instead checks that
+   under `review` each library material's lightest default shade renders
+   brighter than the material at every pixel. A shade at the tonemap's ceiling
+   would render no brighter. The library passes unchanged

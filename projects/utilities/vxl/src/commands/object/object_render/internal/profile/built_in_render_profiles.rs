@@ -27,7 +27,7 @@ mod tests {
     };
 
     #[test]
-    fn the_eleven_built_ins_load_as_view_sets_light_rigs_and_a_bloom() {
+    fn the_twelve_built_ins_load_as_view_sets_light_rigs_and_a_bloom() {
         let profiles = built_in_render_profiles();
 
         assert_eq!(
@@ -40,6 +40,7 @@ mod tests {
                 "glow",
                 "hero",
                 "left",
+                "review",
                 "right",
                 "studio",
                 "top",
@@ -62,6 +63,15 @@ mod tests {
             ["hero", "front", "right", "back", "left"]
         );
         assert!(profiles["turnaround"].views.is_empty());
+
+        assert_eq!(
+            profiles["review"].views_from,
+            ["hero", "front", "right", "top"]
+        );
+        assert_eq!(
+            profiles["review"].views.keys().collect::<Vec<_>>(),
+            ["front", "right", "top"]
+        );
 
         for name in ["studio", "flat"] {
             assert!(profiles[name].views.is_empty(), "{name}");

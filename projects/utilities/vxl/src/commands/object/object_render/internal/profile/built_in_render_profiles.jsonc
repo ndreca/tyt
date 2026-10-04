@@ -47,6 +47,15 @@
     "description": "The hero view and the four sides",
     "viewsFrom": ["hero", "front", "right", "back", "left"],
   },
+  "review": {
+    "description": "The hero view and orthographic front, right, and top views",
+    "viewsFrom": ["hero", "front", "right", "top"],
+    "views": {
+      "front": { "projection": "orthographic" },
+      "right": { "projection": "orthographic" },
+      "top": { "projection": "orthographic" },
+    },
+  },
 
   // The key light's offset gives a box three distinct shades. The shadow
   // takes the default granularity.

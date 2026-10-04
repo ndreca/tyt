@@ -950,21 +950,32 @@ mod tests {
     use crate::{
         ProfileSet, Result,
         commands::{
-            ObjectRender, RenderProfile, built_in_render_profiles,
+            ObjectRender, RenderProfile, built_in_render_profiles, built_in_sdf_doc_config,
             object::object_render::object_render::{camera_line, view_outputs},
         },
     };
     use branded_id::IdVec;
     use clap::Parser;
+    use sdfj::SdfjFile;
+    use sdfj_sdfcore::from_sdfj_file;
+    use serde_json::json;
     use std::{
         collections::BTreeMap,
         path::{Path, PathBuf},
     };
-    use ty_math::{TyAngleUnit, TyLinSrgbF64, TyPoseF64, TyQuaternionF64, TySrgbU8, TyVector3F64};
-    use voxsmith::operations::object::{
-        FitOrFixed, LightRecord, PoseTransform, PositionTransform, RenderBloom, RenderOcclusion,
-        RenderProjection, RenderRecord, RenderShadow, RenderView, Rotation, RotationTransform,
-        SpotTransform, ViewProjection, ViewRecord,
+    use ty_math::{
+        TyAngleUnit, TyLinSrgbF64, TyPoseF64, TyQuaternionF64, TySrgbU8, TySrgbaU8, TyVector3F64,
+    };
+    use voxsmith::{
+        operations::{
+            object::{
+                FitOrFixed, LightRecord, PoseTransform, PositionTransform, RenderBloom,
+                RenderOcclusion, RenderProjection, RenderRecord, RenderShadow, RenderView,
+                Rotation, RotationTransform, SpotTransform, ViewProjection, ViewRecord, render,
+            },
+            sdf_doc::{SdfSampleOptions, SdfVoxMainOptions, sample, to_vox_main},
+        },
+        utilities::{FillMode, FlattenMode, GridResolution, VoxelFrame},
     };
 
     /// The command parsed from `args` after the input.
@@ -1182,6 +1193,125 @@ mod tests {
 
         assert!(error_of(&["--profile", "hero", "--profile", "hero"]).contains("twice"));
         assert!(error_of(&["--profile", "nowhere"]).contains("`nowhere`"));
+    }
+
+    #[test]
+    fn review_renders_hero_and_three_orthographic_sides_under_studio() {
+        let review = record(&["--profile", "review"]);
+
+        let projections: Vec<_> = review
+            .views
+            .iter()
+            .map(|view| (view.name.as_str(), view.projection))
+            .collect();
+        let orthographic = ViewProjection::Orthographic {
+            scale: FitOrFixed::Fit,
+        };
+        assert_eq!(
+            projections,
+            [
+                ("front", orthographic),
+                ("hero", ViewProjection::Perspective { fov: 35.0 }),
+                ("right", orthographic),
+                ("top", orthographic),
+            ]
+        );
+        assert_eq!(review.lights, record(&["--lights-from", "studio"]).lights);
+    }
+
+    #[test]
+    fn review_renders_each_library_material_s_lightest_shade_brighter_than_the_material() {
+        let library = &built_in_sdf_doc_config().build.libraries.embedded["materials"].document;
+        let names: Vec<_> = library
+            .names
+            .materials
+            .entries()
+            .iter()
+            .map(|entry| entry.key.clone())
+            .collect();
+        let count = names.len();
+
+        // Two parts for each material: a box painted the material, and a box
+        // painted the material's lightest default shade.
+        let mut file = serde_json::to_value(library).unwrap();
+        file["materials"].as_array_mut().unwrap().extend(
+            (0..count).map(|shades| json!({ "kind": "shade", "shades": shades, "index": 2 })),
+        );
+        file["shades"] = (0..count)
+            .map(|base| json!({ "base": base, "count": 3 }))
+            .collect();
+        file["shapes3d"] =
+            json!([{ "kind": "box", "min": [-0.1, 0, -0.1], "max": [0.1, 0.2, 0.1] }]);
+        file["steps"] = (0..2 * count)
+            .map(|material| json!({ "kind": "add", "name": "block", "shape": 0, "material": material }))
+            .collect();
+        let part_names: Vec<_> = names
+            .iter()
+            .cloned()
+            .chain(names.iter().map(|name| format!("{name}-lightest")))
+            .collect();
+        file["objects"] = part_names
+            .iter()
+            .enumerate()
+            .map(|(step, name)| json!({ "name": name, "steps": [step] }))
+            .collect();
+        file["nodes"] = part_names
+            .iter()
+            .enumerate()
+            .map(|(object, name)| json!({ "name": name, "childObjects": [object], "childNodes": [] }))
+            .collect();
+        file["rootNodes"] = (0..2 * count).collect();
+        let file: SdfjFile = serde_json::from_value(file).unwrap();
+
+        let sampling = sample(
+            &from_sdfj_file(&file).unwrap(),
+            &SdfSampleOptions {
+                resolution: GridResolution::VoxelSize(0.025),
+                frame: VoxelFrame::World,
+            },
+        )
+        .unwrap();
+        let main = to_vox_main(
+            &sampling,
+            &SdfVoxMainOptions {
+                fill_mode: FillMode::Solid,
+                flatten: FlattenMode::None,
+            },
+        )
+        .unwrap();
+
+        let review = record(&["--profile", "review", "--width", "32", "--height", "32"]);
+        let views_of = |name: &str| -> Vec<Vec<TySrgbaU8>> {
+            let (object_id, _) = main
+                .iter_objects()
+                .find(|(_, object)| object.name() == name)
+                .unwrap();
+            render(&main, &[object_id], &review)
+                .unwrap()
+                .iter()
+                .map(|rendered| rendered.image.pixels().to_vec())
+                .collect()
+        };
+        let brightness =
+            |pixel: &TySrgbaU8| pixel.red as u32 + pixel.green as u32 + pixel.blue as u32;
+
+        // A shade at the tonemap's white ceiling renders no brighter than the
+        // material.
+        for name in &names {
+            let material_views = views_of(name);
+            let lightest_views = views_of(&format!("{name}-lightest"));
+
+            for (material_pixels, lightest_pixels) in material_views.iter().zip(&lightest_views) {
+                for (material, lightest) in material_pixels.iter().zip(lightest_pixels) {
+                    if material.alpha > 0 && lightest.alpha > 0 {
+                        assert!(
+                            brightness(lightest) > brightness(material),
+                            "{name}: {lightest:?} against {material:?}"
+                        );
+                    }
+                }
+            }
+        }
     }
 
     #[test]
