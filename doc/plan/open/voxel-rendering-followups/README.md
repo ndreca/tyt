@@ -15,17 +15,10 @@ Alpha, `transmission`, and `ior`. Built as the
 ## `voxrender-wgpu`
 
 The realtime tiers over the same render scene, drawing into a texture the
-caller owns. The closed plan's
-[Realtime tiers](../../closed/voxel-rendering/README.md#realtime-tiers)
-section holds the design. The standalone tier comes first. It rasterizes
-`voxsurface`'s greedy mesh and lights each face from the grid rays the
-reference casts, so `per-face` and `per-corner` shadows match the reference
-exactly. The desktop tier adds volume marching later. A tier turns off the
-contract features it cannot afford, and the reference renders that tier's
-golden images with the same features off. The crate name was free on
-crates.io as of 2026-09-27. `voxsurface`'s cull knows transparency since the
-[voxel transparency plan](../../closed/voxel-transparency/README.md), so the
-tier can show the glass the reference renders.
+caller owns. Opened 2026-10-04 as the
+[voxrender-wgpu plan](../voxrender-wgpu/README.md). It revisits the
+[Realtime tiers](../../closed/voxel-rendering/README.md#realtime-tiers) of the
+closed rendering plan with the VR experience first.
 
 ## Waiting for a reason
 
