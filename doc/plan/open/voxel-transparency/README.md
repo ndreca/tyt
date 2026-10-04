@@ -126,19 +126,23 @@ over every live cell, so a mesh of the glass asset has a hole in the wall
 behind the clear block and a dark crease around every glass cell. The last
 step teaches it transparency:
 
-1. A `SurfaceGrid` cell says whether it is opaque, from its material's
-   pass. voxrender's grid has the pass at hand, and `object mesh` reads it
-   from the palette beside the object
-2. The cull keeps a face between an opaque cell and a transparent one,
-   drops a face between two transparent cells of one material, the slab
-   rule, and keeps a face between different transparent materials
-3. The occlusion bake counts only opaque cells, the rule the reference
-   uses
-4. The glTF writer marks a material whose alpha is below one as blended,
-   if it does not already
+1. A `SurfaceGrid` says whether a cell is opaque and whether two cells are
+   of one material. The pass moves to voxcore's material vocabulary so the
+   renderer and the mesher read opacity from one formula
+2. The cull drops a face when its neighbor is opaque or of the face's
+   material. An opaque face against glass stays, the seam inside one glass
+   goes, and the boundary between two glasses keeps both faces
+3. The occlusion counts only opaque cells for the reference and the bake
+   alike
+4. `object mesh` builds its grid from the object's swatches and reads each
+   swatch's opacity from the palette's `baseColor`, `metallic`,
+   `transmission`, and `ior`
 
 The reference and the mesh then agree on which cells occlude and which
-faces exist.
+faces exist. The glTF writer already takes `alphaMode` and the transmission
+slots from a profile, and the built-in profiles write neither. A glass
+export needs a profile with a second primitive for the transparent swatches.
+The follow-ups plan lists it.
 
 ## Decisions
 

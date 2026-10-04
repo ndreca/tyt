@@ -31,8 +31,8 @@ pub fn mesh_grid_keyed<G: SurfaceGrid>(
 }
 
 /// Sweeps the slices perpendicular to axis `d`, emitting each solid cell's
-/// face on the `sign` side. `cull` drops a face whose neighbor across it is
-/// solid. `merge` fuses the slice's exposed faces into maximal rectangles,
+/// face on the `sign` side. `cull` drops a face whose neighbor hides it.
+/// `merge` fuses the slice's exposed faces into maximal rectangles,
 /// splitting where the key differs or `span_fits` refuses.
 #[allow(clippy::too_many_arguments)]
 fn sweep<G: SurfaceGrid>(
@@ -82,7 +82,9 @@ fn sweep<G: SurfaceGrid>(
                     let mut neighbor = position.to_array().map(i64::from);
                     neighbor[d] += i64::from(sign);
 
-                    if grid.is_solid(neighbor) {
+                    if let Some(neighbor) = grid.cell_at(neighbor)
+                        && grid.hides(cell, neighbor)
+                    {
                         continue;
                     }
                 }
@@ -198,7 +200,8 @@ fn push_face<G: SurfaceGrid>(grid: &G, mesh: &mut SurfaceMesh<G::Cell>, span: &S
 #[cfg(test)]
 mod tests {
     use crate::{
-        SurfaceMethod, SurfaceSpan, mesh_grid, mesh_grid_keyed, test_utilities::live_object,
+        SurfaceMethod, SurfaceSpan, mesh_grid, mesh_grid_keyed,
+        test_utilities::{MaterialGrid, live_object},
     };
     use ty_math::{TyVector3Ext, TyVector3F32, TyVector3U32};
 
@@ -217,6 +220,33 @@ mod tests {
         let object = live_object([2, 1, 1], &[[0, 0, 0], [1, 0, 0]]);
         assert_eq!(mesh_grid(&object, SurfaceMethod::Naive).quad_count(), 12);
         assert_eq!(mesh_grid(&object, SurfaceMethod::Culled).quad_count(), 10);
+    }
+
+    #[test]
+    fn a_face_against_glass_stays_and_a_seam_inside_one_glass_goes() {
+        // An opaque voxel, then two of one glass: the opaque face against
+        // the glass stays, the glass faces against the opaque voxel and
+        // against each other go.
+        let slab = MaterialGrid::new(
+            [3, 1, 1],
+            &[
+                ([0, 0, 0], 0, true),
+                ([1, 0, 0], 1, false),
+                ([2, 0, 0], 1, false),
+            ],
+        );
+        assert_eq!(mesh_grid(&slab, SurfaceMethod::Culled).quad_count(), 15);
+
+        // Two glasses touching keep both faces of their boundary.
+        let seam = MaterialGrid::new(
+            [3, 1, 1],
+            &[
+                ([0, 0, 0], 0, true),
+                ([1, 0, 0], 1, false),
+                ([2, 0, 0], 2, false),
+            ],
+        );
+        assert_eq!(mesh_grid(&seam, SurfaceMethod::Culled).quad_count(), 17);
     }
 
     #[test]

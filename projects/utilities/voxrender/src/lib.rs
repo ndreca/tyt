@@ -122,10 +122,10 @@ mod normal_reflectance;
 pub(crate) use normal_reflectance::*;
 
 #[cfg(feature = "cpu")]
-mod opaque_grid;
+mod render_grid;
 
 #[cfg(feature = "cpu")]
-pub(crate) use opaque_grid::*;
+pub(crate) use render_grid::*;
 
 #[cfg(feature = "cpu")]
 mod shadow_target;

@@ -66,6 +66,14 @@ pub enum Error {
         error: Box<Error>,
     },
 
+    /// A palette property the mesher reads for a surface's opacity is bound
+    /// to a value pool of the wrong kind.
+    #[cfg(feature = "object")]
+    MaterialPropertyKind {
+        /// The property's name.
+        property: String,
+    },
+
     /// A render record element the run could not render.
     #[cfg(feature = "render")]
     RenderRecord {
@@ -120,6 +128,12 @@ impl Display for Error {
             #[cfg(feature = "palette")]
             Error::InPalette { palette_id, error } => write!(f, "palette {palette_id}: {error}"),
 
+            #[cfg(feature = "object")]
+            Error::MaterialPropertyKind { property } => write!(
+                f,
+                "property {property} is not the kind the mesher reads for opacity"
+            ),
+
             #[cfg(feature = "render")]
             Error::RenderRecord { element, reason } => write!(f, "{element} {reason}"),
 
@@ -157,6 +171,9 @@ impl StdError for Error {
 
             #[cfg(feature = "palette")]
             Error::InPalette { error, .. } => Some(error.as_ref()),
+
+            #[cfg(feature = "object")]
+            Error::MaterialPropertyKind { .. } => None,
 
             #[cfg(feature = "render")]
             Error::RenderRecord { .. } => None,

@@ -112,15 +112,15 @@ code-level choices in [implementation-decisions.md](implementation-decisions.md)
          regenerate, and every other golden holds
       4. The contract's Lights section, the plan README, and the crate README
          state both rules
-- [ ] **S7. The mesh.** `voxsurface` learns transparency so `object mesh`
+- [x] **S7. The mesh.** `voxsurface` learns transparency so `object mesh`
       agrees with the reference.
       1. `SurfaceGrid` tells an opaque cell from a transparent one
       2. The cull keeps a face against a transparent neighbor and drops the
          seam inside one transparent material
       3. `corner_occlusion` counts only opaque cells, and voxrender's
          `OpaqueGrid` goes
-      4. `object mesh` builds its grid with the palette beside the object,
-         and the glTF writer blends a material whose alpha is below one
-      5. Tests over a glass bar and the glass asset meshed
+      4. `object mesh` builds its grid from its swatches and reads each
+         swatch's opacity from the palette through voxcore's `material::pass`
+      5. Tests over a glass bar in voxsurface, voxrender, and voxsmith
       6. The contract's Lights paragraph drops `object mesh`'s exception, and
          the mesh docs mention transparency

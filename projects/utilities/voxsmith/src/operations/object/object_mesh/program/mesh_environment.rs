@@ -1,6 +1,8 @@
 use crate::{
     Error, Result,
-    operations::object::{Computation, ComputedBinding, MeshElement, MeshGeometry, Swatches},
+    operations::object::{
+        Computation, ComputedBinding, MeshElement, MeshGeometry, SwatchGrid, Swatches,
+    },
     utilities::property_value,
 };
 use branded_id::IdRange;
@@ -110,7 +112,9 @@ impl MeshEnvironment {
                     compute_index(domain, entries(domain))
                 }
 
-                Computation::Occlusion => compute_occlusion(object, geometry),
+                Computation::Occlusion => {
+                    compute_occlusion(&SwatchGrid::new(object, swatches), geometry)
+                }
 
                 Computation::VoxelPosition => compute_voxel_position(object),
             };
@@ -175,11 +179,11 @@ fn compute_voxel_position(object: &VoxObject) -> Value {
 }
 
 /// Each face corner's [`mesh_occlusion`] as a corner `f64` vec1 array.
-fn compute_occlusion(object: &VoxObject, geometry: &MeshGeometry) -> Value {
+fn compute_occlusion(grid: &SwatchGrid<'_>, geometry: &MeshGeometry) -> Value {
     Value::new(
         Domain::Corner,
         Dimension::Vec1,
-        Components::F64(mesh_occlusion(object, geometry)),
+        Components::F64(mesh_occlusion(grid, geometry)),
     )
     .expect("one component per corner fills a vec1 array")
 }
@@ -206,7 +210,7 @@ fn groupings_of(swatches: &Swatches<'_>, geometry: &MeshGeometry) -> Groupings {
 mod tests {
     use crate::{
         operations::object::{
-            ArrayDomain, Computation, Method, Swatches,
+            ArrayDomain, Computation, Method, SwatchGrid, Swatches,
             object_mesh::program::mesh_environment::{
                 compute_index, compute_occlusion, compute_voxel_position, computed_type,
                 groupings_of,
@@ -241,10 +245,12 @@ mod tests {
 
     #[test]
     fn the_occlusion_lands_one_corner_entry_per_vertex() {
+        let main: VoxMain = VoxMain::default();
         let object = live_object([3, 3, 3], &[[1, 1, 1]]);
+        let swatches = Swatches::resolve(&main, &object).unwrap();
         let geometry = mesh_grid(&object, Method::Culled);
 
-        let value = compute_occlusion(&object, &geometry);
+        let value = compute_occlusion(&SwatchGrid::new(&object, &swatches), &geometry);
 
         assert_eq!(value.domain(), Domain::Corner);
         assert_eq!(value.entries(), 24);
@@ -253,7 +259,9 @@ mod tests {
 
     #[test]
     fn each_computation_binds_its_computed_type() {
+        let main: VoxMain = VoxMain::default();
         let object = live_object([3, 3, 3], &[[1, 1, 1]]);
+        let swatches = Swatches::resolve(&main, &object).unwrap();
         let geometry = mesh_grid(&object, Method::Culled);
 
         let cases = [
@@ -263,7 +271,7 @@ mod tests {
             ),
             (
                 Computation::Occlusion,
-                compute_occlusion(&object, &geometry),
+                compute_occlusion(&SwatchGrid::new(&object, &swatches), &geometry),
             ),
             (Computation::VoxelPosition, compute_voxel_position(&object)),
         ];

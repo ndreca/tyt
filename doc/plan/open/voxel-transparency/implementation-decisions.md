@@ -115,3 +115,29 @@ they land.
 - The walk lists the materials it starts inside and the shadow walk pays
   their passes. The pixel walk does not, so a view from inside a cell still
   sees out of it.
+
+## S7. The mesh
+
+- The pass and the reflectance at normal incidence move to voxcore's
+  `material` module under its `color` feature. voxsmith's mesh path cannot
+  depend on voxrender, an optional dependency of its `render` feature. Both
+  already read material facts from the vocabulary crate. voxrender
+  keeps `material_pass` and `normal_reflectance` as wrappers over a
+  `RenderMaterial`.
+- `SurfaceGrid` gains `is_opaque` and `shares_material` as required methods
+  and `hides` as the provided cull rule, so a grid cannot forget to answer.
+  `VoxObject` answers opaque throughout. A bare object meshes as before.
+- `RenderGrid` replaces `OpaqueGrid`. It reports every live cell and
+  answers opacity and material through the scene instead of hiding glass
+  cells from the occlusion.
+- `Swatches` resolves each swatch's opacity once because `is_opaque` cannot
+  fail. `SwatchGrid` reads the stored answer wherever the mesh builds one. A
+  surface property bound
+  to a pool of the wrong kind errors as `MaterialPropertyKind`, as it does
+  in voxrender.
+- A boundary between two glasses keeps both faces, one per side, because
+  the render shades it from either side. An opaque face against glass stays and
+  the glass face against it goes, so no two faces are coplanar.
+- A profile decides the glTF material side. The writer takes `alphaMode`
+  and the transmission slots, and the built-ins write neither. The
+  follow-ups plan lists a glass export profile.

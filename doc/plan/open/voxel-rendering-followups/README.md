@@ -31,4 +31,8 @@ gives `voxsurface` before it can show the glass the reference renders.
 
 1. Traced occlusion as a third `occlusion` value
 2. Area lights
-3. Tiling several views into one sheet
+3. A glass export profile for `object mesh`: a second primitive for the
+   transparent swatches under `alphaMode` `BLEND` with the transmission
+   slots written. The mesher already keeps the faces behind glass. The
+   built-in profiles bake one opaque material per object
+4. Tiling several views into one sheet

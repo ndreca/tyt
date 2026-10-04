@@ -92,9 +92,9 @@ one occlusion switch. There are four kinds:
 
 The occlusion switch is `none` or `corner`. `corner` is the
 neighbor-occupancy rule voxel art uses, one value per face corner from the
-three adjacent cells, implemented once in `voxsurface`. The reference counts
-a cell as occupied only when its material's pass is zero, so glass darkens
-nothing it encloses. `object mesh` bakes the rule over every live cell.
+three adjacent cells, implemented once in `voxsurface` for the reference and
+`object mesh` alike. A cell counts as occupied only when its material's pass
+is zero, so glass darkens nothing it encloses.
 
 A shadow is one grid ray toward the light. The ray runs to infinity for a
 directional light and ends at a point or spot light. Its throughput starts

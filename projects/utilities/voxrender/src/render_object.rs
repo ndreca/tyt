@@ -2,7 +2,6 @@ use crate::{BRenderMaterial, Error, Result};
 use branded_id::{IdVec, IteratorExt, U32Id};
 use ty_math::TyVector3U32;
 use voxcore::{BVoxVoxel, VoxObject};
-use voxsurface::SurfaceGrid;
 
 /// An object flattened for drawing: a dense grid of cells, each empty or
 /// holding one material of the scene. A voxel at `p` fills the unit cube
@@ -122,25 +121,11 @@ impl RenderObject {
     }
 }
 
-/// A cell is solid where it holds a material.
-impl SurfaceGrid for RenderObject {
-    type Cell = U32Id<BVoxVoxel>;
-
-    fn bounds(&self) -> TyVector3U32 {
-        self.bounds
-    }
-
-    fn cell(&self, position: TyVector3U32) -> Option<Self::Cell> {
-        self.voxel_id(position).filter(|&id| self.is_live(id))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{Error, RenderObject};
     use branded_id::U32Id;
     use ty_math::TyVector3U32;
-    use voxsurface::SurfaceGrid;
 
     #[test]
     fn cells_address_by_raster_id_and_hold_one_material() {
@@ -155,7 +140,6 @@ mod tests {
         assert_eq!(object.voxel_position(U32Id::from_u32(24)), None);
 
         assert!(!object.is_live(id));
-        assert_eq!(object.cell(position), None);
         assert_eq!(object.live_extent(), None);
 
         object
@@ -163,8 +147,6 @@ mod tests {
             .unwrap();
 
         assert_eq!(object.voxel_material(id), Some(U32Id::from_u32(7)));
-        assert_eq!(object.cell(position), Some(id));
-        assert!(object.is_solid([1, 2, 3]));
         assert_eq!(
             object.iter_live().collect::<Vec<_>>(),
             [(id, U32Id::from_u32(7))]

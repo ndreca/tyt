@@ -2,9 +2,9 @@ use crate::{SurfaceGrid, SurfaceSpan};
 
 /// How open each corner of `span`'s face is, in the order of its
 /// [`corners`](SurfaceSpan::corners): `1` fully open. Each of the three
-/// cells beside the corner in the layer the face looks into closes a third.
-/// Both cells along the face's edges together close it fully. So does a
-/// solid cell over the corner. Only a naive mesh emits a face under one.
+/// opaque cells beside the corner in the layer the face looks into closes a
+/// third. Both cells along the face's edges together close it fully. So
+/// does an opaque cell over the corner. A transparent cell closes nothing.
 pub fn corner_occlusion<G: SurfaceGrid>(grid: &G, span: &SurfaceSpan) -> [f64; 4] {
     let (u, v) = (span.u(), span.v());
 
@@ -29,7 +29,7 @@ pub fn corner_occlusion<G: SurfaceGrid>(grid: &G, span: &SurfaceSpan) -> [f64; 4
             cell[span.d] = layer;
             cell[u] = at_u;
             cell[v] = at_v;
-            grid.is_solid(cell)
+            grid.is_opaque_at(cell)
         };
 
         let over = solid(under_u, under_v);
@@ -49,7 +49,10 @@ pub fn corner_occlusion<G: SurfaceGrid>(grid: &G, span: &SurfaceSpan) -> [f64; 4
 
 #[cfg(test)]
 mod tests {
-    use crate::{SurfaceSpan, corner_occlusion, test_utilities::live_object};
+    use crate::{
+        SurfaceSpan, corner_occlusion,
+        test_utilities::{MaterialGrid, live_object},
+    };
 
     /// The top face of the cell at `(x, y, 0)`.
     fn top(x: usize, y: usize) -> SurfaceSpan {
@@ -106,5 +109,22 @@ mod tests {
     fn a_corner_under_a_solid_cell_is_closed() {
         let pair = live_object([3, 3, 3], &[[0, 0, 0], [0, 0, 1]]);
         assert_eq!(corner_occlusion(&pair, &top(0, 0)), [0.0; 4]);
+    }
+
+    #[test]
+    fn a_transparent_cell_closes_nothing() {
+        // The step with its riser of glass, and a glass cell over the face.
+        let step = MaterialGrid::new(
+            [3, 3, 3],
+            &[
+                ([0, 0, 0], 0, true),
+                ([1, 0, 0], 0, true),
+                ([1, 0, 1], 1, false),
+            ],
+        );
+        assert_eq!(corner_occlusion(&step, &top(0, 0)), [1.0; 4]);
+
+        let under = MaterialGrid::new([3, 3, 3], &[([0, 0, 0], 0, true), ([0, 0, 1], 1, false)]);
+        assert_eq!(corner_occlusion(&under, &top(0, 0)), [1.0; 4]);
     }
 }

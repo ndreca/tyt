@@ -3,8 +3,8 @@ use crate::{
     dependencies::object::EncodePng,
     operations::object::{
         Atlases, CheckedRecord, FacePartition, Images, MergeRules, MeshElement, MeshRecord,
-        MeshTarget, Method, Streams, Swatches, WriteContext, write_attributes, write_extras,
-        write_files, write_hierarchy, write_materials, write_primitive,
+        MeshTarget, Method, Streams, SwatchGrid, Swatches, WriteContext, write_attributes,
+        write_extras, write_files, write_hierarchy, write_materials, write_primitive,
     },
 };
 use branded_id::{IteratorExt, U32Id};
@@ -92,6 +92,7 @@ fn mesh_object<D: EncodePng, T: VoxExt>(
     document: &mut MeshMain<()>,
 ) -> Result<U32Id<BMeshObject>> {
     let swatches = Swatches::resolve(main, object)?;
+    let grid = SwatchGrid::new(object, &swatches);
 
     if record.primitives.is_empty() {
         return Err(Error::mesh_record(
@@ -105,20 +106,20 @@ fn mesh_object<D: EncodePng, T: VoxExt>(
     let streams = Streams::derive(record, &checked_record.destinations)?;
 
     let geometry = if record.method == Method::Greedy {
-        let culled = mesh_grid(object, Method::Culled);
+        let culled = mesh_grid(&grid, Method::Culled);
 
         let run = checked_record.run(object, &swatches, &culled)?;
 
         let rules = MergeRules::derive(object, record, &swatches, &culled, &run, &streams)?;
 
         mesh_grid_keyed(
-            object,
+            &grid,
             Method::Greedy,
             &|voxel_id| rules.voxel_class(voxel_id),
             &|span| rules.span_fits(span),
         )
     } else {
-        mesh_grid(object, record.method)
+        mesh_grid(&grid, record.method)
     };
 
     let run = checked_record.run(object, &swatches, &geometry)?;
@@ -234,7 +235,7 @@ mod tests {
     use voxcore::{
         BVoxMaterial, BVoxObject, BVoxPalette, VoxHierarchyNode, VoxMain, VoxObject, VoxPalette,
         VoxValuePool,
-        material::{BASE_COLOR, METALLIC},
+        material::{BASE_COLOR, METALLIC, TRANSMISSION},
     };
 
     /// A 2x1x1 bar of two live voxels with no layers.
@@ -765,6 +766,67 @@ mod tests {
             (Method::Naive, 12),
         ] {
             let document = meshed(&record(method));
+            let (_, object) = document.iter_objects().next().unwrap();
+            let (_, primitive) = object.iter_primitives().next().unwrap();
+            assert_eq!(primitive.triangle_count(), quads * 2, "{method:?}");
+        }
+    }
+
+    /// A main whose one palette carries `baseColor`, `metallic`, and
+    /// `transmission`, and the id of the bar painted an opaque red metal then
+    /// a blue glass, unplaced.
+    fn glazed() -> (VoxMain, U32Id<BVoxObject>) {
+        let mut main: VoxMain = VoxMain::default();
+        let colors = main.retain_value_pool(
+            VoxValuePool::vec_4_float(vec![[1.0, 0.0, 0.0, 1.0], [0.0, 0.0, 1.0, 1.0]]).unwrap(),
+        );
+        let scalars = main.retain_value_pool(VoxValuePool::float(vec![1.0, 0.0]).unwrap());
+
+        let mut palette = VoxPalette::default();
+        palette
+            .retain_property(BASE_COLOR.to_owned(), colors)
+            .unwrap();
+        palette
+            .retain_property(METALLIC.to_owned(), scalars)
+            .unwrap();
+        palette
+            .retain_property(TRANSMISSION.to_owned(), scalars)
+            .unwrap();
+        let material_ids = [
+            palette
+                .retain_material(vec![
+                    U32Id::from_u32(0),
+                    U32Id::from_u32(0),
+                    U32Id::from_u32(1),
+                ])
+                .unwrap(),
+            palette
+                .retain_material(vec![
+                    U32Id::from_u32(1),
+                    U32Id::from_u32(1),
+                    U32Id::from_u32(0),
+                ])
+                .unwrap(),
+        ];
+        let palette_id = main.retain_palette(palette).unwrap();
+        let object_id = main
+            .retain_object(painted_bar(palette_id, material_ids))
+            .unwrap();
+        (main, object_id)
+    }
+
+    #[test]
+    fn a_face_against_glass_stays_and_the_glass_face_against_it_goes() {
+        let (main, object_id) = glazed();
+
+        // The opaque voxel keeps all six faces, and the glass voxel loses the
+        // one against it. Greedy merges the box's faces across the pair.
+        for (method, quads) in [
+            (Method::Culled, 11),
+            (Method::Greedy, 7),
+            (Method::Naive, 12),
+        ] {
+            let document = mesh_one(&main, object_id, &record(method)).unwrap();
             let (_, object) = document.iter_objects().next().unwrap();
             let (_, primitive) = object.iter_primitives().next().unwrap();
             assert_eq!(primitive.triangle_count(), quads * 2, "{method:?}");

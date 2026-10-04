@@ -1,5 +1,5 @@
 use crate::{
-    BRenderView, Error, OpaqueGrid, RenderBloom, RenderHit, RenderImage, RenderLight,
+    BRenderView, Error, RenderBloom, RenderGrid, RenderHit, RenderImage, RenderLight,
     RenderMaterial, RenderOcclusion, RenderPixel, RenderRay, RenderRayWalk, RenderScene,
     RenderShadow, RenderViewRays, Result, ShadowTarget, apply_bloom, material_pass,
     normal_reflectance,
@@ -190,7 +190,7 @@ fn shade_hit(
 
         RenderOcclusion::Corner => bilinear(
             &hit.face,
-            corner_occlusion(&OpaqueGrid::new(scene, object), &hit.face),
+            corner_occlusion(&RenderGrid::new(scene, object), &hit.face),
             hit.along,
         ),
     };

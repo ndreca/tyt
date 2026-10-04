@@ -1,11 +1,16 @@
-use crate::Result;
+use crate::{Error, Result};
 use branded_id::{IdRange, IdVec, U32Id, UsizeId};
 use std::collections::HashMap;
+use ty_math::{TyLinSrgbF64, TyLinSrgbaF64};
 use vox_value_language::{BSwatch, BVoxel};
 use voxcore::{
     BVoxEffectiveProperty, BVoxLayer, BVoxMaterial, BVoxValuePoolValue, BVoxVoxel,
-    VoxEffectivePalette, VoxExt, VoxMain, VoxObject,
+    VoxEffectivePalette, VoxExt, VoxMain, VoxObject, VoxValuePool,
+    color::ColorValues,
+    material::{self, BASE_COLOR, IOR, METALLIC, TRANSMISSION},
 };
+
+const BLACK: TyLinSrgbF64 = TyLinSrgbF64::new(0.0, 0.0, 0.0);
 
 /// An object's swatches: its distinct flattened materials in first-seen
 /// raster order, one per palette-atlas texel. A voxel's flattened material
@@ -26,11 +31,15 @@ pub struct Swatches<'a> {
 
     /// Each live voxel's entry.
     voxel_entry_ids: HashMap<U32Id<BVoxVoxel>, U32Id<BVoxel>>,
+
+    /// Whether each swatch passes no light.
+    opaque: IdVec<BSwatch, bool>,
 }
 
 impl<'a> Swatches<'a> {
     /// Resolves `object`'s swatches over `main`'s palettes. Errors if a layer
-    /// references a palette `main` does not hold.
+    /// references a palette `main` does not hold, or a property the
+    /// surface's pass reads binds a value pool of the wrong kind.
     pub(crate) fn resolve<T: VoxExt>(main: &'a VoxMain<T>, object: &'a VoxObject) -> Result<Self> {
         let effective = main.effective_palette(object)?;
 
@@ -80,13 +89,77 @@ impl<'a> Swatches<'a> {
             voxel_entry_ids.insert(voxel_id, entry_id);
         }
 
-        Ok(Swatches {
+        let mut swatches = Swatches {
             effective,
             identity_layer_ids,
             keys,
             voxel_swatch_ids,
             voxel_entry_ids,
-        })
+            opaque: IdVec::default(),
+        };
+
+        let opaque = IdRange::from_len(swatches.count())
+            .map(|swatch_id| swatches.resolve_opacity(swatch_id))
+            .collect::<Result<Vec<bool>>>()?;
+
+        swatches.opaque = IdVec::from_vec(opaque);
+
+        Ok(swatches)
+    }
+
+    /// Whether swatch `swatch_id` passes no light. A property the palette
+    /// lacks takes the vocabulary's default.
+    fn resolve_opacity(&self, swatch_id: U32Id<BSwatch>) -> Result<bool> {
+        let base_color = match self.effective.property_id_by_name(BASE_COLOR) {
+            None => TyLinSrgbaF64::new(1.0, 1.0, 1.0, 1.0),
+
+            Some(property_id) => ColorValues::of(self.value_pool(property_id))
+                .ok_or_else(|| Error::MaterialPropertyKind {
+                    property: BASE_COLOR.to_owned(),
+                })?
+                .lin_srgba_f64(self.value_id(swatch_id, property_id))
+                .expect("a swatch draws one of its property's values"),
+        };
+
+        let scalar = |name: &str| -> Result<f64> {
+            match self.effective.property_id_by_name(name) {
+                None => Ok(material::default_scalar(name)
+                    .expect("the surface's scalar properties have standard defaults")),
+
+                Some(property_id) => {
+                    let values = self.value_pool(property_id).float_values().ok_or_else(|| {
+                        Error::MaterialPropertyKind {
+                            property: name.to_owned(),
+                        }
+                    })?;
+
+                    Ok(*values
+                        .get(self.value_id(swatch_id, property_id))
+                        .expect("a swatch draws one of its property's values"))
+                }
+            }
+        };
+
+        let pass = material::pass(
+            base_color,
+            scalar(METALLIC)?,
+            scalar(TRANSMISSION)?,
+            scalar(IOR)?,
+        );
+
+        Ok(pass == BLACK)
+    }
+
+    fn value_pool(&self, property_id: UsizeId<BVoxEffectiveProperty>) -> &'a VoxValuePool {
+        self.effective
+            .property(property_id)
+            .expect("the property is one of the effective palette's")
+            .value_pool()
+    }
+
+    /// Whether swatch `swatch_id` passes no light.
+    pub(crate) fn is_opaque(&self, swatch_id: U32Id<BSwatch>) -> bool {
+        self.opaque[swatch_id.to_usize_id()]
     }
 
     /// The swatch count.

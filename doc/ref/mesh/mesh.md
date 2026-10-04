@@ -55,7 +55,10 @@ object and errors in a mesh holding several. See
    - Repeatable: no
 
    The meshing strategy. Stable per-voxel topology needs `culled` or `naive`.
-   1. `culled`: emits one unmerged quad per solid-empty boundary face.
+   1. `culled`: emits one unmerged quad per exposed face: a face against
+      empty space, an opaque face against a transparent voxel, or a face
+      between two transparent materials. The seam inside one transparent
+      material stays hidden.
    2. `greedy`: merges coplanar faces into the fewest quads the run's values
       allow; see [Atlases](#atlases).
    3. `naive`: emits all six faces of every solid voxel, hidden interior faces
@@ -172,7 +175,8 @@ object and errors in a mesh holding several. See
 
     Computes occlusion from the voxel geometry and binds it to `dst-name` as a
     per-corner `f64` vec1 in `[0, 1]`: `0` is fully occluded and `1` is fully
-    open. See [Computed occlusion](value-language.md#computed-occlusion).
+    open. A transparent voxel closes nothing. See
+    [Computed occlusion](value-language.md#computed-occlusion).
 
 13. `--compute-voxel-position <dst-name>`
     - Repeatable: yes

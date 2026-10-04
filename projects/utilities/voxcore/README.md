@@ -39,9 +39,11 @@ let red_value_id = U32Id::from_u32(0);
 
 A `VoxPalette` binds each named property to a value pool. Each material
 picks one value id per property. The `material` module fixes the shared
-metallic-roughness names, such as `BASE_COLOR` for `baseColor`. A palette
-that already has materials takes `retain_property_filled`, which gives them a
-default value.
+metallic-roughness names, such as `BASE_COLOR` for `baseColor`. Under the
+`color` feature, `pass` takes a material's values and gives the light its
+surface lets through, so a renderer and a mesher agree on what is opaque. A
+palette that already has materials takes `retain_property_filled`, which gives
+them a default value.
 
 ```rust
 let palette_id = main.retain_palette(VoxPalette::default())?;

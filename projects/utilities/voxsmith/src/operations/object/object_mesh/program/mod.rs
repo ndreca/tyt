@@ -7,6 +7,7 @@ mod landing;
 mod mesh_environment;
 mod program_run;
 mod slot_property;
+mod swatch_grid;
 mod swatches;
 mod table_index;
 
@@ -17,5 +18,6 @@ pub(crate) use landing::*;
 pub(crate) use mesh_environment::*;
 pub(crate) use program_run::*;
 pub(crate) use slot_property::*;
+pub(crate) use swatch_grid::*;
 pub(crate) use swatches::*;
 pub(crate) use table_index::*;
