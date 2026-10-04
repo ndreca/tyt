@@ -20,6 +20,25 @@ caller owns. Opened 2026-10-04 as the
 [Realtime tiers](../../closed/voxel-rendering/README.md#realtime-tiers) of the
 closed rendering plan with the VR experience first.
 
+## Colored glass on a transparent background
+
+Under `--background transparent`, colored glass vanishes wherever nothing
+in the scene lies behind it. The output takes one alpha from the peak
+transmittance. Red glass passes 96% of red, so its pixel comes out nearly
+transparent and the tint has no channel to live in. The red pane in
+`glass.voxj` loses its top face this way. Over a background color it reads
+correctly. Found on 2026-10-04 while reviewing the integer walk. The
+options so far:
+
+1. `object render` defaults to a solid background, and transparent output
+   keeps today's rule
+2. Alpha comes from the least-transmitted channel, with the color solved to
+   be exact over white. Colored glass then reads too bright over dark
+   backgrounds
+3. The rule stays, and the docs say colored glass needs a background
+
+Still open: whether drawing the glass's inner back faces would help.
+
 ## Waiting for a reason
 
 1. Traced occlusion as a third `occlusion` value
