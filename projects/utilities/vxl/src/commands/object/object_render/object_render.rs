@@ -1292,8 +1292,14 @@ mod tests {
                 .map(|rendered| rendered.image.pixels().to_vec())
                 .collect()
         };
-        let brightness =
-            |pixel: &TySrgbaU8| pixel.red as u32 + pixel.green as u32 + pixel.blue as u32;
+        // A viewer lays a transparent pixel over white.
+        let brightness = |pixel: &TySrgbaU8| -> u32 {
+            let alpha = pixel.alpha as u32;
+            [pixel.red, pixel.green, pixel.blue]
+                .iter()
+                .map(|&channel| channel as u32 * alpha + 255 * (255 - alpha))
+                .sum()
+        };
 
         // A shade at the tonemap's white ceiling renders no brighter than the
         // material.
