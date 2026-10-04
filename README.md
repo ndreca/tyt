@@ -152,7 +152,7 @@ After cloning, run setup once:
 npm run setup
 ```
 
-This points `core.hooksPath` at `.githooks`, so a pre-commit hook runs `cargo fmt --all -- --check` and `cargo clippy --workspace --all-targets -- -D warnings` before each commit. It also checks out the `submodules/branded-id` submodule, which the workspace patches `branded-id` to, so the build needs it. Without npm, run `git config core.hooksPath .githooks` and `git submodule update --init submodules/branded-id`.
+This points `core.hooksPath` at `.githooks`, so a pre-commit hook runs `cargo fmt --all -- --check` and `cargo clippy --workspace --all-targets -- -D warnings` before each commit. It also checks out the `submodules/branded-id` submodule, where `branded-id` is developed. The workspace builds against the published `branded-id`. To build against unreleased submodule changes, add `branded-id = { path = "submodules/branded-id" }` under the root manifest's `[patch.crates-io]`, and drop it once that version is published. Without npm, run `git config core.hooksPath .githooks` and `git submodule update --init submodules/branded-id`.
 
 Format and lint manually with:
 
@@ -163,16 +163,43 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ## Releasing
 
-Releases use [`cargo-workspaces`](https://github.com/pksunkara/cargo-workspaces) (`cargo install cargo-workspaces` once). Every crate marks itself `independent` in its manifest, so only the crates that actually changed get bumped. `tyt` itself must always be force-bumped so its published `Cargo.lock` refreshes, otherwise `cargo install tyt` keeps pinning the old sub-crate versions.
+Releases use [`cargo-workspaces`](https://github.com/pksunkara/cargo-workspaces) (`cargo install cargo-workspaces` once) and `jq`. Every crate marks itself `independent` in its manifest, so only the crates that changed get bumped. `tyt` is always force-bumped so its published `Cargo.lock` refreshes. Otherwise `cargo install tyt` keeps pinning the old sub-crate versions.
 
-```sh
-cargo workspaces version --force tyt patch --yes   # bump changed crates + force tyt, commit, tag, push
-cargo workspaces publish --publish-as-is           # publish to crates.io in dependency order, skipping published versions
-```
+`branded-id` lives outside the workspace in its submodule, so the release commands skip it. Publish a new version from its own repository first when the release needs it, and drop the workspace's `[patch.crates-io]` entry for it.
 
-`branded-id` lives outside the workspace in its submodule, so the release commands skip it. Publish a new version from its own repository before a release whose crates depend on it.
+1. Pick the bump. Use `minor` when any change breaks a public API, since cargo treats `0.2.2` to `0.2.3` as compatible. Otherwise use `patch`
 
-A crate not yet on crates.io publishes by hand first at the version its manifest names, with `cargo publish -p <crate>`, and the version command then takes `--ignore-changes '<crate path>/**'` so the bump leaves it there. Stick with `patch`. Use `custom <version>` for an explicit version.
+2. Bump the changed crates without committing:
+
+   ```sh
+   cargo workspaces version --force tyt minor --no-git-commit --yes
+   ```
+
+3. Fix the requirements the bump left behind. `cargo-workspaces` skips some dependency entries, such as a multi-line inline table or a repeat in `[dev-dependencies]`. A stale requirement either fails the lockfile update or silently resolves to the old crates.io release. Raise each one to its crate's new version, refresh the lockfile, and list the crates.io copies of workspace crates, which has to print nothing:
+
+   ```sh
+   cargo update -w
+   cargo metadata --format-version 1 | jq -r '(.packages | map(select(.source == null) | .name)) as $ws | .packages[] | select(.source != null and (.name | IN($ws[]))) | "\(.name) \(.version)"'
+   ```
+
+4. Run the tests, commit, tag each new `crate@version`, and push:
+
+   ```sh
+   cargo test --workspace
+   git commit -am "chore(release): bump the changed crates"
+   cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | "\(.name)@\(.version)"' | while read tag; do git rev-parse -q --verify "refs/tags/$tag" >/dev/null || git tag "$tag"; done
+   git push origin main $(git tag --points-at HEAD | sed 's#^#refs/tags/#')
+   ```
+
+5. Publish in dependency order. The command skips published versions:
+
+   ```sh
+   cargo workspaces publish --publish-as-is --yes
+   ```
+
+   crates.io accepts a burst of about 30 updates, then about one a minute, and answers `429 Too Many Requests` past that. Wait for the time the error gives and rerun the command until it succeeds
+
+A crate new to crates.io takes the bump along with the rest. Publishing it by hand first only works when every dependency it needs is already published.
 
 ## License
 
