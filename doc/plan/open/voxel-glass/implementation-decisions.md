@@ -67,3 +67,13 @@ they land.
   staircase now shows through the pillar.
 - Only the four `glass` goldens moved, by up to 21 levels. The others hold
   byte for byte.
+
+## S4. Double-sided glass
+
+- The `glass` material writes a literal `true` because one blended material
+  serves every transparent swatch. The `body` material keeps glTF's
+  back-face culling.
+- Both copies of the profile were edited by hand because no test ties the
+  reference's listing to the embedded map.
+- Meshing `glass.voxj` under the profile writes `doubleSided` on the `glass`
+  material alone.

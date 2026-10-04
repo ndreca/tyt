@@ -56,7 +56,7 @@ code-level choices in [implementation-decisions.md](implementation-decisions.md)
          and the goldens without glass hold
       4. The glass goldens regenerate with a list of what moved
       5. The contract's Shading section states the Fresnel
-- [ ] **S4. Double-sided glass.** The `glass` built-in profile writes
+- [x] **S4. Double-sided glass.** The `glass` built-in profile writes
       `doubleSided` on its blended material.
       1. The built-in profiles and the profile reference both carry the slot
       2. Tests over the expansion

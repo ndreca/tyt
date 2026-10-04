@@ -378,7 +378,7 @@ profile loads: the built-ins take the same schema by construction:
 
   // Two primitives over pbr's values: the opaque swatches under its
   // material, the transparent swatches under a blended copy that writes the
-  // transmission slots.
+  // transmission slots. doubleSided has a viewer draw a block's far walls.
   "glass": {
     "description": "The pbr material split into opaque and transparent primitives",
     "valuesFrom": ["pbr"],
@@ -411,6 +411,7 @@ profile loads: the built-ins take the same schema by construction:
           "emissiveFactor": { "kind": "value", "value": "white" },
           "emissiveStrength": { "kind": "value", "value": "maxStrength" },
           "alphaMode": { "kind": "value", "value": "\"BLEND\"" },
+          "doubleSided": { "kind": "value", "value": "true" },
           "transmissionTexture": { "kind": "value", "value": "transmission" },
           "transmissionFactor": { "kind": "value", "value": "1.0" },
           "ior": { "kind": "value", "value": "glassIor" },

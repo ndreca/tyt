@@ -2332,7 +2332,7 @@ mod tests {
     }
 
     #[test]
-    fn glass_splits_pbr_into_an_opaque_and_a_blended_primitive() {
+    fn glass_splits_pbr_into_an_opaque_and_a_blended_double_sided_primitive() {
         let record = record(&["--profile", "glass"]);
 
         let mut expected = DEFAULTS.to_vec();
@@ -2364,11 +2364,19 @@ mod tests {
             glass_only,
             [
                 "alphaMode",
+                "doubleSided",
                 "ior",
                 "transmissionFactor",
                 "transmissionTexture"
             ]
         );
+
+        let double_sided = glass
+            .slots
+            .iter()
+            .find(|slot| slot.property == "doubleSided")
+            .unwrap();
+        assert_eq!(double_sided.source, SlotSource::Value("true".to_owned()));
 
         let [opaque, transparent] = record.primitives.as_slice() else {
             panic!("two primitives");
