@@ -1388,6 +1388,7 @@ mod tests {
             lacking.contains("view `cam`'s transform lacks --view-position and a rotation flag"),
             "{lacking}"
         );
+        assert!(!lacking.contains("--view-orbit alone"), "{lacking}");
 
         let camera = error_of(&[
             "--view-frame",
@@ -1574,6 +1575,10 @@ mod tests {
                 "view `hero`'s transform lacks --view-frame and --view-position and a rotation \
                  flag"
             ),
+            "{alone}"
+        );
+        assert!(
+            alone.contains("; --view-orbit alone re-aims the profile's view"),
             "{alone}"
         );
 

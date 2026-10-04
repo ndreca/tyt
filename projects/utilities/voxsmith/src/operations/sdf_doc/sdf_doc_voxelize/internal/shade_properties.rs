@@ -7,8 +7,8 @@ use ty_math::TyLinSrgbaF64;
 const DEFAULT_SPREAD: f64 = 0.08;
 
 /// The shade at `index` of `shades`, whose base material holds `base`. The
-/// shade steps the base color's Oklab lightness, and every other property
-/// carries over.
+/// shade mixes the base color with black or white in linear light to step its
+/// Oklab lightness.
 pub fn shade_properties(
     base: &SdfMaterialProperties,
     shades: &SdfShades,
@@ -22,21 +22,56 @@ pub fn shade_properties(
     }
 
     let color = base.base_color;
-    let [lightness, a, b] = oklab([color.red, color.green, color.blue]);
-    let rgb = lin_srgb([lightness + step, a, b]);
+    let rgb = [color.red, color.green, color.blue];
+    let lightness = oklab(rgb)[0];
+    let target = lightness + step;
 
-    if rgb.iter().any(|component| !(0.0..=1.0).contains(component)) {
+    if !(0.0..=1.0).contains(&target) {
         return Err(ArgumentCheck::new("shades").fail(
             &format!("shade {index}"),
-            "within [0, 1] in linear light",
-            format!("[{}, {}, {}]", rgb[0], rgb[1], rgb[2]),
+            "between black and white",
+            format!("a lightness of {target}"),
         ));
     }
 
+    let [red, green, blue] = if step < 0.0 {
+        toward_black(rgb, lightness, target)
+    } else {
+        toward_white(rgb, target)
+    };
+
     Ok(SdfMaterialProperties {
-        base_color: TyLinSrgbaF64::new(rgb[0], rgb[1], rgb[2], color.alpha),
+        base_color: TyLinSrgbaF64::new(red, green, blue, color.alpha),
         ..base.clone()
     })
+}
+
+/// The linear sRGB color `rgb` of Oklab lightness `lightness` scaled toward
+/// black to the lightness `target`. Scaling a linear color by `k` scales its
+/// Oklab coordinates by the cube root of `k`.
+fn toward_black(rgb: [f64; 3], lightness: f64, target: f64) -> [f64; 3] {
+    let scale = (target / lightness).powi(3);
+    rgb.map(|component| component * scale)
+}
+
+/// The linear sRGB color `rgb` mixed with white to the Oklab lightness
+/// `target`. Mixing with white has no closed form in Oklab, so a bisection
+/// finds the mix.
+fn toward_white(rgb: [f64; 3], target: f64) -> [f64; 3] {
+    let mix = |share: f64| rgb.map(|component| component + (1.0 - component) * share);
+    let (mut low, mut high) = (0.0, 1.0);
+
+    for _ in 0..64 {
+        let middle = (low + high) / 2.0;
+
+        if oklab(mix(middle))[0] < target {
+            low = middle;
+        } else {
+            high = middle;
+        }
+    }
+
+    mix((low + high) / 2.0)
 }
 
 /// The linear sRGB color `rgb` in Oklab, by Bjorn Ottosson's matrices.
@@ -52,28 +87,27 @@ fn oklab([r, g, b]: [f64; 3]) -> [f64; 3] {
     ]
 }
 
-/// The Oklab color `lab` in linear sRGB, by Bjorn Ottosson's matrices.
-fn lin_srgb([lightness, a, b]: [f64; 3]) -> [f64; 3] {
-    let l = (lightness + 0.396_337_777_4 * a + 0.215_803_757_3 * b).powi(3);
-    let m = (lightness - 0.105_561_345_8 * a - 0.063_854_172_8 * b).powi(3);
-    let s = (lightness - 0.089_484_177_5 * a - 1.291_485_548_0 * b).powi(3);
-
-    [
-        4.076_741_662_1 * l - 3.307_711_591_3 * m + 0.230_969_929_2 * s,
-        -1.268_438_004_6 * l + 2.609_757_401_1 * m - 0.341_319_396_5 * s,
-        -0.004_196_086_3 * l - 0.703_418_614_7 * m + 1.707_614_701_0 * s,
-    ]
-}
-
 #[cfg(test)]
 mod tests {
     use crate::operations::sdf_doc::{
-        material_properties,
-        sdf_doc_voxelize::internal::shade_properties::{lin_srgb, oklab},
-        shade_properties,
+        SdfMaterialProperties, material_properties,
+        sdf_doc_voxelize::internal::shade_properties::oklab, shade_properties,
     };
     use branded_id::U32Id;
     use sdfcore::{SdfProperty, SdfPropertyValue, SdfShades};
+
+    /// The Oklab color `lab` in linear sRGB, by Bjorn Ottosson's matrices.
+    fn lin_srgb([lightness, a, b]: [f64; 3]) -> [f64; 3] {
+        let l = (lightness + 0.396_337_777_4 * a + 0.215_803_757_3 * b).powi(3);
+        let m = (lightness - 0.105_561_345_8 * a - 0.063_854_172_8 * b).powi(3);
+        let s = (lightness - 0.089_484_177_5 * a - 1.291_485_548_0 * b).powi(3);
+
+        [
+            4.076_741_662_1 * l - 3.307_711_591_3 * m + 0.230_969_929_2 * s,
+            -1.268_438_004_6 * l + 2.609_757_401_1 * m - 0.341_319_396_5 * s,
+            -0.004_196_086_3 * l - 0.703_418_614_7 * m + 1.707_614_701_0 * s,
+        ]
+    }
 
     /// A `shades` call of `count` shades `spread` apart.
     fn shades(count: f64, spread: Option<f64>) -> SdfShades {
@@ -84,14 +118,20 @@ mod tests {
         }
     }
 
-    /// The Oklab lightness of the shade at `index` of `call` over `color`.
-    fn lightness(color: &str, call: &SdfShades, index: u32) -> f64 {
-        let base = material_properties(&[SdfProperty {
+    /// The material of the base color `color`.
+    fn base(color: &str) -> SdfMaterialProperties {
+        material_properties(&[SdfProperty {
             name: "baseColor".to_owned(),
             value: SdfPropertyValue::Text(color.to_owned()),
         }])
-        .unwrap();
-        let shade = shade_properties(&base, call, index).unwrap().base_color;
+        .unwrap()
+    }
+
+    /// The Oklab lightness of the shade at `index` of `call` over `color`.
+    fn lightness(color: &str, call: &SdfShades, index: u32) -> f64 {
+        let shade = shade_properties(&base(color), call, index)
+            .unwrap()
+            .base_color;
         oklab([shade.red, shade.green, shade.blue])[0]
     }
 
@@ -144,16 +184,34 @@ mod tests {
     }
 
     #[test]
+    fn a_saturated_base_keeps_every_shade_in_gamut() {
+        for color in ["#E6C68A", "#8B0000", "#B05A1A"] {
+            let call = shades(3.0, None);
+            let middle = lightness(color, &call, 1);
+
+            for index in 0..3 {
+                let expected = middle + (f64::from(index) - 1.0) * 0.08;
+                assert!((lightness(color, &call, index) - expected).abs() < 1e-6);
+
+                let shade = shade_properties(&base(color), &call, index)
+                    .unwrap()
+                    .base_color;
+                for component in [shade.red, shade.green, shade.blue] {
+                    assert!((0.0..=1.0).contains(&component), "{color} shade {index}");
+                }
+            }
+        }
+    }
+
+    #[test]
     fn a_shade_past_white_errors() {
-        let white = material_properties(&[SdfProperty {
-            name: "baseColor".to_owned(),
-            value: SdfPropertyValue::Text("#FFFFFF".to_owned()),
-        }])
-        .unwrap();
+        let white = base("#FFFFFF");
 
         let error = shade_properties(&white, &shades(3.0, None), 2).unwrap_err();
         assert!(
-            error.starts_with("shades shade 2 must be within [0, 1] in linear light, not ["),
+            error.starts_with(
+                "shades shade 2 must be between black and white, not a lightness of 1.0"
+            ),
             "{error}"
         );
         assert!(shade_properties(&white, &shades(3.0, None), 0).is_ok());

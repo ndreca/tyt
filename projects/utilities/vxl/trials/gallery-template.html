@@ -1,0 +1,502 @@
+<title>Voxel Trials</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Pixelify+Sans:wght@500;700&display=swap">
+<style>
+/* Layout: a contact sheet. Each prompt takes one row with its two runs as render plates. A sticky bar carries the sections and filters. */
+:root {
+  --bg: #eceef1;
+  --surface: #ffffff;
+  --plate: #f5f6f8;
+  --ink: #1a1e23;
+  --muted: #5a6370;
+  --line: #d5dae0;
+  --accent: #1d5cc9;
+  --good: #2d7a39;
+  --fair: #9a6200;
+  --good-wash: #e3f1e5;
+  --fair-wash: #f8ecd4;
+  --display: "Pixelify Sans", "Courier New", monospace;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111317;
+    --surface: #191c21;
+    --plate: #d8dce1;
+    --ink: #e6e9ed;
+    --muted: #9aa3ad;
+    --line: #2b3038;
+    --accent: #7ba6ff;
+    --good: #72c47f;
+    --fair: #e2a843;
+    --good-wash: #1d3322;
+    --fair-wash: #3a2c12;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111317;
+  --surface: #191c21;
+  --plate: #d8dce1;
+  --ink: #e6e9ed;
+  --muted: #9aa3ad;
+  --line: #2b3038;
+  --accent: #7ba6ff;
+  --good: #72c47f;
+  --fair: #e2a843;
+  --good-wash: #1d3322;
+  --fair-wash: #3a2c12;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.55 var(--body);
+  padding-inline: 16px;
+  padding-block: 0 64px;
+}
+.wrap { max-width: 1180px; margin-inline: auto; }
+a { color: var(--accent); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.masthead { padding-block: 40px 24px; display: grid; gap: 12px; }
+.eyebrow {
+  margin: 0;
+  font: 500 12px/1.4 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+h1 {
+  margin: 0;
+  font: 700 clamp(40px, 7vw, 72px)/1 var(--display);
+  letter-spacing: 0.01em;
+}
+.lede { margin: 0; max-width: 64ch; font-size: 17px; color: var(--ink); }
+.stats {
+  margin: 8px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  font-variant-numeric: tabular-nums;
+}
+.stats div { display: grid; }
+.stats dt { font: 500 11px/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.stats dd { margin: 0; font: 500 20px/1.3 var(--mono); }
+
+.bar {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 5;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(6px);
+  border-block: 1px solid var(--line);
+  margin-inline: -16px;
+  padding: 8px 16px;
+}
+@media (max-width: 760px) { .bar { position: static; } }
+.bar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; }
+.sections { display: flex; gap: 16px; font-weight: 600; }
+.sections a { text-decoration: none; color: var(--ink); }
+.sections a:hover { color: var(--accent); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 3px;
+  padding: 3px 10px;
+  font: 500 12px/1.5 var(--mono);
+  cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.spacer { flex: 1; }
+
+section { padding-block: 32px 8px; scroll-margin-top: 64px; }
+h2.section-title { margin: 0 0 6px; font: 700 28px/1.2 var(--display); }
+.section-lede { margin: 0 0 20px; color: var(--muted); max-width: 70ch; }
+
+.trial {
+  border-top: 1px solid var(--line);
+  padding-block: 28px;
+  scroll-margin-top: 64px;
+}
+.trial-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.num { font: 500 26px/1 var(--mono); color: var(--muted); min-width: 1.6em; font-variant-numeric: tabular-nums; }
+.trial-head h3 { margin: 0; font: 500 19px/1.35 var(--body); flex: 1 1 320px; min-width: 0; text-wrap: balance; }
+.trial-head h3 q { quotes: "\201C" "\201D"; }
+.better { font: 500 12px/1.4 var(--mono); color: var(--muted); }
+.runs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 760px) { .runs { grid-template-columns: minmax(0, 1fr); } }
+.run { margin: 0; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.plate {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 100%;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--plate);
+  cursor: zoom-in;
+  overflow: hidden;
+}
+.plate img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
+.thumb {
+  width: 56px; height: 56px; padding: 0;
+  border: 1px solid var(--line); border-radius: 3px;
+  background: var(--plate); cursor: pointer; overflow: hidden;
+}
+.thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.thumb[aria-current="true"] { outline: 2px solid var(--accent); outline-offset: 1px; }
+.meta { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; font: 400 12.5px/1.5 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.meta b { color: var(--ink); font-weight: 500; }
+.pill { font: 500 11px/1.6 var(--mono); letter-spacing: 0.05em; text-transform: uppercase; padding: 0 7px; border-radius: 3px; }
+.pill.good { color: var(--good); background: var(--good-wash); }
+.pill.fair { color: var(--fair); background: var(--fair-wash); }
+.caption { margin: 0; }
+details { border-top: 1px dashed var(--line); padding-top: 6px; }
+summary { cursor: pointer; font: 500 12.5px/1.6 var(--mono); color: var(--muted); }
+details p, details li { font-size: 14px; }
+details h4 { margin: 12px 0 2px; font: 500 11px/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+details ul { margin: 0; padding-left: 18px; }
+.compare { margin: 16px 0 0; color: var(--muted); max-width: 90ch; }
+.stress { margin: 8px 0 0; font-size: 14px; color: var(--muted); max-width: 90ch; }
+.stress b { color: var(--ink); font-weight: 500; }
+
+.fix-group { margin-bottom: 28px; }
+.fix-group h3 { margin: 0 0 8px; font: 600 20px/1.3 var(--body); }
+.fix { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; padding-block: 12px; border-top: 1px solid var(--line); }
+.fix-title { font-weight: 600; }
+.fix-detail { margin: 0; color: var(--ink); max-width: 80ch; }
+.fix-meta { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font: 400 12px/1.5 var(--mono); color: var(--muted); }
+.fix-meta a { font: 500 12px/1.5 var(--mono); text-decoration: none; border: 1px solid var(--line); border-radius: 3px; padding: 0 5px; background: var(--surface); }
+.status { font: 500 11px/1.6 var(--mono); letter-spacing: 0.05em; text-transform: uppercase; padding: 0 7px; border-radius: 3px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.status.fixed { color: var(--good); background: var(--good-wash); border-color: transparent; }
+.status.call { color: var(--fair); background: var(--fair-wash); border-color: transparent; }
+.status.skill, .status.look { color: var(--accent); }
+.status.phase2 { color: var(--ink); }
+.findings { display: grid; max-width: 90ch; }
+.finding .fix-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.fnum { font: 500 15px/1 var(--mono); color: var(--muted); min-width: 1.8em; font-variant-numeric: tabular-nums; }
+.finding details { margin-top: 4px; }
+ul.evidence { list-style: none; padding: 0; display: grid; gap: 6px; }
+ul.evidence li { font-size: 14px; }
+.evidence a { font: 500 12px/1.5 var(--mono); text-decoration: none; border: 1px solid var(--line); border-radius: 3px; padding: 0 5px; background: var(--surface); }
+.evidence .source { font: 400 12px/1.5 var(--mono); color: var(--muted); margin-inline: 4px 6px; }
+#steps { margin-bottom: 12px; }
+.fix-note { margin: 0; max-width: 80ch; color: var(--muted); }
+.fix-note b { color: var(--ink); font-weight: 600; }
+code { font: 400 0.9em/1 var(--mono); padding: 0 3px; border-radius: 3px; background: color-mix(in srgb, var(--line) 55%, transparent); }
+.files { font: 400 12px/1.5 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.fix-image { width: 100%; max-width: 760px; border: 1px solid var(--line); border-radius: 4px; background: var(--plate); margin-block: 6px; }
+
+.prose { max-width: 75ch; }
+.prose p { margin: 0 0 14px; }
+ol.recs { padding-left: 22px; max-width: 85ch; }
+ol.recs li { margin-bottom: 10px; }
+.issues { display: grid; gap: 0; max-width: 90ch; }
+
+dialog {
+  width: min(1100px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+}
+dialog::backdrop { background: rgba(10, 12, 15, 0.72); }
+.viewer { display: grid; grid-template-columns: minmax(0, 1fr) 280px; min-height: 0; }
+@media (max-width: 820px) { .viewer { grid-template-columns: minmax(0, 1fr); } }
+.viewer-stage { background: var(--plate); display: grid; place-items: center; min-width: 0; }
+.viewer-stage img { width: 100%; max-height: calc(100vh - 140px); object-fit: contain; display: block; }
+.viewer-side { padding: 16px; display: grid; gap: 12px; align-content: start; overflow: auto; max-height: calc(100vh - 34px); }
+.viewer-side h3 { margin: 0; font: 500 16px/1.35 var(--body); }
+.viewer-side .label { font: 500 11px/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.passes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.passes button { padding: 0; border: 1px solid var(--line); border-radius: 3px; background: var(--plate); cursor: pointer; display: grid; }
+.passes img { width: 100%; aspect-ratio: 1; object-fit: contain; display: block; }
+.passes span { font: 400 11px/1.6 var(--mono); color: #3a4048; text-align: center; }
+.close { justify-self: end; border: 1px solid var(--line); background: var(--surface); border-radius: 3px; padding: 2px 10px; cursor: pointer; font: 500 12px/1.6 var(--mono); }
+@media (prefers-reduced-motion: no-preference) { .plate img { transition: opacity 120ms ease; } }
+</style>
+
+<header class="masthead wrap">
+  <p class="eyebrow" id="eyebrow"></p>
+  <h1>Voxel Trials</h1>
+  <p class="lede" id="lede"></p>
+  <dl class="stats" id="stats"></dl>
+</header>
+
+<nav class="bar" aria-label="Sections">
+  <div class="wrap">
+    <div class="sections"><a href="#renders">Renders</a><a href="#findings">Findings</a></div>
+    <span class="spacer"></span>
+    <div class="chips" id="groups" role="group" aria-label="Prompt group"></div>
+    <div class="chips" id="views" role="group" aria-label="View"></div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <section id="renders" aria-labelledby="renders-title">
+    <h2 class="section-title" id="renders-title">Renders</h2>
+    <p class="section-lede">Each plate shows the final pass. Select a plate for every view and the pass-by-pass hero renders.</p>
+    <div id="trials"></div>
+  </section>
+  <section id="findings" aria-labelledby="findings-title">
+    <h2 class="section-title" id="findings-title">Findings</h2>
+    <p class="section-lede" id="findings-lede"></p>
+    <div class="chips" id="steps" role="group" aria-label="Step"></div>
+    <div class="findings" id="findings-list"></div>
+    <div id="synthesis-body"></div>
+  </section>
+</main>
+
+<dialog id="viewer" aria-label="Run renders">
+  <div class="viewer">
+    <div class="viewer-stage"><img id="viewer-img" alt=""></div>
+    <div class="viewer-side">
+      <button class="close" id="viewer-close" type="button">Close</button>
+      <h3 id="viewer-title"></h3>
+      <div class="label">Views</div>
+      <div class="thumbs" id="viewer-views"></div>
+      <div class="label" id="viewer-passes-label">Hero render after each pass</div>
+      <div class="passes" id="viewer-passes"></div>
+      <p class="meta" id="viewer-meta"></p>
+    </div>
+  </div>
+</dialog>
+
+<script type="application/json" id="data">/*DATA*/</script>
+<script>
+const data = JSON.parse(document.getElementById("data").textContent);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const md = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
+const GROUPS = [
+  { key: "all", label: "All", from: 1, to: 30 },
+  { key: "props", label: "Props 1-10", from: 1, to: 10 },
+  { key: "objects", label: "Objects 11-15", from: 11, to: 15 },
+  { key: "assemblies", label: "Assemblies 16-22", from: 16, to: 22 },
+  { key: "scenes", label: "Scenes 23-26", from: 23, to: 26 },
+  { key: "interiors", label: "Interiors 27-30", from: 27, to: 30 },
+];
+const VIEWS = ["hero", "front", "right", "top"];
+let view = "hero";
+let group = "all";
+
+const s = data.stats;
+const r = data.round;
+document.getElementById("eyebrow").textContent =
+  `Voxel-modeling skill trials \u00B7 vxl ${r.vxlVersion} at ${r.commit.slice(0, 8)}${r.dirty ? " with local edits" : ""} \u00B7 ${r.model} at ${r.effort} effort \u00B7 ${r.date.slice(0, 10)}`;
+document.getElementById("lede").textContent =
+  `${s.prompts} prompts, each run twice in a fresh headless Claude Code session with only the voxel-modeling skill to go on. ${s.loaded} of ${s.runs} runs loaded the skill from its description.`;
+const statItems = [
+  ["Runs", s.runs],
+  ["Good", s.good],
+  ["Fair", s.fair],
+  ["Poor", s.poor],
+  ["Passes", `${s.passes}`],
+  ["Failed passes", s.failedPasses],
+  ["Median run", `${s.medianMinutes} min`],
+  ["Total cost", `$${s.cost.toFixed(2)}`],
+];
+document.getElementById("stats").innerHTML = statItems.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("");
+
+function src(run, name) {
+  return name.startsWith("extra-") ? `runs/${run.dir}/${name}.png` : `runs/${run.dir}/${name}.png`;
+}
+function plateName(run) {
+  return run.views.includes(view) ? view : (run.views[0] || run.extras[0]);
+}
+function extraLabel(name) {
+  return name.replace(/^extra-/, "").replace(/[-_]/g, " ");
+}
+function groupOf(num) {
+  return GROUPS.slice(1).find(g => num >= g.from && num <= g.to).key;
+}
+
+function runHTML(t, run) {
+  const name = plateName(run);
+  const failed = run.failedPasses ? `, ${run.failedPasses} failed` : "";
+  const thumbs = [...run.views, ...run.extras].map(n =>
+    `<button class="thumb" type="button" data-open="${t.num}:${run.run}:${esc(n)}" aria-label="Run ${run.run} ${esc(extraLabel(n))} view"><img loading="lazy" src="${esc(src(run, n))}" alt=""></button>`
+  ).join("");
+  const list = items => items.length ? `<ul>${items.map(i => `<li>${esc(i)}</li>`).join("")}</ul>` : "<p>None.</p>";
+  return `<figure class="run">
+    <button class="plate" type="button" data-open="${t.num}:${run.run}:${esc(name)}" aria-label="Open run ${run.run} of prompt ${t.num}">
+      <img loading="lazy" data-run="${t.num}:${run.run}" src="${esc(src(run, name))}" alt="Run ${run.run}, ${esc(name)} view: ${esc(run.caption)}">
+    </button>
+    <div class="thumbs">${thumbs}</div>
+    <figcaption>
+      <div class="meta"><span class="pill ${esc(run.verdict)}">${esc(run.verdict)}</span><b>Run ${run.run}</b><span>${run.passes} passes${failed}</span><span>${run.minutes} min</span><span>$${run.cost.toFixed(2)}</span><span>${run.voxels.toLocaleString("en-US")} voxels at ${esc(run.voxelSize)}</span></div>
+      <p class="caption">${esc(run.caption)}</p>
+    </figcaption>
+    <details>
+      <summary>Notes</summary>
+      <h4>Assessment</h4><p>${esc(run.assessment)}</p>
+      <h4>Progress</h4><p>${esc(run.progress)}</p>
+      <h4>Failures and wrong turns</h4>${list(run.failures)}
+      <h4>Lacked</h4>${list([...run.operationsLacked, ...run.reportDataLacked])}
+      <h4>Color</h4><p>${esc(run.flatColors)}</p>
+    </details>
+  </figure>`;
+}
+
+function renderTrials() {
+  const html = data.trials.map(t => {
+    const better = t.better === "tie" ? "The runs tie" : `Run ${t.better} reads better`;
+    const stress = t.stress ? `<p class="stress"><b>Stress.</b> ${esc(t.stress)}</p><details><summary>How the runs met the stress</summary><p>${esc(t.stressFindings)}</p></details>` : "";
+    return `<article class="trial" id="t${t.num}" data-group="${groupOf(t.num)}">
+      <header class="trial-head"><span class="num">${t.num}</span><h3><q>${esc(t.prompt)}</q></h3><span class="better">${better}</span></header>
+      <div class="runs">${t.runs.map(r => runHTML(t, r)).join("")}</div>
+      <p class="compare">${esc(t.comparison)}</p>
+      ${stress}
+    </article>`;
+  }).join("");
+  document.getElementById("trials").innerHTML = html;
+  applyGroup();
+}
+
+function applyGroup() {
+  document.querySelectorAll(".trial").forEach(el => { el.hidden = group !== "all" && el.dataset.group !== group; });
+}
+function applyView() {
+  document.querySelectorAll("img[data-run]").forEach(img => {
+    const [num, runNo] = img.dataset.run.split(":").map(Number);
+    const run = data.trials.find(t => t.num === num).runs.find(r => r.run === runNo);
+    const name = plateName(run);
+    img.src = src(run, name);
+    img.closest(".plate").dataset.open = `${num}:${runNo}:${name}`;
+  });
+}
+
+function chips(id, items, current, onPick) {
+  const el = document.getElementById(id);
+  el.innerHTML = items.map(i => `<button class="chip" type="button" data-key="${i.key}" aria-pressed="${i.key === current}">${esc(i.label)}</button>`).join("");
+  el.addEventListener("click", e => {
+    const b = e.target.closest(".chip");
+    if (!b) return;
+    el.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", String(c === b)));
+    onPick(b.dataset.key);
+  });
+}
+chips("groups", GROUPS, group, k => { group = k; applyGroup(); try { localStorage.setItem("vt-group", k); } catch (e) {} });
+chips("views", VIEWS.map(v => ({ key: v, label: v[0].toUpperCase() + v.slice(1) })), view, k => { view = k; applyView(); });
+
+const dialog = document.getElementById("viewer");
+let open = null;
+function show(num, runNo, name) {
+  const t = data.trials.find(x => x.num === num);
+  const run = t.runs.find(r => r.run === runNo);
+  open = { t, run, names: [...run.views, ...run.extras], name };
+  document.getElementById("viewer-title").textContent = `${t.num}. ${t.prompt} (run ${run.run})`;
+  document.getElementById("viewer-views").innerHTML = open.names.map(n =>
+    `<button class="thumb" type="button" data-view="${esc(n)}" aria-current="${n === name}" aria-label="${esc(extraLabel(n))} view"><img src="${esc(src(run, n))}" alt=""></button>`
+  ).join("");
+  const passes = run.passImages;
+  document.getElementById("viewer-passes-label").hidden = !passes.length;
+  document.getElementById("viewer-passes").innerHTML = passes.map((p, i) =>
+    `<button type="button" data-pass="${esc(p)}" aria-label="Hero after pass ${i + 1}"><img loading="lazy" src="runs/${esc(run.dir)}/passes/${esc(p)}.webp" alt=""><span>Pass ${i + 1}</span></button>`
+  ).join("");
+  document.getElementById("viewer-meta").textContent = `${run.passes} passes, ${run.minutes} min, ${run.turns} turns, ${run.pieces} piece${run.pieces === 1 ? "" : "s"}`;
+  setStage(src(run, name), `${extraLabel(name)} view`);
+  if (!dialog.open) dialog.showModal();
+}
+function setStage(url, label) {
+  const img = document.getElementById("viewer-img");
+  img.src = url;
+  img.alt = label;
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-open]");
+  if (b) {
+    const [num, runNo, ...rest] = b.dataset.open.split(":");
+    show(Number(num), Number(runNo), rest.join(":"));
+  }
+});
+document.getElementById("viewer-views").addEventListener("click", e => {
+  const b = e.target.closest("[data-view]");
+  if (!b || !open) return;
+  open.name = b.dataset.view;
+  document.querySelectorAll("#viewer-views .thumb").forEach(t => t.setAttribute("aria-current", String(t === b)));
+  setStage(src(open.run, open.name), `${extraLabel(open.name)} view`);
+});
+document.getElementById("viewer-passes").addEventListener("click", e => {
+  const b = e.target.closest("[data-pass]");
+  if (!b || !open) return;
+  document.querySelectorAll("#viewer-views .thumb").forEach(t => t.setAttribute("aria-current", "false"));
+  setStage(`runs/${open.run.dir}/passes/${b.dataset.pass}.webp`, "hero view after an earlier pass");
+});
+document.getElementById("viewer-close").addEventListener("click", () => dialog.close());
+dialog.addEventListener("click", e => { if (e.target === dialog) dialog.close(); });
+document.addEventListener("keydown", e => {
+  if (!dialog.open || !open || !["ArrowLeft", "ArrowRight"].includes(e.key)) return;
+  const i = open.names.indexOf(open.name);
+  const next = open.names[(i + (e.key === "ArrowRight" ? 1 : open.names.length - 1)) % open.names.length];
+  show(open.t.num, open.run.run, next);
+});
+
+function trialLinks(nums) {
+  return nums.map(n => `<a href="#t${n}">${n}</a>`).join("");
+}
+const SOURCES = {
+  comparison: "comparison", failures: "failure", flatColors: "color", operationsLacked: "lacked",
+  reportDataLacked: "report lacked", skillMisses: "skill miss", stressFindings: "stress", workarounds: "workaround",
+};
+function evidenceHTML(e) {
+  return `<li><a href="#t${e.num}">${e.num}</a><span class="source">${e.run ? `run ${e.run}` : "both runs"} \u00B7 ${SOURCES[e.field]}</span>${md(e.text)}</li>`;
+}
+function findingHTML(f, steps) {
+  const nums = [...new Set(f.evidence.map(e => e.num))].sort((a, b) => a - b);
+  return `<div class="fix finding" data-step="${esc(f.step)}" id="f-${esc(f.slug)}">
+    <div class="fix-title"><span class="fnum">${f.num}</span><span class="status ${esc(f.step)}">${esc(steps[f.step])}</span><span>${md(f.title)}</span></div>
+    <p class="fix-detail">${md(f.detail)}</p>
+    ${f.fix ? `<p class="fix-note"><b>${f.step === "call" ? "Proposal" : "Staged"}:</b> ${md(f.fix)}</p>` : ""}
+    ${f.image ? `<img class="fix-image" loading="lazy" src="${esc(f.image)}" alt="${esc(f.imageAlt || "")}">` : ""}
+    ${nums.length ? `<div class="fix-meta">${nums.length} prompt${nums.length === 1 ? "" : "s"} ${trialLinks(nums)}</div>` : ""}
+    ${f.evidence.length ? `<details><summary>Evidence, ${f.evidence.length} item${f.evidence.length === 1 ? "" : "s"}</summary><ul class="evidence">${f.evidence.map(evidenceHTML).join("")}</ul></details>` : ""}
+  </div>`;
+}
+function renderFindings() {
+  const y = data.synthesis;
+  const f = data.findings;
+  const prose = `<div class="fix-group prose"><h3>What worked</h3><p>${esc(y.worked)}</p></div>
+    <div class="fix-group prose"><h3>Two runs of one prompt</h3><p>${esc(y.consistency)}</p></div>`;
+  if (!f) {
+    document.getElementById("steps").hidden = true;
+    const issueList = (title, items) => `<div class="fix-group"><h3>${esc(title)}</h3><div class="issues">${items.map(i => `<div class="fix"><div class="fix-title">${esc(i.item)}</div><p class="fix-detail">${esc(i.note)}</p><div class="fix-meta">Prompts ${trialLinks(i.trials)}</div></div>`).join("")}</div></div>`;
+    document.getElementById("synthesis-body").innerHTML = `${prose}
+      <div class="fix-group"><h3>Recommendations</h3><ol class="recs">${y.phase2.map(p => `<li>${esc(p.replace(/^\d+\.\s*/, ""))}</li>`).join("")}</ol></div>
+      ${issueList("Operations the sessions lacked", y.operationsLacked)}
+      ${issueList("Report and render data the sessions lacked", y.reportDataLacked)}
+      ${issueList("Color", y.colorIssues)}
+      ${issueList("Recurring failures", y.recurringFailures)}
+      ${issueList("Skill advice the sessions missed", y.skillMisses)}`;
+    return;
+  }
+  const steps = Object.fromEntries(f.steps.map(st => [st.key, st.label]));
+  document.getElementById("findings-lede").textContent = f.lede;
+  document.getElementById("findings-list").innerHTML = f.findings.map(x => findingHTML(x, steps)).join("");
+  document.getElementById("synthesis-body").innerHTML = prose;
+  const counts = st => f.findings.filter(x => x.step === st).length;
+  chips("steps", [{ key: "all", label: `All ${f.findings.length}` }, ...f.steps.map(st => ({ key: st.key, label: `${st.label} ${counts(st.key)}` }))], "all", key => {
+    document.querySelectorAll(".finding").forEach(el => { el.hidden = key !== "all" && el.dataset.step !== key; });
+  });
+}
+
+try {
+  const saved = localStorage.getItem("vt-group");
+  if (saved && GROUPS.some(g => g.key === saved)) {
+    group = saved;
+    document.querySelectorAll("#groups .chip").forEach(c => c.setAttribute("aria-pressed", String(c.dataset.key === saved)));
+  }
+} catch (e) {}
+renderTrials();
+renderFindings();
+</script>

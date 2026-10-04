@@ -201,7 +201,7 @@ mod tests {
         );
         let error = resolved(&main).unwrap_err().to_string();
         assert!(
-            error.starts_with("materials[1]: shades shade 2 must be within [0, 1]"),
+            error.starts_with("materials[1]: shades shade 2 must be between black and white"),
             "{error}"
         );
 

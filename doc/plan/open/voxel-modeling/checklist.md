@@ -81,22 +81,43 @@ Trials then show which operations Claude reaches for and where the loop fails.
       `vxl integration skill print voxel-modeling` prints the workflow and then
       the modeling API as one `SKILL.md`. Move model evaluation to
       `doc/ref/sdf-doc/` and the sdfj format into the sdfj crate's `docs/`.
-- [ ] **S12. Trials.** Run the prompts in `trials.md` through the skill, each in
+- [x] **S12. Trials.** Run the prompts in `trials.md` through the skill, each in
       a fresh session. Log each prompt in `trials.md` with the passes it took,
       the failures, and the operations and report data Claude wanted and
       lacked. The log also notes where a model's colors read flat.
-- [ ] **S13. Phase 2 design.** Write the phase 2 steps from the trials and
+- [ ] **S13. Round 1 fixes.** Answer round 1's [findings](trials.md#findings)
+      before the next round:
+  1. The fixes staged with the round, for findings 1, 8, 15, 17, 32, 40, and 54
+  2. The owner's calls:
+     1. A neutral studio fill for findings 20, 21, and 27
+     2. Bloom or an emission range for finding 18
+     3. Grain as rings around its axis for finding 32
+     4. Box corners in any order for finding 45
+     5. A `--version` flag for finding 57
+  3. The skill text for findings 2, 3, 4, 6, 7, 9, 10, 13, 14, 16, 19, 28, 30,
+     34, 36, 44, and 55
+  4. A look at findings 5, 12, 31, 37, 50, 52, and 56 that settles each as a
+     fix, a skill line, or a phase 2 candidate
+- [ ] **S14. Round 2.** Run the prompts again with S13's changes and log the
+      round beside round 1. A finding S13 answered reopens when round 2 still
+      shows it.
+- [ ] **S15. Phase 2 design.** Write the phase 2 steps from both rounds and
       revise the README.
 
 ## Phase 2: follow-ups
 
-S13 writes phase 2's steps from the trials. Known so far:
+S15 writes phase 2's steps from the trials. Round 1's
+[findings](trials.md#findings) give the candidates so far:
 
-1. The operators and patterns Claude reached for and lacked
+1. The operators and patterns Claude reached for and lacked, in findings 11,
+   24, 25, 26, 41, 47, and 59
 2. The `.sdfj` changes those operators need
-3. The contact sheet from the
-   [rendering follow-ups](../voxel-rendering-followups/README.md#waiting-for-a-reason)
-4. Coloring candidates for the trials to confirm:
+3. The report data, inspection, and render support Claude lacked, in findings
+   23, 29, 33, 35, 38, 39, 42, 43, 46, 49, 51, 53, 58, and 60
+4. The contact sheet from the
+   [rendering follow-ups](../voxel-rendering-followups/README.md#waiting-for-a-reason),
+   for finding 8
+5. Coloring candidates:
    1. Patterns that take patterns as entries, for knots over grain or moss over
       cobbles. A pick that lands on a pattern lets that pattern decide the cell.
       `speckle` over `grain` cannot layer today because `speckle` writes its
@@ -105,11 +126,12 @@ S13 writes phase 2's steps from the trials. Known so far:
       lights' hue the other
    3. A step that reads the finished grid as `coat` does and picks darker shades
       in crevices and lighter ones on edges. Review renders shade crevices
-      already, but an exported mesh keeps only the colors
-5. Part candidates for the trials to confirm:
+      already, but an exported mesh keeps only the colors. Finding 48 asks for
+      it
+6. Part candidates:
    1. A step that runs a part's steps on another part's grid. vxl samples the
       part's shapes at that grid's cells. Later steps can then carve, paint, or
       coat across both parts
    2. A rotation on parts that turns the part's shapes at any angle before
-      sampling
-6. A `typescript` library group whose sources vxl builds before the model
+      sampling. Finding 22 asks for it
+7. A `typescript` library group whose sources vxl builds before the model

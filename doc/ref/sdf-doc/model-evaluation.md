@@ -517,11 +517,13 @@ A pattern length left out takes its default count of cells times `g`.
    `vec-N-float`. `int` writes `int` or `vec-N-int`, and `json` writes `json`. A
    material leaving a custom property out takes the kind's empty value: 0, a
    zero vector, `false`, `""`, or `null`.
-4. `shades` converts the base color to
-   [Oklab](https://bottosson.github.io/posts/oklab/), steps its lightness, and
-   converts back. Shade `i` of `count` steps the lightness by
-   `(i - (count - 1) / 2) * spread`. A step of 0 keeps the base color. Every
-   other property and the alpha carry over.
+4. `shades` steps the base color's
+   [Oklab](https://bottosson.github.io/posts/oklab/) lightness. Shade `i` of
+   `count` steps the lightness by `(i - (count - 1) / 2) * spread`. A step of 0
+   keeps the base color. A step down scales the color in linear light toward
+   black, and a step up mixes the color in linear light with white, by the
+   amount that reaches the stepped lightness. A stepped lightness outside
+   [0, 1] errors. Every other property and the alpha carry over.
 5. Two materials with identical properties merge into one palette material.
 
 ## The voxj document

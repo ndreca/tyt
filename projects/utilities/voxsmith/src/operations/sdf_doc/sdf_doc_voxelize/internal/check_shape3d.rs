@@ -42,11 +42,11 @@ pub fn check_shape3d(
                 Some(round) => {
                     let most = (*max - *min).min_element() / 2.0;
                     check.above_zero("round", *round)?;
-                    check.expect(
-                        *round <= most,
+                    check.at_most(
                         "round",
+                        *round,
+                        most,
                         &format!("at most half the shortest side, {most}"),
-                        round,
                     )
                 }
 
@@ -96,11 +96,11 @@ pub fn check_shape3d(
                 Some(round) => {
                     let most = radius.min(a.distance(*b) / 2.0);
                     check.above_zero("round", *round)?;
-                    check.expect(
-                        *round <= most,
+                    check.at_most(
                         "round",
+                        *round,
+                        most,
                         &format!("at most the radius and half the length, {most}"),
-                        round,
                     )
                 }
 
@@ -383,6 +383,24 @@ mod tests {
             check(orient(TyVector3F64::new(0.0, -2.0, 0.0))),
             Err(
                 "orient to must be a direction other than the opposite of from, not [0, -2, 0]"
+                    .to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn a_box_round_may_pass_half_a_side_by_its_rounding() {
+        let rounded = |round| SdfShape3d::Box {
+            min: TyVector3F64::new(0.4, 0.0, 0.0),
+            max: TyVector3F64::new(0.45, 0.1, 0.1),
+            round: Some(round),
+        };
+
+        assert!(check(rounded(0.025)).is_ok());
+        assert_eq!(
+            check(rounded(0.026)),
+            Err(
+                "box round must be at most half the shortest side, 0.024999999999999994, not 0.026"
                     .to_string()
             )
         );

@@ -1,6 +1,10 @@
 use std::{fmt::Display, result::Result as StdResult};
 use ty_math::{TyVector2F64, TyVector3F64};
 
+/// The share of a bound that a value may pass it by. Sums and differences of
+/// meters round off within it.
+const ROUNDING: f64 = 1e-9;
+
 /// Checks one call's arguments. Each error reads `<call> <argument> must be
 /// <expectation>, not <value>`.
 #[derive(Clone, Copy, Debug)]
@@ -56,6 +60,23 @@ impl ArgumentCheck {
     /// Errors unless `value` reads zero or more.
     pub fn at_least_zero(&self, argument: &str, value: f64) -> StdResult<(), String> {
         self.expect(value >= 0.0, argument, "zero or more", value)
+    }
+
+    /// Errors unless `value` reads at most the bound `most` that `expectation`
+    /// describes. `value` may pass `most` by up to `ROUNDING` times `most`.
+    pub fn at_most(
+        &self,
+        argument: &str,
+        value: f64,
+        most: f64,
+        expectation: &str,
+    ) -> StdResult<(), String> {
+        self.expect(
+            value - most <= most.abs() * ROUNDING,
+            argument,
+            expectation,
+            value,
+        )
     }
 
     /// Errors unless `value` is a whole number of at least `least`.

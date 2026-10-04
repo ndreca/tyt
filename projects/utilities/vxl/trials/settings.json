@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": ["Bash(vxl:*)"],
+    "defaultMode": "acceptEdits"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": "sh \"@SNAPSHOT@\"" }]
+      }
+    ]
+  }
+}

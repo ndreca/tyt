@@ -149,9 +149,15 @@ impl ViewElements {
             .collect();
 
             if !missing.is_empty() {
+                let hint = if entry.is_some_and(|entry| entry.transform.is_some()) {
+                    "; --view-orbit alone re-aims the profile's view"
+                } else {
+                    ""
+                };
+
                 return Err(Error::usage(format!(
                     "view `{name}`'s transform lacks {}; a posed view takes --view-frame, \
-                     --view-position, and a rotation flag",
+                     --view-position, and a rotation flag{hint}",
                     missing.join(" and ")
                 )));
             }

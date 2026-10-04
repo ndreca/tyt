@@ -125,7 +125,8 @@ export default [add("block", box([0, 0, 0], [0.1, 0.1, 0.1]), mat.stone)];
 
 Variables, functions, and loops shape the list, but nothing in a model runs per
 voxel. Shapes, steps, and patterns only describe what vxl samples later. A model
-holds no voxel size.
+holds no voxel size. A variable named like a call on this page hides the call. A
+material held in `const paint` breaks every `paint` step.
 
 A larger model can split across files. A file imports another by its relative
 path with the `.ts` extension. Every file sees the names on this page.
@@ -397,7 +398,8 @@ Angles in the plane run from +u toward +v.
 7. `vesica` makes a pointed lens `width` across from `a` to `b` for leaves,
    blades, and flames.
 8. `arch` tops the rectangle between its corners with a half circle as wide as
-   the rectangle. Doors, windows, and gravestones start from an `arch`.
+   the rectangle. `max` has to sit at least half the width above `min`. Doors,
+   windows, and gravestones start from an `arch`.
 
 ### From 2D to 3D
 
@@ -607,8 +609,9 @@ type Value = boolean | number | string | number[] | IntValue | JsonValue;
    kind's empty value there: 0, a zero vector, `false`, `""`, or `null`.
 4. `shades` returns `count` versions of `base` that run from darkest to lightest
    with the original in the middle. Neighboring shades differ in perceived
-   lightness by `spread`, and the other properties carry over. `count` defaults
-   to 3 and `spread` to 0.08. A shade past black or white errors.
+   lightness by `spread`, and the other properties carry over. Darker shades mix
+   the base with black and lighter shades with white. `count` defaults to 3 and
+   `spread` to 0.08. A shade past black or white errors.
 
 ```ts
 const glass = material({
@@ -695,7 +698,8 @@ voxel size.
    noise. `period` defaults to 1 cell and `warp` to 0.
 2. `grain` slices the same way and gives each slab a random pick. Its `period`
    defaults to 2 cells and its `warp` to 1.5 cells. A single `base` stands for
-   `shades(base)`. The `axis` runs along the wood's length.
+   `shades(base)`. The streaks run across `axis`. A board running along y with
+   its face toward +z takes `axis: "x"`.
 3. `gradient` splits `from` to `to` along `axis` into equal spans that take the
    materials in order. Cells before `from` take the first material and cells
    past `to` the last. `warp` bends the spans as it bends `bands` and defaults
@@ -896,7 +900,7 @@ for `--voxel-size 0.025`.
 ```ts
 // Four turned legs from one profile.
 const leg = lathe([[0.0375, 0], [0.03, 0.15], [0.045, 0.225], [0.03, 0.425]]).translate([0.2, 0, 0.2]);
-add("legs", leg.mirror("xz"), grain(mat.oak, { axis: "y", seed: 1 })),
+add("legs", leg.mirror("xz"), grain(mat.oak, { axis: "x", seed: 1 })),
 
 // A jewel set into a surface. The later add takes the cells the two share.
 add("jewel", octahedron([0, 0.875, -0.175], 0.0625), mat.ruby),
@@ -955,11 +959,11 @@ const jewels = union(
 );
 
 export default [
-  add("legs", leg.mirror("xz"), oak("y", 1)),
+  add("legs", leg.mirror("xz"), oak("x", 1)),
   add("seat", box([-0.25, 0.425, -0.25], [0.25, 0.475, 0.25]), oak("x", 2)),
-  add("posts", post.mirror("x"), oak("y", 3)),
-  add("spindles", spindle, oak("y", 4)),
-  add("rail", rail, oak("x", 5)),
+  add("posts", post.mirror("x"), oak("x", 3)),
+  add("spindles", spindle, oak("x", 4)),
+  add("rail", rail, oak("y", 5)),
   paint("gilt", intersect(rail.shell(0.025), halfSpace("+y", 0.925)), mat.gold),
   add("finials", finial, mat.gold),
   add("jewels", jewels, mat.ruby),

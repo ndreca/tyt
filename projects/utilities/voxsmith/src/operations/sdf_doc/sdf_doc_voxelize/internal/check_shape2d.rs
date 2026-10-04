@@ -220,11 +220,11 @@ fn corner_cut(
     most: f64,
 ) -> StdResult<(), String> {
     check.above_zero(argument, corner)?;
-    check.expect(
-        corner <= most,
+    check.at_most(
         argument,
-        &format!("at most half the shorter side, {most}"),
         corner,
+        most,
+        &format!("at most half the shorter side, {most}"),
     )
 }
 

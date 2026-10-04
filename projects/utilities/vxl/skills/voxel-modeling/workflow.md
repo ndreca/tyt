@@ -19,6 +19,11 @@ stale `.sdfj` document. The line stops at the first error. A pass writes
 `chair.sdfj`, `chair.voxj`, `chair-front.png`, `chair-right.png`,
 `chair-top.png`, and `chair-hero.png` beside the model file.
 
+The pass line runs on its own, and edits to the model file go through the
+file-editing tool. A permission rule for `vxl` commands then covers every pass.
+A pass chained after `sed`, `python`, or a `time` wrapper needs its own
+approval.
+
 ## Building a model
 
 1. **Pick a voxel size.** Most models read best 16 to 64 voxels across. At 2.5
@@ -51,10 +56,48 @@ The report comes first because numbers read more reliably than pixels:
 5. A part reading `detached` has a gap at its joint
 6. A step's bounds can feed a `box` directly to line one form up with another
 
-The PNGs come next:
+The PNGs come next, all four on every pass:
 
 1. `front`, `right`, and `top` draw without perspective. The three views show
    the forms' heights, widths, symmetry, and alignment true to scale
 2. `hero` shows whether the model reads as the prompt, whether neighboring forms
    take distinct materials, and whether a large surface reads flat. A flat
    surface takes `shades` or a pattern
+
+## Other views
+
+The review views look at the whole model from outside. A close-up, another
+angle, or a view inside a room comes from flags on the same render command:
+
+```sh
+# chair-hero.png from behind and to the left, beside the other review views
+vxl object render chair.voxj
+  --profile review
+  --view-orbit hero 225 20 fit
+  --to png
+
+# robot-close.png with the head part alone
+vxl object render robot.voxj
+  --select 'robot/head'
+  --view-orbit close 30 20 fit
+  --to png
+  --file-stem robot-close
+
+# room-inside.png from eye height toward the fireplace
+vxl object render room.voxj
+  --view-frame inside world
+  --view-position inside 1.2 1.6 1.4
+  --view-look-at inside -0.3 0.9 -1.4
+  --view-fov inside 60
+  --to png
+  --file-stem room-inside
+```
+
+1. `--view-orbit` places a view whole: an azimuth and an elevation in degrees,
+   and a distance in meters or `fit`. It re-aims a profile view such as `hero`,
+   and a new view name adds a PNG beside the review four
+2. A view placed by position takes `--view-frame`, `--view-position`, and a
+   rotation flag such as `--view-look-at`. `--view-angles` sets only the
+   rotation and cannot re-aim `hero` alone
+3. `--select` renders the matched parts alone. `--view-select <view> <glob>`
+   keeps the whole model and frames the view on the matched parts
