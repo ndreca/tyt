@@ -10,12 +10,13 @@ pub fn from_voxj_file_bytes<D: DecodeVoxjJson>(dependencies: &D, bytes: &[u8]) -
 mod tests {
     use crate::{
         DependenciesImpl, Error, from_voxj_file_bytes, from_voxj_or_voxjz_file_bytes,
-        from_voxjz_file_bytes, to_voxj_file_bytes, to_voxjz_file_bytes,
+        from_voxjz_file_bytes, to_voxj_file_bytes, to_voxj_pretty_file_bytes, to_voxjz_file_bytes,
     };
     use serde_json::{Value, json};
     use voxj::{
-        VoxjFile, VoxjHierarchyNode, VoxjMain, VoxjMap, VoxjObject, VoxjPositionBlock,
-        VoxjRuntimeState, VoxjSampleBlock, VoxjTransform, VoxjValuePool,
+        VoxjFile, VoxjHierarchyNode, VoxjMain, VoxjMap, VoxjMapEntry, VoxjObject,
+        VoxjPositionBlock, VoxjRuntimeState, VoxjSampleBlock, VoxjTransform, VoxjValue,
+        VoxjValuePool,
     };
 
     fn document() -> VoxjFile {
@@ -60,7 +61,7 @@ mod tests {
     #[test]
     fn voxj_round_trips_document_and_ext() {
         let file = document_with_ext(json!({ "vmax": { "scene": { "v": 4 } } }));
-        let bytes = to_voxj_file_bytes(&DependenciesImpl, &file);
+        let bytes = to_voxj_file_bytes(&DependenciesImpl, &file).unwrap();
         assert_eq!(
             from_voxj_file_bytes(&DependenciesImpl, &bytes).unwrap(),
             file
@@ -70,7 +71,7 @@ mod tests {
     #[test]
     fn voxj_without_ext_omits_the_field() {
         let file = document();
-        let bytes = to_voxj_file_bytes(&DependenciesImpl, &file);
+        let bytes = to_voxj_file_bytes(&DependenciesImpl, &file).unwrap();
         assert!(
             !String::from_utf8(bytes.clone())
                 .unwrap()
@@ -92,15 +93,18 @@ mod tests {
             0.21586050011389926,
             0.9734452903984125,
         ])];
-        let bytes = to_voxj_file_bytes(&DependenciesImpl, &file);
+        let bytes = to_voxj_file_bytes(&DependenciesImpl, &file).unwrap();
         let reloaded = from_voxj_file_bytes(&DependenciesImpl, &bytes).unwrap();
-        assert_eq!(to_voxj_file_bytes(&DependenciesImpl, &reloaded), bytes);
+        assert_eq!(
+            to_voxj_file_bytes(&DependenciesImpl, &reloaded).unwrap(),
+            bytes
+        );
     }
 
     #[test]
     fn voxjz_round_trips_and_detection_dispatches() {
         let file = document_with_ext(json!({ "k": 1 }));
-        let zip = to_voxjz_file_bytes(&DependenciesImpl, &file);
+        let zip = to_voxjz_file_bytes(&DependenciesImpl, &file).unwrap();
         assert_eq!(
             from_voxjz_file_bytes(&DependenciesImpl, &zip).unwrap(),
             file
@@ -111,11 +115,43 @@ mod tests {
             from_voxj_or_voxjz_file_bytes(&DependenciesImpl, &zip).unwrap(),
             file
         );
-        let json = to_voxj_file_bytes(&DependenciesImpl, &file);
+        let json = to_voxj_file_bytes(&DependenciesImpl, &file).unwrap();
         assert_eq!(
             from_voxj_or_voxjz_file_bytes(&DependenciesImpl, &json).unwrap(),
             file
         );
+    }
+
+    #[test]
+    fn a_document_without_a_json_form_fails_to_write() {
+        let mut nan_transform = document();
+        nan_transform.main.runtime_state.nodes[0].transform.position[0] = f64::NAN;
+
+        let mut nan_json_value = document();
+        nan_json_value.main.runtime_state.value_pools =
+            vec![VoxjValuePool::Json(vec![VoxjValue::Number(f64::NAN)])];
+
+        let entry = VoxjMapEntry {
+            key: "k".to_owned(),
+            value: VoxjValue::Null,
+        };
+        let mut repeated_ext_key = document();
+        repeated_ext_key.main.ext = Some(VoxjMap::new(vec![entry.clone(), entry]));
+
+        for file in [nan_transform, nan_json_value, repeated_ext_key] {
+            assert!(matches!(
+                to_voxj_file_bytes(&DependenciesImpl, &file),
+                Err(Error::Json(_))
+            ));
+            assert!(matches!(
+                to_voxj_pretty_file_bytes(&DependenciesImpl, &file),
+                Err(Error::Json(_))
+            ));
+            assert!(matches!(
+                to_voxjz_file_bytes(&DependenciesImpl, &file),
+                Err(Error::Json(_))
+            ));
+        }
     }
 
     #[test]

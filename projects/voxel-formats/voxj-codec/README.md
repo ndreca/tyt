@@ -14,6 +14,9 @@ Load and save leave each object's position and sample blocks encoded.
 - `from_voxj_or_voxjz_file_bytes`: either form, detected by its leading bytes.
 - `to_voxj_pretty_file_bytes`: pretty-printed `.voxj` JSON.
 
+A save errors when the file holds a NaN, an infinity outside a `float` value
+pool, or a repeated object key.
+
 Each transcodes the JSON through the `DecodeVoxjJson` and `EncodeVoxjJson`
 traits and the `.voxjz` member through `Deflate` and `Inflate`. Implement the
 traits, or use `DependenciesImpl` behind the default `impl` feature: JSON over

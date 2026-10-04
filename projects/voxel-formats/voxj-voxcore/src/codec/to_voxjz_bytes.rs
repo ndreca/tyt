@@ -10,5 +10,5 @@ pub fn to_voxjz_bytes<D: EncodeBase64 + CostVoxjObject + EncodeVoxjJson + Deflat
     options: &VoxjWriteOptions,
 ) -> Result<Vec<u8>> {
     let file = to_voxj_file(dependencies, main, options)?;
-    Ok(to_voxjz_file_bytes(dependencies, &file))
+    Ok(to_voxjz_file_bytes(dependencies, &file)?)
 }

@@ -1,4 +1,4 @@
-use crate::{Deflate, EncodeVoxjJson, to_voxj_file_bytes};
+use crate::{Deflate, EncodeVoxjJson, Result, to_voxj_file_bytes};
 use voxj::VoxjFile;
 
 /// Conventional name of the single `.voxj` member inside a `.voxjz` archive.
@@ -54,8 +54,11 @@ const CRC32_TABLE: [u32; 256] = {
 pub fn to_voxjz_file_bytes<D: EncodeVoxjJson + Deflate>(
     dependencies: &D,
     file: &VoxjFile,
-) -> Vec<u8> {
-    wrap_voxjz(dependencies, &to_voxj_file_bytes(dependencies, file))
+) -> Result<Vec<u8>> {
+    Ok(wrap_voxjz(
+        dependencies,
+        &to_voxj_file_bytes(dependencies, file)?,
+    ))
 }
 
 /// Wraps a `.voxj` byte payload in a single-member, deflate-compressed `.voxjz`

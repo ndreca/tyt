@@ -19,12 +19,12 @@ impl DecodeVoxjJson for DependenciesImpl {
 }
 
 impl EncodeVoxjJson for DependenciesImpl {
-    fn encode_voxj_json(&self, file: &VoxjFile) -> Vec<u8> {
-        serde_json::to_vec(file).expect("a document holds nothing without a JSON form")
+    fn encode_voxj_json(&self, file: &VoxjFile) -> Result<Vec<u8>, String> {
+        serde_json::to_vec(file).map_err(|error| error.to_string())
     }
 
-    fn encode_voxj_json_pretty(&self, file: &VoxjFile) -> Vec<u8> {
-        serde_json::to_vec_pretty(file).expect("a document holds nothing without a JSON form")
+    fn encode_voxj_json_pretty(&self, file: &VoxjFile) -> Result<Vec<u8>, String> {
+        serde_json::to_vec_pretty(file).map_err(|error| error.to_string())
     }
 }
 

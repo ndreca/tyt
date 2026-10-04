@@ -6,7 +6,7 @@ use std::{
 /// An error decoding or encoding a Voxel Json (`.voxj` / `.voxjz`) document.
 #[derive(Debug)]
 pub enum Error {
-    /// The document JSON could not be parsed.
+    /// The document JSON could not be parsed or written.
     Json(String),
 
     /// The document or `.voxjz` archive was readable but structurally
