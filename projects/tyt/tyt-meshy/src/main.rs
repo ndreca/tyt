@@ -1,6 +1,7 @@
 use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::Shell;
 use std::{io, process};
+use tyt_common::completion_install_help;
 use tyt_meshy::{DependenciesImpl, TytMeshy};
 
 /// Commands for working with the Meshy API
@@ -34,7 +35,7 @@ enum Integration {
 #[command(subcommand_value_name = "command")]
 enum Completion {
     /// Prints the completions for a shell.
-    #[command(name = "print")]
+    #[command(name = "print", after_help = completion_install_help("meshy"))]
     Print {
         /// The shell to print completions for.
         #[arg(value_name = "shell")]

@@ -2,6 +2,7 @@ use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::Shell;
 use std::{io, process};
 use tyt_claude::{DependenciesImpl, TytClaude};
+use tyt_common::completion_install_help;
 
 /// Operations for working with claude
 #[derive(Clone, Debug, Parser)]
@@ -34,7 +35,7 @@ enum Integration {
 #[command(subcommand_value_name = "command")]
 enum Completion {
     /// Prints the completions for a shell.
-    #[command(name = "print")]
+    #[command(name = "print", after_help = completion_install_help("claude"))]
     Print {
         /// The shell to print completions for.
         #[arg(value_name = "shell")]

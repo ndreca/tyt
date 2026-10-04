@@ -276,6 +276,10 @@ land.
 2. Each command path runs nouns then a verb, as `vxl object voxels flip` does.
    `integration completion print` prints the completions, and
    `integration skill print` prints the skill
+3. Each `print` command's help ends with the commands that install the printed
+   file. The tyt binaries share `completion_install_help` from tyt-common
+   because the help needs no clap. vxl keeps a copy because vxl depends on no
+   tyt crate
 
 ## S11. Skill
 

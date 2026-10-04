@@ -147,7 +147,8 @@ that printed it. Upgrading vxl takes a reprint.
 `vxl integration` gathers the commands that print a file for another tool.
 `vxl integration completion print <shell>` takes over from `vxl completion`.
 Every other binary in the workspace follows. `--help` lists the shells and
-skills each command takes.
+skills each command takes. The help also shows the commands that install the
+printed files.
 
 The skill walks Claude through the workflow: pick a voxel size, write real sizes
 in meters, block out with boxes, voxelize at the chosen size, review, fix the
