@@ -141,3 +141,24 @@ they land.
 - A profile decides the glTF material side. The writer takes `alphaMode`
   and the transmission slots, and the built-ins write neither. The
   follow-ups plan lists a glass export profile.
+
+## S8. The export
+
+- `glass` lives in vxl's embedded jsonc beside the other built-ins. voxsmith
+  knows no profiles.
+- `glass` binds `transmission` and `ior` with their defaults itself.
+  `defaults` keeps the six names every profile reads.
+- A swatch is transparent where its alpha is under one or its transmission
+  over zero. The mesher's pass rule counts a metal or a black swatch with
+  transmission as opaque. This predicate counts it transparent, so it lands
+  in the blended primitive and still draws opaque. The value language has no
+  pass function, and the plan adds none.
+- The transmission rides a texture under a factor of one. A transmission
+  never exceeds one, so it needs none of the normalization the emissive
+  strength takes.
+- The glass material takes the palette's highest `ior` because one material
+  carries one index.
+  The bridge omits the extension at the default, so a palette that never
+  sets `ior` adds none.
+- The computed enum example's config profile is now `blend` because a config
+  profile named `glass` would replace the built-in.

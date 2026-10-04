@@ -78,4 +78,51 @@
       },
     ],
   },
+
+  // Two primitives over pbr's values: the opaque swatches under its
+  // material, the transparent swatches under a blended copy that writes the
+  // transmission slots.
+  "glass": {
+    "description": "The pbr material split into opaque and transparent primitives",
+    "valuesFrom": ["pbr"],
+    "values": [
+      "transmission = swatch(default(transmission, 0))",
+      "ior = swatch(default(ior, 1.5))",
+      "transparent = baseColor.a < 1 || transmission > 0",
+      "opaque = !transparent",
+      "glassIor = max(ior)",
+    ],
+    "materials": [
+      {
+        "name": "body",
+        "slots": {
+          "baseColorTexture": { "kind": "value", "value": "albedo" },
+          "occlusionTexture": { "kind": "value", "value": "orm" },
+          "metallicRoughnessTexture": { "kind": "value", "value": "orm" },
+          "emissiveTexture": { "kind": "value", "value": "emissive" },
+          "emissiveFactor": { "kind": "value", "value": "white" },
+          "emissiveStrength": { "kind": "value", "value": "maxStrength" },
+        },
+      },
+      {
+        "name": "glass",
+        "slots": {
+          "baseColorTexture": { "kind": "value", "value": "albedo" },
+          "occlusionTexture": { "kind": "value", "value": "orm" },
+          "metallicRoughnessTexture": { "kind": "value", "value": "orm" },
+          "emissiveTexture": { "kind": "value", "value": "emissive" },
+          "emissiveFactor": { "kind": "value", "value": "white" },
+          "emissiveStrength": { "kind": "value", "value": "maxStrength" },
+          "alphaMode": { "kind": "value", "value": "\"BLEND\"" },
+          "transmissionTexture": { "kind": "value", "value": "transmission" },
+          "transmissionFactor": { "kind": "value", "value": "1.0" },
+          "ior": { "kind": "value", "value": "glassIor" },
+        },
+      },
+    ],
+    "primitives": [
+      { "name": "body", "select": "opaque", "material": 0 },
+      { "name": "glass", "select": "transparent", "material": 1 },
+    ],
+  },
 }

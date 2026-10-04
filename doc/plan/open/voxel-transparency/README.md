@@ -123,7 +123,7 @@ tonemap, which would turn a white background grey behind clear glass.
 
 `voxsurface` culls a face against any live neighbor and bakes the occlusion
 over every live cell, so a mesh of the glass asset has a hole in the wall
-behind the clear block and a dark crease around every glass cell. The last
+behind the clear block and a dark crease around every glass cell. The mesh
 step teaches it transparency:
 
 1. A `SurfaceGrid` says whether a cell is opaque and whether two cells are
@@ -139,10 +139,23 @@ step teaches it transparency:
    `transmission`, and `ior`
 
 The reference and the mesh then agree on which cells occlude and which
-faces exist. The glTF writer already takes `alphaMode` and the transmission
-slots from a profile, and the built-in profiles write neither. A glass
-export needs a profile with a second primitive for the transparent swatches.
-The follow-ups plan lists it.
+faces exist.
+
+## The export
+
+The glTF writer takes `alphaMode` and the transmission slots from a profile.
+The built-in profiles write neither, so a glass asset meshed under `pbr`
+comes out solid. A `glass` built-in splits `pbr`'s material in two:
+
+1. The opaque swatches draw in one primitive under `pbr`'s material
+2. The transparent swatches draw in a second primitive under a copy of that
+   material with `alphaMode` `BLEND`, the transmission in a texture, and the
+   palette's highest `ior`
+
+A swatch counts as transparent where its alpha is under one or its
+transmission over zero. A glTF primitive carries one material, so the split
+keeps the opaque faces out of the blended draw. A palette without transparent
+swatches leaves the second primitive empty, and the bridge writes none.
 
 ## Decisions
 
@@ -174,8 +187,11 @@ The follow-ups plan lists it.
     review render showed a voxel buried in red glass lit as if the glass
     were not there. A camera ray still starts clean, so a view from inside
     a cell sees out of it.
-12. The mesher learns transparency as this plan's last step, so the render
-    and the mesh agree again.
+12. The mesher learns transparency in this plan, so the render and the mesh
+    agree again.
+13. The export is a built-in profile over `pbr`, not a change to `pbr`. `pbr`
+    mirrors glTF's core material, and an engine without the transmission
+    extension wants it unchanged. A profile name makes the split a choice.
 
 ## Out of scope
 

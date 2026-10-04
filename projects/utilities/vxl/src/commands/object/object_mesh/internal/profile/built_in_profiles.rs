@@ -24,12 +24,12 @@ mod tests {
     use vox_value_language::parse;
 
     #[test]
-    fn the_five_built_ins_load_and_their_values_parse() {
+    fn the_six_built_ins_load_and_their_values_parse() {
         let profiles = built_in_profiles();
 
         assert_eq!(
             profiles.keys().collect::<Vec<_>>(),
-            ["albedo", "defaults", "emissive", "orm", "pbr"]
+            ["albedo", "defaults", "emissive", "glass", "orm", "pbr"]
         );
 
         for (name, profile) in &profiles {

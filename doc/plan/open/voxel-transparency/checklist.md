@@ -124,3 +124,11 @@ code-level choices in [implementation-decisions.md](implementation-decisions.md)
       5. Tests over a glass bar in voxsurface, voxrender, and voxsmith
       6. The contract's Lights paragraph drops `object mesh`'s exception, and
          the mesh docs mention transparency
+- [x] **S8. The export.** A `glass` built-in profile exports the transparent
+      swatches.
+      1. `glass` builds on `pbr`: a second material under `alphaMode` `BLEND`
+         with a transmission texture and `ior`, and two primitives selected
+         by opacity
+      2. The profile reference lists it, and the computed enum example no
+         longer shadows its name
+      3. Tests over the expansion

@@ -73,7 +73,7 @@ mod tests {
         assert_eq!(
             groups,
             [
-                "built in: albedo defaults emissive pbr",
+                "built in: albedo defaults emissive glass pbr",
                 "/home/.vxlconfig: orm",
                 "/repo/.vxlconfig: a",
                 "/repo/sub/.vxlconfig: b",

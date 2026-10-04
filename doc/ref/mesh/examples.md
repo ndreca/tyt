@@ -1202,8 +1202,10 @@ stream anyway.
 ## A computed enum
 
 The lamp's bulb carries a 0.6 alpha the [pbr bake](#the-pbr-bake) leaves opaque.
-An enum property takes a plain [string](value-language.md#strings), so the
-profile computes the mode from the palette itself:
+The built-in `glass` profile moves such a swatch into a blended primitive. This
+example keeps one material instead. An enum property takes a plain
+[string](value-language.md#strings), so the profile computes the mode from the
+palette itself:
 
 ```jsonc
 // .vxlconfig; JSON escapes the inner quotes
@@ -1211,7 +1213,7 @@ profile computes the mode from the palette itself:
   "object": {
     "mesh": {
       "profiles": {
-        "glass": {
+        "blend": {
           "valuesFrom": ["albedo"],
           "values": [
             "mode = mix(\"OPAQUE\", \"BLEND\", min(baseColor.a) < 1)",
@@ -1233,10 +1235,10 @@ profile computes the mode from the palette itself:
 
 ```sh
 vxl object mesh lamp.voxj
-  --profile glass
+  --profile blend
 ```
 
-or expanded into its flags, the `glass` values over the built-in `albedo`
+or expanded into its flags, the `blend` values over the built-in `albedo`
 profile they build on, the shell's single quotes carrying the inner double
 quotes through:
 

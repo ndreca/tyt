@@ -2332,6 +2332,54 @@ mod tests {
     }
 
     #[test]
+    fn glass_splits_pbr_into_an_opaque_and_a_blended_primitive() {
+        let record = record(&["--profile", "glass"]);
+
+        let mut expected = DEFAULTS.to_vec();
+        expected.extend([
+            "albedo",
+            "orm",
+            "maxStrength",
+            "emissive",
+            "white",
+            "transmission",
+            "ior",
+            "transparent",
+            "opaque",
+            "glassIor",
+        ]);
+        assert_eq!(bound_names(&record), expected);
+
+        let [body, glass] = record.materials.as_slice() else {
+            panic!("two materials");
+        };
+        assert_eq!(body.slots.len(), 6);
+        let glass_only: Vec<_> = glass
+            .slots
+            .iter()
+            .map(|slot| slot.property.as_str())
+            .filter(|property| !body.slots.iter().any(|slot| slot.property == *property))
+            .collect();
+        assert_eq!(
+            glass_only,
+            [
+                "alphaMode",
+                "ior",
+                "transmissionFactor",
+                "transmissionTexture"
+            ]
+        );
+
+        let [opaque, transparent] = record.primitives.as_slice() else {
+            panic!("two primitives");
+        };
+        assert_eq!(opaque.material_id, Some(U32Id::from_u32(0)));
+        assert_eq!(opaque.select, "opaque");
+        assert_eq!(transparent.material_id, Some(U32Id::from_u32(1)));
+        assert_eq!(transparent.select, "transparent");
+    }
+
+    #[test]
     fn a_flag_replaces_the_profile_element_at_its_destination() {
         let record = record(&[
             "--profile",
