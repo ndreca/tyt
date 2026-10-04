@@ -19,6 +19,7 @@ mod error;
 mod fit_distance;
 mod fit_margin;
 mod fit_scale;
+mod grid_quantization;
 mod render_bloom;
 mod render_image;
 mod render_light;
@@ -43,6 +44,7 @@ pub use error::*;
 pub use fit_distance::*;
 pub use fit_margin::*;
 pub use fit_scale::*;
+pub use grid_quantization::*;
 pub use render_bloom::*;
 pub use render_image::*;
 pub use render_light::*;
@@ -72,6 +74,18 @@ mod render;
 
 #[cfg(feature = "cpu")]
 pub use render::*;
+
+#[cfg(feature = "cpu")]
+mod render_grid_ray;
+
+#[cfg(feature = "cpu")]
+pub use render_grid_ray::*;
+
+#[cfg(feature = "cpu")]
+mod render_grid_view_rays;
+
+#[cfg(feature = "cpu")]
+pub use render_grid_view_rays::*;
 
 #[cfg(feature = "cpu")]
 mod render_hit;
@@ -110,6 +124,18 @@ mod bloom;
 pub(crate) use bloom::*;
 
 #[cfg(feature = "cpu")]
+mod grid_point;
+
+#[cfg(feature = "cpu")]
+pub(crate) use grid_point::*;
+
+#[cfg(feature = "cpu")]
+mod grid_vector;
+
+#[cfg(feature = "cpu")]
+pub(crate) use grid_vector::*;
+
+#[cfg(feature = "cpu")]
 mod material_pass;
 
 #[cfg(feature = "cpu")]
@@ -120,6 +146,18 @@ mod normal_reflectance;
 
 #[cfg(feature = "cpu")]
 pub(crate) use normal_reflectance::*;
+
+#[cfg(feature = "cpu")]
+mod quantize_direction;
+
+#[cfg(feature = "cpu")]
+pub(crate) use quantize_direction::*;
+
+#[cfg(feature = "cpu")]
+mod quantize_point;
+
+#[cfg(feature = "cpu")]
+pub(crate) use quantize_point::*;
 
 #[cfg(feature = "cpu")]
 mod render_grid;

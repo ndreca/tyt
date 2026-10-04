@@ -94,29 +94,35 @@ let view = RenderView {
 ## Rays
 
 The `cpu` feature adds the rays. `RenderViewRays` gives the world ray
-through each pixel center of a view over an image. `RenderRayWalk` marches
-a ray through every placement's grid and yields a `RenderHit` at each
-surface it crosses, nearest first, out to a distance. The surface is the
-boundary between materials. In each placement the ray remembers the
-material of the cell it is inside. Entering a live cell of another
-material is a hit. Entering a cell of the same material or an empty cell
-yields nothing, so a slab of one material shows one face and no back face.
-A ray that starts inside a cell leaves that cell's material before it can
-hit anything. `cast_ray` returns the walk's first hit. A hit carries:
+through each pixel center of a view over an image. A `RenderGridRay` is a
+ray quantized into one placement's grid: a fixed-point origin, an integer
+direction, and an optional last cell. `to_grid_rays` lowers a view's rays
+into a placement's grid as integer steps, so every renderer derives the same
+ray for a pixel. `RenderRayWalk` walks one grid ray per placement with an
+integer DDA and yields a `RenderHit` at each surface it crosses, nearest
+first. `from_ray` quantizes a world ray for every placement. The surface is
+the boundary between materials. In each placement the ray remembers the
+material of the cell it is inside. Entering a live cell of another material
+is a hit. Entering a cell of the same material or an empty cell yields
+nothing, so a slab of one material shows one face and no back face. A ray
+that starts inside a cell leaves that cell's material before it can hit
+anything. `cast_ray` returns the walk's first hit within a distance. A hit
+carries:
 
 1. The placement
 2. The cell
 3. The face the ray entered through, as a unit `SurfaceSpan`
-4. Where on the face the ray landed
+4. Where on the face the ray landed, as fractions and as a fixed point
 5. The distance
 
-A shadow ray is the same walk toward a light with a distance cap.
+A shadow ray is the same walk from a fixed point on the face toward a
+light. `RenderGridRay::toward` ends it at the light.
 
 ```rust
 let rays = RenderViewRays::new(&view, 1024, 1024);
 let ray = rays.ray(512, 512);
 
-for hit in RenderRayWalk::new(&scene, &ray, f64::INFINITY) {
+for hit in RenderRayWalk::from_ray(&scene, &ray)? {
     let object_id = scene.placement(hit.placement_id)?.object_id;
     let occlusion = corner_occlusion(scene.object(object_id)?, &hit.face);
 }

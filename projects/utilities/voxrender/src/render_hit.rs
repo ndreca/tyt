@@ -21,6 +21,10 @@ pub struct RenderHit {
     /// `[0, 1]`.
     pub along: [f64; 2],
 
+    /// The hit point in the object's grid, rounded to fixed point. It lies
+    /// on the face's plane.
+    pub point: [i64; 3],
+
     /// The distance from the ray's origin, in meters.
     pub distance: f64,
 }

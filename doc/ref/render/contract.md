@@ -25,11 +25,23 @@ Entering a live cell whose material differs from the one the ray is inside
 is a surface hit through the face it entered. Entering a cell of the same
 material or an empty cell shades nothing, so there are no back faces. A ray
 that starts inside a cell leaves that cell's material before it can hit
-anything. Each placement walks on its own, and the hits merge by distance.
-A ray from
-outside the grid first hits the boundary between live and non-live cells
-that `voxsurface` enumerates. Faces are axis-aligned unit squares with flat
-normals. There is no smoothing, no bevel, and no sub-voxel detail.
+anything. Each placement walks on its own, and the hits merge by distance,
+ties in placement order. A ray from outside the grid first hits the boundary
+between live and non-live cells that `voxsurface` enumerates. Faces are
+axis-aligned unit squares with flat normals. There is no smoothing, no
+bevel, and no sub-voxel detail.
+
+The walk runs in integers so every renderer makes the same choices. A ray
+enters each placement's walk quantized into its grid: a fixed-point origin
+with 13 fraction bits and integer direction components of at most 2^16. A
+view's ray for a pixel comes from integer steps across the image carrying 12
+guard bits, rounded once. The walk steps across the boundary the ray reaches
+first, judged by the sign of an integer error term between each pair of
+axes. A tie steps x, then y, then z. A point on a boundary belongs to the
+cell the ray moves into, and on an axis the ray does not move along, to the
+cell above. A ray from outside a grid enters it as though it had walked
+there from its origin. A hit's distance in meters comes from the integer
+state in `f64`.
 
 ## Materials
 
@@ -96,8 +108,12 @@ three adjacent cells, implemented once in `voxsurface` for the reference and
 `object mesh` alike. A cell counts as occupied only when its material's pass
 is zero, so glass darkens nothing it encloses.
 
-A shadow is one grid ray toward the light. The ray runs to infinity for a
-directional light and ends at a point or spot light. Its throughput starts
+A shadow is one grid ray toward the light. The ray starts on the face's
+plane, which the boundary rule puts in the cell in front of a lit face. It
+runs to infinity for a directional light. Toward a point or spot light its
+direction is the integer offset to the light, shifted right until it fits,
+and it ends in the cell it reaches at the light's coordinate on the axis it
+travels farthest. Its throughput starts
 at the pass of each material the ray starts inside, which the light crossed
 to reach the point, and multiplies by the pass of each surface it meets, so
 a shadow is a color. A red pane throws a red shadow. A pane two voxels thick
@@ -105,14 +121,17 @@ throws the shadow a thin one throws. A floor under a pane is lit through
 it. Each light scales its contribution by what remains. A light samples the
 ray at one of three granularities:
 
-1. `per-pixel` casts the ray from the hit: a crisp diagonal edge across faces,
-   the MagicaVoxel render and Teardown look
+1. `per-pixel` casts the ray from the hit, rounded to fixed point: a crisp
+   diagonal edge across faces, the MagicaVoxel render and Teardown look
 2. `per-face` casts it from the face center: one value per voxel face, a crisp
    staircase at voxel resolution, the look Minecraft's Vibrant Visuals snaps
    to
 3. `per-corner` casts it from each corner and blends the four bilinearly
    across the face, per channel: a soft staircase, the vanilla Minecraft
    smooth-lighting look with a sun
+
+A per-pixel or per-corner start sits at least 2^-10 of a voxel in from the
+face's edges, which keeps it in front of the hit's cell.
 
 `none` turns a light's shadow off. `per-corner` is the default look. It reads
 as one look with the corner occlusion.
@@ -161,8 +180,10 @@ A rotation is one of four forms, shared by every shape:
 takes -Z as up instead, so a `top` view shows the front at the bottom of the
 image. A look-at whose eye is its target errors. Transforms resolve in the
 order subject bounds, then views, then lights, because a `camera`-frame light
-resolves once per view. Floats stay `f64` until a GPU upload boundary narrows
-them, where ids pack too.
+resolves once per view. Floats stay `f64` until the walk quantizes them into
+each placement's grid, the boundary the reference and every tier share. A
+ray or light 2^32 or more cells from a placement's grid errors. Ids pack at
+a GPU's upload.
 
 ## Views
 
@@ -232,6 +253,7 @@ anyway.
 
 ## Determinism
 
-Nothing in the render is random. Tests compare images per channel within a
-small tolerance, never byte for byte, because float math differs across
-platforms and GPUs.
+Nothing in the render is random. The walk runs in integers, so which face
+a pixel or shadow ray meets is the same on every renderer. Tests compare
+images per channel within a small tolerance, never byte for byte, because
+shading's float math differs across platforms and GPUs.

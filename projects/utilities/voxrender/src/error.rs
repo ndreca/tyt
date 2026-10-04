@@ -1,4 +1,4 @@
-use crate::{BRenderLight, BRenderMaterial, BRenderPlacement, BRenderView};
+use crate::{BRenderLight, BRenderMaterial, BRenderPlacement, BRenderView, GRID_RANGE_BITS};
 use branded_id::U32Id;
 use std::{
     error::Error as StdError,
@@ -125,6 +125,12 @@ pub enum Error {
 
     /// A bloom's threshold is not finite and zero or more.
     BloomThreshold { threshold: f64 },
+
+    /// A ray's origin or a light lies out of this placement's grid
+    /// [range](crate::GRID_RANGE_BITS).
+    GridRange {
+        placement_id: U32Id<BRenderPlacement>,
+    },
 }
 
 impl Display for Error {
@@ -273,6 +279,12 @@ impl Display for Error {
                     "bloom threshold {threshold} is not finite and zero or more"
                 )
             }
+
+            Error::GridRange { placement_id } => write!(
+                f,
+                "a ray or light lies 2^{GRID_RANGE_BITS} or more cells from placement \
+                 {placement_id}'s grid"
+            ),
         }
     }
 }

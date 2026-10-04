@@ -1,9 +1,16 @@
-use crate::{RenderHit, RenderRay, RenderRayWalk, RenderScene};
+use crate::{RenderHit, RenderRay, RenderRayWalk, RenderScene, Result};
 
 /// The nearest surface hit of `ray` within `max_distance` across every
-/// placement of `scene`: the first hit of its [`RenderRayWalk`].
-pub fn cast_ray(scene: &RenderScene, ray: &RenderRay, max_distance: f64) -> Option<RenderHit> {
-    RenderRayWalk::new(scene, ray, max_distance).next()
+/// placement of `scene`: the first hit of its [`RenderRayWalk`]. Errors if
+/// the ray's origin lies out of a grid's [range](crate::GRID_RANGE_BITS).
+pub fn cast_ray(
+    scene: &RenderScene,
+    ray: &RenderRay,
+    max_distance: f64,
+) -> Result<Option<RenderHit>> {
+    let hit = RenderRayWalk::from_ray(scene, ray)?.next();
+
+    Ok(hit.filter(|hit| hit.distance <= max_distance))
 }
 
 #[cfg(test)]
@@ -33,7 +40,9 @@ mod tests {
                 let mut direction = [0.0; 3];
                 direction[axis] = -f64::from(sign);
 
-                let hit = cast_ray(&scene, &ray(origin, direction), f64::INFINITY).unwrap();
+                let hit = cast_ray(&scene, &ray(origin, direction), f64::INFINITY)
+                    .unwrap()
+                    .unwrap();
 
                 assert_eq!(hit.face.d, axis);
                 assert_eq!(hit.face.sign, sign);
@@ -53,7 +62,8 @@ mod tests {
                 &scene,
                 &ray([0.5, 1.5, 4.0], [0.0, 0.0, -1.0]),
                 f64::INFINITY
-            ),
+            )
+            .unwrap(),
             None
         );
         assert_eq!(
@@ -61,11 +71,12 @@ mod tests {
                 &scene,
                 &ray([0.5, 0.5, 4.0], [0.0, 0.0, 1.0]),
                 f64::INFINITY
-            ),
+            )
+            .unwrap(),
             None
         );
         assert_eq!(
-            cast_ray(&scene, &ray([0.5, 0.5, 4.0], [0.0, 0.0, -1.0]), 2.0),
+            cast_ray(&scene, &ray([0.5, 0.5, 4.0], [0.0, 0.0, -1.0]), 2.0).unwrap(),
             None
         );
     }
@@ -83,6 +94,7 @@ mod tests {
             &ray([0.5, 0.5, 0.5], [1.0, 0.0, 0.0]),
             f64::INFINITY,
         )
+        .unwrap()
         .unwrap();
         assert_eq!(hit.face.d, 0);
         assert_eq!(hit.face.sign, -1);
@@ -94,7 +106,8 @@ mod tests {
                 &scene,
                 &ray([0.5, 0.5, 0.5], [-1.0, 0.0, 0.0]),
                 f64::INFINITY
-            ),
+            )
+            .unwrap(),
             None
         );
     }
@@ -113,6 +126,7 @@ mod tests {
             &ray([0.5, 0.5, 10.0], [0.0, 0.0, -1.0]),
             f64::INFINITY,
         )
+        .unwrap()
         .unwrap();
         assert_eq!(hit.distance, 9.0);
         assert_eq!(
@@ -135,6 +149,7 @@ mod tests {
             &ray([11.0, 1.0, 5.0], [0.0, 0.0, -1.0]),
             f64::INFINITY,
         )
+        .unwrap()
         .unwrap();
         assert!((hit.distance - 5.0).abs() < 1e-9);
         // Grid +X turns onto world -Z, so the ray runs along grid +X and

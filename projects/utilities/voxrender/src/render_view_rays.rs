@@ -1,5 +1,8 @@
-use crate::{RenderProjection, RenderRay, RenderView};
-use ty_math::TyVector3F64;
+use crate::{
+    GRID_DIRECTION_BITS, GRID_FRACTION_BITS, GRID_GUARD_BITS, RenderGridViewRays, RenderProjection,
+    RenderRay, RenderView, grid_point, grid_vector, quantize_point,
+};
+use ty_math::{TyTransformF64, TyVector3F64};
 
 /// The rays through the pixel centers of a view over an image. Rows run top
 /// to bottom. A perspective ray fans out from the view's position by its
@@ -9,6 +12,8 @@ use ty_math::TyVector3F64;
 ///
 /// [`new`](Self::new) lowers the projection into pixel steps.
 /// [`ray`](Self::ray) adds those steps without branching on the projection.
+/// [`to_grid_rays`](Self::to_grid_rays) carries the steps into a
+/// placement's grid as integers.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct RenderViewRays {
     width: u32,
@@ -113,6 +118,61 @@ impl RenderViewRays {
             direction: (self.direction + self.direction_x * x + self.direction_y * y).normalize(),
         }
     }
+
+    /// These rays in the grid of a placement under `transform`, or `None`
+    /// when a corner pixel's origin lies out of the grid's
+    /// [range](crate::GRID_RANGE_BITS). The direction scale leaves room under
+    /// `1 << GRID_DIRECTION_BITS` for the steps' rounding.
+    pub fn to_grid_rays(&self, transform: &TyTransformF64) -> Option<RenderGridViewRays> {
+        let origin = grid_point(transform, self.origin);
+        let origin_x = grid_vector(transform, self.origin_x);
+        let origin_y = grid_vector(transform, self.origin_y);
+        let direction = grid_vector(transform, self.direction);
+        let direction_x = grid_vector(transform, self.direction_x);
+        let direction_y = grid_vector(transform, self.direction_y);
+
+        // Every ray lies between the corner pixels' rays.
+        let last_x = f64::from(self.width - 1);
+        let last_y = f64::from(self.height - 1);
+        let corners = [(0.0, 0.0), (last_x, 0.0), (0.0, last_y), (last_x, last_y)];
+
+        for (x, y) in corners {
+            quantize_point(origin + origin_x * x + origin_y * y)?;
+        }
+
+        let largest = corners
+            .iter()
+            .map(|&(x, y)| {
+                (direction + direction_x * x + direction_y * y)
+                    .abs()
+                    .max_element()
+            })
+            .fold(0.0, f64::max);
+
+        let margin = 1 + ((u64::from(self.width) + u64::from(self.height)) >> GRID_GUARD_BITS);
+        let reach = 2f64.powi(GRID_DIRECTION_BITS as i32) - margin as f64;
+
+        let guard = 2f64.powi(GRID_GUARD_BITS as i32);
+        let origin_scale = guard * 2f64.powi(GRID_FRACTION_BITS as i32);
+        let direction_scale = guard * reach / largest;
+
+        Some(RenderGridViewRays {
+            width: self.width,
+            height: self.height,
+            origin: fixed(origin, origin_scale),
+            origin_x: fixed(origin_x, origin_scale),
+            origin_y: fixed(origin_y, origin_scale),
+            direction: fixed(direction, direction_scale),
+            direction_x: fixed(direction_x, direction_scale),
+            direction_y: fixed(direction_y, direction_scale),
+        })
+    }
+}
+
+fn fixed(vector: TyVector3F64, scale: f64) -> [i64; 3] {
+    vector
+        .to_array()
+        .map(|component| (component * scale).round() as i64)
 }
 
 #[cfg(test)]

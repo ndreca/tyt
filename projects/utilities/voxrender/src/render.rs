@@ -1,8 +1,9 @@
 use crate::{
-    BRenderView, Error, RenderBloom, RenderGrid, RenderHit, RenderImage, RenderLight,
-    RenderMaterial, RenderOcclusion, RenderPixel, RenderRay, RenderRayWalk, RenderScene,
-    RenderShadow, RenderViewRays, Result, ShadowTarget, apply_bloom, material_pass,
-    normal_reflectance,
+    BRenderPlacement, BRenderView, Error, GRID_FRACTION_BITS, RenderBloom, RenderGrid,
+    RenderGridRay, RenderHit, RenderImage, RenderLight, RenderMaterial, RenderOcclusion,
+    RenderPixel, RenderRay, RenderRayWalk, RenderScene, RenderShadow, RenderViewRays, Result,
+    SHADOW_INSET_BITS, ShadowTarget, apply_bloom, grid_point, grid_vector, material_pass,
+    normal_reflectance, quantize_direction, quantize_point,
 };
 use branded_id::U32Id;
 use std::{
@@ -19,12 +20,11 @@ const MIN_ALPHA: f64 = 1e-3;
 /// whose angles sit a rounding apart finite.
 const MIN_CONE_WIDTH: f64 = 1e-3;
 
-/// How far a shadow ray's start sits out from its face, in grid units.
-const BIAS: f64 = 1e-4;
+/// One cell's side in fixed point.
+const ONE: i64 = 1 << GRID_FRACTION_BITS;
 
-/// The least distance from a face's edges to a sample, as a fraction of the
-/// face. It keeps a corner sample in front of the hit's cell.
-const INSET: f64 = 1e-3;
+/// [`SHADOW_INSET_BITS`] in fixed point.
+const INSET: i64 = ONE >> SHADOW_INSET_BITS;
 
 const BLACK: TyLinSrgbF64 = TyLinSrgbF64::new(0.0, 0.0, 0.0);
 
@@ -36,8 +36,9 @@ const WHITE: TyLinSrgbF64 = TyLinSrgbF64::new(1.0, 1.0, 1.0);
 /// to back, adding each hit's shade at its coverage and passing the rest
 /// through by the material's pass. A pixel no ray hits carries no light and
 /// full transmittance until `bloom`'s halo reaches it. Errors if the view
-/// is not one of the scene's, a side is zero, or a bloom value is out of
-/// range.
+/// is not one of the scene's, a side is zero, a bloom value is out of
+/// range, or a ray or light lies out of a grid's
+/// [range](crate::GRID_RANGE_BITS).
 pub fn render(
     scene: &RenderScene,
     view_id: U32Id<BRenderView>,
@@ -55,12 +56,22 @@ pub fn render(
     let view = scene.view(view_id).ok_or(Error::UnknownView { view_id })?;
 
     let rays = RenderViewRays::new(view, width, height);
+
+    let grid_rays = scene
+        .iter_placements()
+        .map(|(placement_id, placement)| {
+            rays.to_grid_rays(&placement.transform)
+                .ok_or(Error::GridRange { placement_id })
+        })
+        .collect::<Result<Vec<_>>>()?;
+
     let mut image = RenderImage::new(width, height);
     let mut emission = vec![TyLinSrgbF32::new(0.0, 0.0, 0.0); width as usize * height as usize];
 
     for y in 0..height {
         for x in 0..width {
-            let shade = shade_ray(scene, occlusion, &rays.ray(x, y));
+            let walk = RenderRayWalk::new(scene, grid_rays.iter().map(|rays| rays.ray(x, y)));
+            let shade = shade_ray(scene, occlusion, &rays.ray(x, y), walk)?;
 
             image.set_pixel(
                 x,
@@ -119,14 +130,20 @@ struct RayShade {
     transmittance: TyLinSrgbF64,
 }
 
-/// The shade of `ray` through `scene`, front to back.
-fn shade_ray(scene: &RenderScene, occlusion: RenderOcclusion, ray: &RenderRay) -> RayShade {
+/// The shade of `ray` through `scene`, summed front to back over the hits
+/// of its `walk`.
+fn shade_ray(
+    scene: &RenderScene,
+    occlusion: RenderOcclusion,
+    ray: &RenderRay,
+    walk: RenderRayWalk,
+) -> Result<RayShade> {
     let mut light = BLACK;
     let mut emission = BLACK;
     let mut throughput = WHITE;
 
-    for hit in RenderRayWalk::new(scene, ray, f64::INFINITY) {
-        let shade = shade_hit(scene, occlusion, ray, &hit);
+    for hit in walk {
+        let shade = shade_hit(scene, occlusion, ray, &hit)?;
         let covered = throughput * shade.coverage;
 
         light += covered * shade.color;
@@ -138,11 +155,11 @@ fn shade_ray(scene: &RenderScene, occlusion: RenderOcclusion, ray: &RenderRay) -
         }
     }
 
-    RayShade {
+    Ok(RayShade {
         light,
         emission,
         transmittance: throughput,
-    }
+    })
 }
 
 /// What a hit shades to.
@@ -168,7 +185,7 @@ fn shade_hit(
     occlusion: RenderOcclusion,
     ray: &RenderRay,
     hit: &RenderHit,
-) -> HitShade {
+) -> Result<HitShade> {
     let placement = scene
         .placement(hit.placement_id)
         .expect("a hit lands on one of the scene's placements");
@@ -213,7 +230,7 @@ fn shade_hit(
                     continue;
                 }
 
-                let lit = shadow_factor(scene, hit, shadow, &ShadowTarget::Direction(toward));
+                let lit = shadow_factor(scene, hit, shadow, &ShadowTarget::Direction(toward))?;
 
                 color += radiance * light_color * lit * strength;
             }
@@ -239,7 +256,7 @@ fn shade_hit(
                 }
 
                 let reach = point_attenuation(distance, range);
-                let lit = shadow_factor(scene, hit, shadow, &ShadowTarget::Position(position));
+                let lit = shadow_factor(scene, hit, shadow, &ShadowTarget::Position(position))?;
 
                 color += radiance * light_color * lit * (strength * reach);
             }
@@ -276,7 +293,7 @@ fn shade_hit(
                     continue;
                 }
 
-                let lit = shadow_factor(scene, hit, shadow, &ShadowTarget::Position(position));
+                let lit = shadow_factor(scene, hit, shadow, &ShadowTarget::Position(position))?;
 
                 color += radiance * light_color * lit * (strength * reach);
             }
@@ -291,12 +308,12 @@ fn shade_hit(
         }
     }
 
-    HitShade {
+    Ok(HitShade {
         color,
         emission,
         coverage: material.base_color.alpha,
         pass: material_pass(material),
-    }
+    })
 }
 
 fn hit_material<'a>(scene: &'a RenderScene, hit: &RenderHit) -> &'a RenderMaterial {
@@ -426,33 +443,14 @@ fn shadow_factor(
     hit: &RenderHit,
     shadow: RenderShadow,
     target: &ShadowTarget,
-) -> TyLinSrgbF64 {
-    let placement = scene
-        .placement(hit.placement_id)
-        .expect("a hit lands on one of the scene's placements");
-
-    let sample = |along: [f64; 2]| {
-        let origin = placement
-            .transform
-            .transform_point(face_point(&hit.face, along, BIAS));
-
-        let (direction, max_distance) = match *target {
-            ShadowTarget::Direction(direction) => (direction, f64::INFINITY),
-
-            ShadowTarget::Position(position) => {
-                let to_light = position - origin;
-                let distance = to_light.length();
-
-                (to_light / distance, distance)
-            }
-        };
-
-        let ray = RenderRay { origin, direction };
-        let walk = RenderRayWalk::new(scene, &ray, max_distance);
+) -> Result<TyLinSrgbF64> {
+    let sample = |across: [i64; 2]| {
+        let origin = face_origin(&hit.face, across);
+        let walk = RenderRayWalk::new(scene, shadow_rays(scene, hit.placement_id, origin, target)?);
         let mut throughput = entry_pass(scene, &walk);
 
         if throughput == BLACK {
-            return BLACK;
+            return Ok(BLACK);
         }
 
         for hit in walk {
@@ -463,29 +461,84 @@ fn shadow_factor(
             }
         }
 
-        throughput
+        Ok(throughput)
     };
 
-    let inset = |along: f64| along.clamp(INSET, 1.0 - INSET);
-
     match shadow {
-        RenderShadow::None => WHITE,
+        RenderShadow::None => Ok(WHITE),
 
-        RenderShadow::PerPixel => sample(hit.along.map(inset)),
+        RenderShadow::PerPixel => {
+            let across = |axis: usize, start: usize| {
+                (hit.point[axis] - start as i64 * ONE).clamp(INSET, ONE - INSET)
+            };
 
-        RenderShadow::PerFace => sample([0.5, 0.5]),
+            sample([
+                across(hit.face.u(), hit.face.u0),
+                across(hit.face.v(), hit.face.v0),
+            ])
+        }
+
+        RenderShadow::PerFace => sample([ONE / 2; 2]),
 
         RenderShadow::PerCorner => {
-            let values = hit.face.corners().map(|[uu, vv]| {
-                sample([
-                    inset(if uu == hit.face.u0 { 0.0 } else { 1.0 }),
-                    inset(if vv == hit.face.v0 { 0.0 } else { 1.0 }),
-                ])
-            });
+            let edge = |at_start: bool| if at_start { INSET } else { ONE - INSET };
+            let mut values = [BLACK; 4];
 
-            bilinear(&hit.face, values, hit.along)
+            for (value, [uu, vv]) in values.iter_mut().zip(hit.face.corners()) {
+                *value = sample([edge(uu == hit.face.u0), edge(vv == hit.face.v0)])?;
+            }
+
+            Ok(bilinear(&hit.face, values, hit.along))
         }
     }
+}
+
+/// One ray per placement toward `target` from `origin`, a fixed point in
+/// `placement_id`'s grid. Other grids get the origin through world space.
+fn shadow_rays(
+    scene: &RenderScene,
+    placement_id: U32Id<BRenderPlacement>,
+    origin: [i64; 3],
+    target: &ShadowTarget,
+) -> Result<Vec<RenderGridRay>> {
+    let placement = scene
+        .placement(placement_id)
+        .expect("a hit lands on one of the scene's placements");
+
+    let world = placement
+        .transform
+        .transform_point(TyVector3F64::from_array(
+            origin.map(|coordinate| coordinate as f64 / ONE as f64),
+        ));
+
+    scene
+        .iter_placements()
+        .map(|(other_id, other)| {
+            let quantize = |point| {
+                quantize_point(grid_point(&other.transform, point)).ok_or(Error::GridRange {
+                    placement_id: other_id,
+                })
+            };
+
+            let start = if other_id == placement_id {
+                origin
+            } else {
+                quantize(world)?
+            };
+
+            Ok(match *target {
+                ShadowTarget::Direction(direction) => RenderGridRay {
+                    origin: start,
+                    direction: quantize_direction(grid_vector(&other.transform, direction)),
+                    end: None,
+                },
+
+                ShadowTarget::Position(position) => {
+                    RenderGridRay::toward(start, quantize(position)?)
+                }
+            })
+        })
+        .collect()
 }
 
 /// What the light paid to enter the materials `walk` starts inside.
@@ -501,17 +554,16 @@ fn entry_pass(scene: &RenderScene, walk: &RenderRayWalk) -> TyLinSrgbF64 {
         })
 }
 
-/// The point on `face` at `along`, the fraction across its `u` and `v`,
-/// pushed `bias` grid units out along its normal.
-fn face_point(face: &SurfaceSpan, along: [f64; 2], bias: f64) -> TyVector3F64 {
-    let mut point = [0.0; 3];
+/// The fixed point on `face`'s plane `across` units from its min corner
+/// along its `u` and `v`.
+fn face_origin(face: &SurfaceSpan, across: [i64; 2]) -> [i64; 3] {
+    let mut point = [0; 3];
 
-    point[face.d] =
-        f64::from(face.s) + if face.sign > 0 { 1.0 } else { 0.0 } + f64::from(face.sign) * bias;
-    point[face.u()] = face.u0 as f64 + along[0] * (face.u1 - face.u0) as f64;
-    point[face.v()] = face.v0 as f64 + along[1] * (face.v1 - face.v0) as f64;
+    point[face.d] = (i64::from(face.s) + i64::from(face.sign > 0)) * ONE;
+    point[face.u()] = face.u0 as i64 * ONE + across[0];
+    point[face.v()] = face.v0 as i64 * ONE + across[1];
 
-    TyVector3F64::from_array(point)
+    point
 }
 
 /// `values` blended bilinearly across `face` at `along`.
@@ -550,7 +602,7 @@ mod tests {
         RenderPixel, RenderPlacement, RenderProjection, RenderRay, RenderRayWalk, RenderScene,
         RenderShadow, RenderView, ShadowTarget, cast_ray, fit_distance, render,
         render::{
-            BLACK, WHITE, bilinear, check_bloom, cone_attenuation, direct_radiance,
+            BLACK, RayShade, WHITE, bilinear, check_bloom, cone_attenuation, direct_radiance,
             hemisphere_radiance, point_attenuation, shade_hit, shade_ray, shadow_factor,
         },
         test_utilities::{
@@ -564,6 +616,13 @@ mod tests {
         TyTransformF64, TyVector3Ext, TyVector3F64, TyVector3U32,
     };
     use voxsurface::SurfaceSpan;
+
+    /// The shade of `ray` through `scene` without occlusion.
+    fn ray_shade(scene: &RenderScene, ray: &RenderRay) -> RayShade {
+        let walk = RenderRayWalk::from_ray(scene, ray).unwrap();
+
+        shade_ray(scene, RenderOcclusion::None, ray, walk).unwrap()
+    }
 
     #[test]
     fn hits_block_what_lies_behind_and_misses_pass_it() {
@@ -689,6 +748,46 @@ mod tests {
     }
 
     /// One white cube at the origin.
+    #[test]
+    fn a_ray_or_light_out_of_a_grids_range_errors() {
+        let draw = |scene: &RenderScene| {
+            let (view_id, _) = scene.iter_views().next().unwrap();
+
+            render(
+                scene,
+                view_id,
+                RenderOcclusion::None,
+                RenderBloom::default(),
+                8,
+                8,
+            )
+        };
+
+        let mut tiny = cube_scene(RenderShadow::PerFace);
+        let (placement_id, _) = tiny.iter_placements().next().unwrap();
+        tiny.set_placement_transform(
+            placement_id,
+            TyTransformF64::new(
+                TyVector3F64::ZERO,
+                TyQuaternionF64::IDENTITY,
+                TyVector3F64::splat(1e-10),
+            ),
+        )
+        .unwrap();
+        assert_eq!(draw(&tiny), Err(Error::GridRange { placement_id }));
+
+        let mut far = cube_scene(RenderShadow::PerFace);
+        far.retain_light(RenderLight::Point {
+            position: TyVector3F64::splat(1e12),
+            color: TyLinSrgbF64::new(1.0, 1.0, 1.0),
+            strength: 1.0,
+            range: None,
+            shadow: RenderShadow::PerFace,
+        })
+        .unwrap();
+        assert_eq!(draw(&far), Err(Error::GridRange { placement_id }));
+    }
+
     fn cube() -> RenderScene {
         let mut scene = RenderScene::default();
         let material_id = scene
@@ -753,8 +852,10 @@ mod tests {
             origin: TyVector3F64::from_array(origin),
             direction: TyVector3F64::from_array(direction),
         };
-        let hit = cast_ray(scene, &ray, f64::INFINITY).unwrap();
-        let color = shade_hit(scene, RenderOcclusion::Corner, &ray, &hit).color;
+        let hit = cast_ray(scene, &ray, f64::INFINITY).unwrap().unwrap();
+        let color = shade_hit(scene, RenderOcclusion::Corner, &ray, &hit)
+            .unwrap()
+            .color;
         color.red + color.green + color.blue
     }
 
@@ -863,7 +964,7 @@ mod tests {
         // The white sky lights a face by its diffuse color plus the 0.04
         // reflectance. The pane reflects the 0.04 alone and passes 0.96.
         let (pane, ray) = bar(&[glass(white)]);
-        let alone = shade_ray(&pane, RenderOcclusion::None, &ray);
+        let alone = ray_shade(&pane, &ray);
         assert!(
             close(alone.light, TyLinSrgbF64::new(0.04, 0.04, 0.04)),
             "{:?}",
@@ -877,7 +978,7 @@ mod tests {
 
         // The wall behind it shades to (1.04, 0.04, 0.04).
         let (walled, _) = bar(&[glass(white), matte(red)]);
-        let through = shade_ray(&walled, RenderOcclusion::None, &ray);
+        let through = ray_shade(&walled, &ray);
         assert!(
             close(
                 through.light,
@@ -897,8 +998,8 @@ mod tests {
         let (thin, ray) = bar(&[glass(white), matte(red)]);
         let (thick, _) = bar(&[glass(white), glass(white), matte(red)]);
 
-        let thin = shade_ray(&thin, RenderOcclusion::None, &ray);
-        let thick = shade_ray(&thick, RenderOcclusion::None, &ray);
+        let thin = ray_shade(&thin, &ray);
+        let thick = ray_shade(&thick, &ray);
         assert_eq!(thick.light, thin.light);
         assert_eq!(thick.transmittance, thin.transmittance);
     }
@@ -910,7 +1011,7 @@ mod tests {
 
         // Half of (0.04, 0.04, 1.04) plus half of (1.04, 0.04, 0.04).
         let (walled, ray) = bar(&[blue, red]);
-        let shade = shade_ray(&walled, RenderOcclusion::None, &ray);
+        let shade = ray_shade(&walled, &ray);
         assert!(
             close(shade.light, TyLinSrgbF64::new(0.54, 0.04, 0.54)),
             "{:?}",
@@ -920,7 +1021,7 @@ mod tests {
 
         // Over nothing, the other half passes.
         let (open, _) = bar(&[blue]);
-        let shade = shade_ray(&open, RenderOcclusion::None, &ray);
+        let shade = ray_shade(&open, &ray);
         assert!(close(shade.light, TyLinSrgbF64::new(0.02, 0.02, 0.52)));
         assert_eq!(shade.transmittance, TyLinSrgbF64::new(0.5, 0.5, 0.5));
     }
@@ -934,7 +1035,7 @@ mod tests {
         };
 
         let (scene, ray) = bar(&[emitter]);
-        let shade = shade_ray(&scene, RenderOcclusion::None, &ray);
+        let shade = ray_shade(&scene, &ray);
 
         assert_eq!(shade.emission, TyLinSrgbF64::new(1.0, 0.5, 0.0));
         // Half the emission plus half the 0.04 reflectance.
@@ -986,9 +1087,9 @@ mod tests {
             origin: TyVector3F64::new(0.5, 4.0, 0.5),
             direction: -TyVector3F64::Y,
         };
-        let hit = cast_ray(&scene, &ray, f64::INFINITY).unwrap();
+        let hit = cast_ray(&scene, &ray, f64::INFINITY).unwrap().unwrap();
 
-        let shade = shade_hit(&scene, RenderOcclusion::None, &ray, &hit);
+        let shade = shade_hit(&scene, RenderOcclusion::None, &ray, &hit).unwrap();
         assert_eq!(shade.color, TyLinSrgbF64::new(2.0, 1.0, 0.0));
         assert_eq!(shade.emission, shade.color);
     }
@@ -1036,14 +1137,19 @@ mod tests {
         // the corner occlusion.
         let behind = |front: RenderMaterial| {
             let (scene, ray) = bar(&[front, matte(white)]);
-            let hit = RenderRayWalk::new(&scene, &ray, f64::INFINITY)
+            let hit = RenderRayWalk::from_ray(&scene, &ray)
+                .unwrap()
                 .nth(1)
                 .unwrap();
             assert_eq!(hit.distance, 2.0);
 
             (
-                shade_hit(&scene, RenderOcclusion::Corner, &ray, &hit).color,
-                shade_hit(&scene, RenderOcclusion::None, &ray, &hit).color,
+                shade_hit(&scene, RenderOcclusion::Corner, &ray, &hit)
+                    .unwrap()
+                    .color,
+                shade_hit(&scene, RenderOcclusion::None, &ray, &hit)
+                    .unwrap()
+                    .color,
             )
         };
 
@@ -1063,18 +1169,18 @@ mod tests {
             matte(TyLinSrgbaF64::new(1.0, 1.0, 1.0, 1.0)),
         ]);
         let away = ShadowTarget::Direction(-TyVector3F64::X);
-        let mut walk = RenderRayWalk::new(&scene, &ray, f64::INFINITY);
+        let mut walk = RenderRayWalk::from_ray(&scene, &ray).unwrap();
 
         // The pane's face stands in the open.
         let pane = walk.next().unwrap();
         assert_eq!(
-            shadow_factor(&scene, &pane, RenderShadow::PerPixel, &away),
+            shadow_factor(&scene, &pane, RenderShadow::PerPixel, &away).unwrap(),
             WHITE
         );
 
         // The wall's face behind it starts inside the red glass.
         let wall = walk.next().unwrap();
-        let shadow = shadow_factor(&scene, &wall, RenderShadow::PerPixel, &away);
+        let shadow = shadow_factor(&scene, &wall, RenderShadow::PerPixel, &away).unwrap();
         assert!(
             close(shadow, TyLinSrgbF64::new(0.96, 0.0, 0.0)),
             "{shadow:?}"
@@ -1238,9 +1344,10 @@ mod tests {
                 origin: TyVector3F64::new(x, 3.5, 4.5),
                 direction: -TyVector3F64::Y,
             };
-            let hit = cast_ray(scene, &ray, f64::INFINITY).unwrap();
+            let hit = cast_ray(scene, &ray, f64::INFINITY).unwrap().unwrap();
             assert_eq!(hit.distance, 2.5);
             shade_hit(scene, RenderOcclusion::None, &ray, &hit)
+                .unwrap()
                 .color
                 .red
         };
@@ -1305,6 +1412,7 @@ mod tests {
             f64::INFINITY,
         )
         .unwrap()
+        .unwrap()
     }
 
     #[test]
@@ -1319,40 +1427,40 @@ mod tests {
 
         // Per pixel splits the face at the shadow's edge.
         assert_eq!(
-            shadow_factor(&scene, &near, RenderShadow::PerPixel, &target),
+            shadow_factor(&scene, &near, RenderShadow::PerPixel, &target).unwrap(),
             WHITE
         );
         assert_eq!(
-            shadow_factor(&scene, &far, RenderShadow::PerPixel, &target),
+            shadow_factor(&scene, &far, RenderShadow::PerPixel, &target).unwrap(),
             BLACK
         );
 
         // Per face reads the center, which the light clears.
         assert_eq!(
-            shadow_factor(&scene, &far, RenderShadow::PerFace, &target),
+            shadow_factor(&scene, &far, RenderShadow::PerFace, &target).unwrap(),
             WHITE
         );
 
         // Per corner blends the lit corners at x = 1 with the shadowed
         // corners at x = 2.
         assert!(close(
-            shadow_factor(&scene, &near, RenderShadow::PerCorner, &target),
+            shadow_factor(&scene, &near, RenderShadow::PerCorner, &target).unwrap(),
             WHITE * 0.75
         ));
         assert!(close(
-            shadow_factor(&scene, &far, RenderShadow::PerCorner, &target),
+            shadow_factor(&scene, &far, RenderShadow::PerCorner, &target).unwrap(),
             WHITE * 0.25
         ));
 
         assert_eq!(
-            shadow_factor(&scene, &far, RenderShadow::None, &target),
+            shadow_factor(&scene, &far, RenderShadow::None, &target).unwrap(),
             WHITE
         );
 
         // The floor well in front of the wall is fully lit.
         let open = floor_at(&scene, 0.5);
         assert_eq!(
-            shadow_factor(&scene, &open, RenderShadow::PerCorner, &target),
+            shadow_factor(&scene, &open, RenderShadow::PerCorner, &target).unwrap(),
             WHITE
         );
 
@@ -1360,12 +1468,12 @@ mod tests {
         // x = 1.75 casts nothing, and the wall blocks a light at x = 5.
         let behind = ShadowTarget::Position(TyVector3F64::new(1.75, 1.5, 1.5));
         assert_eq!(
-            shadow_factor(&scene, &far, RenderShadow::PerPixel, &behind),
+            shadow_factor(&scene, &far, RenderShadow::PerPixel, &behind).unwrap(),
             WHITE
         );
         let beyond = ShadowTarget::Position(TyVector3F64::new(5.0, 1.5, 1.5));
         assert_eq!(
-            shadow_factor(&scene, &far, RenderShadow::PerPixel, &beyond),
+            shadow_factor(&scene, &far, RenderShadow::PerPixel, &beyond).unwrap(),
             BLACK
         );
     }
@@ -1380,22 +1488,22 @@ mod tests {
         let far = floor_at(&scene, 1.75);
 
         assert!(close(
-            shadow_factor(&scene, &far, RenderShadow::PerPixel, &target),
+            shadow_factor(&scene, &far, RenderShadow::PerPixel, &target).unwrap(),
             red
         ));
         assert_eq!(
-            shadow_factor(&scene, &far, RenderShadow::PerFace, &target),
+            shadow_factor(&scene, &far, RenderShadow::PerFace, &target).unwrap(),
             WHITE
         );
 
         // Three lit corners and one red: the green and blue fall to the
         // lit share, the red almost holds.
         assert!(close(
-            shadow_factor(&scene, &near, RenderShadow::PerCorner, &target),
+            shadow_factor(&scene, &near, RenderShadow::PerCorner, &target).unwrap(),
             WHITE * 0.75 + red * 0.25
         ));
         assert!(close(
-            shadow_factor(&scene, &far, RenderShadow::PerCorner, &target),
+            shadow_factor(&scene, &far, RenderShadow::PerCorner, &target).unwrap(),
             WHITE * 0.25 + red * 0.75
         ));
     }
@@ -1453,9 +1561,9 @@ mod tests {
         let up = ShadowTarget::Direction(TyVector3F64::Y);
 
         let (thin, ray) = paned(red, 1);
-        let hit = cast_ray(&thin, &ray, f64::INFINITY).unwrap();
+        let hit = cast_ray(&thin, &ray, f64::INFINITY).unwrap().unwrap();
         assert_eq!(hit.distance, 0.5);
-        let shadow = shadow_factor(&thin, &hit, RenderShadow::PerPixel, &up);
+        let shadow = shadow_factor(&thin, &hit, RenderShadow::PerPixel, &up).unwrap();
         assert!(
             close(shadow, TyLinSrgbF64::new(0.96, 0.0, 0.0)),
             "{shadow:?}"
@@ -1463,18 +1571,18 @@ mod tests {
 
         // Every sample of the face lies under the pane.
         assert_eq!(
-            shadow_factor(&thin, &hit, RenderShadow::PerFace, &up),
+            shadow_factor(&thin, &hit, RenderShadow::PerFace, &up).unwrap(),
             shadow
         );
         assert!(close(
-            shadow_factor(&thin, &hit, RenderShadow::PerCorner, &up),
+            shadow_factor(&thin, &hit, RenderShadow::PerCorner, &up).unwrap(),
             shadow
         ));
 
         let (thick, ray) = paned(red, 2);
-        let hit = cast_ray(&thick, &ray, f64::INFINITY).unwrap();
+        let hit = cast_ray(&thick, &ray, f64::INFINITY).unwrap().unwrap();
         assert_eq!(
-            shadow_factor(&thick, &hit, RenderShadow::PerPixel, &up),
+            shadow_factor(&thick, &hit, RenderShadow::PerPixel, &up).unwrap(),
             shadow
         );
     }
@@ -1484,16 +1592,16 @@ mod tests {
         let up = ShadowTarget::Direction(TyVector3F64::Y);
 
         let (scene, ray) = paned(matte(TyLinSrgbaF64::new(1.0, 0.0, 0.0, 0.0)), 1);
-        let hit = cast_ray(&scene, &ray, f64::INFINITY).unwrap();
+        let hit = cast_ray(&scene, &ray, f64::INFINITY).unwrap().unwrap();
         assert_eq!(
-            shadow_factor(&scene, &hit, RenderShadow::PerPixel, &up),
+            shadow_factor(&scene, &hit, RenderShadow::PerPixel, &up).unwrap(),
             WHITE
         );
 
         let (scene, ray) = paned(matte(TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0)), 1);
-        let hit = cast_ray(&scene, &ray, f64::INFINITY).unwrap();
+        let hit = cast_ray(&scene, &ray, f64::INFINITY).unwrap().unwrap();
         assert_eq!(
-            shadow_factor(&scene, &hit, RenderShadow::PerPixel, &up),
+            shadow_factor(&scene, &hit, RenderShadow::PerPixel, &up).unwrap(),
             BLACK
         );
     }
@@ -1505,8 +1613,10 @@ mod tests {
         let (shaded, _) = paned(red, 1);
 
         let floor = |scene: &RenderScene| {
-            let hit = cast_ray(scene, &ray, f64::INFINITY).unwrap();
-            shade_hit(scene, RenderOcclusion::None, &ray, &hit).color
+            let hit = cast_ray(scene, &ray, f64::INFINITY).unwrap().unwrap();
+            shade_hit(scene, RenderOcclusion::None, &ray, &hit)
+                .unwrap()
+                .color
         };
 
         let lit = floor(&open);

@@ -20,7 +20,7 @@ code-level choices in
 
 ## Steps
 
-- [ ] **S1. Integer traversal in the reference.** `voxrender`'s walk becomes
+- [x] **S1. Integer traversal in the reference.** `voxrender`'s walk becomes
       the integer DDA.
       1. A quantization module turns each placement's object-space ray into a
          fixed-point origin with 13 fraction bits and a 16-bit integer
