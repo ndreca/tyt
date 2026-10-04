@@ -23,8 +23,8 @@ closed rendering plan with the VR experience first.
 ## Glass
 
 Back faces, Fresnel by angle, and a transparent PNG that keeps glass's tint.
-Found on 2026-10-04 while reviewing the integer walk, and opened the same
-day as the [voxel glass plan](../voxel-glass/README.md).
+Built as the [voxel glass plan](../../closed/voxel-glass/README.md), closed
+2026-10-04 with the reference and the `glass` profile done.
 
 ## Waiting for a reason
 

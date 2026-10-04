@@ -1,10 +1,14 @@
 # Voxel glass plan
 
-Status: **open.** Opened 2026-10-04 after the glass review. The steps live
-in [checklist.md](checklist.md). Code-level choices are logged in
+Status: **closed.** Opened 2026-10-04 after the glass review. The steps
+landed on main the same day, ending with the double-sided `glass` profile in
+`90df0a5b`. The steps lived in [checklist.md](checklist.md). Code-level
+choices are logged in
 [implementation-decisions.md](implementation-decisions.md). The
 [contract](../../../ref/render/contract.md) holds the render rules. The
-[follow-ups plan](../voxel-rendering-followups/README.md) points here.
+[profile reference](../../../ref/mesh/profile-language.md#built-in-profiles)
+holds the `glass` profile. The
+[follow-ups plan](../../open/voxel-rendering-followups/README.md) points here.
 
 ## Goal
 
@@ -20,7 +24,7 @@ review of the integer walk found two faults:
 The review compared prototype renders of each candidate over white, gray,
 dark, black, and patterned backdrops, and this plan builds the ones it
 picked. It revisits two choices of the closed
-[transparency plan](../../closed/voxel-transparency/README.md): front faces
+[transparency plan](../voxel-transparency/README.md): front faces
 only, its decision 1, and the output's single alpha.
 
 ## Exits

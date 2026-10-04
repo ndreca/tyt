@@ -60,6 +60,6 @@ code-level choices in [implementation-decisions.md](implementation-decisions.md)
       `doubleSided` on its blended material.
       1. The built-in profiles and the profile reference both carry the slot
       2. Tests over the expansion
-- [ ] **S5. Review and close.** Rerender the review's scenes from main's
+- [x] **S5. Review and close.** Rerender the review's scenes from main's
       `vxl` and compare them with the picked prototype over each backdrop.
       The follow-ups plan records the plan closed.

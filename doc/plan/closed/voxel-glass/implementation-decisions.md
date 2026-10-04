@@ -77,3 +77,22 @@ they land.
   reference's listing to the embedded map.
 - Meshing `glass.voxj` under the profile writes `doubleSided` on the `glass`
   material alone.
+
+## S5. Review and close
+
+- The review rendered `hero`, `top`, and `swatches` at 512 pixels from
+  main's `vxl`, transparent and over white, `#808080`, `#1e1e1e`, black, and
+  the lab's pattern. The prototype is the lab's `fresnel-walls` data under
+  the sRGB solve.
+- `swatches` matches within 5 levels over every backdrop.
+- In `glass.voxj` the glass matches within 2.6 levels on average. The larger
+  differences fall where the plan departs from the prototype:
+  1. Shadow rays meet exits. The prototype's shadow walk had none, so
+     main's glass shadows are darker
+  2. Shadow rays take their own cosine. Pinning it to one drops the hero's
+     peak difference from 49 levels to 34
+  3. No exit into an opaque cell. The prototype tinted the floor under the
+     glass and the wall behind the clear block once more, by up to 37 levels
+- Main's transparent PNG over white matches its `--background white` within
+  a level. Over each other backdrop it matches the prototype's PNG as
+  closely as the exact composites match.
