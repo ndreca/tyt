@@ -2,6 +2,7 @@ use crate::operations::mesh_doc::{
     GridSpace, MeshInput, MeshTriangle, TextureSlots, VoxelGrid, VoxelMaterial,
 };
 use meshdoc::MeshMaterial;
+use std::array;
 use ty_math::{TyLinSrgbF64, TyLinSrgbaF64, TySrgbaU8, TyVector3F64};
 use voxcore::color::lin_srgba_f64_from_srgba_u8;
 
@@ -48,7 +49,6 @@ pub fn sample_material(
         .map(|index| TextureSlots::resolve(mesh, index as u32))
         .collect();
 
-    // A running per-attribute sum and shared sample count per cell.
     let mut accum = vec![CellAccum::default(); cells];
 
     for (index, triangle) in triangles.iter().enumerate() {
@@ -86,7 +86,7 @@ pub fn sample_material(
                     continue;
                 }
 
-                accumulate(&mut accum[cell], triangle, material, slots, a, b, c);
+                accum[cell].add(sample_attributes(triangle, material, slots, a, b, c));
             }
         }
     }
@@ -115,63 +115,100 @@ fn resolve_cell(
     let source = mesh.primitives[triangle.primitive as usize].material;
     let mut material = VoxelMaterial::from(source);
 
-    let accum = if scatter.count > 0 {
-        *scatter
+    let sample = if scatter.count > 0 {
+        scatter.mean()
     } else if slots.any() {
-        point_accum(triangle, source, slots, space, cell)
+        let (a, b, c) = barycentric(&triangle.points, space.cell_center(cell));
+        sample_attributes(triangle, source, slots, a, b, c)
     } else {
         return Some(material);
     };
 
-    apply(&mut material, slots, &accum);
+    apply(&mut material, slots, &sample);
 
     Some(material)
 }
 
-/// A per-cell running sum of each sampled attribute over `count` samples.
+/// The attributes one point of a triangle samples. An attribute whose slot is
+/// unresolved stays `0`.
 #[derive(Clone, Copy, Default)]
-struct CellAccum {
-    /// The linear base color, summed component-wise.
+struct AttributeSample {
+    /// The linear base color.
     base_color: [f64; 4],
 
-    /// The metallic value, summed.
     metallic: f64,
 
-    /// The roughness value, summed.
     roughness: f64,
 
-    /// The linear emissive color, summed component-wise.
+    /// The linear emissive color.
     emissive: [f64; 3],
 
-    /// The occlusion value, summed.
     occlusion: f64,
+}
 
-    /// The number of samples contributing to the sums.
+impl AttributeSample {
+    /// Each attribute of `self` and `other` paired through `combine`.
+    fn combine(self, other: Self, combine: impl Fn(f64, f64) -> f64) -> Self {
+        Self {
+            base_color: array::from_fn(|i| combine(self.base_color[i], other.base_color[i])),
+            metallic: combine(self.metallic, other.metallic),
+            roughness: combine(self.roughness, other.roughness),
+            emissive: array::from_fn(|i| combine(self.emissive[i], other.emissive[i])),
+            occlusion: combine(self.occlusion, other.occlusion),
+        }
+    }
+}
+
+/// A cell's samples, summed as offsets from the first sample so a cell of one
+/// repeated sample resolves to that sample bit for bit. A plain sum divided by
+/// the count drifts in the last bit and splits one material into several.
+#[derive(Clone, Default)]
+struct CellAccum {
+    first: AttributeSample,
+
+    offset_sum: AttributeSample,
+
     count: u32,
 }
 
-/// Samples each resolved slot at barycentric `(a, b, c)` over `triangle`,
-/// applies the factor of `material`, and adds it to `accum` as one sample.
-fn accumulate(
-    accum: &mut CellAccum,
+impl CellAccum {
+    fn add(&mut self, sample: AttributeSample) {
+        if self.count == 0 {
+            self.first = sample;
+        } else {
+            let offset = sample.combine(self.first, |sample, first| sample - first);
+            self.offset_sum = self.offset_sum.combine(offset, |sum, offset| sum + offset);
+        }
+
+        self.count += 1;
+    }
+
+    fn mean(&self) -> AttributeSample {
+        let count = self.count as f64;
+        self.first
+            .combine(self.offset_sum, |first, sum| first + sum / count)
+    }
+}
+
+/// Samples each resolved slot at barycentric `(a, b, c)` over `triangle` and
+/// applies the factor of `material`.
+fn sample_attributes(
     triangle: &MeshTriangle,
     material: &MeshMaterial,
     slots: &TextureSlots<'_>,
     a: f64,
     b: f64,
     c: f64,
-) {
+) -> AttributeSample {
     let vertex_ids = triangle.vertex_ids;
+    let mut sample = AttributeSample::default();
 
     // The sRGB-decoded texel tinted by the linear factor.
     if let Some(slot) = &slots.base_color {
         let texel = slot.sample(vertex_ids, a, b, c);
         let color =
             lin_srgba_f64_from_srgba_u8(TySrgbaU8::from(texel)) * material.base_color_factor;
-        accum.base_color[0] += color.red;
-        accum.base_color[1] += color.green;
-        accum.base_color[2] += color.blue;
-        accum.base_color[3] += color.alpha;
+        sample.base_color = [color.red, color.green, color.blue, color.alpha];
     }
 
     // Straight-decoded linear data, blue scaled by the metallic factor and
@@ -180,8 +217,8 @@ fn accumulate(
         let data = slot
             .sample(vertex_ids, a, b, c)
             .map(|byte| byte as f64 / 255.0);
-        accum.metallic += material.metallic_factor * data[2];
-        accum.roughness += material.roughness_factor * data[1];
+        sample.metallic = material.metallic_factor * data[2];
+        sample.roughness = material.roughness_factor * data[1];
     }
 
     // The sRGB-decoded texel tinted component-wise by the linear emissive
@@ -190,68 +227,46 @@ fn accumulate(
         let texel = slot.sample(vertex_ids, a, b, c);
         let color = lin_srgba_f64_from_srgba_u8(TySrgbaU8::from(texel));
         let factor = material.emissive_factor;
-        accum.emissive[0] += color.red * factor.red;
-        accum.emissive[1] += color.green * factor.green;
-        accum.emissive[2] += color.blue * factor.blue;
+        sample.emissive = [
+            color.red * factor.red,
+            color.green * factor.green,
+            color.blue * factor.blue,
+        ];
     }
 
     // Straight-decoded red at `1 + strength * (red - 1)`, so the strength
     // scales how far the map darkens from full.
     if let Some(slot) = &slots.occlusion {
         let red = slot.sample(vertex_ids, a, b, c)[0] as f64 / 255.0;
-        accum.occlusion += 1.0 + material.occlusion_strength * (red - 1.0);
+        sample.occlusion = 1.0 + material.occlusion_strength * (red - 1.0);
     }
 
-    accum.count += 1;
+    sample
 }
 
-/// One point sample at the cell center, for a surface cell the scatter grazed
-/// without a lattice point landing in it.
-fn point_accum(
-    triangle: &MeshTriangle,
-    material: &MeshMaterial,
-    slots: &TextureSlots<'_>,
-    space: &GridSpace,
-    cell: usize,
-) -> CellAccum {
-    let (a, b, c) = barycentric(&triangle.points, space.cell_center(cell));
-    let mut accum = CellAccum::default();
-    accumulate(&mut accum, triangle, material, slots, a, b, c);
-    accum
-}
-
-/// Overrides each resolved slot's attribute of `material` with its accumulated
-/// mean. An attribute whose slot is unresolved keeps its flat factor.
-fn apply(material: &mut VoxelMaterial, slots: &TextureSlots<'_>, accum: &CellAccum) {
-    let n = accum.count as f64;
-
+/// Overrides each resolved slot's attribute of `material` with its value in
+/// `sample`. An attribute whose slot is unresolved keeps its flat factor.
+fn apply(material: &mut VoxelMaterial, slots: &TextureSlots<'_>, sample: &AttributeSample) {
     if slots.base_color.is_some() {
-        material.base_color = TyLinSrgbaF64::new(
-            accum.base_color[0] / n,
-            accum.base_color[1] / n,
-            accum.base_color[2] / n,
-            accum.base_color[3] / n,
-        );
+        let [red, green, blue, alpha] = sample.base_color;
+        material.base_color = TyLinSrgbaF64::new(red, green, blue, alpha);
     }
 
     if slots.metallic_roughness.is_some() {
-        material.metallic = accum.metallic / n;
-        material.roughness = accum.roughness / n;
+        material.metallic = sample.metallic;
+        material.roughness = sample.roughness;
     }
 
     // The map overrides the emissive color; the emissive strength stays the
     // material's flat factor, since it is a per-material scalar the texture does
     // not carry.
     if slots.emissive.is_some() {
-        material.emissive_color = TyLinSrgbF64::new(
-            accum.emissive[0] / n,
-            accum.emissive[1] / n,
-            accum.emissive[2] / n,
-        );
+        let [red, green, blue] = sample.emissive;
+        material.emissive_color = TyLinSrgbF64::new(red, green, blue);
     }
 
     if slots.occlusion.is_some() {
-        material.occlusion = accum.occlusion / n;
+        material.occlusion = sample.occlusion;
     }
 }
 
@@ -332,20 +347,20 @@ mod tests {
         MeshImage, MeshImageMediaType, MeshImageSource, MeshMain, MeshMaterial, MeshPrimitive,
         MeshTexture, MeshTextureRef,
     };
-    use ty_math::{TyLinSrgbaF64, TyTransformF64, TyVector2F64, TyVector3F64, TyVector3U32};
+    use ty_math::{
+        TyLinSrgbaF64, TySrgbaU8, TyTransformF64, TyVector2F64, TyVector3F64, TyVector3U32,
+    };
+    use voxcore::color::lin_srgba_f64_from_srgba_u8;
 
-    /// Every surface cell of a textured mesh resolves to a material, through the
-    /// scatter or the point-sample fallback, never staying `None`. A `None`
-    /// surface cell is the grazing-miss bug that left voxels the flat white
-    /// factor.
-    #[test]
-    fn every_textured_surface_cell_resolves() {
+    /// The base color of each surface cell of an oblique triangle textured by a
+    /// 1 x 1 image of `texel`, or `None` for a surface cell left unresolved.
+    fn surface_base_colors(texel: [u8; 4]) -> Vec<Option<TyLinSrgbaF64>> {
         let mut main = MeshMain::default();
         let image_id = main
             .retain_image(MeshImage {
                 name: String::new(),
                 media_type: MeshImageMediaType::Png,
-                source: MeshImageSource::Bytes(png_rgba(1, 1, &[[255, 0, 0, 255]])),
+                source: MeshImageSource::Bytes(png_rgba(1, 1, &[texel])),
             })
             .unwrap();
         let texture_id = main.retain_texture(MeshTexture::new(image_id)).unwrap();
@@ -395,16 +410,40 @@ mod tests {
 
         let sampled = sample_material(&mesh, &mesh.triangles, &grid, &space);
 
-        let surface = grid.triangle.iter().filter(|t| t.is_some()).count();
-        assert!(surface > 0, "the oblique triangle rasterizes surface cells");
-        for (cell, covering) in grid.triangle.iter().enumerate() {
-            if covering.is_some() {
-                assert_eq!(
-                    sampled[cell].map(|material| material.base_color),
-                    Some(TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0)),
-                    "surface cell {cell} left uncolored"
-                );
-            }
+        let surface_base_colors: Vec<_> = grid
+            .triangle
+            .iter()
+            .zip(sampled)
+            .filter(|(covering, _)| covering.is_some())
+            .map(|(_, material)| material.map(|material| material.base_color))
+            .collect();
+        assert!(
+            !surface_base_colors.is_empty(),
+            "the oblique triangle rasterizes surface cells"
+        );
+        surface_base_colors
+    }
+
+    /// Every surface cell of a textured mesh resolves to a material, through the
+    /// scatter or the point-sample fallback, never staying `None`. A `None`
+    /// surface cell is the grazing-miss bug that left voxels the flat white
+    /// factor.
+    #[test]
+    fn every_textured_surface_cell_resolves() {
+        for base_color in surface_base_colors([255, 0, 0, 255]) {
+            assert_eq!(base_color, Some(TyLinSrgbaF64::new(1.0, 0.0, 0.0, 1.0)));
+        }
+    }
+
+    /// A cell whose samples all read one texel resolves to that texel's color
+    /// bit for bit, so one texel makes one palette material.
+    #[test]
+    fn a_cell_of_one_texel_resolves_to_the_texel_exactly() {
+        let texel = [122, 74, 42, 255];
+        let decoded = lin_srgba_f64_from_srgba_u8(TySrgbaU8::from(texel));
+
+        for base_color in surface_base_colors(texel) {
+            assert_eq!(base_color, Some(decoded));
         }
     }
 }
