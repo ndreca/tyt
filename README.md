@@ -146,13 +146,15 @@ cargo build -p tyt --features bin   # Build the binary
 
 ## Development
 
+Images and other binaries live in [Git LFS](https://git-lfs.com), and the voxrender golden tests compile the real PNGs in, so install `git-lfs` before cloning. A clone made without it holds pointer files; run `git lfs pull` to fetch them.
+
 After cloning, run setup once:
 
 ```sh
 npm run setup
 ```
 
-This points `core.hooksPath` at `.githooks`, so a pre-commit hook runs `cargo fmt --all -- --check` and `cargo clippy --workspace --all-targets -- -D warnings` before each commit. A commit touching `projects/utilities/sdfj-builder` also runs the builder's Deno checks and needs `deno`. Setup also checks out the `submodules/branded-id` submodule, where `branded-id` is developed. The workspace builds against the published `branded-id`. To build against unreleased submodule changes, add `branded-id = { path = "submodules/branded-id" }` under the root manifest's `[patch.crates-io]`, and drop it once that version is published. Without npm, run `git config core.hooksPath .githooks` and `git submodule update --init submodules/branded-id`.
+This points `core.hooksPath` at `.githooks`, so a pre-commit hook runs `cargo fmt --all -- --check` and `cargo clippy --workspace --all-targets -- -D warnings` before each commit, and the Git LFS hooks upload binaries on push. A commit touching `projects/utilities/sdfj-builder` also runs the builder's Deno checks and needs `deno`. Setup also checks out the `submodules/branded-id` submodule, where `branded-id` is developed. The workspace builds against the published `branded-id`. To build against unreleased submodule changes, add `branded-id = { path = "submodules/branded-id" }` under the root manifest's `[patch.crates-io]`, and drop it once that version is published. Without npm, run `git config core.hooksPath .githooks` and `git submodule update --init submodules/branded-id`.
 
 Format and lint manually with:
 

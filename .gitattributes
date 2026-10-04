@@ -1,1 +1,46 @@
+# Binary
+*.wasm filter=lfs diff=lfs merge=lfs -text
+
+# Docs
+*.docx filter=lfs diff=lfs merge=lfs -text
+
+# Font
+*.otf filter=lfs diff=lfs merge=lfs -text
+*.ttf filter=lfs diff=lfs merge=lfs -text
+*.woff2 filter=lfs diff=lfs merge=lfs -text
+
+# Image
+*.ico filter=lfs diff=lfs merge=lfs -text
 *.png filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.gif filter=lfs diff=lfs merge=lfs -text
+*.tif filter=lfs diff=lfs merge=lfs -text
+*.webp filter=lfs diff=lfs merge=lfs -text
+
+# Meshes
+*.blend filter=lfs diff=lfs merge=lfs -text
+*.glb filter=lfs diff=lfs merge=lfs -text
+*.obj filter=lfs diff=lfs merge=lfs -text
+*.fbx filter=lfs diff=lfs merge=lfs -text
+*.usdz filter=lfs diff=lfs merge=lfs -text
+
+# PDF
+*.pdf filter=lfs diff=lfs merge=lfs -text
+
+# Pixquare
+*.px filter=lfs diff=lfs merge=lfs -text
+
+# Video
+*.mp4 filter=lfs diff=lfs merge=lfs -text
+
+# Voxel Max
+*.scndata filter=lfs diff=lfs merge=lfs -text
+*.vmaxb filter=lfs diff=lfs merge=lfs -text
+*.vmaxhb filter=lfs diff=lfs merge=lfs -text
+*.vmaxpsb filter=lfs diff=lfs merge=lfs -text
+*.vmaxhvsb filter=lfs diff=lfs merge=lfs -text
+*.vmaxhvsc filter=lfs diff=lfs merge=lfs -text
+*.vxtex filter=lfs diff=lfs merge=lfs -text
+
+# Zip
+*.zip filter=lfs diff=lfs merge=lfs -text
