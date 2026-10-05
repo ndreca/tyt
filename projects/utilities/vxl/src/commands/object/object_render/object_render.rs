@@ -42,7 +42,7 @@ pub struct ObjectRender {
     /// through the Kitty or iTerm2 graphics protocol or as ANSI half blocks
     /// where neither is supported. As PNG, one view writes the stem with
     /// `.png` beside the input, and several write the stem, a hyphen, and
-    /// the view's name.
+    /// the view's name. Each PNG's path prints on its own line.
     #[arg(value_name = "to", long, value_parser = cli_value_parser::<OutputKind>())]
     to: Option<OutputKind>,
 
@@ -445,23 +445,27 @@ impl ObjectRender {
 
         let rendered = render(&main, &object_ids, &record)?;
 
-        if let Some(outputs) = &outputs {
-            for (path, view) in outputs.iter().zip(rendered.iter()) {
-                let png = encode_render_png(&VoxsmithDependenciesImpl, &view.image)?;
-
-                WriteFile::write_file(&dependencies, path, &png)?;
-            }
-        }
+        let mut paths = outputs.as_ref().map(|outputs| outputs.iter());
 
         for (index, (view, rendered)) in record.views.iter().zip(rendered.iter()).enumerate() {
-            if outputs.is_none() {
-                if index > 0 {
-                    dependencies.write_stdout(b"\n")?;
+            match paths.as_mut() {
+                Some(paths) => {
+                    let path = paths.next().expect("each view has an output path");
+                    let png = encode_render_png(&VoxsmithDependenciesImpl, &rendered.image)?;
+
+                    WriteFile::write_file(&dependencies, path, &png)?;
+                    dependencies.write_stdout(format!("{}\n", path.display()).as_bytes())?;
                 }
 
-                let image = &rendered.image;
+                None => {
+                    if index > 0 {
+                        dependencies.write_stdout(b"\n")?;
+                    }
 
-                dependencies.display_image(image.width(), image.height(), &image.to_bytes())?;
+                    let image = &rendered.image;
+
+                    dependencies.display_image(image.width(), image.height(), &image.to_bytes())?;
+                }
             }
 
             if self.print_camera {
@@ -1196,7 +1200,7 @@ mod tests {
     }
 
     #[test]
-    fn review_renders_hero_and_three_orthographic_sides_under_studio_and_a_bloom() {
+    fn review_renders_hero_and_three_orthographic_sides_under_studio_and_a_bloom_over_white() {
         let review = record(&["--profile", "review"]);
 
         let projections: Vec<_> = review
@@ -1218,6 +1222,7 @@ mod tests {
         );
         assert_eq!(review.lights, record(&["--lights-from", "studio"]).lights);
         assert_eq!(review.bloom, record(&["--profile", "glow"]).bloom);
+        assert_eq!(review.background, Some(TySrgbU8::new(255, 255, 255)));
     }
 
     #[test]
@@ -1282,12 +1287,15 @@ mod tests {
         .unwrap();
 
         // The bloom stays off because a material and its lightest shade glow
-        // alike, and their halo hides the shading this test compares.
+        // alike, and their halo hides the shading this test compares. A
+        // transparent background marks the model's pixels by their alpha.
         let review = record(&[
             "--profile",
             "review",
             "--bloom-strength",
             "0",
+            "--background",
+            "transparent",
             "--width",
             "32",
             "--height",

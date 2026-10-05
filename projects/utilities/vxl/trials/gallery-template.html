@@ -177,9 +177,9 @@ details ul { margin: 0; padding-left: 18px; }
 .fix-meta { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font: 400 12px/1.5 var(--mono); color: var(--muted); }
 .fix-meta a { font: 500 12px/1.5 var(--mono); text-decoration: none; border: 1px solid var(--line); border-radius: 3px; padding: 0 5px; background: var(--surface); }
 .status { font: 500 11px/1.6 var(--mono); letter-spacing: 0.05em; text-transform: uppercase; padding: 0 7px; border-radius: 3px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
-.status.fixed { color: var(--good); background: var(--good-wash); border-color: transparent; }
-.status.call { color: var(--fair); background: var(--fair-wash); border-color: transparent; }
-.status.skill, .status.look { color: var(--accent); }
+.status.fixed, .status.held { color: var(--good); background: var(--good-wash); border-color: transparent; }
+.status.call, .status.reopened { color: var(--fair); background: var(--fair-wash); border-color: transparent; }
+.status.skill, .status.look, .status.new { color: var(--accent); }
 .status.phase2 { color: var(--ink); }
 .findings { display: grid; max-width: 90ch; }
 .finding .fix-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
@@ -452,12 +452,12 @@ const SOURCES = {
 function evidenceHTML(e) {
   return `<li><a href="#t${e.num}">${e.num}</a><span class="source">${e.run ? `run ${e.run}` : "both runs"} \u00B7 ${SOURCES[e.field]}</span>${md(e.text)}</li>`;
 }
-function findingHTML(f, steps) {
+function findingHTML(f, steps, fixLabels) {
   const nums = [...new Set(f.evidence.map(e => e.num))].sort((a, b) => a - b);
   return `<div class="fix finding" data-step="${esc(f.step)}" id="f-${esc(f.slug)}">
     <div class="fix-title"><span class="fnum">${f.num}</span><span class="status ${esc(f.step)}">${esc(steps[f.step])}</span><span>${md(f.title)}</span></div>
     <p class="fix-detail">${md(f.detail)}</p>
-    ${f.fix ? `<p class="fix-note"><b>${f.step === "call" ? "Proposal" : "Staged"}:</b> ${md(f.fix)}</p>` : ""}
+    ${f.fix ? `<p class="fix-note"><b>${esc(fixLabels[f.step] || (f.step === "call" ? "Proposal" : "Staged"))}:</b> ${md(f.fix)}</p>` : ""}
     ${f.image ? `<img class="fix-image" loading="lazy" src="${esc(f.image)}" alt="${esc(f.imageAlt || "")}">` : ""}
     ${nums.length ? `<div class="fix-meta">${nums.length} prompt${nums.length === 1 ? "" : "s"} ${trialLinks(nums)}</div>` : ""}
     ${f.evidence.length ? `<details><summary>Evidence, ${f.evidence.length} item${f.evidence.length === 1 ? "" : "s"}</summary><ul class="evidence">${f.evidence.map(evidenceHTML).join("")}</ul></details>` : ""}
@@ -481,8 +481,9 @@ function renderFindings() {
     return;
   }
   const steps = Object.fromEntries(f.steps.map(st => [st.key, st.label]));
+  const fixLabels = Object.fromEntries(f.steps.map(st => [st.key, st.fixLabel]));
   document.getElementById("findings-lede").textContent = f.lede;
-  document.getElementById("findings-list").innerHTML = f.findings.map(x => findingHTML(x, steps)).join("");
+  document.getElementById("findings-list").innerHTML = f.findings.map(x => findingHTML(x, steps, fixLabels)).join("");
   document.getElementById("synthesis-body").innerHTML = prose;
   const counts = st => f.findings.filter(x => x.step === st).length;
   chips("steps", [{ key: "all", label: `All ${f.findings.length}` }, ...f.steps.map(st => ({ key: st.key, label: `${st.label} ${counts(st.key)}` }))], "all", key => {

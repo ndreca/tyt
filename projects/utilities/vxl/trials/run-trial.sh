@@ -14,7 +14,7 @@ model=$(jq -r .model "$root/_runs/round.json")
 effort=$(jq -r .effort "$root/_runs/round.json")
 
 mkdir -p "$out"
-rm -rf "$out/exit" "$out/finished" "$out/passes"
+rm -rf "$out/exit" "$out/finished" "$out/passes" "$out/voxelized"
 printf '%s\n' "$prompt" > "$out/prompt.txt"
 date -u +%Y-%m-%dT%H:%M:%SZ > "$out/started"
 touch "$out/snapshot-marker"

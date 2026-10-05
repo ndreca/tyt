@@ -139,7 +139,9 @@ impl SdfDocVoxelize {
                 .expect("an output path names a file")
                 .to_string_lossy();
 
-            dependencies.write_stdout(report(&main, &world, &name)?.as_bytes())?;
+            dependencies.write_stdout(
+                report(&main, &world, settings.vox_main.fill_mode, &name)?.as_bytes(),
+            )?;
         }
 
         Ok(())

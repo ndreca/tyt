@@ -23,6 +23,9 @@ A headless session ignores the settings of an untrusted directory. The slots
 stay in place from round to round, and `trust.sh` marks them trusted once. A
 person runs `trust.sh` because it edits `~/.claude.json`.
 
+Each slot's settings run its session in auto mode. Claude Code then approves any
+command a classifier judges safe.
+
 ## A round
 
 ```sh
@@ -36,7 +39,9 @@ sh projects/utilities/vxl/trials/archive.sh 2026-10-04
    vxl
 2. `setup.sh` clears the slots, prints the installed vxl's skill into each, and
    records the round. It takes the model and the effort, `claude-opus-5-5` and
-   `high` by default
+   `high` by default. A `vxl-model` skill under `~/.claude/skills` replaces each
+   slot's copy, and `setup.sh` errors when that skill differs from the installed
+   vxl's
 3. A Claude Code session in this repository runs `workflow.js` with the
    contents of `prompts.json` as its `trials` argument. The workflow runs 12
    sessions at a time, analyzes both runs of each prompt, and synthesizes the

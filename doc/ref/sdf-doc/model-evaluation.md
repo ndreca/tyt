@@ -522,9 +522,10 @@ A pattern length left out takes its default count of cells times `g`.
    [Oklab](https://bottosson.github.io/posts/oklab/) lightness. Shade `i` of
    `count` steps the lightness by `(i - (count - 1) / 2) * spread`. A step of 0
    keeps the base color. A step down scales the color in linear light toward
-   black, and a step up mixes the color in linear light with white, by the
-   amount that reaches the stepped lightness. A stepped lightness outside
-   [0, 1] errors. Every other property and the alpha carry over.
+   black by the amount that reaches the stepped lightness. A step up keeps the
+   color's Oklab hue and chroma at the stepped lightness. Where linear sRGB
+   cannot hold that chroma, the shade takes the most it can. A stepped lightness
+   outside [0, 1] errors. Every other property and the alpha carry over.
 5. Two materials with identical properties merge into one palette material.
 
 ## The voxj document
@@ -566,13 +567,13 @@ A pattern length left out takes its default count of cells times `g`.
 
 ## The report
 
-1. The report reads each place's grid as the part's last step leaves it, before
-   `--fill-mode surface` runs. The grids come from `--frame world` under either
-   frame. The model's line comes first. Each place of a part then takes a part
-   line. The part's steps follow in list order, and its child parts come after
-   them. A part's steps and child parts indent one level past the part's line. A
-   lone root part takes no line, and its steps and child parts follow the
-   model's line.
+1. The report reads each place's grid as the part's last step leaves it. Only
+   the voxel counts read the grids `--fill-mode surface` leaves. The grids come
+   from `--frame world` under either frame. The model's line comes first. Each
+   place of a part then takes a part line. The part's steps follow in list
+   order, and its child parts come after them. A part's steps and child parts
+   indent one level past the part's line. A lone root part takes no line, and
+   its steps and child parts follow the model's line.
 2. An `add` or a `set` writes every cell it fills. A `carve` writes the live
    cells it empties, and a `paint` or a `coat` writes the live cells it
    recolors. A step keeps the cells whose last change came from the step.

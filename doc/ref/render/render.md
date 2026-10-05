@@ -38,9 +38,9 @@ through the Kitty or iTerm2 graphics protocol or as ANSI half blocks where
 neither is supported. `--to png` writes them beside the input instead: one
 view as the input's stem with `.png`, and several as the stem, a hyphen, and
 the view's name, as `object mesh` joins object names under `--split-files`.
-`--file-stem` replaces the stem. `--print-camera` prints each view's resolved
-pose after its image as the flags that reproduce it, ready to paste back as a
-`world` view or a profile entry.
+`--file-stem` replaces the stem, and each PNG's path prints on its own line.
+`--print-camera` prints each view's resolved pose after its image as the flags
+that reproduce it, ready to paste back as a `world` view or a profile entry.
 
 `--select` and `--select-index` choose the objects, and the default takes
 every object. The selected objects render together, placed by the hierarchy
@@ -62,7 +62,8 @@ mesh. A document with no objects errors. See
 
    Where the views go.
    1. `terminal`: inline in the terminal, one view below another.
-   2. `png`: a PNG per view beside the input.
+   2. `png`: a PNG per view beside the input, each path printed on its own
+      line.
 
 3. `--file-stem <file-stem>`
    - Default: the input's stem

@@ -437,13 +437,14 @@ when a profile loads, so the built-ins take the same schema by construction:
     "viewsFrom": ["hero", "front", "right", "back", "left"],
   },
   "review": {
-    "description": "The hero view and orthographic front, right, and top views with a bloom",
+    "description": "The hero view and orthographic front, right, and top views with a bloom over white",
     "viewsFrom": ["hero", "front", "right", "top"],
     "views": {
       "front": { "projection": "orthographic" },
       "right": { "projection": "orthographic" },
       "top": { "projection": "orthographic" },
     },
+    "background": "#FFFFFF",
     "bloomStrength": 1,
     "bloomRadius": 0.03,
     "bloomThreshold": 1,
@@ -505,7 +506,9 @@ run. `top` and `bottom` look along the up axis, where -Z is up, so the front
 sits at the bottom of the image. `turnaround` imports five of them and holds
 nothing else. `review` imports `hero`, `front`, `right`, and `top` and makes
 the three sides orthographic for checking proportions. `review` also takes
-`glow`'s bloom to show how each emissive material glows.
+`glow`'s bloom to show how each emissive material glows. Its views draw on
+opaque white because an image reader that drops alpha shows a transparent
+background as black.
 
 `studio` is one key light in the `camera` frame, from the upper left of
 whoever is looking, over a hemisphere light. A light in the `camera` frame

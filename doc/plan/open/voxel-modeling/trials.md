@@ -1,7 +1,8 @@
 # Trials
 
 Step S12 of the [checklist](checklist.md) runs these prompts through the
-vxl-model skill.
+vxl-model skill. Step S14 runs them twice more, and [round 2](trials-round-2.md)
+and [round 3](trials-round-3.md) log those rounds.
 
 ## Running a trial
 

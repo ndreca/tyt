@@ -1,7 +1,7 @@
 use crate::{
     Error, Result,
     operations::sdf_doc::{
-        FACE_OFFSETS, SdfCell, SdfGrid, SdfSampling, SdfVoxMainOptions, retain_sdf_palette,
+        SdfCell, SdfGrid, SdfSampling, SdfVoxMainOptions, has_open_face, retain_sdf_palette,
     },
     utilities::{FillMode, FlattenMode, VoxelFrame},
 };
@@ -405,8 +405,7 @@ fn snap(offset: TyVector3F64) -> TyVector3F64 {
     }))
 }
 
-/// The cells of `grid` with every live cell that has no empty face neighbor
-/// emptied. A cell outside the grid counts as empty.
+/// The cells of `grid` with every live cell that has no open face emptied.
 fn surface_cells(grid: &SdfGrid) -> Vec<SdfCell> {
     let size = grid.size.as_ivec3();
 
@@ -426,12 +425,7 @@ fn surface_cells(grid: &SdfGrid) -> Vec<SdfCell> {
                     index % size.z,
                 );
 
-            let shows = FACE_OFFSETS.iter().any(|face| {
-                grid.cell(position + *face)
-                    .is_none_or(|neighbor| neighbor.material.is_none())
-            });
-
-            if shows {
+            if has_open_face(grid, position) {
                 *cell
             } else {
                 SdfCell {

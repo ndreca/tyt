@@ -6,9 +6,9 @@ use ty_math::TyLinSrgbaF64;
 /// The lightness step between neighboring shades when the model leaves it out.
 const DEFAULT_SPREAD: f64 = 0.08;
 
-/// The shade at `index` of `shades`, whose base material holds `base`. The
-/// shade mixes the base color with black or white in linear light to step its
-/// Oklab lightness.
+/// The shade at `index` of `shades`, whose base material holds `base`. A
+/// darker shade mixes the base color with black in linear light, and a lighter
+/// one keeps the color's Oklab hue and chroma.
 pub fn shade_properties(
     base: &SdfMaterialProperties,
     shades: &SdfShades,
@@ -37,7 +37,7 @@ pub fn shade_properties(
     let [red, green, blue] = if step < 0.0 {
         toward_black(rgb, lightness, target)
     } else {
-        toward_white(rgb, target)
+        lightened(rgb, target)
     };
 
     Ok(SdfMaterialProperties {
@@ -54,24 +54,35 @@ fn toward_black(rgb: [f64; 3], lightness: f64, target: f64) -> [f64; 3] {
     rgb.map(|component| component * scale)
 }
 
-/// The linear sRGB color `rgb` mixed with white to the Oklab lightness
-/// `target`. Mixing with white has no closed form in Oklab, so a bisection
-/// finds the mix.
-fn toward_white(rgb: [f64; 3], target: f64) -> [f64; 3] {
-    let mix = |share: f64| rgb.map(|component| component + (1.0 - component) * share);
+/// The linear sRGB color at the Oklab lightness `target` with the hue of `rgb`
+/// and as much of its chroma as linear sRGB holds there.
+fn lightened(rgb: [f64; 3], target: f64) -> [f64; 3] {
+    let [_, a, b] = oklab(rgb);
+    let at = |share: f64| lin_srgb([target, a * share, b * share]);
+    let fits = |color: [f64; 3]| {
+        color
+            .iter()
+            .all(|component| (0.0..=1.0).contains(component))
+    };
+
+    if fits(at(1.0)) {
+        return at(1.0);
+    }
+
     let (mut low, mut high) = (0.0, 1.0);
 
     for _ in 0..64 {
         let middle = (low + high) / 2.0;
 
-        if oklab(mix(middle))[0] < target {
+        if fits(at(middle)) {
             low = middle;
         } else {
             high = middle;
         }
     }
 
-    mix((low + high) / 2.0)
+    // The gray at a share of 0 can stray past 1 by float error.
+    at(low).map(|component| component.clamp(0.0, 1.0))
 }
 
 /// The linear sRGB color `rgb` in Oklab, by Bjorn Ottosson's matrices.
@@ -87,27 +98,28 @@ fn oklab([r, g, b]: [f64; 3]) -> [f64; 3] {
     ]
 }
 
+/// The Oklab color `lab` in linear sRGB, by Bjorn Ottosson's matrices.
+fn lin_srgb([lightness, a, b]: [f64; 3]) -> [f64; 3] {
+    let l = (lightness + 0.396_337_777_4 * a + 0.215_803_757_3 * b).powi(3);
+    let m = (lightness - 0.105_561_345_8 * a - 0.063_854_172_8 * b).powi(3);
+    let s = (lightness - 0.089_484_177_5 * a - 1.291_485_548_0 * b).powi(3);
+
+    [
+        4.076_741_662_1 * l - 3.307_711_591_3 * m + 0.230_969_929_2 * s,
+        -1.268_438_004_6 * l + 2.609_757_401_1 * m - 0.341_319_396_5 * s,
+        -0.004_196_086_3 * l - 0.703_418_614_7 * m + 1.707_614_701_0 * s,
+    ]
+}
+
 #[cfg(test)]
 mod tests {
     use crate::operations::sdf_doc::{
         SdfMaterialProperties, material_properties,
-        sdf_doc_voxelize::internal::shade_properties::oklab, shade_properties,
+        sdf_doc_voxelize::internal::shade_properties::{lin_srgb, oklab},
+        shade_properties,
     };
     use branded_id::U32Id;
     use sdfcore::{SdfProperty, SdfPropertyValue, SdfShades};
-
-    /// The Oklab color `lab` in linear sRGB, by Bjorn Ottosson's matrices.
-    fn lin_srgb([lightness, a, b]: [f64; 3]) -> [f64; 3] {
-        let l = (lightness + 0.396_337_777_4 * a + 0.215_803_757_3 * b).powi(3);
-        let m = (lightness - 0.105_561_345_8 * a - 0.063_854_172_8 * b).powi(3);
-        let s = (lightness - 0.089_484_177_5 * a - 1.291_485_548_0 * b).powi(3);
-
-        [
-            4.076_741_662_1 * l - 3.307_711_591_3 * m + 0.230_969_929_2 * s,
-            -1.268_438_004_6 * l + 2.609_757_401_1 * m - 0.341_319_396_5 * s,
-            -0.004_196_086_3 * l - 0.703_418_614_7 * m + 1.707_614_701_0 * s,
-        ]
-    }
 
     /// A `shades` call of `count` shades `spread` apart.
     fn shades(count: f64, spread: Option<f64>) -> SdfShades {
@@ -201,6 +213,36 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn a_lighter_shade_keeps_the_hue_and_the_chroma_srgb_holds() {
+        let chroma_and_hue = |[_, a, b]: [f64; 3]| (a.hypot(b), b.atan2(a));
+        let call = shades(3.0, None);
+
+        for color in ["#C9A227", "#8A5A2B", "#2E6B30"] {
+            let base_color = base(color).base_color;
+            let (chroma, hue) =
+                chroma_and_hue(oklab([base_color.red, base_color.green, base_color.blue]));
+
+            let shade = shade_properties(&base(color), &call, 2).unwrap().base_color;
+            let (shade_chroma, shade_hue) =
+                chroma_and_hue(oklab([shade.red, shade.green, shade.blue]));
+
+            assert!((shade_hue - hue).abs() < 1e-6, "{color}");
+            assert!((shade_chroma - chroma).abs() < 1e-6, "{color}");
+        }
+
+        // A lighter yellow fits sRGB only with less chroma.
+        let yellow = base("#FFFF00").base_color;
+        let (chroma, hue) = chroma_and_hue(oklab([yellow.red, yellow.green, yellow.blue]));
+        let shade = shade_properties(&base("#FFFF00"), &shades(3.0, Some(0.02)), 2)
+            .unwrap()
+            .base_color;
+        let (shade_chroma, shade_hue) = chroma_and_hue(oklab([shade.red, shade.green, shade.blue]));
+
+        assert!((shade_hue - hue).abs() < 1e-6);
+        assert!(shade_chroma > 0.0 && shade_chroma < chroma);
     }
 
     #[test]

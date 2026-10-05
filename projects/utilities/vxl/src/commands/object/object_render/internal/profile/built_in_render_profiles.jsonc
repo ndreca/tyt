@@ -48,13 +48,14 @@
     "viewsFrom": ["hero", "front", "right", "back", "left"],
   },
   "review": {
-    "description": "The hero view and orthographic front, right, and top views with a bloom",
+    "description": "The hero view and orthographic front, right, and top views with a bloom over white",
     "viewsFrom": ["hero", "front", "right", "top"],
     "views": {
       "front": { "projection": "orthographic" },
       "right": { "projection": "orthographic" },
       "top": { "projection": "orthographic" },
     },
+    "background": "#FFFFFF",
     "bloomStrength": 1,
     "bloomRadius": 0.03,
     "bloomThreshold": 1,

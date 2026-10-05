@@ -22,96 +22,29 @@ vxl sdf-doc voxelize chair.sdfj
 
 `vxl sdf-doc build` runs the model file and writes its steps and parts as an
 `.sdfj` document. An edit to the model file takes effect at the next build.
-
-1. `[output]` sets the document's path. The path defaults to the model's path
-   with an `.sdfj` extension
-2. `--library <library>` lists a [library](#libraries) the model reads, such as
-   vxl's [`materials`](#the-materials-library). The flag repeats
-3. `--runtime <runtime>` runs the model under `node`, `bun`, or `deno` and
-   defaults to `node`. The runtime has to be installed
-4. `--profile <profile>` applies saved flags from a [profile](#profiles)
+Each `--library <library>` adds a [library](#libraries) the model reads, such
+as vxl's [`materials`](#the-materials-library).
 
 `vxl sdf-doc voxelize` samples the document on a [voxel grid](#coordinates) and
-writes a voxj document. Its flags follow
-[`vxl mesh-doc voxelize`](https://github.com/tyleo/tyt/blob/main/doc/plan/open/vxl-commands/reference/mesh-doc/voxelize.md)
-and take the values that page lists:
+writes a voxj document:
 
-1. `[output]` sets the voxj document's path. The path defaults to the input's
-   path with a `.voxj` extension, or `.voxjz` under `--format zip`
-2. `--voxel-size <meters>` sets the edge of a cell and defaults to 1 meter
-3. `--resolution <reference> <n>` sets the voxel size to a reference side of the
-   model divided by `n` and excludes `--voxel-size`
-4. `--fill-mode surface` keeps only the cells that show as a hollow shell one
+1. `--voxel-size <meters>` sets the edge of a cell and defaults to 1 meter
+2. `--resolution <reference> <n>` sets the voxel size to a reference side of the
+   model divided by `n`. `longest-world 32` fits 32 cells across the model's
+   widest side
+3. `--fill-mode surface` keeps only the cells that show as a hollow shell one
    cell thick. The default `--fill-mode solid` keeps every filled cell
-5. `--frame world` samples every [part](#parts) on one lattice and writes an
-   object for each place. `--frame local` voxelizes each part once, and every
-   place shares the part's object. `--frame` defaults to `world`
-6. `--flatten nodes` writes a model's parts as objects under one node, and
-   `--flatten objects` writes the parts as one object. Either needs
-   `--frame world`.
-   The default `--flatten none` writes a node for each place
-7. `--report` prints the [report](#report), and `--report false` turns it off
-8. `--profile <profile>` applies saved flags from a [profile](#profiles)
-9. `--format`, `--encoding-preset`, `--position-encoding`, and
-   `--sample-encoding` choose the container and the block encodings
-
-For `--resolution`, world references such as `longest-world` and `world-y`
-measure the whole model, and object references measure each part.
-
-```sh
-# chair.voxj at 32 cells across its widest side
-vxl sdf-doc voxelize chair.sdfj
-  --resolution longest-world 32
-```
+4. `--frame local` voxelizes each [part](#parts) once, and every place shares
+   the part's object. The default `--frame world` samples every part on one
+   lattice and writes an object for each place
+5. `--report` prints the [report](#report)
 
 ### Profiles
 
-A profile holds a command's flags under a name in a `.vxlconfig`. A batch of
-models can then share one profile's settings:
-
-```jsonc
-{
-  "sdfDoc": {
-    "build": {
-      "profiles": {
-        "bun": {
-          "description": "Models under Bun",
-          "libraries": ["materials"],
-          "runtime": "bun",
-        },
-      },
-    },
-    "voxelize": {
-      "profiles": {
-        "props": {
-          "description": "Props at 2.5 cm per voxel",
-          "voxelSize": 0.025,
-          "report": true,
-        },
-        "icons": {
-          "resolution": { "reference": "longest-world", "count": 16 },
-          "flatten": "objects",
-        },
-      },
-    },
-  },
-}
-```
-
-```sh
-vxl sdf-doc voxelize lantern.sdfj
-  --profile props
-```
-
-A build profile takes `libraries` and `runtime`. A voxelize profile takes
-`resolution` or `voxelSize`, `frame`, `fillMode`, `flatten`, and `report`.
-Either takes an optional `description`. Each flag key takes its flag's values.
-The output and the encoding flags stay on the command line. A flag on the
-command line overrides the profile, and either size flag replaces both
-`resolution` and `voxelSize`. The `.vxlconfig` files load in
-[`mesh-doc voxelize`'s cascade](https://github.com/tyleo/tyt/blob/main/doc/plan/open/vxl-commands/reference/mesh-doc/voxelize.md#profiles).
-`vxl profile sdf-doc build list` and `vxl profile sdf-doc voxelize list` print
-the profiles.
+A `.vxlconfig` can save either command's flags under a profile name for
+`--profile`.
+[Model evaluation](https://github.com/tyleo/tyt/blob/main/doc/ref/sdf-doc/model-evaluation.md#settings)
+sets how profiles and libraries load.
 
 ## Model files
 
@@ -622,8 +555,9 @@ type Value = boolean | number | string | number[] | IntValue | JsonValue;
 5. `shades` returns `count` versions of `base` that run from darkest to lightest
    with the original in the middle. Neighboring shades differ in perceived
    lightness by `spread`, and the other properties carry over. Darker shades mix
-   the base with black and lighter shades with white. `count` defaults to 3 and
-   `spread` to 0.08. A shade past black or white errors.
+   the base with black. Lighter shades keep the base's hue and saturation where
+   sRGB can hold them. `count` defaults to 3 and `spread` to 0.08. A shade past
+   black or white errors.
 
 ```ts
 const glass = material({
@@ -660,8 +594,7 @@ vxl defines the `materials` library, which names these materials:
 The metals are fully metallic, the gems are smooth and saturated, and the light
 group glows. The gems, `ice`, and `water` also transmit light at their own
 `ior`. Velvet, painted wood, and anything else the library lacks take a custom
-`material`. A `.vxlconfig` can replace `materials` as it replaces any
-[library](#libraries).
+`material`.
 
 ### Patterns
 
@@ -757,20 +690,18 @@ export default [
 ];
 ```
 
-1. `--library` and a build profile's `libraries` list the libraries a build
-   reads. A later library wins a name. A build that lists none reads no library
+1. A later library wins a name
 2. Reading a name no listed library holds errors
 3. Using an entry copies the entry, every entry it references, and their names
    into the model's `.sdfj` document. The document then voxelizes without the
    library
-4. A library edit takes effect at the next build
 
-Every built `.sdfj` document can serve as a library. A model file's named
-exports name their materials, patterns, shapes, steps, and parts in the
-document. An exported function names nothing. Any other named export errors.
-Exporting the array from `shades` errors, but each shade can take its own
-export. A model that exports its own `oak` and also uses `mat.oak` errors
-because two different materials take one name.
+Every built `.sdfj` document can serve as a library once a `.vxlconfig` gives it
+a library name. A model file's named exports name their materials, patterns,
+shapes, steps, and parts in the document. An exported function names nothing.
+Any other named export errors. Exporting the array from `shades` errors, but
+each shade can take its own export. A model that exports its own `oak` and also
+uses `mat.oak` errors because two different materials take one name.
 
 ```ts
 // woods.ts, built into woods.sdfj
@@ -780,40 +711,6 @@ export const stool = part("stool", {}, [
 ]);
 
 export default [stool];
-```
-
-A `.vxlconfig` defines libraries by name at `sdfDoc.build.libraries`. `files`
-holds each library as the `path` of an `.sdfj` file relative to the
-`.vxlconfig`. `embedded` holds each library's `document` inline. Either takes
-an optional `description`. A later `.vxlconfig` in the [cascade](#profiles)
-replaces a library of the same name in either group:
-
-```jsonc
-{
-  "sdfDoc": {
-    "build": {
-      "libraries": {
-        "files": {
-          "woods": {
-            "description": "Stools and woods",
-            "path": "libraries/woods.sdfj",
-          },
-        },
-        "embedded": {
-          "fabrics": {
-            "description": "Velvet",
-            "document": {
-              /* ... */
-            },
-          },
-        },
-      },
-      "profiles": {
-        "bar": { "libraries": ["materials", "woods", "fabrics"] },
-      },
-    },
-  },
-}
 ```
 
 ## Report
@@ -845,6 +742,9 @@ chair.voxj  1922 voxels of 0.025 m  1 piece  20x41x20  [-0.25, 0, -0.25] .. [0.2
 4. A step with `0 cells` wrote nothing: an `add` or a `set` fell between the
    cell centers, or a `carve`, `paint`, or `coat` met no live cell. A step with
    cells and `0 kept` was undone by later steps.
+5. `--fill-mode surface` thins the voxel counts on the model, part, and piece
+   lines to the shell the document holds. The other fields read the cells before
+   the fill.
 
 The rail keeps 252 of its 360 cells because the gilt and the jewels take the
 rest. The jewels keep all 96 cells and show 36 of them because half of each

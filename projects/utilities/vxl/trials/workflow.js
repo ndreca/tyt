@@ -89,7 +89,7 @@ const RUN_ANALYSIS = {
     progress: { type: 'string', description: 'one sentence on how the model changed from the first pass to the last' },
     failures: { type: 'array', items: { type: 'string' }, description: 'errors, broken passes, and wrong turns, each with its pass number and the error text when short' },
     operationsLacked: { type: 'array', items: { type: 'string' }, description: 'operations the session wanted that the API lacks, each with what the session did instead' },
-    skillMisses: { type: 'array', items: { type: 'string' }, description: 'API features or skill advice the session missed or misused although SKILL.md has them' },
+    skillMisses: { type: 'array', items: { type: 'string' }, description: 'API features or skill advice the session missed or misused although SKILL.md has them, where the miss cost the model quality or cost passes' },
     reportDataLacked: { type: 'array', items: { type: 'string' }, description: 'report or render data the session wanted and lacked' },
     flatColors: { type: 'string', description: 'where the colors read flat or wrong in the renders, or "none"' },
     workarounds: { type: 'array', items: { type: 'string' } },
@@ -131,7 +131,7 @@ For each run:
 2. Read the final model file. Look at the final renders with Read (front, right, top, hero, and any other PNG the session rendered last), and at the hero render in passes/01 to see how far the model came.
 3. The skill the sessions followed is ~/voxel-trials/${t.dir}/.claude/skills/vxl-model/SKILL.md. Before listing an operation as lacking, confirm in SKILL.md that the API lacks it. When the API has it and the session missed it, list it under skillMisses instead.
 ${t.stress ? `\nThe prompt was chosen to stress this: ${t.stress}. Report how each run fared against each point.\n` : ''}${t.check ? `\n${t.check} Stay read-only.\n` : ''}
-Judge each result from the renders the way the person who wrote the prompt would. Be concrete and critical, and keep each list item to one or two sentences. Then write the whole object you return as JSON to ~/voxel-trials/_runs/${t.dir}/analysis.json and return it.`
+Judge the model, not the process. A session may use any tools in any order, and a skipped skill step counts only where the model or the session's time suffered. Judge each result from the renders the way the person who wrote the prompt would. Be concrete and critical, and keep each list item to one or two sentences. Then write the whole object you return as JSON to ~/voxel-trials/_runs/${t.dir}/analysis.json and return it.`
 }
 
 async function trialPipeline(t, runPromises) {

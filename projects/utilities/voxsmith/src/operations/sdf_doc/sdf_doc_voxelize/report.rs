@@ -1,18 +1,25 @@
 use crate::{
     Error, Result,
-    operations::sdf_doc::{FACE_OFFSETS, SdfCell, SdfGrid, SdfSampling},
-    utilities::VoxelFrame,
+    operations::sdf_doc::{FACE_OFFSETS, SdfCell, SdfGrid, SdfSampling, has_open_face},
+    utilities::{FillMode, VoxelFrame},
 };
 use sdfcore::{SdfMain, SdfState, SdfStep};
 use std::{
+    borrow::Cow,
     cmp::Reverse,
     collections::{HashMap, HashSet, VecDeque},
 };
 use ty_math::TyVector3I32;
 
-/// The report on the grids of `sampling` for the voxj document `name` by model
-/// evaluation. Errors on grids sampled under the local frame.
-pub fn report(main: &SdfMain, sampling: &SdfSampling, name: &str) -> Result<String> {
+/// The report on the grids of `sampling` for the voxj document `name` written
+/// under `fill_mode` by model evaluation. Errors on grids sampled under the
+/// local frame.
+pub fn report(
+    main: &SdfMain,
+    sampling: &SdfSampling,
+    fill_mode: FillMode,
+    name: &str,
+) -> Result<String> {
     if sampling.frame == VoxelFrame::Local {
         return Err(Error::invalid(
             "report must read grids sampled under the world frame, not the local frame",
@@ -36,6 +43,32 @@ pub fn report(main: &SdfMain, sampling: &SdfSampling, name: &str) -> Result<Stri
 
     let covered: HashSet<TyVector3I32> = place_cells.iter().flatten().copied().collect();
     let pieces = face_pieces(&covered);
+
+    // The voxel counts read the cells the document holds.
+    let (place_voxels, voxels) = match fill_mode {
+        FillMode::Solid => (Cow::Borrowed(&place_cells[..]), Cow::Borrowed(&covered)),
+
+        FillMode::Surface => {
+            let place_voxels: Vec<HashSet<TyVector3I32>> = sampling
+                .places
+                .iter()
+                .map(|place| {
+                    place
+                        .grid_indices
+                        .iter()
+                        .flat_map(|&grid_index| {
+                            let grid = &sampling.grids[grid_index];
+
+                            live_cells(grid).filter(move |cell| has_open_face(grid, *cell))
+                        })
+                        .collect()
+                })
+                .collect();
+            let voxels = place_voxels.iter().flatten().copied().collect();
+
+            (Cow::Owned(place_voxels), Cow::Owned(voxels))
+        }
+    };
 
     let roots: Vec<usize> = (0..sampling.places.len())
         .filter(|&index| sampling.places[index].parent.is_none())
@@ -85,7 +118,7 @@ pub fn report(main: &SdfMain, sampling: &SdfSampling, name: &str) -> Result<Stri
                 Some(Field::Text(name.to_owned())),
                 Some(Field::Text(format!(
                     "{} of {} m",
-                    count_text(covered.len() as u64, "voxel", "voxels"),
+                    count_text(voxels.len() as u64, "voxel", "voxels"),
                     meters(voxel_size)
                 ))),
                 Some(Field::Text(pieces_label)),
@@ -99,6 +132,7 @@ pub fn report(main: &SdfMain, sampling: &SdfSampling, name: &str) -> Result<Stri
         state,
         sampling,
         place_cells: &place_cells,
+        place_voxels: &place_voxels,
         lines: &mut lines,
     };
 
@@ -149,7 +183,11 @@ pub fn report(main: &SdfMain, sampling: &SdfSampling, name: &str) -> Result<Stri
                 fields: [
                     vec![
                         Some(Field::Text(format!("piece {:>width$}", index + 1))),
-                        Some(count_field(piece.len() as u64, "voxel", "voxels")),
+                        Some(count_field(
+                            piece.iter().filter(|cell| voxels.contains(cell)).count() as u64,
+                            "voxel",
+                            "voxels",
+                        )),
                     ],
                     extent_fields(piece.iter().copied(), voxel_size),
                     vec![Some(Field::Text(format!("from {}", sources.join(", "))))],
@@ -201,6 +239,9 @@ struct ReportWriter<'a> {
 
     place_cells: &'a [HashSet<TyVector3I32>],
 
+    /// Each place's cells the document holds.
+    place_voxels: &'a [HashSet<TyVector3I32>],
+
     lines: &'a mut Vec<ReportLine>,
 }
 
@@ -233,7 +274,11 @@ impl ReportWriter<'_> {
                     Some(Field::Text(
                         place.path.last().expect("a place has a part").clone(),
                     )),
-                    Some(count_field(cells.len() as u64, "voxel", "voxels")),
+                    Some(count_field(
+                        self.place_voxels[place_index].len() as u64,
+                        "voxel",
+                        "voxels",
+                    )),
                 ],
                 extent_fields(cells.iter().copied(), self.sampling.voxel_size),
                 vec![detached.then(|| Field::Text("detached".to_owned()))],
@@ -263,13 +308,7 @@ impl ReportWriter<'_> {
 
                     _ => Some(count_field(
                         kept.iter()
-                            .filter(|(cell, live)| {
-                                *live
-                                    && FACE_OFFSETS.iter().any(|face| {
-                                        grid.cell(*cell + *face)
-                                            .is_none_or(|neighbor| neighbor.material.is_none())
-                                    })
-                            })
+                            .filter(|(cell, live)| *live && has_open_face(grid, *cell))
                             .count() as u64,
                         "exposed",
                         "exposed",
@@ -513,14 +552,14 @@ mod tests {
         operations::sdf_doc::{
             SdfSampleOptions, parts_main, report, sample, shared_leaf_main, single_part_main,
         },
-        utilities::{GridResolution, VoxelFrame},
+        utilities::{FillMode, GridResolution, VoxelFrame},
     };
     use branded_id::U32Id;
     use sdfcore::{SdfMain, SdfShape3d, SdfStep, SdfStepMaterial};
     use ty_math::TyVector3F64;
 
     /// The report on `main` sampled at `voxel_size` under the world frame.
-    fn report_on(main: &SdfMain, voxel_size: f64) -> String {
+    fn report_on(main: &SdfMain, voxel_size: f64, fill_mode: FillMode) -> String {
         let sampling = sample(
             main,
             &SdfSampleOptions {
@@ -530,7 +569,7 @@ mod tests {
         )
         .unwrap();
 
-        report(main, &sampling, "model.voxj").unwrap()
+        report(main, &sampling, fill_mode, "model.voxj").unwrap()
     }
 
     #[test]
@@ -572,7 +611,7 @@ mod tests {
         );
 
         assert_eq!(
-            report_on(&main, 0.025),
+            report_on(&main, 0.025, FillMode::Solid),
             "\
 model.voxj  32 voxels of 0.025 m  1 piece  4x2x4  [0, 0, 0] .. [0.1, 0.05, 0.1]
   add    block  48 cells  24 kept  24 exposed  4x3x4  [0, 0, 0] .. [0.1, 0.075, 0.1]
@@ -586,7 +625,7 @@ model.voxj  32 voxels of 0.025 m  1 piece  4x2x4  [0, 0, 0] .. [0.1, 0.05, 0.1]
     #[test]
     fn parts_take_part_lines_and_separate_pieces_take_piece_lines() {
         assert_eq!(
-            report_on(&parts_main(), 1.0),
+            report_on(&parts_main(), 1.0, FillMode::Solid),
             "\
 model.voxj  37 voxels of 1 m  2 pieces  7x3x4  [0, 0, 0] .. [7, 3, 4]
   add  body  32 cells  32 kept  32 exposed  4x2x4  [0, 0, 0] .. [4, 2, 4]
@@ -601,9 +640,33 @@ model.voxj  37 voxels of 1 m  2 pieces  7x3x4  [0, 0, 0] .. [7, 3, 4]
     }
 
     #[test]
+    fn the_surface_fill_thins_the_voxel_counts_to_the_shell() {
+        let main = single_part_main(
+            vec![SdfShape3d::Box {
+                min: TyVector3F64::ZERO,
+                max: TyVector3F64::splat(3.0),
+                round: None,
+            }],
+            vec![SdfStep::Add {
+                name: "block".to_string(),
+                shape_id: U32Id::from_u32(0),
+                material: SdfStepMaterial::Material(U32Id::from_u32(0)),
+            }],
+        );
+
+        assert_eq!(
+            report_on(&main, 1.0, FillMode::Surface),
+            "\
+model.voxj  26 voxels of 1 m  1 piece  3x3x3  [0, 0, 0] .. [3, 3, 3]
+  add  block  27 cells  27 kept  26 exposed  3x3x3  [0, 0, 0] .. [3, 3, 3]
+"
+        );
+    }
+
+    #[test]
     fn a_step_name_in_several_lists_takes_its_path_in_the_piece_lines() {
         assert_eq!(
-            report_on(&shared_leaf_main(), 1.0),
+            report_on(&shared_leaf_main(), 1.0, FillMode::Solid),
             "\
 model.voxj  2 voxels of 1 m  2 pieces  3x1x1  [0, 0, 0] .. [3, 1, 1]
   part  a  0 voxels
@@ -631,7 +694,7 @@ model.voxj  2 voxels of 1 m  2 pieces  3x1x1  [0, 0, 0] .. [3, 1, 1]
         .unwrap();
 
         assert_eq!(
-            report(&main, &sampling, "model.voxj")
+            report(&main, &sampling, FillMode::Solid, "model.voxj")
                 .unwrap_err()
                 .to_string(),
             "report must read grids sampled under the world frame, not the local frame"

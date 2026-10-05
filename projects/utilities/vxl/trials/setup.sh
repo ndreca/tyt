@@ -14,6 +14,15 @@ if [ -e "$root/_runs" ]; then
   exit 1
 fi
 
+# Claude Code loads a user-level skill in place of a slot's skill of the same
+# name.
+user_skill=$HOME/.claude/skills/vxl-model/SKILL.md
+if [ -e "$user_skill" ] && ! vxl integration skill print vxl-model | cmp -s - "$user_skill"; then
+  echo "$user_skill differs from the installed vxl's skill and would replace each slot's" >&2
+  echo "Print the installed vxl's skill over it or move it aside first" >&2
+  exit 1
+fi
+
 mkdir -p "$root/_harness" "$root/_runs"
 cp "$here/snapshot.sh" "$root/_harness/snapshot.sh"
 untrusted=0
