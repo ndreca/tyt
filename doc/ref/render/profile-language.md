@@ -59,8 +59,8 @@ interface Profile {
    *  omitted, `0.03`. */
   bloomRadius?: number;
 
-  /** Mirrors `--bloom-threshold`, a luminance in linear light; omitted,
-   *  `1`. */
+  /** Mirrors `--bloom-threshold`, a level in linear light that an
+   *  emission's brightest channel must exceed; omitted, `1`. */
   bloomThreshold?: number;
 
   /** Mirrors `--views-from` per entry; only the views travel. */
@@ -293,8 +293,8 @@ a profile writes its names and values.
             },
             {
               "kind": "hemisphere",
-              "sky": "#9FB4CC",
-              "ground": "#4A3E33",
+              "sky": "#FFFFFF",
+              "ground": "#404040",
               "strength": 1,
             },
           ],
@@ -437,13 +437,16 @@ when a profile loads, so the built-ins take the same schema by construction:
     "viewsFrom": ["hero", "front", "right", "back", "left"],
   },
   "review": {
-    "description": "The hero view and orthographic front, right, and top views",
+    "description": "The hero view and orthographic front, right, and top views with a bloom",
     "viewsFrom": ["hero", "front", "right", "top"],
     "views": {
       "front": { "projection": "orthographic" },
       "right": { "projection": "orthographic" },
       "top": { "projection": "orthographic" },
     },
+    "bloomStrength": 1,
+    "bloomRadius": 0.03,
+    "bloomThreshold": 1,
   },
 
   // The key light's offset gives a box three distinct shades. The shadow
@@ -462,8 +465,8 @@ when a profile loads, so the built-ins take the same schema by construction:
       },
       {
         "kind": "hemisphere",
-        "sky": "#9FB4CC",
-        "ground": "#4A3E33",
+        "sky": "#FFFFFF",
+        "ground": "#404040",
         "strength": 1,
       },
     ],
@@ -501,7 +504,8 @@ profile, so `--profile front --profile top` renders `front` and `top` in one
 run. `top` and `bottom` look along the up axis, where -Z is up, so the front
 sits at the bottom of the image. `turnaround` imports five of them and holds
 nothing else. `review` imports `hero`, `front`, `right`, and `top` and makes
-the three sides orthographic for checking proportions.
+the three sides orthographic for checking proportions. `review` also takes
+`glow`'s bloom to show how each emissive material glows.
 
 `studio` is one key light in the `camera` frame, from the upper left of
 whoever is looking, over a hemisphere light. A light in the `camera` frame
@@ -512,7 +516,8 @@ with no shadow, for judging color alone.
 `glow` turns the [bloom](contract.md#bloom) on over the emissive materials.
 With no view and no rig, it stacks over any of them:
 `--profile turnaround --profile glow` renders the turnaround under `studio`
-with the emissive materials glowing.
+with the emissive materials glowing. `glow` errors over `review` because
+`review` sets the same bloom. `--bloom-strength 0` turns `review`'s bloom off.
 
 ## User-defined profiles
 

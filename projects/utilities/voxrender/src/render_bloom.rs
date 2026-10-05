@@ -12,8 +12,8 @@ pub struct RenderBloom {
     /// average.
     pub radius: f64,
 
-    /// The luminance in linear light an emission must exceed to glow,
-    /// `0..`. Only the part above it blurs, hue preserved.
+    /// The level in linear light an emission's brightest channel must exceed
+    /// to glow, `0..`. Only the part above it blurs, with its hue kept.
     pub threshold: f64,
 }
 

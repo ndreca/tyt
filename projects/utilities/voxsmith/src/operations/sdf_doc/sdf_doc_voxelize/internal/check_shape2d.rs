@@ -96,9 +96,9 @@ pub fn check_shape2d(shape: &SdfShape2d) -> StdResult<(), String> {
             round,
         } => {
             let check = ArgumentCheck::new("rect");
-            check.corners2d(*min, *max)?;
+            check.opposite_corners2d(*min, *max)?;
 
-            let most = (*max - *min).min_element() / 2.0;
+            let most = (*max - *min).abs().min_element() / 2.0;
 
             match (chamfer, round) {
                 (Some(_), Some(round)) => {
@@ -349,6 +349,13 @@ mod tests {
         };
 
         assert!(check_shape2d(&rect(Some(0.25), None)).is_ok());
+        let flipped = SdfShape2d::Rect {
+            min: TyVector2F64::new(1.0, 0.5),
+            max: TyVector2F64::ZERO,
+            chamfer: Some(0.25),
+            round: None,
+        };
+        assert!(check_shape2d(&flipped).is_ok());
         assert_eq!(
             check_shape2d(&rect(None, Some(0.3))),
             Err("rect round must be at most half the shorter side, 0.25, not 0.3".to_string())

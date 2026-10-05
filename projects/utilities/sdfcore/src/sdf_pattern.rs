@@ -54,7 +54,7 @@ pub enum SdfPattern {
         seed: Option<f64>,
     },
 
-    /// Slabs across an axis that each take a random pick.
+    /// Rings around an axis that each take a random pick.
     Grain {
         material_ids: Vec<U32Id<BSdfMaterial>>,
 

@@ -36,11 +36,11 @@ pub fn check_shape3d(
 
         SdfShape3d::Box { min, max, round } => {
             let check = ArgumentCheck::new("box");
-            check.corners(*min, *max)?;
+            check.opposite_corners(*min, *max)?;
 
             match round {
                 Some(round) => {
-                    let most = (*max - *min).min_element() / 2.0;
+                    let most = (*max - *min).abs().min_element() / 2.0;
                     check.above_zero("round", *round)?;
                     check.at_most(
                         "round",
@@ -60,7 +60,7 @@ pub fn check_shape3d(
             thickness,
         } => {
             let check = ArgumentCheck::new("boxFrame");
-            check.corners(*min, *max)?;
+            check.opposite_corners(*min, *max)?;
             check.above_zero("thickness", *thickness)
         }
 
@@ -386,6 +386,25 @@ mod tests {
                     .to_string()
             )
         );
+    }
+
+    #[test]
+    fn a_box_takes_its_corners_in_either_order_but_apart_on_each_axis() {
+        let cuboid = |min: [f64; 3], max: [f64; 3]| SdfShape3d::Box {
+            min: TyVector3F64::from(min),
+            max: TyVector3F64::from(max),
+            round: Some(0.02),
+        };
+
+        assert!(check(cuboid([-0.2, 0.0, 0.0], [-0.25, 0.1, 0.1])).is_ok());
+        assert_eq!(
+            check(cuboid([0.0, 0.0, 0.0], [0.1, -0.1, 0.0])),
+            Err(
+                "box max must be apart from min [0, 0, 0] on each axis, not [0.1, -0.1, 0]"
+                    .to_string()
+            )
+        );
+        assert!(check(cuboid([0.0, 0.0, 0.0], [-0.03, 0.1, 0.1])).is_err());
     }
 
     #[test]

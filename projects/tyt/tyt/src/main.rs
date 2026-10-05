@@ -7,6 +7,7 @@ use tyt_common::completion_install_help;
 /// Tyleo's tools — a collection of command-line utilities for working with
 /// files, images, materials, and more.
 #[derive(Clone, Debug, Parser)]
+#[command(version)]
 struct Cli {
     #[clap(subcommand)]
     command: Command,

@@ -19,8 +19,8 @@ pub fn pattern_material(
     voxel_size: f64,
 ) -> U32Id<BSdfMaterial> {
     let seed_of = |seed: Option<f64>| seed.map_or(0, noise_seed);
-    let warped = |axis: usize, warp: f64, scale: f64, seed: u32| {
-        q[axis] + warp * fbm(q / scale, DEFAULT_OCTAVES, seed)
+    let warped = |unwarped: f64, warp: f64, scale: f64, seed: u32| {
+        unwarped + warp * fbm(q / scale, DEFAULT_OCTAVES, seed)
     };
 
     match pattern {
@@ -33,7 +33,7 @@ pub fn pattern_material(
         } => {
             let period = period.unwrap_or(voxel_size);
             let s = warped(
-                axis.index(),
+                q[axis.index()],
                 warp.unwrap_or(0.0),
                 4.0 * period,
                 seed_of(*seed),
@@ -69,7 +69,7 @@ pub fn pattern_material(
             seed,
         } => {
             let s = warped(
-                axis.index(),
+                q[axis.index()],
                 warp.unwrap_or(0.0),
                 (to - from) / 4.0,
                 seed_of(*seed),
@@ -86,8 +86,11 @@ pub fn pattern_material(
         } => {
             let period = period.unwrap_or(2.0 * voxel_size);
             let seed = noise_seed(*seed);
+            // The grain rings the axis line by reading the distance from it.
+            let mut across = q;
+            across[axis.index()] = 0.0;
             let s = warped(
-                axis.index(),
+                across.length(),
                 warp.unwrap_or(1.5 * voxel_size),
                 4.0 * period,
                 seed,
@@ -246,6 +249,7 @@ mod tests {
     use crate::operations::sdf_doc::pattern_material;
     use branded_id::U32Id;
     use sdfcore::{BSdfMaterial, SdfPattern};
+    use std::f64::consts::TAU;
     use ty_math::{TyAxis3, TyVector3F64, TyVector3I32};
 
     /// The materials `0` to `count - 1`.
@@ -302,7 +306,7 @@ mod tests {
     }
 
     #[test]
-    fn a_grain_slab_takes_one_hashed_pick() {
+    fn a_grain_ring_around_the_axis_takes_one_hashed_pick() {
         let grain = SdfPattern::Grain {
             material_ids: materials(5),
             axis: TyAxis3::Z,
@@ -311,18 +315,19 @@ mod tests {
             seed: 2.0,
         };
 
-        let slab = |z: f64| {
-            (0..10)
-                .map(|step| pick_at(&grain, f64::from(step) * 0.3, -1.0, z))
-                .collect::<Vec<_>>()
-        };
-        let first = slab(0.5);
-        assert!(first.iter().all(|pick| *pick == first[0]));
-
-        let picks: Vec<u32> = (0..20)
-            .map(|step| pick_at(&grain, 0.0, 0.0, f64::from(step) + 0.5))
+        let ring: Vec<u32> = (0..12)
+            .map(|step| {
+                let angle = f64::from(step) * TAU / 12.0;
+                let z = f64::from(step) * 0.7 - 4.0;
+                pick_at(&grain, 2.5 * angle.cos(), 2.5 * angle.sin(), z)
+            })
             .collect();
-        assert!(picks.iter().any(|pick| *pick != picks[0]));
+        assert!(ring.iter().all(|pick| *pick == ring[0]), "{ring:?}");
+
+        let across: Vec<u32> = (0..20)
+            .map(|step| pick_at(&grain, f64::from(step) + 0.5, 0.0, 0.0))
+            .collect();
+        assert!(across.iter().any(|pick| *pick != across[0]));
     }
 
     #[test]

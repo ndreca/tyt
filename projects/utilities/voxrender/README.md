@@ -152,9 +152,9 @@ pass of the material it starts inside and transmits by the pass of each
 surface it meets, so a red pane throws a red shadow. `RenderShadow` casts it
 per pixel, per face, or per corner, and blends the corner results across the
 face per channel. A `RenderBloom` adds a halo over the emissive term before
-the tonemap: the part of each hit's emission over its threshold, blurred out
-to its radius and scaled by its strength, lands on every pixel. The default
-strength of `0` skips the pass.
+the tonemap: the part of each hit's emission whose brightest channel passes
+its threshold, blurred out to its radius and scaled by its strength, lands on
+every pixel. The default strength of `0` skips the pass.
 
 A pixel walks its ray front to back, adding each hit's shade at its base
 color's alpha and passing the rest through by the material's pass, the share

@@ -22,28 +22,63 @@ stale `.sdfj` document. The line stops at the first error. A pass writes
 The pass line runs on its own, and edits to the model file go through the
 file-editing tool. A permission rule for `vxl` commands then covers every pass.
 A pass chained after `sed`, `python`, or a `time` wrapper needs its own
-approval.
+approval. A scratch model that tries one call sits beside the model file and
+runs through the same pass line because a write outside the working folder needs
+its own approval too.
 
 ## Building a model
 
-1. **Pick a voxel size.** Most models read best 16 to 64 voxels across. At 2.5
-   cm per voxel, a chair about 1 m tall stands 40 voxels high
+1. **Pick a voxel size from the smallest feature.** Every feature the prompt
+   names spans at least 2 voxels. Six strings across a 5 cm neck take voxels of
+   about 4 mm, and the guitar then runs about 250 voxels long. Models several
+   hundred voxels across voxelize in minutes. A large scene under a voxel budget
+   keeps its real size with `--fill-mode surface` or a coarser voxel
 2. **Write real sizes in meters.** A seat 45 cm up sits at `y = 0.45`. At 2.5 cm
    per voxel, the seat lands 18 voxels up. A constant such as `const v = 0.025;`
-   holds the voxel size for the details sized to the grid
-3. **Block out with boxes.** The first draft gives each large form one `box`
-   with corners on multiples of `v`. Each box takes one library material
-4. **Voxelize at the chosen size.** Every pass sets `--voxel-size` to the size
+   holds the voxel size for the details sized to the grid and matches
+   `--voxel-size`
+3. **Block out with boxes.** The first pass gives each large form one `box` with
+   corners on multiples of `v`, even when the details are clear from the start.
+   Each box takes one library material. Details written before the proportions
+   settle get rewritten when the boxes move
+4. **Face the subject toward the hero.** The `hero` view looks from the
+   front-right-top. The detail the prompt is about faces +z or +x, and no post,
+   roof, or wall stands between it and that corner. A room or a hull keeps its
+   walls and takes a re-aimed or inside view from [Other views](#other-views)
+5. **Voxelize at the chosen size.** Every pass sets `--voxel-size` to the size
    from step 1
-5. **Review.** After each pass, the [checks](#checks) cover the report and then
+6. **Review.** After each pass, the [checks](#checks) cover the report and then
    the four PNGs
-6. **Fix the proportions.** Edits between the block-out passes move and resize
-   the boxes until every view matches the prompt
-7. **Detail and paint.** Later edits replace boxes with the shapes the forms
+7. **Fix the proportions.** Edits between the block-out passes move and resize
+   the boxes until every view matches the prompt. A revision keeps the real
+   sizes and the silhouette the earlier passes got right
+8. **Detail and paint.** Later edits replace boxes with the shapes the forms
    need, cut openings, add the small details, and paint with materials and
-   patterns. Each edit changes a few steps
-8. **Export.** A prompt that asks for a mesh gets one from [one more
+   patterns. Each edit changes a few steps. Before each build, every new detail
+   meets the [resolution](#resolution) rules
+9. **Export.** A prompt that asks for a mesh gets one from [one more
    command](#exporting-a-mesh) after the last pass
+
+## Choosing operations
+
+The API already holds most of what a model builds by hand:
+
+1. Gems on a pile, snow on a roof, and gilt on top faces take `coat` with
+   `sides`. The coat finds the surface without a guessed height
+2. Arms, spokes, and candles around a center take `repeatPolar`. Limbs, horns,
+   and curled tips take `bend` or `twist`
+3. A feature with nested layers, such as a flame's core inside its outer flame,
+   takes one shape with a `gradient`. Nested shapes bury each other in any order
+4. A pattern reads the frame its shape was built in. Flames built at the origin
+   and moved into place each carry the whole `gradient`, and boards built that
+   way streak with `grain`
+5. A rim around a flat outline takes a 2D `offset` before the `extrude`. A 3D
+   `offset` also pulls in the extrusion's ends
+6. A `coat` or a `paint` also recolors a neighbor's live cells inside its reach.
+   A coat with `within: torso` stays on the torso
+7. A kit or a scene of repeated props places one part at each spot. Under
+   `--frame local` every place then shares one object. A part built fresh per
+   spot never shares, and neither does the default `--frame world`
 
 ## Checks
 
@@ -51,7 +86,8 @@ The report comes first because numbers read more reliably than pixels:
 
 1. The bounds on the model's line have to match the prompt's real size in meters
 2. A step at `0 cells` missed every cell center. A step at `0 kept` lost every
-   cell to later steps. Either needs a fix before anything else
+   cell to later steps. Either needs a fix before anything else unless later
+   paints recolor that step on purpose
 3. A detail at `0 exposed` sits buried inside another form
 4. A second piece means a shape floats. The piece lines list the steps behind
    each piece
@@ -62,9 +98,22 @@ The PNGs come next, all four on every pass:
 
 1. `front`, `right`, and `top` draw without perspective. The three views show
    the forms' heights, widths, symmetry, and alignment true to scale
-2. `hero` shows whether the model reads as the prompt, whether neighboring forms
-   take distinct materials, and whether a large surface reads flat. A flat
-   surface takes `shades` or a pattern
+2. `hero` shows whether the model reads as the prompt and whether the subject
+   faces the camera
+3. Every large face takes `shades`, `noise`, or a pattern. A terrain's cut sides
+   take strata from `bands` or `gradient`. A face of one flat color reads
+   unfinished
+4. Neighboring materials need colors far apart in lightness or hue. Two dark
+   tones or two metals side by side merge into one
+5. Glass and water read faintly over the white background. A darker rim outlines
+   clear glass that would otherwise vanish. Tinted glass tints what sits behind
+   it and can turn a red potion mauve. Water darkens what sits inside it
+6. A glow that reads pale or white where the prompt wants color takes a lower
+   `emissiveStrength` or a darker `baseColor`
+
+The model is done when every view shows the prompt and no flaw the review can
+name. A flaw named in a review takes another pass. A fix counts once the next
+pass's PNGs show it.
 
 ## Other views
 

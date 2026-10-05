@@ -6,6 +6,7 @@ use tyt_vmax::{DependenciesImpl, TytVMax};
 
 /// Commands for working with Voxel Max.
 #[derive(Clone, Debug, Parser)]
+#[command(version)]
 struct Cli {
     #[clap(subcommand)]
     command: Command,

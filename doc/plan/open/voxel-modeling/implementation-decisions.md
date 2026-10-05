@@ -297,3 +297,33 @@ land.
 5. The sdfj format moves to `docs/sdf-json-file-format.md` with the title SDF
    Json File Format. The file name and title follow voxj's
    `docs/voxel-json-file-format.md`
+
+## S13. Round 1 fixes
+
+1. `studio`'s hemisphere takes a white sky over a #404040 ground. The hemisphere
+   alone colors a metal because a voxel face misses the key light's highlight. A
+   blue-gray sky turned gold olive and steel navy
+2. `grain` hashes the frame position's distance from the line along `axis`
+   through the frame's origin. A shape built around the origin and moved by
+   `translate` centers its rings because a pattern reads the frame from before
+   the transforms
+3. `box`, `boxFrame`, and `rect` keep `min` and `max` as their parameter and key
+   names. vxl sorts the corners per axis when it builds each shape's field. The
+   checks read the sorted size. The document keeps the corners as the model
+   wrote them. `arch` keeps ordered corners because its `max` sets the height
+   above the spring line
+4. Every binary's `Cli` takes `#[command(version)]`, which prints the binary
+   crate's version. The tyt-meta `main.rs` template carries the attribute
+5. `review` sets `glow`'s three bloom values itself because a profile imports
+   only views and lights. Stacking `review` with `glow` errors as any element
+   two profiles set does. `--bloom-strength 0` turns the bloom off
+6. The bloom threshold reads an emission's brightest channel. Luminance weighs
+   green ten times blue, so a pink at strength 5 barely bloomed beside a green
+7. The library shade test renders `review` with the bloom off because a material
+   and its lightest shade share one emission and one halo
+8. In the light group, `ember` and `lava` drop to strength 1 and `flame` to 1.5
+   over a darker #9A5A1E base. Each core then keeps its hue under `review`.
+   `glow` keeps strength 3 because its near-white color whitens without losing
+   its blue
+9. The library's `grass` takes #6A8547. The more saturated #5A8F3A read as a toy
+   green beside the other library colors

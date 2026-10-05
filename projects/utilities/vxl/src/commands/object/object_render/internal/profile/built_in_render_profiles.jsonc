@@ -48,13 +48,16 @@
     "viewsFrom": ["hero", "front", "right", "back", "left"],
   },
   "review": {
-    "description": "The hero view and orthographic front, right, and top views",
+    "description": "The hero view and orthographic front, right, and top views with a bloom",
     "viewsFrom": ["hero", "front", "right", "top"],
     "views": {
       "front": { "projection": "orthographic" },
       "right": { "projection": "orthographic" },
       "top": { "projection": "orthographic" },
     },
+    "bloomStrength": 1,
+    "bloomRadius": 0.03,
+    "bloomThreshold": 1,
   },
 
   // The key light's offset gives a box three distinct shades. The shadow
@@ -73,8 +76,8 @@
       },
       {
         "kind": "hemisphere",
-        "sky": "#9FB4CC",
-        "ground": "#4A3E33",
+        "sky": "#FFFFFF",
+        "ground": "#404040",
         "strength": 1,
       },
     ],

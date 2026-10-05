@@ -231,13 +231,15 @@ the lens responds:
 2. `bloomRadius` sets the halo's reach as a fraction of the shorter image
    side, `0.03` by default. The fraction makes a small render glow like a
    large one. The radius is the standard deviation of the widest blur
-3. `bloomThreshold` is the luminance in linear light an emission must
-   exceed, `1` by default. At `1` a material at glTF's default
-   `emissiveStrength` stays flat and one pushed above it glows
+3. `bloomThreshold` sets the level in linear light an emission's brightest
+   channel must exceed, `1` by default. Every hue then blooms alike. At `1` a
+   material at glTF's default `emissiveStrength` stays flat and one pushed
+   above it glows
 
 The pass runs in four steps:
 
-1. Takes the part of each hit's emission over the threshold, hue preserved
+1. Takes the part of each hit's emission whose brightest channel passes the
+   threshold, with its hue kept
 2. Blurs it by a Gaussian per octave from the radius halving to one pixel
 3. Averages the octaves and scales by the strength
 4. Adds the halo to every pixel

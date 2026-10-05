@@ -42,7 +42,7 @@ export function bands(
 }
 
 /**
- * Slabs across `axis` that each pick a random material. A single `base`
+ * Rings around `axis` that each pick a random material. A single `base`
  * stands for `shades(base)`.
  */
 export function grain(

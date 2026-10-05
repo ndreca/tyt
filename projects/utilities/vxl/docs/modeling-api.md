@@ -214,7 +214,8 @@ wherever two reach the same cell.
    `sides` defaults to all six. `depth` counts cells and defaults to 1. `within`
    limits the coat to a shape's cells.
 5. `set` fills the cell holding each point and places detail too small for a
-   shape.
+   shape. A point at a cell center, `(i + 0.5) * v`, lands in that cell. A point
+   on a cell boundary can land on either side of it.
 
 Every step takes a name no other step in its list shares. The report and errors
 use the name. A part's grid grows to hold every `add` and `set`, and `carve`,
@@ -322,8 +323,8 @@ function pyramid(baseCenter: Vec3, width: number, height: number): Shape3d;
 function halfSpace(side: Side, at: number): Shape3d;
 ```
 
-1. `box` spans its two corners. `round` rounds its edges and corners by that
-   radius inside the same corners.
+1. `box` spans its two corners in either order on each axis.
+   `round` rounds its edges and corners by that radius inside the same corners.
 2. `boxFrame` keeps the twelve edges of the box between its corners as square
    bars `thickness` across that stay inside the corners. Crates, cages, bed
    frames, and lantern frames start from a `boxFrame`.
@@ -337,8 +338,9 @@ function halfSpace(side: Side, at: number): Shape3d;
    radius. `from` and `to` cut the ring to an arc with round ends. The angles
    run as an `arc`'s do in the plane `extrude` maps across `axis`. A cut torus
    makes handles, hooks, and horseshoes.
-5. `octahedron` reaches `radius` along each axis from its center and makes a
-   cut-gem silhouette at small sizes.
+5. `octahedron` reaches `radius` along each axis from its center. From a radius
+   of about 3 voxels it makes a cut-gem silhouette, and a smaller one reads as a
+   plus sign.
 6. `pyramid` stands on a square base `width` across centered on `baseCenter`,
    with its apex `height` above it along +Y.
 7. `halfSpace` covers everything past `at` toward `side`:
@@ -385,8 +387,8 @@ function arch(min: Vec2, max: Vec2): Shape2d;
 
 Angles in the plane run from +u toward +v.
 
-1. `rect` takes `round` or `chamfer`. A chamfer cuts each corner at 45 degrees
-   with legs that long.
+1. `rect` spans its two corners in either order. `rect` takes `round` or
+   `chamfer`. A chamfer cuts each corner at 45 degrees with legs that long.
 2. `ngon` sets every side `radius` from its center with one side facing -v.
    `ngon(c, 4, r)` makes the square from `c - r` to `c + r`. An octagon's sides
    run along the axes and the diagonals.
@@ -420,7 +422,9 @@ function lathe(
 
 1. `extrude` pushes the profile from `from` to `to` along the z axis unless
    `axis` picks another. The profile's u and v map to the other two axes in x,
-   y, z order: (x, y) for `"z"`, (x, z) for `"y"`, and (y, z) for `"x"`.
+   y, z order: (x, y) for `"z"`, (x, z) for `"y"`, and (y, z) for `"x"`. Under
+   `"y"` a profile's angles run from +x toward +z, opposite to a positive
+   `rotate("y", ...)`.
 2. `revolve` spins the profile around the y axis through `center` unless `axis`
    picks another. The profile's u measures the distance from the axis, and v
    measures the position along it. Only the half at u >= 0 counts.
@@ -475,12 +479,14 @@ interface Shape3d {
    default to `[0, 0, 0]`.
 2. `orient` turns the shape about `pivot` until the direction `from` points
    along `to`. A `torus` or a `lathe` can then point along any line.
-3. `mirror` adds the shape's reflection across the plane through `center` for
-   each axis in `axes`. `leg.mirror("xz")` makes four legs from one. A shape
-   crossing a plane keeps both halves.
+3. `mirror` adds the shape's reflection across `center` along each axis in
+   `axes`. Each letter flips one axis. `"x"` copies a left side to the right,
+   and `leg.mirror("xz")` makes four legs from one. A shape crossing a mirror
+   plane keeps both halves.
 4. `repeat` makes `count` copies along each axis and offsets the copy at
    `[i, j, k]` by `[i * step[0], j * step[1], k * step[2]]`. The copy at
-   `[0, 0, 0]` stays put.
+   `[0, 0, 0]` stays put. Five posts along z take
+   `repeat([0, 0, s], [1, 1, 5])`.
 5. `repeatPolar` makes `count` copies turned evenly around `axis` through
    `center`.
 
@@ -519,7 +525,8 @@ interface Shape3d {
 ```
 
 1. `offset` grows the shape by `distance` and shrinks it when `distance` is
-   negative.
+   negative. On an extrusion the offset moves the ends too. An inset rim takes
+   the 2D `offset` before the `extrude`.
 2. `shell` keeps the outer `thickness` and hollows the rest. A shell stays
    closed until a `carve` or a `subtract` cuts an opening.
 3. `elongate` cuts the shape through `center` across each axis, moves the halves
@@ -529,7 +536,8 @@ interface Shape3d {
    distance from `center` along the axis.
 5. `bend` curls the shape's `along` axis into an arc of `radius` curving toward
    `toward`. The slice through `pivot` stays put, and the arc keeps every length
-   along the axis.
+   along the axis. A second `bend` keeps only its own pivot's slice in place and
+   moves the rest of the first bend's arc.
 6. `displace` roughens the surface with fractal noise up to `amplitude` deep
    whose features run about `scale` across. `octaves` sets how many layers the
    noise sums and defaults to 4.
@@ -602,12 +610,16 @@ type Value = boolean | number | string | number[] | IntValue | JsonValue;
    for their meanings, ranges, and defaults, except that `metallic` defaults
    to 0. The colors take sRGB hex: `#RRGGBB`, or `#RRGGBBAA` for a `baseColor`
    with alpha.
-3. Any other name adds a custom property whose kind follows its value: a
+3. At `emissiveStrength` 1 a material glows at its `emissiveColor`. Strengths
+   of 2 to 4 add a halo in the review renders and pale the core, and higher
+   strengths whiten it. The lit `baseColor` adds to the glow. A dark
+   `baseColor` keeps a strength-1 glow at its full hue.
+4. Any other name adds a custom property whose kind follows its value: a
    boolean, a string, a float, or a vector of 2 to 4 floats. `int` marks whole
    numbers and vectors of them, and `json` carries any other JSON value. A
    material without a custom property that another material sets takes the
    kind's empty value there: 0, a zero vector, `false`, `""`, or `null`.
-4. `shades` returns `count` versions of `base` that run from darkest to lightest
+5. `shades` returns `count` versions of `base` that run from darkest to lightest
    with the original in the middle. Neighboring shades differ in perceived
    lightness by `spread`, and the other properties carry over. Darker shades mix
    the base with black and lighter shades with white. `count` defaults to 3 and
@@ -622,7 +634,7 @@ const glass = material({
 const rune = material({
   baseColor: "#3A3F44",
   emissiveColor: "#40C0FF",
-  emissiveStrength: 4,
+  emissiveStrength: 2,
 });
 const chest = material({
   baseColor: "#8A5A2B",
@@ -696,10 +708,14 @@ voxel size.
 1. `bands` slices space across `axis` into slabs `period` thick and cycles
    through `materials` in order. `warp` bends the slabs by up to that much
    noise. `period` defaults to 1 cell and `warp` to 0.
-2. `grain` slices the same way and gives each slab a random pick. Its `period`
-   defaults to 2 cells and its `warp` to 1.5 cells. A single `base` stands for
-   `shades(base)`. The streaks run across `axis`. A board running along y with
-   its face toward +z takes `axis: "x"`.
+2. `grain` cuts space into rings `period` thick around the line along `axis`
+   through the frame's origin and gives each ring a random pick. Faces that run
+   along `axis` streak, and end faces show the rings. A board, post, or leg
+   takes the axis it runs along. A board built around the origin and moved by
+   `translate` streaks across its faces. A board built in place far from the
+   origin reads as one broad ring. `warp` bends the rings as it bends `bands`.
+   `period` defaults to 2 cells and `warp` to 1.5 cells. A single `base` stands
+   for `shades(base)`.
 3. `gradient` splits `from` to `to` along `axis` into equal spans that take the
    materials in order. Cells before `from` take the first material and cells
    past `to` the last. `warp` bends the spans as it bends `bands` and defaults
@@ -709,7 +725,8 @@ voxel size.
    share of the cells. `octaves` defaults to 4.
 5. `cells` breaks space into irregular cells about `size` across that each take
    a random pick. `border` fills a seam one grid cell wide between the cells for
-   cobblestone and mortar.
+   cobblestone and mortar. Cells under about 6 voxels across read mostly as
+   border.
 6. `speckle` gives each grid cell a `density` chance of a random accent and
    leaves the rest `base`. Because `speckle` reads grid cells, its copies
    differ.
@@ -805,15 +822,15 @@ replaces a library of the same name in either group:
 [example](#example) chair reports:
 
 ```
-chair.voxj  1904 voxels of 0.025 m  1 piece  20x41x20  [-0.25, 0, -0.25] .. [0.25, 1.025, 0.25]
+chair.voxj  1922 voxels of 0.025 m  1 piece  20x41x20  [-0.25, 0, -0.25] .. [0.25, 1.025, 0.25]
   add    legs      400 cells  400 kept  336 exposed  20x17x20  [-0.25, 0, -0.25] .. [0.25, 0.425, 0.25]
   add    seat      800 cells  800 kept  772 exposed  20x2x20   [-0.25, 0.425, -0.25] .. [0.25, 0.475, 0.25]
   add    posts     234 cells  234 kept  208 exposed  20x13x3   [-0.25, 0.475, -0.25] .. [0.25, 0.8, -0.175]
   add    spindles   52 cells   52 kept   52 exposed  10x13x1   [-0.125, 0.475, -0.225] .. [0.125, 0.8, -0.2]
-  add    rail      360 cells  270 kept  196 exposed  20x6x3    [-0.25, 0.8, -0.25] .. [0.25, 0.95, -0.175]
+  add    rail      360 cells  252 kept  184 exposed  20x6x3    [-0.25, 0.8, -0.25] .. [0.25, 0.95, -0.175]
   paint  gilt       60 cells   58 kept   56 exposed  20x1x3    [-0.25, 0.925, -0.25] .. [0.25, 0.95, -0.175]
   add    finials    30 cells   30 kept   24 exposed  20x4x3    [-0.25, 0.925, -0.25] .. [0.25, 1.025, -0.175]
-  add    jewels     60 cells   60 kept   24 exposed  14x3x4    [-0.175, 0.825, -0.225] .. [0.175, 0.9, -0.125]
+  add    jewels     96 cells   96 kept   36 exposed  14x4x4    [-0.175, 0.825, -0.225] .. [0.175, 0.925, -0.125]
 ```
 
 1. A step's cells are the cells it wrote as it ran: every cell an `add` or a
@@ -829,8 +846,8 @@ chair.voxj  1904 voxels of 0.025 m  1 piece  20x41x20  [-0.25, 0, -0.25] .. [0.2
    cell centers, or a `carve`, `paint`, or `coat` met no live cell. A step with
    cells and `0 kept` was undone by later steps.
 
-The rail keeps 270 of its 360 cells because the gilt and the jewels take the
-rest. The jewels keep all 60 cells and show 24 of them because half of each
+The rail keeps 252 of its 360 cells because the gilt and the jewels take the
+rest. The jewels keep all 96 cells and show 36 of them because half of each
 jewel sits inside the rail. The spindles come out one cell thick.
 
 With parts, each place of a part gets a part line. The part's steps and child
@@ -876,21 +893,27 @@ list every error.
 
 ## Resolution
 
-Most voxel models sit 16 to 64 voxels across. At that size the grid shapes
-everything:
+Voxel models run from 16 to several hundred voxels across. At any size the grid
+shapes the smallest features:
 
-1. A shape thinner than a voxel can miss every cell center and vanish. A thin
-   feature takes whole cells: a one-voxel post is the `box` from `[x, y0, z]` to
-   `[x + v, y1, z + v]`, with `x` and `z` on multiples of `v`.
-2. A sphere or cylinder under a radius of about 3 voxels reads as a plus sign or
-   a block. Small round details read better as boxes or single `set` cells.
+1. A shape thinner than a voxel can miss every cell center and vanish. A feature
+   one voxel thick holds only on whole cells along the axes: a one-voxel post is
+   the `box` from `[x, y0, z]` to `[x + v, y1, z + v]`, with `x` and `z` on
+   multiples of `v`. A tilted or curved member, a stroke, and a torus tube need
+   about 2 voxels across or they break into pieces.
+2. A sphere, cylinder, cone, octahedron, or rounded corner under a radius of
+   about 3 voxels reads as a plus sign, a rod, or a block. Small round details
+   read better as boxes or single `set` cells.
 3. A large `add` placed after a detail buries it because later steps win. Large
-   forms go first and details after.
+   forms go first and details after. Nested shapes of one feature bury each
+   other in any order.
 4. Copies from `mirror` and `repeat` repeat their pattern exactly. A distinct
    look per copy takes its own step with its own seed.
 5. A model holds its details at the voxel size they were sized for. A coarser
    sampling can drop details thinner than its cells, and a finer one draws each
    detail with more cells without adding any.
+6. A thin form or a whole object turned off the axes samples into ribs and
+   stair steps. Furniture, plates, and dishes read cleanest square to the axes.
 
 ## Recipes
 
@@ -900,10 +923,10 @@ for `--voxel-size 0.025`.
 ```ts
 // Four turned legs from one profile.
 const leg = lathe([[0.0375, 0], [0.03, 0.15], [0.045, 0.225], [0.03, 0.425]]).translate([0.2, 0, 0.2]);
-add("legs", leg.mirror("xz"), grain(mat.oak, { axis: "x", seed: 1 })),
+add("legs", leg.mirror("xz"), grain(mat.oak, { axis: "y", seed: 1 })),
 
 // A jewel set into a surface. The later add takes the cells the two share.
-add("jewel", octahedron([0, 0.875, -0.175], 0.0625), mat.ruby),
+add("jewel", octahedron([0, 0.875, -0.175], 0.075), mat.ruby),
 
 // A gilded top edge.
 paint("gilt", intersect(rail.shell(0.025), halfSpace("+y", 0.925)), mat.gold),
@@ -938,7 +961,8 @@ add("boulder", sphere([0, 0.125, 0], 0.15).displace({ amplitude: 0.0375, scale: 
 
 ```ts
 // An oak chair facing +z with three rubies set in its top rail, sized for
-// --voxel-size 0.025.
+// --voxel-size 0.025. Building each board around the origin and moving it
+// into place centers its grain.
 const oak = (axis: Axis, seed: number) => grain(mat.oak, { axis, seed });
 
 const leg = lathe([
@@ -947,23 +971,30 @@ const leg = lathe([
   [0.045, 0.225],
   [0.03, 0.425],
 ]).translate([0.2, 0, 0.2]);
-const post = box([0.175, 0.475, -0.25], [0.25, 0.8, -0.175]);
+const post = box([-0.0375, 0, -0.0375], [0.0375, 0.325, 0.0375]).translate([
+  0.2125, 0.475, -0.2125,
+]);
 const spindle = box([-0.125, 0.475, -0.225], [-0.1, 0.8, -0.2]).repeat(
   [0.075, 0, 0],
   [4, 1, 1],
 );
-const rail = box([-0.25, 0.8, -0.25], [0.25, 0.95, -0.175], { round: 0.025 });
+const rail = box([-0.25, -0.075, -0.0375], [0.25, 0.075, 0.0375], {
+  round: 0.025,
+}).translate([0, 0.875, -0.2125]);
+const seat = box([-0.25, -0.025, -0.25], [0.25, 0.025, 0.25]).translate([
+  0, 0.45, 0,
+]);
 const finial = sphere([0.2125, 0.975, -0.2125], 0.0375).mirror("x");
 const jewels = union(
-  ...[-0.125, 0, 0.125].map((x) => octahedron([x, 0.875, -0.175], 0.0625)),
+  ...[-0.125, 0, 0.125].map((x) => octahedron([x, 0.875, -0.175], 0.075)),
 );
 
 export default [
-  add("legs", leg.mirror("xz"), oak("x", 1)),
-  add("seat", box([-0.25, 0.425, -0.25], [0.25, 0.475, 0.25]), oak("x", 2)),
-  add("posts", post.mirror("x"), oak("x", 3)),
-  add("spindles", spindle, oak("x", 4)),
-  add("rail", rail, oak("y", 5)),
+  add("legs", leg.mirror("xz"), oak("y", 1)),
+  add("seat", seat, oak("x", 2)),
+  add("posts", post.mirror("x"), oak("y", 3)),
+  add("spindles", spindle, oak("y", 4)),
+  add("rail", rail, oak("x", 5)),
   paint("gilt", intersect(rail.shell(0.025), halfSpace("+y", 0.925)), mat.gold),
   add("finials", finial, mat.gold),
   add("jewels", jewels, mat.ruby),

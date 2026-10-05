@@ -282,7 +282,7 @@ const leg = lathe([
 ]).translate([0.2, 0, 0.2]);
 
 export default [
-  add("legs", leg.mirror("xz"), oak("x", 1)),
+  add("legs", leg.mirror("xz"), oak("y", 1)),
   add("seat", box([-0.25, 0.425, -0.25], [0.25, 0.475, 0.25]), oak("x", 2)),
 ];
 ```
@@ -325,7 +325,7 @@ Built with the `materials` library, `chair.sdfj` holds:
     { "base": 0, "count": 3 },
   ],
   "patterns": [
-    { "kind": "grain", "materials": [1, 2, 3], "axis": "x", "seed": 1 },
+    { "kind": "grain", "materials": [1, 2, 3], "axis": "y", "seed": 1 },
     { "kind": "grain", "materials": [4, 5, 6], "axis": "x", "seed": 2 },
   ],
   "steps": [

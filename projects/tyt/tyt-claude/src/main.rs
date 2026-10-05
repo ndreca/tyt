@@ -6,6 +6,7 @@ use tyt_common::completion_install_help;
 
 /// Operations for working with claude
 #[derive(Clone, Debug, Parser)]
+#[command(version)]
 struct Cli {
     #[clap(subcommand)]
     command: Command,

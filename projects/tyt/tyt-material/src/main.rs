@@ -6,6 +6,7 @@ use tyt_material::{DependenciesImpl, TytMaterial};
 
 /// Operations on material textures.
 #[derive(Clone, Debug, Parser)]
+#[command(version)]
 struct Cli {
     #[clap(subcommand)]
     command: Command,

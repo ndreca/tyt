@@ -110,8 +110,8 @@ mesh. A document with no objects errors. See
    - Repeatable: no
 
    The factor scaling the bloom halo over the emissive term; see
-   [Bloom](contract.md#bloom). `0` skips the pass. The built-in `glow`
-   profile sets `1`. A negative strength errors.
+   [Bloom](contract.md#bloom). `0` skips the pass. The built-in `glow` and
+   `review` profiles set `1`. A negative strength errors.
 
 10. `--bloom-radius <fraction>`
     - Default: `0.03`
@@ -119,13 +119,13 @@ mesh. A document with no objects errors. See
 
     The halo's reach as a fraction of the shorter image side. Zero errors.
 
-11. `--bloom-threshold <luminance>`
+11. `--bloom-threshold <level>`
     - Default: `1`
     - Repeatable: no
 
-    The luminance in linear light an emission must exceed to bloom. At `1`
-    a material at glTF's default emissive strength stays flat. A negative
-    threshold errors.
+    The level in linear light an emission's brightest channel must exceed to
+    bloom. At `1` a material at glTF's default emissive strength stays flat. A
+    negative threshold errors.
 
 12. `--profile <profile>`
     - Repeatable: yes

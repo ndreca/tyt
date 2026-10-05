@@ -475,7 +475,8 @@ sets `octaves`. `hash(x, ...)` folds its whole-number arguments into the
 
 1. `bands` computes `s = q[axis] + warp * fbm(q / (4 * period))`, and the cell
    takes material `mod(floor(s / period), n)`.
-2. `grain` computes the same `s`, and the cell takes material
+2. `grain` computes `s = r + warp * fbm(q / (4 * period))`, where `r` is the
+   length of `q` with its `axis` component set to 0. The cell takes material
    `mod(hash(floor(s / period)), n)`.
 3. `gradient` computes
    `t = (q[axis] + warp * fbm(q / ((to - from) / 4)) - from) / (to - from)`, and
@@ -641,9 +642,11 @@ it belongs to by its path of part names.
      fall in their ranges, and a shade stays inside `[0, 1]` in linear light.
    - A custom property takes a non-empty name and a value with a kind. An `int`
      holds whole numbers within `2^53 - 1`, and a vector holds 2 to 4 numbers.
-   - A `rect` takes `round` or `chamfer` but not both, and either stays within
-     half its shorter side. A `box`'s `round` stays within half its shortest
-     extent, and a `cylinder`'s within its radius and half its length.
+   - The corners of a `box`, a `boxFrame`, and a `rect` differ on each axis and
+     may come in either order. A `rect` takes `round` or `chamfer` but not both,
+     and either stays within half its shorter side. A `box`'s `round` stays
+     within half its shortest extent, and a `cylinder`'s within its radius and
+     half its length.
    - The ends of a `cylinder`, a `cone`, a `capsule`, a `roundCone`, and a
      `vesica` differ, as do a `polyline`'s neighboring points. A `roundCone`'s
      radii differ by less than the distance between its ends.

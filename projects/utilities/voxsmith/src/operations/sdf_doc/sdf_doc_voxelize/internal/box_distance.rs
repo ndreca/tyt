@@ -34,6 +34,19 @@ mod tests {
     }
 
     #[test]
+    fn a_box_measures_the_same_with_its_corners_swapped_per_axis() {
+        let shape = SdfShape3d::Box {
+            min: TyVector3F64::new(MAX.x, MIN.y, MAX.z),
+            max: TyVector3F64::new(MIN.x, MAX.y, MIN.z),
+            round: None,
+        };
+
+        assert_shape3d(Vec::new(), vec![shape], GRID, 1e-12, |point| {
+            box_reference(point, MIN, MAX)
+        });
+    }
+
+    #[test]
     fn a_round_box_rounds_inside_its_corners() {
         let round = 0.125;
         let shape = SdfShape3d::Box {

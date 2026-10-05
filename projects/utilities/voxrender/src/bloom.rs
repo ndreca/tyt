@@ -1,9 +1,6 @@
 use crate::{RenderBloom, RenderImage, RenderPixel};
 use ty_math::TyLinSrgbF32;
 
-/// Rec. 709's luminance weights over linear sRGB.
-const LUMINANCE: TyLinSrgbF32 = TyLinSrgbF32::new(0.2126, 0.7152, 0.0722);
-
 /// How many standard deviations out a blur's taps reach.
 const TAP_REACH: f64 = 3.0;
 
@@ -79,18 +76,17 @@ pub fn apply_bloom(image: &mut RenderImage, emission: &[TyLinSrgbF32], bloom: Re
 
 const BLACK: TyLinSrgbF32 = TyLinSrgbF32::new(0.0, 0.0, 0.0);
 
-/// The part of `emission` whose luminance exceeds `threshold`, hue
-/// preserved: black at or under it.
+/// The part of `emission` whose brightest channel passes `threshold`, with its
+/// hue kept, or black at or under it. Reading the brightest channel lets every
+/// hue bloom at the same strength.
 fn over_threshold(emission: TyLinSrgbF32, threshold: f32) -> TyLinSrgbF32 {
-    let luminance = emission.red * LUMINANCE.red
-        + emission.green * LUMINANCE.green
-        + emission.blue * LUMINANCE.blue;
+    let peak = emission.red.max(emission.green).max(emission.blue);
 
-    if luminance <= threshold {
+    if peak <= threshold {
         return BLACK;
     }
 
-    emission * ((luminance - threshold) / luminance)
+    emission * ((peak - threshold) / peak)
 }
 
 /// `source`, a `width` by `height` image in row-major order, blurred by a
@@ -179,12 +175,12 @@ mod tests {
     fn the_part_over_the_threshold_keeps_its_hue() {
         let orange = TyLinSrgbF32::new(4.0, 2.0, 0.0);
 
-        // Luminance 2.2808; a threshold at half of it leaves half the color.
-        let over = over_threshold(orange, 1.1404);
+        // A threshold at half the peak leaves half the color.
+        let over = over_threshold(orange, 2.0);
         assert!(close(over.red, 2.0) && close(over.green, 1.0) && over.blue == 0.0);
 
         assert_eq!(
-            over_threshold(orange, 2.29),
+            over_threshold(orange, 4.0),
             TyLinSrgbF32::new(0.0, 0.0, 0.0)
         );
         assert_eq!(
@@ -192,6 +188,19 @@ mod tests {
             TyLinSrgbF32::new(0.0, 0.0, 0.0)
         );
         assert_eq!(over_threshold(orange, 0.0), orange);
+    }
+
+    #[test]
+    fn every_hue_blooms_by_its_brightest_channel() {
+        let over = |red, green, blue| {
+            let over = over_threshold(TyLinSrgbF32::new(red, green, blue), 1.0);
+            over.red.max(over.green).max(over.blue)
+        };
+
+        assert!(close(over(3.0, 0.0, 0.0), 2.0));
+        assert!(close(over(0.0, 3.0, 0.0), 2.0));
+        assert!(close(over(0.0, 0.0, 3.0), 2.0));
+        assert!(close(over(3.0, 0.3, 1.5), 2.0));
     }
 
     #[test]

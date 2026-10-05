@@ -10,6 +10,7 @@ use {module}::{{DependenciesImpl, {root_enum}}};
 
 /// {description}
 #[derive(Clone, Debug, Parser)]
+#[command(version)]
 struct Cli {{
     #[clap(subcommand)]
     command: Command,

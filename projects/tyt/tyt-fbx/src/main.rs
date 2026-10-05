@@ -6,6 +6,7 @@ use tyt_fbx::{DependenciesImpl, TytFbx};
 
 /// Operations on FBX files.
 #[derive(Clone, Debug, Parser)]
+#[command(version)]
 struct Cli {
     #[clap(subcommand)]
     command: Command,

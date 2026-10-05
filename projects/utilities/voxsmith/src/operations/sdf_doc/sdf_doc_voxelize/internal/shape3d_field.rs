@@ -296,9 +296,10 @@ impl Shape3dField {
                 ),
             },
 
+            // A box takes its corners in either order on each axis.
             SdfShape3d::Box { min, max, round } => Shape3dField::Box {
-                min: *min,
-                max: *max,
+                min: min.min(*max),
+                max: min.max(*max),
                 round: round.unwrap_or(0.0),
             },
 
@@ -307,8 +308,8 @@ impl Shape3dField {
                 max,
                 thickness,
             } => Shape3dField::BoxFrame {
-                min: *min,
-                max: *max,
+                min: min.min(*max),
+                max: min.max(*max),
                 half_thickness: thickness / 2.0,
             },
 

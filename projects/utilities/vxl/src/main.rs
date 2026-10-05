@@ -17,6 +17,7 @@ completes vxl on Tab.";
 
 /// A command-line tool for working with voxels.
 #[derive(Clone, Debug, Parser)]
+#[command(version)]
 struct Cli {
     #[clap(subcommand)]
     command: Command,
@@ -119,4 +120,21 @@ fn skill_install_help() -> String {
          asks for vxl-model. Upgrading vxl takes a reprint.",
         installs.join("\n\n")
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Cli;
+    use clap::{Parser, error::ErrorKind};
+
+    #[test]
+    fn version_prints_the_crate_version() {
+        let error = Cli::try_parse_from(["vxl", "--version"]).unwrap_err();
+
+        assert_eq!(error.kind(), ErrorKind::DisplayVersion);
+        assert_eq!(
+            error.to_string(),
+            format!("vxl {}\n", env!("CARGO_PKG_VERSION"))
+        );
+    }
 }

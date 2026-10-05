@@ -6,6 +6,7 @@ use tyt_meshy::{DependenciesImpl, TytMeshy};
 
 /// Commands for working with the Meshy API
 #[derive(Clone, Debug, Parser)]
+#[command(version)]
 struct Cli {
     #[clap(subcommand)]
     command: Command,

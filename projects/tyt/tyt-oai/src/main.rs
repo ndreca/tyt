@@ -6,6 +6,7 @@ use tyt_oai::{DependenciesImpl, TytOAI};
 
 /// Commands for working with the OpenAI API.
 #[derive(Clone, Debug, Parser)]
+#[command(version)]
 struct Cli {
     #[clap(subcommand)]
     command: Command,

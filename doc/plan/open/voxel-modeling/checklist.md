@@ -85,19 +85,26 @@ Trials then show which operations Claude reaches for and where the loop fails.
       a fresh session. Log each prompt in `trials.md` with the passes it took,
       the failures, and the operations and report data Claude wanted and
       lacked. The log also notes where a model's colors read flat.
-- [ ] **S13. Round 1 fixes.** Answer round 1's [findings](trials.md#findings)
+- [x] **S13. Round 1 fixes.** Answer round 1's [findings](trials.md#findings)
       before the next round:
   1. The fixes staged with the round, for findings 1, 8, 15, 17, 32, 40, and 54
   2. The owner's calls:
-     1. A neutral studio fill for findings 20, 21, and 27
-     2. Bloom or an emission range for finding 18
-     3. Grain as rings around its axis for finding 32
-     4. Box corners in any order for finding 45
-     5. A `--version` flag for finding 57
+     1. `studio` lights from a white sky over a #404040 ground for findings 20,
+        21, and 27
+     2. `review` takes a bloom whose threshold reads an emission's brightest
+        channel for finding 18. The modeling API gives the strengths that keep a
+        glow's hue. The library's light group follows them
+     3. `grain` rings its axis for finding 32
+     4. `box`, `boxFrame`, and `rect` take their corners in either order for
+        finding 45
+     5. Every binary takes `--version` for finding 57
   3. The skill text for findings 2, 3, 4, 6, 7, 9, 10, 13, 14, 16, 19, 28, 30,
      34, 36, 44, and 55
-  4. A look at findings 5, 12, 31, 37, 50, 52, and 56 that settles each as a
-     fix, a skill line, or a phase 2 candidate
+  4. A look at findings 5, 12, 31, 37, 50, 52, and 56:
+     1. The neutral fill answers finding 5 and the rope in finding 31. The
+        library's `grass` turns less saturated for the rest of finding 31
+     2. Skill lines answer findings 12, 37, 52, and 56
+     3. Finding 50 joins phase 2's candidates
 - [ ] **S14. Round 2.** Run the prompts again with S13's changes and log the
       round beside round 1. A finding S13 answered reopens when round 2 still
       shows it.
@@ -109,8 +116,9 @@ Trials then show which operations Claude reaches for and where the loop fails.
 S15 writes phase 2's steps from the trials. Round 1's
 [findings](trials.md#findings) give the candidates so far:
 
-1. The operators and patterns Claude reached for and lacked, in findings 11,
-   24, 25, 26, 41, 47, and 59
+1. The operators and patterns Claude reached for and lacked, in findings 11, 24,
+   25, 26, 41, 47, and 59. Finding 50 adds a step that hollows the finished
+   grid without the walls a union's shell leaves
 2. The `.sdfj` changes those operators need
 3. The report data, inspection, and render support Claude lacked, in findings
    23, 29, 33, 35, 38, 39, 42, 43, 46, 49, 51, 53, 58, and 60

@@ -94,6 +94,16 @@ mod tests {
         assert_eq!(glow.bloom_strength, Some(NonNegativeF64(1.0)));
         assert_eq!(glow.bloom_radius, Some(PositiveF64(0.03)));
         assert_eq!(glow.bloom_threshold, Some(NonNegativeF64(1.0)));
+
+        let review = &profiles["review"];
+        assert_eq!(
+            (
+                review.bloom_strength,
+                review.bloom_radius,
+                review.bloom_threshold
+            ),
+            (glow.bloom_strength, glow.bloom_radius, glow.bloom_threshold)
+        );
     }
 
     #[test]

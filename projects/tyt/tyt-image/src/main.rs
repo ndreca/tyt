@@ -6,6 +6,7 @@ use tyt_image::{DependenciesImpl, TytImage};
 
 /// Operations on images.
 #[derive(Clone, Debug, Parser)]
+#[command(version)]
 struct Cli {
     #[clap(subcommand)]
     command: Command,

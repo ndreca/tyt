@@ -114,13 +114,27 @@ impl ArgumentCheck {
         self.expect(to > from, "to", &format!("past from {from}"), to)
     }
 
-    /// Errors unless `max` passes `min` on each axis.
-    pub fn corners(&self, min: TyVector3F64, max: TyVector3F64) -> StdResult<(), String> {
+    /// Errors unless `max` sits apart from `min` on each axis.
+    pub fn opposite_corners(&self, min: TyVector3F64, max: TyVector3F64) -> StdResult<(), String> {
         self.expect(
-            max.cmpgt(min).all(),
+            max.cmpne(min).all(),
             "max",
-            &format!("past min {} on each axis", vector(min)),
+            &format!("apart from min {} on each axis", vector(min)),
             vector(max),
+        )
+    }
+
+    /// Errors unless `max` sits apart from `min` on each axis of the plane.
+    pub fn opposite_corners2d(
+        &self,
+        min: TyVector2F64,
+        max: TyVector2F64,
+    ) -> StdResult<(), String> {
+        self.expect(
+            max.cmpne(min).all(),
+            "max",
+            &format!("apart from min [{}, {}] on each axis", min.x, min.y),
+            format!("[{}, {}]", max.x, max.y),
         )
     }
 

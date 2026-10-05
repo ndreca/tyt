@@ -76,7 +76,7 @@ pub struct ObjectRender {
 
     /// The factor scaling the bloom halo over the emissive term, zero or
     /// more and defaulting to `0`, which skips the pass. The built-in
-    /// `glow` profile sets `1`.
+    /// `glow` and `review` profiles set `1`.
     #[arg(value_name = "strength", long)]
     bloom_strength: Option<NonNegativeF64>,
 
@@ -85,10 +85,10 @@ pub struct ObjectRender {
     #[arg(value_name = "fraction", long)]
     bloom_radius: Option<PositiveF64>,
 
-    /// The luminance in linear light an emission must exceed to bloom, zero
-    /// or more and defaulting to `1`, which a material at glTF's default
-    /// emissive strength never exceeds.
-    #[arg(value_name = "luminance", long)]
+    /// The level in linear light an emission's brightest channel must exceed
+    /// to bloom, zero or more. The default of `1` keeps a material at glTF's
+    /// default emissive strength from blooming.
+    #[arg(value_name = "level", long)]
     bloom_threshold: Option<NonNegativeF64>,
 
     /// Applies a profile whole, expanding it into its flags with its
@@ -1196,7 +1196,7 @@ mod tests {
     }
 
     #[test]
-    fn review_renders_hero_and_three_orthographic_sides_under_studio() {
+    fn review_renders_hero_and_three_orthographic_sides_under_studio_and_a_bloom() {
         let review = record(&["--profile", "review"]);
 
         let projections: Vec<_> = review
@@ -1217,6 +1217,7 @@ mod tests {
             ]
         );
         assert_eq!(review.lights, record(&["--lights-from", "studio"]).lights);
+        assert_eq!(review.bloom, record(&["--profile", "glow"]).bloom);
     }
 
     #[test]
@@ -1280,7 +1281,18 @@ mod tests {
         )
         .unwrap();
 
-        let review = record(&["--profile", "review", "--width", "32", "--height", "32"]);
+        // The bloom stays off because a material and its lightest shade glow
+        // alike, and their halo hides the shading this test compares.
+        let review = record(&[
+            "--profile",
+            "review",
+            "--bloom-strength",
+            "0",
+            "--width",
+            "32",
+            "--height",
+            "32",
+        ]);
         let views_of = |name: &str| -> Vec<Vec<TySrgbaU8>> {
             let (object_id, _) = main
                 .iter_objects()

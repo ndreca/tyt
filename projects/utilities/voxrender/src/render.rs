@@ -1838,17 +1838,18 @@ mod tests {
         let (view_id, _) = scene.iter_views().next().unwrap();
         let draw = |bloom| render(&scene, view_id, RenderOcclusion::Corner, bloom, 64, 64).unwrap();
 
-        // The strip's emission has a luminance of 2.48.
+        // The strip's emission peaks at 4 in its red channel.
         let off = draw(RenderBloom::default());
         let under = draw(RenderBloom {
             strength: 1.0,
-            threshold: 3.0,
+            threshold: 4.0,
             ..RenderBloom::default()
         });
         assert_eq!(off, under);
 
+        // Half strength keeps the halo above the strip partly transparent.
         let glow = draw(RenderBloom {
-            strength: 1.0,
+            strength: 0.5,
             ..RenderBloom::default()
         });
         assert_ne!(off, glow);

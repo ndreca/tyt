@@ -6,6 +6,7 @@ use tyt_fs::{DependenciesImpl, TytFS};
 
 /// Operations on the filesystem.
 #[derive(Clone, Debug, Parser)]
+#[command(version)]
 struct Cli {
     #[clap(subcommand)]
     command: Command,

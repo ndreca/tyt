@@ -6,6 +6,7 @@ use tyt_cubemap::{DependenciesImpl, TytCubemap};
 
 /// Operations on cubemap images.
 #[derive(Clone, Debug, Parser)]
+#[command(version)]
 struct Cli {
     #[clap(subcommand)]
     command: Command,

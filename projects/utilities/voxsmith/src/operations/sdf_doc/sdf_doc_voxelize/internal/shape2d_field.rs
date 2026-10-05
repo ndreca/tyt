@@ -279,15 +279,16 @@ impl Shape2dField {
             } => match (chamfer, round) {
                 (Some(_), Some(_)) => panic!("a rect takes round or chamfer but not both"),
 
+                // A rect takes its corners in either order on each axis.
                 (Some(chamfer), None) => Shape2dField::ChamferRect {
-                    min: *min,
-                    max: *max,
+                    min: min.min(*max),
+                    max: min.max(*max),
                     chamfer: *chamfer,
                 },
 
                 (None, round) => Shape2dField::Rect {
-                    min: *min,
-                    max: *max,
+                    min: min.min(*max),
+                    max: min.max(*max),
                     round: round.unwrap_or(0.0),
                 },
             },
