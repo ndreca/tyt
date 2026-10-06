@@ -74,7 +74,7 @@ const RUN_ANALYSIS = {
     run: { type: 'integer', description: '1 or 2' },
     skillLoaded: { type: 'boolean', description: 'the session loaded the vxl-model skill' },
     finished: { type: 'boolean', description: 'the session called the model done, rather than stopping on an error, a question, or the time cap' },
-    passes: { type: 'integer', description: 'commands that ran sdf-doc voxelize' },
+    passes: { type: 'integer', description: 'the PASS markers in the transcript summary' },
     failedPasses: { type: 'integer', description: 'passes whose command exited with an error' },
     minutes: { type: 'number' },
     turns: { type: 'integer' },

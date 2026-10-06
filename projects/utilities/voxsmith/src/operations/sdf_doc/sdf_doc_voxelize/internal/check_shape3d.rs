@@ -126,22 +126,12 @@ pub fn check_shape3d(
             check.seed(*seed)
         }
 
-        SdfShape3d::Elongate { lengths, .. } => {
-            let check = ArgumentCheck::new("elongate");
-            let written = format!("[{}, {}, {}]", lengths.x, lengths.y, lengths.z);
-            check.expect(
-                lengths.cmpge(TyVector3F64::ZERO).all(),
-                "lengths",
-                "zero or more on each axis",
-                &written,
-            )?;
-            check.expect(
-                lengths.cmpgt(TyVector3F64::ZERO).any(),
-                "lengths",
-                "above zero on at least one axis",
-                &written,
-            )
-        }
+        SdfShape3d::Elongate { lengths, .. } => ArgumentCheck::new("elongate").expect(
+            lengths.cmpge(TyVector3F64::ZERO).all(),
+            "lengths",
+            "zero or more on each axis",
+            format!("[{}, {}, {}]", lengths.x, lengths.y, lengths.z),
+        ),
 
         SdfShape3d::Ellipsoid { radii, .. } => {
             ArgumentCheck::new("ellipsoid").each_above_zero("radii", *radii)
@@ -448,6 +438,21 @@ mod tests {
         assert_eq!(
             check(cylinder(-0.1)),
             Err("cylinder round must be zero or more, not -0.1".to_string())
+        );
+    }
+
+    #[test]
+    fn an_elongate_of_zero_leaves_the_shape_unstretched() {
+        let elongate = |lengths: [f64; 3]| SdfShape3d::Elongate {
+            shape_id: U32Id::from_u32(0),
+            lengths: TyVector3F64::from(lengths),
+            center: None,
+        };
+
+        assert!(check(elongate([0.0, 0.0, 0.0])).is_ok());
+        assert_eq!(
+            check(elongate([-0.1, 0.0, 0.0])),
+            Err("elongate lengths must be zero or more on each axis, not [-0.1, 0, 0]".to_string())
         );
     }
 

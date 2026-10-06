@@ -64,14 +64,37 @@ def tool_input(name, data):
     return cut(json.dumps(data), 1500)
 
 
+def entries():
+    for line in open(path):
+        try:
+            yield json.loads(line)
+        except ValueError:
+            pass
+
+
+def is_pass(block):
+    """A pass is a call the snapshot hook saw write a voxj or a voxelize command
+    that failed. A round from before the hook kept that list counts each
+    voxelize command."""
+    command = block.get("input", {}).get("command", "")
+    if voxelizes is None:
+        return "sdf-doc voxelize" in command
+    return block.get("id") in voxelizes or ("sdf-doc voxelize" in command and block.get("id") in failed)
+
+
 path = transcript_path()
+log = os.path.join(out, "voxelizes")
+voxelizes = set(open(log).read().split()) if os.path.exists(log) else None
+failed = {
+    block.get("tool_use_id")
+    for entry in entries()
+    if isinstance((entry.get("message") or {}).get("content"), list)
+    for block in entry["message"]["content"]
+    if block.get("type") == "tool_result" and block.get("is_error")
+}
 print(f"# transcript {path}")
 passes = 0
-for line in open(path):
-    try:
-        entry = json.loads(line)
-    except ValueError:
-        continue
+for entry in entries():
     kind = entry.get("type")
     if kind == "attachment":
         attachment = entry.get("attachment") or {}
@@ -94,7 +117,7 @@ for line in open(path):
         elif btype == "tool_use":
             name = block.get("name")
             data = block.get("input", {})
-            if name == "Bash" and "sdf-doc voxelize" in data.get("command", ""):
+            if name == "Bash" and is_pass(block):
                 passes += 1
                 print(f"\n## PASS {passes}")
             print(f"\n## TOOL {name}\n{tool_input(name, data)}")
@@ -107,4 +130,4 @@ for line in open(path):
                 )
             flag = " ERROR" if block.get("is_error") else ""
             print(f"\n## RESULT{flag}\n{cut(parts or '')}")
-print(f"\n# {passes} commands ran sdf-doc voxelize")
+print(f"\n# {passes} passes")

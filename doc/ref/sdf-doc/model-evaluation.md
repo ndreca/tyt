@@ -657,9 +657,9 @@ it belongs to by its path of part names.
      at least half its width tall. An `arc`, a `sector`, and a cut `torus` span
      at most 360 degrees. A `torus` takes both `from` and `to` or neither.
    - `orient` takes two directions of nonzero length that do not point opposite
-     ways. An `elongate` stretches at least one axis, and its `center` lies
-     inside its shape's box along each axis it stretches. A `bend`'s `along`
-     and `toward` lie on different axes, and its shape has a box.
+     ways. An `elongate`'s `center` lies inside its shape's box along each axis
+     it stretches. A `bend`'s `along` and `toward` lie on different axes, and
+     its shape has a box.
    - A `polygon` outline never crosses itself.
 5. Over the document, every step has a non-empty name no other step in its list
    shares, and every part has a non-empty name no other part in its list shares.

@@ -14,10 +14,10 @@ model=$(jq -r .model "$root/_runs/round.json")
 effort=$(jq -r .effort "$root/_runs/round.json")
 
 mkdir -p "$out"
-rm -rf "$out/exit" "$out/finished" "$out/passes" "$out/voxelized"
+rm -rf "$out/exit" "$out/finished" "$out/passes" "$out/voxelized" "$out/voxelizes"
 printf '%s\n' "$prompt" > "$out/prompt.txt"
 date -u +%Y-%m-%dT%H:%M:%SZ > "$out/started"
-touch "$out/snapshot-marker"
+touch "$out/snapshot-marker" "$out/call-marker"
 cd "$root/$run" || exit 2
 
 # A parent Claude Code session's variables would mark the trial as nested.
