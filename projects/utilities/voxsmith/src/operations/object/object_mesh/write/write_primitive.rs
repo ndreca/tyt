@@ -6,14 +6,14 @@ use branded_id::U32Id;
 use meshdoc::{MeshPrimitive, MeshTriangle};
 use ty_math::{TyVector3F64, TyVector3I32};
 
-/// The primitive drawing `faces` of `geometry` shifted by the grid `origin`,
-/// at `voxel_size` meters per voxel, with its streams read off `atlases` and
-/// no material yet.
+/// The primitive drawing `faces` of `geometry` shifted by the grid `origin` and
+/// scaled by `scene_scale`, with its streams read off `atlases` and no material
+/// yet.
 pub fn write_primitive(
     geometry: &MeshGeometry,
     faces: &[usize],
     origin: TyVector3I32,
-    voxel_size: f64,
+    scene_scale: f64,
     primitive_record: &PrimitiveRecord,
     stream_list: &[ArrayDomain],
     atlases: &Atlases<'_>,
@@ -23,7 +23,7 @@ pub fn write_primitive(
     let positions = faces
         .iter()
         .flat_map(|&face| &geometry.positions[vertices(face)])
-        .map(|position| TyVector3F64::from((origin.as_dvec3() + position.as_dvec3()) * voxel_size))
+        .map(|position| TyVector3F64::from((origin.as_dvec3() + position.as_dvec3()) * scene_scale))
         .collect();
 
     let triangles = faces

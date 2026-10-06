@@ -23,8 +23,8 @@ pub enum Error {
     /// contract reads: floats for a scalar, float vectors for a color.
     MaterialPropertyKind { property: String },
 
-    /// A flatten's voxel size is not finite and positive.
-    VoxelSize { voxel_size: f64 },
+    /// A flatten's scene scale is not finite and positive.
+    SceneScale { scene_scale: f64 },
 
     /// A render asked for an image with a zero side.
     ImageSide { width: u32, height: u32 },
@@ -155,8 +155,8 @@ impl Display for Error {
                 "property {property} is not the kind the render contract reads"
             ),
 
-            Error::VoxelSize { voxel_size } => {
-                write!(f, "voxel size {voxel_size} is not finite and positive")
+            Error::SceneScale { scene_scale } => {
+                write!(f, "scene scale {scene_scale} is not finite and positive")
             }
 
             Error::ImageSide { width, height } => {

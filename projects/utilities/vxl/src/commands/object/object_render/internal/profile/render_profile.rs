@@ -26,8 +26,8 @@ pub struct RenderProfile {
     /// Mirrors `--occlusion`.
     pub(crate) occlusion: Option<NamedCliValue<RenderOcclusion>>,
 
-    /// Mirrors `--voxel-size`.
-    pub(crate) voxel_size: Option<PositiveF64>,
+    /// Mirrors `--scene-scale`.
+    pub(crate) scene_scale: Option<PositiveF64>,
 
     /// Mirrors `--bloom-strength`.
     pub(crate) bloom_strength: Option<NonNegativeF64>,
@@ -79,7 +79,7 @@ mod tests {
                 "height": 480,
                 "background": "#202020",
                 "occlusion": "none",
-                "voxelSize": 0.1,
+                "sceneScale": 0.1,
                 "bloomStrength": 1.5,
                 "bloomRadius": 0.05,
                 "bloomThreshold": 0.8,
@@ -144,7 +144,7 @@ mod tests {
             profile.occlusion,
             Some(NamedCliValue(RenderOcclusion::None))
         );
-        assert_eq!(profile.voxel_size, Some(PositiveF64(0.1)));
+        assert_eq!(profile.scene_scale, Some(PositiveF64(0.1)));
         assert_eq!(profile.bloom_strength, Some(NonNegativeF64(1.5)));
         assert_eq!(profile.bloom_radius, Some(PositiveF64(0.05)));
         assert_eq!(profile.bloom_threshold, Some(NonNegativeF64(0.8)));

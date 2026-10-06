@@ -173,8 +173,8 @@ is six faces, twelve triangles, twenty-four vertices, and thirty-six indices.
 
 The buffer is the three streams packed: twenty-four positions and twenty-four
 normals at twelve bytes each, thirty-six `u32` indices at four, 720 bytes.
-`--voxel-size` defaults to one meter, so positions run from `[0, 0, 0]` to
-`[1, 2, 1]`.
+Neither the document nor `--scene-scale` scales the voxels, so each spans one
+meter and positions run from `[0, 0, 0]` to `[1, 2, 1]`.
 
 ## The pbr bake
 
@@ -327,7 +327,7 @@ riding the config too:
         "matte": {
           "valuesFrom": ["defaults"],
           "values": ["albedo = baseColor"],
-          "voxelSize": 0.1,
+          "sceneScale": 0.1,
           "files": {
             "png": {
               "{file-stem}-albedo.png": {
@@ -364,7 +364,7 @@ or expanded into its flags, the file templates already filled:
 ```sh
 vxl object mesh lamp.voxj
   --to gltf
-  --voxel-size 0.1
+  --scene-scale 0.1
   --values-from matte
   --write-file-png-value lamp-albedo.png albedo srgb
   --write-material-slot-file 0 baseColorTexture lamp-albedo.png
@@ -416,7 +416,7 @@ relative path:
 }
 ```
 
-`voxelSize` scales vertex positions alone, so the same forty vertices now run
+`sceneScale` scales vertex positions alone, so the same forty vertices now run
 from `[0, 0, 0]` to `[0.1, 0.2, 0.1]`.
 
 ## The palette pattern

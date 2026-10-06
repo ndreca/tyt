@@ -8,16 +8,15 @@ use ty_math::TyTransformF64;
 use voxcore::{VoxExt, VoxMain};
 
 /// The frame each hierarchy node path offers a `node` transform: the path's
-/// world transform with the voxel size applied, the one the flatten gives the
+/// world transform with the scene scale applied, the one the flatten gives the
 /// path's placements.
 pub struct NodeFrames {
     frames: Vec<(String, TyTransformF64)>,
 }
 
 impl NodeFrames {
-    /// The frames of every node path of `main` at `voxel_size` meters per
-    /// voxel.
-    pub fn new<T: VoxExt>(main: &VoxMain<T>, voxel_size: f64) -> Self {
+    /// The frames of every node path of `main` at `scene_scale` times its size.
+    pub fn new<T: VoxExt>(main: &VoxMain<T>, scene_scale: f64) -> Self {
         NodeFrames {
             frames: node_paths(main)
                 .into_iter()
@@ -25,7 +24,7 @@ impl NodeFrames {
                     (
                         path,
                         TyTransformF64 {
-                            position: world.position * voxel_size,
+                            position: world.position * scene_scale,
                             ..world
                         },
                     )
@@ -125,7 +124,7 @@ mod tests {
     }
 
     #[test]
-    fn a_glob_matching_one_path_gives_its_frame_at_the_voxel_size() {
+    fn a_glob_matching_one_path_gives_its_frame_at_the_scene_scale() {
         let frames = NodeFrames::new(&scene(), 0.5);
 
         let door = frames.frame(&element(), "house/door").unwrap();

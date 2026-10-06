@@ -68,11 +68,10 @@ pub struct ObjectRender {
     #[arg(value_name = "occlusion", long, value_parser = cli_value_parser::<RenderOcclusion>())]
     occlusion: Option<RenderOcclusion>,
 
-    /// The real-world edge length of one voxel in meters, defaulting to `1.0`
-    /// and applied as a uniform scale to the whole scene, so a point or spot
-    /// light's falloff runs in meters after it applies.
-    #[arg(value_name = "voxel-size", long)]
-    voxel_size: Option<PositiveF64>,
+    /// A uniform scale on the document's meters, defaulting to `1.0`. A point
+    /// or spot light's falloff runs in meters after it applies.
+    #[arg(value_name = "scene-scale", long)]
+    scene_scale: Option<PositiveF64>,
 
     /// The factor scaling the bloom halo over the emissive term, zero or
     /// more and defaulting to `0`, which skips the pass. The built-in
@@ -552,9 +551,9 @@ impl ObjectRender {
                 .occlusion
                 .or(stack.occlusion.map(|occlusion| occlusion.0))
                 .unwrap_or(RenderOcclusion::Corner),
-            voxel_size: self
-                .voxel_size
-                .or(stack.voxel_size)
+            scene_scale: self
+                .scene_scale
+                .or(stack.scene_scale)
                 .map_or(1.0, |size| size.0),
             bloom: RenderBloom {
                 strength: self
@@ -1060,7 +1059,7 @@ mod tests {
         assert_eq!((record.width, record.height), (1024, 1024));
         assert_eq!(record.background, Some(TySrgbU8::new(255, 255, 255)));
         assert_eq!(record.occlusion, RenderOcclusion::Corner);
-        assert_eq!(record.voxel_size, 1.0);
+        assert_eq!(record.scene_scale, 1.0);
         assert_eq!(record.bloom, RenderBloom::default());
 
         let hero = view(&record);
@@ -1110,7 +1109,7 @@ mod tests {
             "#010203",
             "--occlusion",
             "none",
-            "--voxel-size",
+            "--scene-scale",
             "0.5",
             "--bloom-strength",
             "2",
@@ -1123,7 +1122,7 @@ mod tests {
         assert_eq!((record.width, record.height), (8, 4));
         assert_eq!(record.background, Some(TySrgbU8::new(1, 2, 3)));
         assert_eq!(record.occlusion, RenderOcclusion::None);
-        assert_eq!(record.voxel_size, 0.5);
+        assert_eq!(record.scene_scale, 0.5);
         assert_eq!(
             record.bloom,
             RenderBloom {

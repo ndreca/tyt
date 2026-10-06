@@ -71,11 +71,10 @@ pub struct ObjectMesh {
     )]
     texture_shape: Option<TextureShape>,
 
-    /// The real-world edge length of one voxel in meters, defaulting to `1.0`
-    /// and applied as a uniform scale to every vertex position and hierarchy
-    /// node position.
-    #[arg(value_name = "voxel-size", long)]
-    voxel_size: Option<PositiveF64>,
+    /// A uniform scale on the document's meters, defaulting to `1.0` and
+    /// applied to every vertex position and hierarchy node position.
+    #[arg(value_name = "scene-scale", long)]
+    scene_scale: Option<PositiveF64>,
 
     /// How many materials the mesh carries, numbered from `0`. Derived from
     /// use when omitted, as the highest mentioned index plus one, and a skipped
@@ -535,8 +534,8 @@ impl ObjectMesh {
 
         let (program, computed_bindings) = builder.finish();
 
-        let profile_voxel_size = match &profile {
-            Some((origin, profile)) => profile_voxel_size(origin, profile)?,
+        let profile_scene_scale = match &profile {
+            Some((origin, profile)) => profile_scene_scale(origin, profile)?,
             None => None,
         };
 
@@ -553,10 +552,10 @@ impl ObjectMesh {
                     .as_ref()
                     .and_then(|(_, profile)| profile.texture_shape.map(|shape| shape.0)))
                 .unwrap_or(TextureShape::Pot),
-            voxel_size: self
-                .voxel_size
+            scene_scale: self
+                .scene_scale
                 .map(|size| size.0)
-                .or(profile_voxel_size)
+                .or(profile_scene_scale)
                 .unwrap_or(1.0),
             computed_bindings,
             program,
@@ -929,19 +928,19 @@ fn profile_origin(names: &[String]) -> String {
     }
 }
 
-/// The voxel size `profile`, which `origin` applies, sets, checked positive.
-fn profile_voxel_size(origin: &str, profile: &MeshProfile) -> Result<Option<f64>> {
-    let Some(size) = profile.voxel_size else {
+/// The scene scale `profile`, which `origin` applies, sets, checked positive.
+fn profile_scene_scale(origin: &str, profile: &MeshProfile) -> Result<Option<f64>> {
+    let Some(scene_scale) = profile.scene_scale else {
         return Ok(None);
     };
 
-    if size <= 0.0 || !size.is_finite() {
+    if scene_scale <= 0.0 || !scene_scale.is_finite() {
         return Err(Error::usage(format!(
-            "{origin}'s voxelSize is {size}, and a voxel size must be positive"
+            "{origin}'s sceneScale is {scene_scale}, and a scene scale must be positive"
         )));
     }
 
-    Ok(Some(size))
+    Ok(Some(scene_scale))
 }
 
 /// A written value of `flag`, its expression checked and its transfer
@@ -1046,9 +1045,9 @@ fn stack_profiles(
 
         let member = profiles.get(origin, name)?;
 
-        if let Some(size) = member.voxel_size {
-            claim(&mut claims, name, "voxelSize".to_owned())?;
-            stack.voxel_size = Some(size);
+        if let Some(scene_scale) = member.scene_scale {
+            claim(&mut claims, name, "sceneScale".to_owned())?;
+            stack.scene_scale = Some(scene_scale);
         }
 
         if let Some(method) = member.method {
@@ -1845,7 +1844,7 @@ mod tests {
 
         assert_eq!(record.method, Method::Greedy);
         assert_eq!(record.texture_shape, TextureShape::Pot);
-        assert_eq!(record.voxel_size, 1.0);
+        assert_eq!(record.scene_scale, 1.0);
         assert!(record.materials.is_empty());
         assert!(record.program.is_empty());
 
@@ -1864,7 +1863,7 @@ mod tests {
             "naive",
             "--texture-shape",
             "64",
-            "--voxel-size",
+            "--scene-scale",
             "0.5",
             "--value",
             "a = 1",
@@ -1874,7 +1873,7 @@ mod tests {
 
         assert_eq!(record.method, Method::Naive);
         assert_eq!(record.texture_shape, TextureShape::Exact(64));
-        assert_eq!(record.voxel_size, 0.5);
+        assert_eq!(record.scene_scale, 0.5);
         assert_eq!(record.program, "a = 1;\nb = a;");
     }
 
@@ -2719,7 +2718,7 @@ mod tests {
                     "valuesFrom": ["defaults"],
                     "computeOcclusion": "ao",
                     "values": ["albedo = baseColor"],
-                    "voxelSize": 0.1,
+                    "sceneScale": 0.1,
                     "materials": [
                         {
                             "name": "body",
@@ -2755,7 +2754,7 @@ mod tests {
         assert!(stack.values_from.is_empty());
         assert!(stack.values.is_empty());
         assert!(stack.compute_occlusion.0.is_empty());
-        assert_eq!(stack.voxel_size, Some(0.1));
+        assert_eq!(stack.scene_scale, Some(0.1));
         assert_eq!(stack.method, Some(NamedCliValue(Method::Culled)));
 
         let [body, glow] = stack.materials.as_slice() else {

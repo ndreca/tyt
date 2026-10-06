@@ -122,7 +122,7 @@ mod tests {
             height: 32,
             background: None,
             occlusion: RenderOcclusion::Corner,
-            voxel_size: 1.0,
+            scene_scale: 1.0,
             bloom: RenderBloom::default(),
             views: IdVec::from(vec![ViewRecord {
                 name: "hero".to_owned(),

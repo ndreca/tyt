@@ -458,7 +458,7 @@ mod tests {
         MeshRecord {
             method: Method::Greedy,
             texture_shape: TextureShape::Pot,
-            voxel_size: 1.0,
+            scene_scale: 1.0,
             computed_bindings: Vec::new(),
             program: String::new(),
             materials: IdVec::from_vec(materials),

@@ -73,8 +73,8 @@ interface Profile {
   /** Mirrors `--value` per entry. */
   values?: Bindings[];
 
-  /** Mirrors `--voxel-size`. */
-  voxelSize?: number;
+  /** Mirrors `--scene-scale`. */
+  sceneScale?: number;
 
   /** Mirrors `--method`. */
   method?: "culled" | "greedy" | "naive";
@@ -178,7 +178,7 @@ a profile writes its names and expressions.
           "computeOcclusion": "<dst-name>",
           "computeVoxelPosition": "<dst-name>",
 
-          "voxelSize": 1.0,
+          "sceneScale": 1.0,
           "method": "<culled | greedy | naive>",
           "textureShape": "<fit | line | pot | square | n>",
 

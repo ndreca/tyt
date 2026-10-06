@@ -480,7 +480,7 @@ mod tests {
         )
         .unwrap();
 
-        // The voxel size halves the node's position alone. The offset doubles
+        // The scene scale halves the node's position alone. The offset doubles
         // under the node's scale and turns with it: 5 along +Z lands 10 along
         // +X. The look back at the node's axis turns the same way.
         assert!(close(view.pose.position, TyVector3F64::new(15.0, 2.0, 0.0)));

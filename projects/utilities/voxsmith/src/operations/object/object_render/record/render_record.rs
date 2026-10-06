@@ -20,8 +20,8 @@ pub struct RenderRecord {
     /// The occlusion the render shades with.
     pub occlusion: RenderOcclusion,
 
-    /// One voxel's edge length in meters.
-    pub voxel_size: f64,
+    /// The uniform scale on the document's meters.
+    pub scene_scale: f64,
 
     /// The halo over the emissive term.
     pub bloom: RenderBloom,

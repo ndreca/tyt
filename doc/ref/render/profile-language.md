@@ -49,8 +49,8 @@ interface Profile {
   /** Mirrors `--occlusion`; omitted, `corner`. */
   occlusion?: "none" | "corner";
 
-  /** Mirrors `--voxel-size`, meters per voxel; omitted, `1`. */
-  voxelSize?: number;
+  /** Mirrors `--scene-scale`; omitted, `1`. */
+  sceneScale?: number;
 
   /** Mirrors `--bloom-strength`; omitted, `0`, which skips the pass. */
   bloomStrength?: number;
@@ -222,7 +222,7 @@ a profile writes its names and values.
           "height": 1024,
           "background": "<transparent | #RRGGBB>",
           "occlusion": "<none | corner>",
-          "voxelSize": 1.0,
+          "sceneScale": 1.0,
           "bloomStrength": 1,
           "bloomRadius": 0.03,
           "bloomThreshold": 1,
@@ -357,7 +357,7 @@ The checks split by when they run:
 1. every run
    1. each `.vxlconfig` parsing
    2. the schema's shape, an unknown key erroring rather than skipping
-   3. each value's range: a positive `width`, `height`, `voxelSize`, `fov`,
+   3. each value's range: a positive `width`, `height`, `sceneScale`, `fov`,
       `scale`, `range`, `bloomRadius`, and orbit distance, a `strength`, a
       cone angle, `bloomStrength`, and `bloomThreshold` of zero or more, and
       a `#RRGGBB` color

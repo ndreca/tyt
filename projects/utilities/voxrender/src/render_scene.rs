@@ -48,17 +48,17 @@ pub struct RenderScene {
 
 impl RenderScene {
     /// Flattens the objects `object_ids` of `main` for drawing at
-    /// `voxel_size` meters per voxel.
+    /// `scene_scale` times their size.
     ///
     /// Each object yields one material per live voxel, resolved by the
     /// layer-override rule of the effective palette and deduplicated into
     /// the material table. A shaded property the palette does not supply
     /// takes its standard default. Each root-to-object path of the hierarchy
     /// yields one placement carrying the path's world transform, with the
-    /// grid origin folded in and every position scaled by the voxel size. An
+    /// grid origin folded in and every position scaled by the scene scale. An
     /// object no path reaches gets one placement at the identity. Errors if:
     ///
-    /// 1. `voxel_size` is not finite and positive
+    /// 1. `scene_scale` is not finite and positive
     /// 2. an object id is not one of `main`'s or is listed twice
     /// 3. a shaded property's value pool is not the kind the contract reads
     /// 4. a shaded value is outside its range
@@ -66,10 +66,10 @@ impl RenderScene {
     pub fn from_vox_main<T: VoxExt>(
         main: &VoxMain<T>,
         object_ids: &[U32Id<BVoxObject>],
-        voxel_size: f64,
+        scene_scale: f64,
     ) -> Result<Self> {
-        if !(voxel_size.is_finite() && voxel_size > 0.0) {
-            return Err(Error::VoxelSize { voxel_size });
+        if !(scene_scale.is_finite() && scene_scale > 0.0) {
+            return Err(Error::SceneScale { scene_scale });
         }
 
         let mut scene = RenderScene::default();
@@ -157,7 +157,7 @@ impl RenderScene {
                 main,
                 root_id,
                 &TyTransformF64::IDENTITY,
-                voxel_size,
+                scene_scale,
                 &mut scene,
                 &mut placed,
             )?;
@@ -175,7 +175,7 @@ impl RenderScene {
 
             scene.retain_placement(RenderPlacement {
                 object_id,
-                transform: placement_transform(&TyTransformF64::IDENTITY, origin, voxel_size),
+                transform: placement_transform(&TyTransformF64::IDENTITY, origin, scene_scale),
             })?;
         }
 
@@ -762,7 +762,7 @@ fn place<T: VoxExt>(
     main: &VoxMain<T>,
     node_id: U32Id<BVoxHierarchyNode>,
     parent: &TyTransformF64,
-    voxel_size: f64,
+    scene_scale: f64,
     scene: &mut RenderScene,
     placed: &mut HashSet<U32Id<BVoxObject>>,
 ) -> Result<()> {
@@ -784,37 +784,37 @@ fn place<T: VoxExt>(
 
         scene.retain_placement(RenderPlacement {
             object_id,
-            transform: placement_transform(&world, origin, voxel_size),
+            transform: placement_transform(&world, origin, scene_scale),
         })?;
 
         placed.insert(object_id);
     }
 
     for &child_id in &node.child_node_ids {
-        place(main, child_id, &world, voxel_size, scene, placed)?;
+        place(main, child_id, &world, scene_scale, scene, placed)?;
     }
 
     Ok(())
 }
 
 /// The grid-to-world transform of an object at `origin` under the node path
-/// `world`, at `voxel_size` meters per voxel. Scaling every node position by
-/// the voxel size is one uniform scale of the whole path, so the path's
-/// position scales and the grid units fold into the placement's scale.
+/// `world`, at `scene_scale` times its size. Scaling every node position by the
+/// scene scale is one uniform scale of the whole path, so the path's position
+/// scales and the grid units fold into the placement's scale.
 fn placement_transform(
     world: &TyTransformF64,
     origin: TyVector3I32,
-    voxel_size: f64,
+    scene_scale: f64,
 ) -> TyTransformF64 {
     let scaled = TyTransformF64 {
-        position: world.position * voxel_size,
+        position: world.position * scene_scale,
         ..*world
     };
 
     scaled.compose(&TyTransformF64::new(
-        origin.as_dvec3() * voxel_size,
+        origin.as_dvec3() * scene_scale,
         TyQuaternionF64::IDENTITY,
-        TyVector3F64::splat(voxel_size),
+        TyVector3F64::splat(scene_scale),
     ))
 }
 
@@ -1617,7 +1617,7 @@ mod tests {
             )
         );
 
-        // No path reaches lone, which sits at its origin under the voxel size.
+        // No path reaches lone, which sits at its origin under the scene scale.
         assert_eq!(placements[2].object_id, lone_id);
         assert_eq!(
             placements[2].transform,
@@ -1630,7 +1630,7 @@ mod tests {
     }
 
     #[test]
-    fn a_flatten_refuses_a_bad_selection_and_a_bad_voxel_size() {
+    fn a_flatten_refuses_a_bad_selection_and_a_bad_scene_scale() {
         let (main, bar_id, _) = painted_main();
 
         assert_eq!(
@@ -1645,7 +1645,7 @@ mod tests {
         );
         assert_eq!(
             RenderScene::from_vox_main(&main, &[bar_id], 0.0).err(),
-            Some(Error::VoxelSize { voxel_size: 0.0 })
+            Some(Error::SceneScale { scene_scale: 0.0 })
         );
     }
 

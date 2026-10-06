@@ -32,8 +32,8 @@ pub struct MeshProfile {
     /// Mirrors `--value` per entry.
     pub(crate) values: Vec<String>,
 
-    /// Mirrors `--voxel-size`.
-    pub(crate) voxel_size: Option<f64>,
+    /// Mirrors `--scene-scale`.
+    pub(crate) scene_scale: Option<f64>,
 
     /// Mirrors `--method`.
     pub(crate) method: Option<NamedCliValue<Method>>,
@@ -77,7 +77,7 @@ mod tests {
                 "computeOcclusion": "ao",
                 "computeVoxelPosition": ["at"],
                 "values": ["albedo = baseColor"],
-                "voxelSize": 0.1,
+                "sceneScale": 0.1,
                 "method": "culled",
                 "textureShape": 32,
                 "files": {
@@ -118,7 +118,7 @@ mod tests {
         );
         assert_eq!(profile.compute_occlusion.0, ["ao"]);
         assert_eq!(profile.compute_voxel_position.0, ["at"]);
-        assert_eq!(profile.voxel_size, Some(0.1));
+        assert_eq!(profile.scene_scale, Some(0.1));
         assert_eq!(profile.method, Some(NamedCliValue(Method::Culled)));
         assert_eq!(
             profile.texture_shape,

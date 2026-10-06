@@ -7,14 +7,13 @@ use voxcore::{BVoxObject, VoxExt, VoxMain};
 
 /// Places `objects`, each a meshed object of `main` beside its mesh object, by
 /// the hierarchy of `main` narrowed to the nodes reaching one of them, with
-/// node positions scaled by `voxel_size` onto meters. An object no node places
-/// gets a root node of its name after the mirrored roots. `document` holds no
-/// node yet.
+/// node positions scaled by `scene_scale`. An object no node places gets a root
+/// node of its name after the mirrored roots. `document` holds no node yet.
 pub fn write_hierarchy<T: VoxExt>(
     document: &mut MeshMain<()>,
     main: &VoxMain<T>,
     objects: &[(U32Id<BVoxObject>, U32Id<BMeshObject>)],
-    voxel_size: f64,
+    scene_scale: f64,
 ) -> Result<()> {
     assert_eq!(
         document.hierarchy_node_count(),
@@ -52,7 +51,7 @@ pub fn write_hierarchy<T: VoxExt>(
             MeshHierarchyNode {
                 name: node.name.clone(),
                 transform: TyTransformF64 {
-                    position: node.transform.position * voxel_size,
+                    position: node.transform.position * scene_scale,
                     ..node.transform
                 },
                 child_node_ids: node

@@ -17,7 +17,7 @@ use voxsurface::{mesh_grid, mesh_grid_keyed};
 /// its record, placed by the hierarchy of `main` narrowed to the nodes reaching
 /// a target. Positions are in meters on the grid's axes, which the document
 /// shares, with each object shifted by its grid origin. The records have to
-/// agree on the voxel size.
+/// agree on the scene scale.
 pub fn mesh<D: EncodePng, T: VoxExt>(
     dependencies: &D,
     main: &VoxMain<T>,
@@ -27,7 +27,7 @@ pub fn mesh<D: EncodePng, T: VoxExt>(
         return Err(Error::invalid("a run meshes at least one object"));
     };
 
-    let voxel_size = first.record.voxel_size;
+    let scene_scale = first.record.scene_scale;
 
     let mut seen = HashSet::new();
 
@@ -46,16 +46,16 @@ pub fn mesh<D: EncodePng, T: VoxExt>(
             .into());
         }
 
-        if !(target.record.voxel_size.is_finite() && target.record.voxel_size > 0.0) {
+        if !(target.record.scene_scale.is_finite() && target.record.scene_scale > 0.0) {
             return Err(Error::mesh_record(
-                MeshElement::VoxelSize,
+                MeshElement::SceneScale,
                 "must be finite and greater than 0",
             ));
         }
 
-        if target.record.voxel_size != voxel_size {
+        if target.record.scene_scale != scene_scale {
             return Err(Error::mesh_record(
-                MeshElement::VoxelSize,
+                MeshElement::SceneScale,
                 "differs between the objects of one run",
             ));
         }
@@ -77,7 +77,7 @@ pub fn mesh<D: EncodePng, T: VoxExt>(
         })
         .collect::<Result<Vec<_>>>()?;
 
-    write_hierarchy(&mut document, main, &objects, voxel_size)?;
+    write_hierarchy(&mut document, main, &objects, scene_scale)?;
 
     Ok(document)
 }
@@ -178,7 +178,7 @@ fn mesh_object<D: EncodePng, T: VoxExt>(
             &geometry,
             faces,
             object.origin(),
-            record.voxel_size,
+            record.scene_scale,
             primitive_record,
             streams.primitive_list(primitive_id),
             &atlases,
@@ -333,12 +333,12 @@ mod tests {
         }
     }
 
-    /// A geometry-only record under `method` at one meter per voxel.
+    /// A geometry-only record under `method` at the document's size.
     fn record(method: Method) -> MeshRecord {
         MeshRecord {
             method,
             texture_shape: TextureShape::Pot,
-            voxel_size: 1.0,
+            scene_scale: 1.0,
             computed_bindings: Vec::new(),
             program: String::new(),
             materials: IdVec::default(),
@@ -487,7 +487,7 @@ mod tests {
     #[test]
     fn geometry_alone_is_one_bare_primitive_under_one_root() {
         let mut record = record(Method::Greedy);
-        record.voxel_size = 2.0;
+        record.scene_scale = 2.0;
 
         let document = meshed(&record);
 
@@ -504,7 +504,7 @@ mod tests {
         assert!(primitive.normals().is_some());
 
         // Greedy merges the bar into a box: six faces of four vertices and
-        // two triangles, scaled to two meters per voxel on the grid's axes.
+        // two triangles, scaled twofold on the grid's axes.
         assert_eq!(primitive.vertex_count(), 24);
         assert_eq!(primitive.triangle_count(), 12);
         let max = primitive
@@ -517,14 +517,14 @@ mod tests {
     }
 
     #[test]
-    fn the_origin_shifts_the_positions_before_the_voxel_size_scales_them() {
+    fn the_origin_shifts_the_positions_before_the_scene_scale_scales_them() {
         let mut main: VoxMain = VoxMain::default();
         let mut object = bar();
         object.set_origin(TyVector3I32::new(-1, 2, 0));
         let object_id = main.retain_object(object).unwrap();
 
         let mut record = record(Method::Greedy);
-        record.voxel_size = 2.0;
+        record.scene_scale = 2.0;
 
         let document = mesh_one(&main, object_id, &record).unwrap();
 
@@ -576,7 +576,7 @@ mod tests {
         main.set_root_hierarchy_node_ids(vec![root, other]).unwrap();
 
         let mut record = record(Method::Greedy);
-        record.voxel_size = 0.5;
+        record.scene_scale = 0.5;
 
         let document = mesh(
             &DependenciesImpl,
@@ -648,14 +648,14 @@ mod tests {
     }
 
     #[test]
-    fn the_targets_share_one_voxel_size() {
+    fn the_targets_share_one_scene_scale() {
         let mut main: VoxMain = VoxMain::default();
         let a = main.retain_object(bar()).unwrap();
         let b = main.retain_object(bar()).unwrap();
 
         let one = record(Method::Greedy);
         let mut two = record(Method::Greedy);
-        two.voxel_size = 2.0;
+        two.scene_scale = 2.0;
 
         let error = record_error(mesh(
             &DependenciesImpl,
@@ -671,7 +671,7 @@ mod tests {
                 },
             ],
         ));
-        assert_eq!(error, MeshElement::VoxelSize);
+        assert_eq!(error, MeshElement::SceneScale);
     }
 
     #[test]
@@ -994,11 +994,11 @@ mod tests {
     }
 
     #[test]
-    fn a_non_positive_voxel_size_errors() {
-        for voxel_size in [0.0, -1.0, f64::NAN, f64::INFINITY] {
+    fn a_non_positive_scene_scale_errors() {
+        for scene_scale in [0.0, -1.0, f64::NAN, f64::INFINITY] {
             let mut record = record(Method::Greedy);
-            record.voxel_size = voxel_size;
-            assert_eq!(failing_element(&record), MeshElement::VoxelSize);
+            record.scene_scale = scene_scale;
+            assert_eq!(failing_element(&record), MeshElement::SceneScale);
         }
     }
 

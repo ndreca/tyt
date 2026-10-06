@@ -99,13 +99,12 @@ mesh. A document with no objects errors. See
 
    The occlusion the render shades with; see [Lights](contract.md#lights).
 
-8. `--voxel-size <meters>`
+8. `--scene-scale <scale>`
    - Default: `1.0`
    - Repeatable: no
 
-   The edge length of one voxel, applied as a uniform scale to the whole
-   scene. A point or spot light's falloff and `range` run in meters after it
-   applies.
+   A uniform scale on the document's meters, applied to the whole scene. A point
+   or spot light's falloff and `range` run in meters after it applies.
 
 9. `--bloom-strength <strength>`
    - Default: `0`

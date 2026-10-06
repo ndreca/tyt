@@ -1073,3 +1073,15 @@ With descriptions shown, the table layouts switch from one column per origin to
 one `label` and `description` record table per origin because a column of long
 descriptions reads poorly. `text-rows` heads each origin over a row per profile,
 and `md-lists` appends the description to each item.
+
+## Scene units
+
+The voxj spec makes a world unit one meter. sdf-doc and `mesh-doc voxelize`
+already wrote node scales that measure meters, and the spec now states that
+convention for every reader. A MagicaVoxel or Qubicle file converts with no
+scale and places voxels one meter across because the source holds no size.
+Running `vxl node set scale` on a root gives it one.
+
+`object mesh` and `object render` took `--voxel-size` while the grid had no
+unit. Under meters the flag multiplies a scene that already has a size, so it
+became `--scene-scale`, with the profile key `sceneScale`.

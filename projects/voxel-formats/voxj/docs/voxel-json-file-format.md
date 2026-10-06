@@ -67,7 +67,7 @@ The runtime scene lives under `main.runtimeState`: value pools, palettes, object
 
 ## Coordinate System
 
-The axes are glTF's: Y is up, the frame is right-handed, and +Z points toward the viewer. Voxel coordinates are unsigned integers, one unit per voxel. A voxel at `(x, y, z)` fills the unit cube with that minimum corner, `[x, x + 1)` on each axis. An object has no transform beyond its grid `origin`. Rotation, scale, and placement come from the hierarchy node that references it. An `origin` near `-bounds / 2` puts the node's position at the object's center, so the node rotates and scales the object about its center.
+The axes are glTF's: Y is up, the frame is right-handed, and +Z points toward the viewer. A world unit is one meter. Voxel coordinates are unsigned integers, one grid unit per voxel. A voxel at `(x, y, z)` fills the unit cube with that minimum corner, `[x, x + 1)` on each axis. An object has no transform beyond its grid `origin`. Rotation, scale, and placement come from the hierarchy node that references it. A voxel spans one meter until the scales along its node path resize it. An `origin` near `-bounds / 2` puts the node's position at the object's center, so the node rotates and scales the object about its center.
 
 ## Objects
 
@@ -395,7 +395,7 @@ Nodes form a DAG: a node may have multiple parents but no cycles. Each reference
 }
 ```
 
-A transform has three fields: `position` is a possibly-fractional `[x, y, z]`, `rotation` is a unit quaternion `[x, y, z, w]`, and `scale` is `[x, y, z]`.
+A transform has three fields: `position` is a possibly-fractional `[x, y, z]` in the parent's units, `rotation` is a unit quaternion `[x, y, z, w]`, and `scale` is `[x, y, z]`. A root's `position` counts meters.
 
 1. A transform composes as `Translation * Rotation * Scale`.
 2. A node's world transform is `parentWorld * nodeLocal`; a root, listed in `rootNodes`, has world = local. Reached through multiple parents, a node is placed once per path; this is instancing.

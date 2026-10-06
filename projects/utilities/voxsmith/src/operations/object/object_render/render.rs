@@ -22,8 +22,8 @@ use voxrender::{
 ///
 /// 1. `object_ids` is empty, lists an object twice, or lists one that is
 ///    not one of `main`'s
-/// 2. an image side is zero, the voxel size is not finite and positive, or
-///    a bloom value is out of range
+/// 2. an image side is zero, the scene scale is not finite and positive, or a
+///    bloom value is out of range
 /// 3. the record holds no view
 /// 4. a view's `select` matches none of the rendered objects
 /// 5. a transform cannot resolve
@@ -36,9 +36,9 @@ pub fn render<T: VoxExt>(
 
     check_record(record)?;
 
-    let mut scene = RenderScene::from_vox_main(main, object_ids, record.voxel_size)?;
+    let mut scene = RenderScene::from_vox_main(main, object_ids, record.scene_scale)?;
 
-    let node_frames = NodeFrames::new(main, record.voxel_size);
+    let node_frames = NodeFrames::new(main, record.scene_scale);
 
     let mut outputs = IdVec::with_capacity(record.views.len());
 
@@ -130,7 +130,7 @@ fn check_objects<T: VoxExt>(main: &VoxMain<T>, object_ids: &[U32Id<BVoxObject>])
 }
 
 /// Errors unless `record` has an image with two positive sides, a finite
-/// positive voxel size, a bloom in range, and at least one view.
+/// positive scene scale, a bloom in range, and at least one view.
 fn check_record(record: &RenderRecord) -> Result<()> {
     if record.width == 0 || record.height == 0 {
         return Err(Error::render_record(
@@ -142,9 +142,9 @@ fn check_record(record: &RenderRecord) -> Result<()> {
         ));
     }
 
-    if !(record.voxel_size.is_finite() && record.voxel_size > 0.0) {
+    if !(record.scene_scale.is_finite() && record.scene_scale > 0.0) {
         return Err(Error::render_record(
-            RenderElement::VoxelSize,
+            RenderElement::SceneScale,
             "must be finite and greater than 0",
         ));
     }
@@ -380,7 +380,7 @@ mod tests {
             height: 8,
             background: None,
             occlusion: RenderOcclusion::Corner,
-            voxel_size: 1.0,
+            scene_scale: 1.0,
             bloom: RenderBloom::default(),
             views: IdVec::from(views),
             lights: IdVec::from(vec![headlight()]),
@@ -611,10 +611,10 @@ mod tests {
         );
 
         let mut sized = record(vec![orbit("front", 0.0)]);
-        sized.voxel_size = 0.0;
+        sized.scene_scale = 0.0;
         assert_eq!(
             element(render(&main, &object_ids, &sized)),
-            RenderElement::VoxelSize
+            RenderElement::SceneScale
         );
 
         for bloom in [

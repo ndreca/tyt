@@ -77,17 +77,14 @@ object and errors in a mesh holding several. See
    4. `square`: the smallest square.
    5. `<n>`: an exact `n`x`n` canvas of cells; a canvas too small errors.
 
-5. `--voxel-size <meters>`
+5. `--scene-scale <scale>`
    - Default: `1.0`
    - Repeatable: no
 
-   The real-world edge length of one voxel in meters. The voxel grid is
-   unitless, so this flag gives a voxel its physical size. The flag is always
-   meters; the writer converts into the target format's native unit. glTF is
-   meter-native, so the size passes through. `1.0` opens at one meter per voxel,
-   and `0.01` opens at one centimeter. The size applies as a uniform scale to
-   vertex positions and to hierarchy node positions, so a document whose node
-   scales already carry the voxel size keeps the default.
+   A uniform scale on the whole scene, applied to vertex positions and hierarchy
+   node positions. At the default, the glTF keeps the document's meters. A
+   document whose nodes carry no scale places voxels one meter across, and
+   `0.01` meshes those voxels one centimeter across.
 
 6. `--material-count <count>`
    - Default: derived from use

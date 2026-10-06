@@ -108,8 +108,8 @@ pub enum MeshElement {
     /// The atlas canvas.
     TextureShape,
 
-    /// One voxel's edge length.
-    VoxelSize,
+    /// The uniform scale on the scene.
+    SceneScale,
 }
 
 impl Display for MeshElement {
@@ -172,7 +172,7 @@ impl Display for MeshElement {
 
             MeshElement::TextureShape => f.write_str("the texture shape"),
 
-            MeshElement::VoxelSize => f.write_str("the voxel size"),
+            MeshElement::SceneScale => f.write_str("the scene scale"),
         }
     }
 }

@@ -176,7 +176,7 @@ mod tests {
         let record = MeshRecord {
             method: Method::Culled,
             texture_shape: TextureShape::Pot,
-            voxel_size: 1.0,
+            scene_scale: 1.0,
             computed_bindings: vec![
                 ComputedBinding {
                     name: "ao".to_owned(),

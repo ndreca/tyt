@@ -13,8 +13,8 @@ pub struct MeshRecord {
     /// The atlas canvas.
     pub texture_shape: TextureShape,
 
-    /// One voxel's edge length in meters.
-    pub voxel_size: f64,
+    /// The uniform scale on the document's meters.
+    pub scene_scale: f64,
 
     /// The computed bindings.
     pub computed_bindings: Vec<ComputedBinding>,

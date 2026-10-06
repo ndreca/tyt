@@ -60,9 +60,9 @@ impl<'a> RenderProfileStack<'a> {
                 self.profile.occlusion = Some(occlusion);
             }
 
-            if let Some(voxel_size) = member.voxel_size {
-                self.claim(name, "voxelSize".to_owned())?;
-                self.profile.voxel_size = Some(voxel_size);
+            if let Some(scene_scale) = member.scene_scale {
+                self.claim(name, "sceneScale".to_owned())?;
+                self.profile.scene_scale = Some(scene_scale);
             }
 
             if let Some(strength) = member.bloom_strength {

@@ -28,7 +28,7 @@ placement never points at a released object and a voxel never samples a
 released material. `from_vox_main`
 flattens a voxcore document: one material per live voxel by the effective
 palette, deduplicated into the table, and one placement per path with the
-grid origin and the voxel size folded in. `subject_bounds` gives the world
+grid origin and the scene scale folded in. `subject_bounds` gives the world
 bounds of the live voxels under a set of placements, which the `fit` rule
 frames.
 

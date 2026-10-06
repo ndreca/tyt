@@ -12,9 +12,9 @@ and lights below.
 ## Frame
 
 The frame is voxj's: glTF Y-up, right-handed, +Z toward the viewer. A voxel at
-`p` fills the unit cube with min corner `p`. Placement follows the node DAG,
-one path making one placement. A voxel size in meters scales the whole scene,
-as it scales an [`object mesh`](../mesh/mesh.md) output.
+`p` fills the unit cube with min corner `p`. Placement follows the node DAG, one
+path making one placement. The document measures meters, and the scene scale
+multiplies the whole scene.
 
 ## Surface
 
@@ -110,9 +110,8 @@ one occlusion switch. There are four kinds:
    granularity
 2. A `point` light is a position with glTF's punctual falloff: inverse
    square, an optional `range`, and glTF's smooth cutoff at that range. It
-   carries a shadow granularity too. Falloff runs in meters after the voxel
-   size applies, so one rig lights a large voxel size differently from a
-   small one
+   carries a shadow granularity too. Falloff runs in meters after the scene
+   scale applies, so one rig lights a large scene differently from a small one
 3. A `spot` light is a pose. It sits at a position and shines down its
    local -Z with a point light's falloff, times glTF's cone falloff: full
    strength inside an inner cone half-angle, none past an outer one, and a
@@ -182,7 +181,7 @@ for. Each shape is a tagged union over the frame its values are read in:
    path. Zero or several matches error, listing the paths that matched. The
    position and rotation are read on the node's axes and compose with the
    path's world transform, the one the flatten gives the path's placements
-   with the voxel size applied
+   with the scene scale applied
 
 A view takes `world`, `subject`, `orbit`, or `node`. A directional light
 takes `world`, `camera`, or `node`. A point light and a spot light take all

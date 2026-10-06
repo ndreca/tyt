@@ -39,8 +39,8 @@ pub enum RenderElement {
     /// The view table.
     Views,
 
-    /// The voxel size.
-    VoxelSize,
+    /// The uniform scale on the scene.
+    SceneScale,
 }
 
 impl Display for RenderElement {
@@ -62,7 +62,7 @@ impl Display for RenderElement {
 
             RenderElement::Views => f.write_str("the view table"),
 
-            RenderElement::VoxelSize => f.write_str("the voxel size"),
+            RenderElement::SceneScale => f.write_str("the scene scale"),
         }
     }
 }
