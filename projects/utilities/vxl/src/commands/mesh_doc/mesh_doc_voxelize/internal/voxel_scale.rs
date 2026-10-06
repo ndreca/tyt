@@ -18,7 +18,8 @@ impl CliValue for VoxelScale {
             }
 
             VoxelScale::Keep => {
-                "Keep node scale on the node, so a scaled object's cubes scale with it"
+                "Keep node scale on the node, so a scaled object's cubes scale with it. The voxel \
+                 size is in unscaled units, and world references are rejected"
             }
         }
     }

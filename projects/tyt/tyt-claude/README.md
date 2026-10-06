@@ -1,3 +1,3 @@
 # tyt-claude - Claude
 
-Operations for working with claude
+Works with Claude Code profiles.

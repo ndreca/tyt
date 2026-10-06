@@ -6,23 +6,25 @@ use crate::{
 use clap::{ArgAction, Parser};
 use std::path::{Path, PathBuf};
 
-/// Retextures an existing Meshy mesh using the Meshy [Retexture](https://docs.meshy.ai/en/api/retexture) API.
+/// Retextures an existing Meshy mesh using Meshy's Retexture API.
 ///
-/// Reads a `<output-base>.meshy.mesh.json` written by `tyt meshy mesh` and sends
+/// Reads a `<output-base>.meshy.mesh.json` written by `mesh` and sends
 /// its `taskId` as the retexture `input_task_id`. A texture style is required:
 /// exactly one of `--texture-prompt`, `--texture-prompt-file`, or
 /// `--texture-image`. Writes `<output-base>.meshy.texture.json` and prints the
 /// task id. With `--wait`, blocks until the task completes and downloads its
-/// files; otherwise fetch them later with `tyt meshy poll`.
+/// result files; otherwise fetch them later with `poll`.
+///
+/// See https://docs.meshy.ai/en/api/retexture.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "texture")]
 pub struct Texture {
-    /// The source `<output-base>.meshy.mesh.json` file, relative to the current
+    /// The input `<output-base>.meshy.mesh.json` file, relative to the current
     /// directory. Its `taskId` is sent as `input_task_id`.
-    #[arg(value_name = "meshy-mesh-json-path")]
+    #[arg(value_name = "meshy-mesh-json")]
     meshy_mesh_json_path: PathBuf,
 
-    /// A text prompt describing the desired texture style (max 600 characters).
+    /// A text prompt guiding texturing (max 600 characters).
     #[arg(value_name = "texture-prompt", long = "texture-prompt")]
     texture_prompt: Option<String>,
 
@@ -39,7 +41,7 @@ pub struct Texture {
     #[arg(value_name = "model", long, value_enum, default_value_t = Model::Meshy6)]
     model: Model,
 
-    /// Generate PBR maps (metallic, roughness, normal) alongside the base color.
+    /// Generates PBR maps (metallic, roughness, normal) alongside the base color.
     #[arg(
         value_name = "texture-gen-pbr",
         long = "texture-gen-pbr",
@@ -51,11 +53,11 @@ pub struct Texture {
     )]
     texture_gen_pbr: bool,
 
-    /// The base color texture quality. `hd` requires Meshy 6.
+    /// The base color texture quality.
     #[arg(value_name = "texture-quality", long = "texture-quality", value_enum, default_value_t = TextureQuality::Normal)]
     texture_quality: TextureQuality,
 
-    /// Reuse the source model's original UVs instead of generating new ones.
+    /// Reuses the source model's original UVs instead of generating new ones.
     #[arg(
         value_name = "original-uv",
         long = "original-uv",
@@ -67,8 +69,8 @@ pub struct Texture {
     )]
     original_uv: bool,
 
-    /// Keep the input's highlights and shadows baked into the base color
-    /// texture. Only supported on Meshy 6; defaults to false there.
+    /// Keeps the input's highlights and shadows baked into the base color
+    /// texture. Only supported on Meshy 6, where it defaults to `false`.
     #[arg(
         value_name = "keep-lighting",
         long = "keep-lighting",
@@ -79,7 +81,7 @@ pub struct Texture {
     )]
     keep_lighting: Option<bool>,
 
-    /// A 3D file format to generate. Repeatable; defaults to `usdz`.
+    /// A 3D file format to generate. Defaults to `usdz`. Repeatable.
     #[arg(value_name = "target-format", long = "target-format", value_enum)]
     target_format: Vec<TargetFormat>,
 

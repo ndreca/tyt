@@ -12,7 +12,7 @@ use std::{
 /// The Blender script that applies the modify operations to named objects.
 const FBX_MODIFY_PY: Script = embed_blender_script!("fbx_modify.py");
 
-/// Applies mutating operations to matched objects in an FBX.
+/// Applies mutating operations to matched objects in an FBX file.
 #[derive(Clone, Debug, Parser)]
 pub struct Modify {
     /// The input FBX file.
@@ -21,15 +21,16 @@ pub struct Modify {
 
     /// Gitignore-style pattern selecting object hierarchy paths, with more
     /// passed via `--select`. A bare name matches at any depth, a slashed
-    /// pattern anchors to a scene root; `**/name/**` selects a whole subtree.
+    /// pattern anchors to a scene root, and `**/name/**` selects a whole
+    /// subtree.
     #[arg(value_name = "pattern")]
     pattern: String,
 
-    /// Additional selection patterns unioned with the positional pattern.
+    /// Additional patterns unioned with the positional `pattern`. Repeatable.
     #[arg(value_name = "select", long)]
     select: Vec<String>,
 
-    /// The output FBX file to write. If not provided, the input file will be
+    /// The output FBX file to write. When omitted, the input file is
     /// overwritten.
     #[arg(value_name = "output-fbx")]
     output_fbx: Option<PathBuf>,

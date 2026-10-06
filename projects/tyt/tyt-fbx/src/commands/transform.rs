@@ -36,25 +36,26 @@ pub struct Transform {
 
     /// Gitignore-style pattern selecting object hierarchy paths, with more
     /// passed via `--select`. A bare name matches at any depth, a slashed
-    /// pattern anchors to a scene root; `**/name/**` selects a whole subtree.
+    /// pattern anchors to a scene root, and `**/name/**` selects a whole
+    /// subtree.
     #[arg(value_name = "pattern")]
     pattern: String,
 
-    /// Additional selection patterns unioned with the positional pattern.
+    /// Additional patterns unioned with the positional `pattern`. Repeatable.
     #[arg(value_name = "select", long)]
     select: Vec<String>,
 
-    /// The output FBX file to write. If not provided, the input file will be
+    /// The output FBX file to write. When omitted, the input file is
     /// overwritten.
     #[arg(value_name = "output-fbx")]
     output_fbx: Option<PathBuf>,
 
-    /// The transform space used for the set-* and mod-* values. When not set,
-    /// Blender's default (local) is used.
+    /// The transform space used for the `--set-*` and `--mod-*` values. When
+    /// omitted, Blender's default (`local`) is used.
     #[arg(value_name = "space", long = "space")]
     space: Option<Space>,
 
-    /// The unit used for the set-rot-* and mod-rot-* values.
+    /// The unit used for the `--set-rot-*` and `--mod-rot-*` values.
     #[arg(value_name = "rot-unit", long = "rot-unit", default_value = "rad")]
     rot_unit: RotUnit,
 
@@ -85,7 +86,7 @@ pub struct Transform {
     )]
     set_pos_z: Option<f64>,
 
-    /// Sets the rotation of the matched objects around the x-axis.
+    /// Sets the Euler rotation of the matched objects around the x-axis.
     #[arg(
         value_name = "x",
         long = "set-rot-x",
@@ -94,7 +95,7 @@ pub struct Transform {
     )]
     set_rot_x: Option<f64>,
 
-    /// Sets the rotation of the matched objects around the y-axis.
+    /// Sets the Euler rotation of the matched objects around the y-axis.
     #[arg(
         value_name = "y",
         long = "set-rot-y",
@@ -103,7 +104,7 @@ pub struct Transform {
     )]
     set_rot_y: Option<f64>,
 
-    /// Sets the rotation of the matched objects around the z-axis.
+    /// Sets the Euler rotation of the matched objects around the z-axis.
     #[arg(
         value_name = "z",
         long = "set-rot-z",
@@ -112,7 +113,7 @@ pub struct Transform {
     )]
     set_rot_z: Option<f64>,
 
-    /// Sets the scale of the matched objects in the x-axis.
+    /// Sets the scale of the matched objects along the x-axis.
     #[arg(
         value_name = "x",
         long = "set-scl-x",
@@ -121,7 +122,7 @@ pub struct Transform {
     )]
     set_scl_x: Option<f64>,
 
-    /// Sets the scale of the matched objects in the y-axis.
+    /// Sets the scale of the matched objects along the y-axis.
     #[arg(
         value_name = "y",
         long = "set-scl-y",
@@ -130,7 +131,7 @@ pub struct Transform {
     )]
     set_scl_y: Option<f64>,
 
-    /// Sets the scale of the matched objects in the z-axis.
+    /// Sets the scale of the matched objects along the z-axis.
     #[arg(
         value_name = "z",
         long = "set-scl-z",
@@ -139,7 +140,7 @@ pub struct Transform {
     )]
     set_scl_z: Option<f64>,
 
-    /// Sets all components of position on the matched objects.
+    /// Sets all three components of the matched objects' position.
     #[arg(
         value_names = ["x", "y", "z"],
         long = "set-pos",
@@ -150,7 +151,7 @@ pub struct Transform {
     )]
     set_pos: Option<Vec<f64>>,
 
-    /// Sets all components of rotation on the matched objects.
+    /// Sets all three components of the matched objects' Euler rotation.
     #[arg(
         value_names = ["x", "y", "z"],
         long = "set-rot",
@@ -161,7 +162,7 @@ pub struct Transform {
     )]
     set_rot: Option<Vec<f64>>,
 
-    /// Sets all components of scale on the matched objects.
+    /// Sets all three components of the matched objects' scale.
     #[arg(
         value_names = ["x", "y", "z"],
         long = "set-scl",
@@ -172,7 +173,7 @@ pub struct Transform {
     )]
     set_scl: Option<Vec<f64>>,
 
-    /// Sets the full transform of the matched objects. Takes 9 values in
+    /// Sets the full transform of the matched objects. Takes nine values in
     /// pos-x/y/z, rot-x/y/z, scl-x/y/z order.
     #[arg(
         value_names = ["px", "py", "pz", "rx", "ry", "rz", "sx", "sy", "sz"],
@@ -215,7 +216,7 @@ pub struct Transform {
     )]
     mod_pos_z: Option<f64>,
 
-    /// Adds to the rotation of the matched objects around the x-axis.
+    /// Adds to the Euler rotation of the matched objects around the x-axis.
     #[arg(
         value_name = "x",
         long = "mod-rot-x",
@@ -224,7 +225,7 @@ pub struct Transform {
     )]
     mod_rot_x: Option<f64>,
 
-    /// Adds to the rotation of the matched objects around the y-axis.
+    /// Adds to the Euler rotation of the matched objects around the y-axis.
     #[arg(
         value_name = "y",
         long = "mod-rot-y",
@@ -233,7 +234,7 @@ pub struct Transform {
     )]
     mod_rot_y: Option<f64>,
 
-    /// Adds to the rotation of the matched objects around the z-axis.
+    /// Adds to the Euler rotation of the matched objects around the z-axis.
     #[arg(
         value_name = "z",
         long = "mod-rot-z",
@@ -242,7 +243,7 @@ pub struct Transform {
     )]
     mod_rot_z: Option<f64>,
 
-    /// Adds to the scale of the matched objects in the x-axis.
+    /// Adds to the scale of the matched objects along the x-axis.
     #[arg(
         value_name = "x",
         long = "mod-scl-x",
@@ -251,7 +252,7 @@ pub struct Transform {
     )]
     mod_scl_x: Option<f64>,
 
-    /// Adds to the scale of the matched objects in the y-axis.
+    /// Adds to the scale of the matched objects along the y-axis.
     #[arg(
         value_name = "y",
         long = "mod-scl-y",
@@ -260,7 +261,7 @@ pub struct Transform {
     )]
     mod_scl_y: Option<f64>,
 
-    /// Adds to the scale of the matched objects in the z-axis.
+    /// Adds to the scale of the matched objects along the z-axis.
     #[arg(
         value_name = "z",
         long = "mod-scl-z",
@@ -269,7 +270,7 @@ pub struct Transform {
     )]
     mod_scl_z: Option<f64>,
 
-    /// Adds to all components of position on the matched objects.
+    /// Adds to all three components of the matched objects' position.
     #[arg(
         value_names = ["x", "y", "z"],
         long = "mod-pos",
@@ -280,7 +281,7 @@ pub struct Transform {
     )]
     mod_pos: Option<Vec<f64>>,
 
-    /// Adds to all components of rotation on the matched objects.
+    /// Adds to all three components of the matched objects' Euler rotation.
     #[arg(
         value_names = ["x", "y", "z"],
         long = "mod-rot",
@@ -291,7 +292,7 @@ pub struct Transform {
     )]
     mod_rot: Option<Vec<f64>>,
 
-    /// Adds to all components of scale on the matched objects.
+    /// Adds to all three components of the matched objects' scale.
     #[arg(
         value_names = ["x", "y", "z"],
         long = "mod-scl",
@@ -302,7 +303,7 @@ pub struct Transform {
     )]
     mod_scl: Option<Vec<f64>>,
 
-    /// Adds to the full transform of the matched objects. Takes 9 values in
+    /// Adds to the full transform of the matched objects. Takes nine values in
     /// pos-x/y/z, rot-x/y/z, scl-x/y/z order.
     #[arg(
         value_names = ["px", "py", "pz", "rx", "ry", "rz", "sx", "sy", "sz"],
@@ -318,8 +319,9 @@ pub struct Transform {
     )]
     mod_xfm: Option<Vec<f64>>,
 
-    /// Bakes the x position of the matched objects: zeros pos x on the final
-    /// transform and displaces mesh verts so the object appears unmoved.
+    /// Bakes the x position of the matched objects, zeroing it on the final
+    /// transform and displacing the mesh vertices so the object appears
+    /// unmoved.
     #[arg(value_name = "bak-pos-x", long = "bak-pos-x")]
     bak_pos_x: bool,
 
@@ -331,32 +333,32 @@ pub struct Transform {
     #[arg(value_name = "bak-pos-z", long = "bak-pos-z")]
     bak_pos_z: bool,
 
-    /// Bakes the rotation of the matched objects around the x-axis.
+    /// Bakes the Euler rotation of the matched objects around the x-axis.
     #[arg(value_name = "bak-rot-x", long = "bak-rot-x")]
     bak_rot_x: bool,
 
-    /// Bakes the rotation of the matched objects around the y-axis.
+    /// Bakes the Euler rotation of the matched objects around the y-axis.
     #[arg(value_name = "bak-rot-y", long = "bak-rot-y")]
     bak_rot_y: bool,
 
-    /// Bakes the rotation of the matched objects around the z-axis.
+    /// Bakes the Euler rotation of the matched objects around the z-axis.
     #[arg(value_name = "bak-rot-z", long = "bak-rot-z")]
     bak_rot_z: bool,
 
-    /// Bakes the scale of the matched objects in the x-axis.
+    /// Bakes the scale of the matched objects along the x-axis.
     #[arg(value_name = "bak-scl-x", long = "bak-scl-x")]
     bak_scl_x: bool,
 
-    /// Bakes the scale of the matched objects in the y-axis.
+    /// Bakes the scale of the matched objects along the y-axis.
     #[arg(value_name = "bak-scl-y", long = "bak-scl-y")]
     bak_scl_y: bool,
 
-    /// Bakes the scale of the matched objects in the z-axis.
+    /// Bakes the scale of the matched objects along the z-axis.
     #[arg(value_name = "bak-scl-z", long = "bak-scl-z")]
     bak_scl_z: bool,
 
-    /// Bakes all components of position on the matched objects to 0,
-    /// displacing mesh verts so the object appears unmoved.
+    /// Bakes all three components of the matched objects' position to 0,
+    /// displacing the mesh vertices so the object appears unmoved.
     #[arg(
         value_name = "bak-pos",
         long = "bak-pos",
@@ -364,7 +366,7 @@ pub struct Transform {
     )]
     bak_pos: bool,
 
-    /// Bakes all components of rotation on the matched objects to 0.
+    /// Bakes all three components of the matched objects' Euler rotation to 0.
     #[arg(
         value_name = "bak-rot",
         long = "bak-rot",
@@ -372,7 +374,7 @@ pub struct Transform {
     )]
     bak_rot: bool,
 
-    /// Bakes all components of scale on the matched objects to 1.
+    /// Bakes all three components of the matched objects' scale to 1.
     #[arg(
         value_name = "bak-scl",
         long = "bak-scl",

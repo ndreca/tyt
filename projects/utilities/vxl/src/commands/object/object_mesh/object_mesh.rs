@@ -30,9 +30,9 @@ use voxsmith::{
     },
 };
 
-/// Triangulates the selected objects' voxels into a glTF or GLB mesh, one
-/// mesh object per voxel object placed by the hierarchy reaching it, baking
-/// the palette materials into values that ride along as textures, material
+/// Triangulates the selected objects' voxels into a glTF mesh, one mesh
+/// object per voxel object placed by the hierarchy reaching it, baking the
+/// palette materials into values that ride along as textures, material
 /// fields, and files beside the mesh. Every property of the effective palette
 /// enters the program as a name.
 #[derive(Clone, Debug, Parser)]
@@ -41,28 +41,28 @@ pub struct ObjectMesh {
     #[command(flatten)]
     input: VoxelInput,
 
-    /// The output mesh. Defaults to the input path with the mesh extension.
+    /// The output `.glb` or `.gltf` mesh to write. Defaults to the input path
+    /// with the `--to` container's extension.
     #[arg(value_name = "output")]
     output: Option<PathBuf>,
 
-    /// Target mesh container, glTF text (`.gltf`) or binary (`.glb`). Inferred
-    /// from the output extension when omitted, defaulting to `.glb`.
+    /// The target mesh container. Defaults to the container the output
+    /// extension implies, else `glb`.
     #[arg(value_name = "to", long, value_parser = cli_value_parser::<GltfContainer>())]
     to: Option<GltfContainer>,
 
-    /// The meshing strategy, defaulting to `greedy`. Stable per-voxel topology
-    /// needs `culled` or `naive`.
+    /// The meshing strategy. Stable per-voxel topology needs `culled` or
+    /// `naive`. Defaults to `greedy`.
     #[arg(value_name = "method", long, value_parser = cli_value_parser::<Method>())]
     method: Option<Method>,
 
-    /// The atlas canvas, counted in cells, defaulting to `pot`. Unused cells
-    /// are transparent black the mesh never samples.
+    /// The atlas canvas, counted in cells. Unused cells are transparent black the mesh never samples. Defaults to `pot`
     ///
-    /// 1. `fit`: the near-square packing.
-    /// 2. `line`: a single row of cells.
-    /// 3. `pot`: the smallest square power of two.
-    /// 4. `square`: the smallest square.
-    /// 5. `<n>`: an exact `n`x`n` canvas of cells. A canvas too small errors.
+    /// - `fit`: The near-square packing
+    /// - `line`: A single row of cells
+    /// - `pot`: The smallest square power of two
+    /// - `square`: The smallest square
+    /// - `<n>`: An exact `n x n` canvas of cells. A canvas too small errors
     #[arg(
         value_name = "texture-shape",
         long,
@@ -71,14 +71,14 @@ pub struct ObjectMesh {
     )]
     texture_shape: Option<TextureShape>,
 
-    /// A uniform scale on the document's meters, defaulting to `1.0` and
-    /// applied to every vertex position and hierarchy node position.
+    /// A uniform scale on the document's meters, applied to every vertex
+    /// position and hierarchy node position. Defaults to `1.0`.
     #[arg(value_name = "scene-scale", long)]
     scene_scale: Option<PositiveF64>,
 
-    /// How many materials the mesh carries, numbered from `0`. Derived from
-    /// use when omitted, as the highest mentioned index plus one, and a skipped
-    /// index errors. When given, an index at or above it errors and an
+    /// How many materials the mesh carries, numbered from `0`. When omitted,
+    /// the count derives from use as the highest mentioned index plus one, and
+    /// a skipped index errors. When given, an index at or above it errors and an
     /// unmentioned index below it emits an empty material.
     #[arg(value_name = "count", long)]
     material_count: Option<u32>,
@@ -95,7 +95,7 @@ pub struct ObjectMesh {
     /// Declares one stream of the indexed material's list, `corner`, `face`,
     /// `swatch`, or `voxel`. The flag order sets the `TEXCOORD` numbers. A
     /// domain listed twice errors. Each of the material's textures bakes at the
-    /// lowest listed domain at or above its value's. Without the flag the list
+    /// lowest listed domain at or above its value's. When omitted, the list
     /// derives from the textures. Repeatable.
     #[arg(
         value_names = ["material-index", "domain"],
@@ -107,8 +107,8 @@ pub struct ObjectMesh {
 
     /// Declares a primitive drawing with the indexed material, or `none`, and
     /// taking every face its select is true for. Primitives number from `0` in
-    /// flag order. The selects partition the faces. Without the flag one
-    /// primitive holds every face, drawing with material 0 when the mesh
+    /// flag order. The selects partition the faces. When omitted, one
+    /// primitive holds every face, drawing with material `0` when the mesh
     /// carries materials. Repeatable.
     #[arg(
         value_names = ["material-index", "src-expr"],
@@ -156,16 +156,17 @@ pub struct ObjectMesh {
     #[arg(value_name = "file-stem", long)]
     file_stem: Option<String>,
 
-    /// Applies a profile whole, expanding it into its flags with the
-    /// `valuesFrom` values first. Wherever the flag sits, the profile's values
+    /// Applies a profile whole, expanding it into its flags with its
+    /// `valuesFrom` imports first. Wherever the flag sits, the profile's values
     /// join the program ahead of every `--value` and `--values-from` binding,
     /// so a hand binding can read or redefine a profile value. An explicit
-    /// flag replaces the profile element it collides with. Repeatable: the
+    /// flag replaces the profile element it collides with. Repeatable; the
     /// profiles stack in line order, their lists merging by position. An
-    /// element two of them set errors. The profiles are the built-ins under
-    /// every `.vxlconfig`'s `mesh.profiles`, the user's `~/.vxlconfig` first
-    /// and then each directory from the git root down to the working
-    /// directory, a name reading from the last file supplying it.
+    /// element two of them set errors. The profiles come from the built-ins,
+    /// then every `.vxlconfig`'s `object.mesh.profiles`, the user's
+    /// `~/.vxlconfig` first and then each directory from the git root down to
+    /// the working directory. A name reads from the last file supplying it,
+    /// else from the built-ins.
     #[arg(value_name = "profile", long, action = ArgAction::Append)]
     profile: Vec<String>,
 
@@ -195,7 +196,7 @@ pub struct ObjectMesh {
 
     /// Writes an array value to an 8-bit PNG beside the mesh, one texel per
     /// entry, with the transfer, `linear` or `srgb`. The value's width sets the
-    /// channels: vec1 grey, vec2 grey-alpha, vec3 RGB, vec4 RGBA. Repeatable.
+    /// channels: vec1 gray, vec2 gray-alpha, vec3 RGB, vec4 RGBA. Repeatable.
     #[arg(
         value_names = ["dst-file", "src-expr", "transfer"],
         long,
@@ -330,10 +331,10 @@ pub struct ObjectMesh {
     )]
     write_primitive_custom_value: Vec<String>,
 
-    /// Whether the indexed primitive writes `NORMAL` beside `POSITION`, `true`
-    /// by default. Repeatable.
+    /// Whether the indexed primitive writes `NORMAL` beside `POSITION`: `true`
+    /// or `false`. Defaults to `true`. Repeatable.
     #[arg(
-        value_names = ["primitive-index", "false | true"],
+        value_names = ["primitive-index", "write-normal"],
         long,
         num_args = 2,
         action = ArgAction::Append,
@@ -342,8 +343,8 @@ pub struct ObjectMesh {
 
     /// Writes one UV stream, `corner`, `face`, `swatch`, or `voxel`, on the
     /// indexed primitive. The flag order sets the `TEXCOORD` numbers. A domain
-    /// listed twice errors. With the flag the primitive writes exactly the
-    /// named streams, and without it its material's list. Repeatable.
+    /// listed twice errors. With the flag, the primitive writes exactly the
+    /// named streams. When omitted, it writes its material's list. Repeatable.
     #[arg(
         value_names = ["primitive-index", "domain"],
         long,

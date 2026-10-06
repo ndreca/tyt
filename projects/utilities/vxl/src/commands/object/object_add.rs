@@ -14,8 +14,8 @@ use voxsmith::operations::object::add_objects;
 /// Copies objects from another document. `--select` and `--select-index`
 /// choose them in the source. Each source palette a copy references is
 /// appended once with its value pools. Each copy goes under the parent node,
-/// or else under a new root node named for it. The source's ext is not
-/// carried.
+/// or else under a new root node named for it. The source's `ext` block is
+/// not carried.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "add")]
 pub struct ObjectAdd {
@@ -29,7 +29,7 @@ pub struct ObjectAdd {
     #[arg(value_name = "source", long)]
     source: PathBuf,
 
-    /// Format of the source. Inferred from its extension when omitted.
+    /// Format of the source. Defaults to the format its extension implies.
     #[arg(value_name = "source-from", long, value_parser = cli_value_parser::<ReadFormat>())]
     source_from: Option<ReadFormat>,
 

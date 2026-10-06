@@ -3,7 +3,7 @@ use std::process;
 use ty_clap::{Completion, DependenciesImpl as ClapDependenciesImpl};
 use tyt_claude::{DependenciesImpl, TytClaude};
 
-/// Operations for working with claude
+/// Works with Claude Code profiles.
 #[derive(Clone, Debug, Parser)]
 #[command(version)]
 struct Cli {

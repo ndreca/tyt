@@ -9,16 +9,13 @@ use voxsmith::utilities::{GridResolution, ResolutionReference};
     ArgGroup::new("grid_resolution").args(["resolution", "voxel_size"])
 ))]
 pub struct GridResolutionOptions {
-    /// Voxel count `n` along a reference side. The voxel size is that side
-    /// divided by `n`. World references measure the whole model. Object
-    /// references take the longest or shortest object. `<reference>` is one
-    /// of:
+    /// Voxel count `n` along a reference side. The voxel size is that side divided by `n`. World references measure the whole model. Object references take the longest or shortest object. `reference` is one of:
     ///
-    /// 1. `longest-world` | `shortest-world`
-    /// 2. `world-x` | `world-y` | `world-z`
-    /// 3. `longest-object` | `shortest-object`
-    /// 4. `longest-object-x` | `longest-object-y` | `longest-object-z`
-    /// 5. `shortest-object-x` | `shortest-object-y` | `shortest-object-z`
+    /// - `longest-world` or `shortest-world`
+    /// - `world-x`, `world-y`, or `world-z`
+    /// - `longest-object` or `shortest-object`
+    /// - `longest-object-x`, `longest-object-y`, or `longest-object-z`
+    /// - `shortest-object-x`, `shortest-object-y`, or `shortest-object-z`
     #[arg(value_names = ["reference", "n"], long, num_args = 2, verbatim_doc_comment)]
     resolution: Option<Vec<String>>,
 

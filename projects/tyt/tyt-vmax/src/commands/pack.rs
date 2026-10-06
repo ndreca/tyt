@@ -7,17 +7,18 @@ use std::{
 
 const HISTORY_EXTENSIONS: &[&str] = &["vmaxhb", "vmaxhvsb", "vmaxhvsc"];
 
-/// Packs a .vmax directory by stripping history, renumbering the surviving
-/// contents/palettes/thumbnails, and deleting files no longer referenced by
-/// `scene.json`.
+/// Packs a `.vmax` package directory by stripping history, renumbering the
+/// surviving contents, palettes, and thumbnails, and deleting files no longer
+/// referenced by `scene.json`.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "pack")]
 pub struct Pack {
-    /// The input `.vmax` directory to pack.
+    /// The input `.vmax` package directory.
     #[arg(value_name = "input-vmax")]
     input_vmax: PathBuf,
 
-    /// Optional output `.vmax` directory. If provided, copies the input first.
+    /// The output `.vmax` package directory. When given, the input is copied
+    /// there first. When omitted, the input is packed in place.
     #[arg(value_name = "output-vmax", long)]
     output_vmax: Option<PathBuf>,
 }

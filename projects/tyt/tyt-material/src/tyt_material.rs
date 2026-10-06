@@ -1,7 +1,7 @@
 use crate::{Dependencies, Result, commands};
 use clap::Subcommand;
 
-/// Operations on material textures.
+/// Works with material textures.
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 pub enum TytMaterial {

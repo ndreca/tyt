@@ -1,13 +1,13 @@
 use crate::{Dependencies, Error, Result, Scope, normalize_separators};
 use clap::Parser;
 
-/// Adds a profile entry (name and directory) to the chosen `.tytconfig` /
-/// `.tytusrconfig` file. Does not create the directory; Claude Code will
-/// create it on first launch.
+/// Adds a profile entry (name and directory) to the chosen `.tytconfig` or
+/// `.tytusrconfig` file. Does not create the directory; Claude Code creates it
+/// on first launch.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "add-profile")]
 pub struct AddProfile {
-    /// Profile name (e.g., `work`, `personal`).
+    /// Profile name (e.g. `work`, `personal`).
     #[arg(value_name = "name")]
     pub name: String,
 

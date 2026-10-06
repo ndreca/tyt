@@ -1,4 +1,4 @@
-use crate::{Error, Result, parse_id_selector};
+use crate::{Error, Result, SelectionBrand, parse_id_selector};
 use branded_id::U32Id;
 use clap::Args;
 use std::fmt;
@@ -6,19 +6,20 @@ use voxcore::{BVoxHierarchyNode, BVoxObject, VoxExt, VoxMain};
 use voxsmith::utilities::{IdSelector, select_nodes, select_objects};
 
 /// The `--select` / `--select-index` selectors of an edit command, which
-/// requires at least one. `TBrand` is the kind of entry the command selects.
+/// requires at least one. `TBrand` is the kind of entry the command selects
+/// and supplies the flags' help.
 #[derive(Args)]
 #[group(required = true, multiple = true)]
-pub struct RequiredSelection<TBrand: Send + Sync + 'static> {
-    /// Choose by hierarchy-path glob. An object command takes every object at
-    /// or under a matched path, and a node command takes the matched node
-    /// alone. Repeatable; unions with `--select-index`.
-    #[arg(value_name = "select", long)]
+pub struct RequiredSelection<TBrand: SelectionBrand> {
+    #[arg(value_name = "select", long, help = TBrand::SELECT_HELP)]
     select: Vec<String>,
 
-    /// Choose by object id or, for a node command, node id: an integer, an
-    /// `a-b` range, or `*` for every one. Repeatable; unions with `--select`.
-    #[arg(value_name = "select-index", long, value_parser = parse_id_selector::<TBrand>)]
+    #[arg(
+        value_name = "select-index",
+        long,
+        help = TBrand::SELECT_INDEX_HELP,
+        value_parser = parse_id_selector::<TBrand>
+    )]
     select_index: Vec<IdSelector<TBrand>>,
 }
 
@@ -92,7 +93,7 @@ impl RequiredSelection<BVoxHierarchyNode> {
     }
 }
 
-impl<TBrand: Send + Sync + 'static> Clone for RequiredSelection<TBrand> {
+impl<TBrand: SelectionBrand> Clone for RequiredSelection<TBrand> {
     fn clone(&self) -> Self {
         Self {
             select: self.select.clone(),
@@ -101,7 +102,7 @@ impl<TBrand: Send + Sync + 'static> Clone for RequiredSelection<TBrand> {
     }
 }
 
-impl<TBrand: Send + Sync + 'static> fmt::Debug for RequiredSelection<TBrand> {
+impl<TBrand: SelectionBrand> fmt::Debug for RequiredSelection<TBrand> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("RequiredSelection")
             .field("select", &self.select)

@@ -25,7 +25,7 @@ pub struct PaletteShow {
     /// profile's selectors come ahead of every `--property` and
     /// `--properties-from` selector, with its `propertiesFrom` imports first.
     /// `--layout` replaces the profile's layout with every element it carries,
-    /// and the other display flags refine the layout that results. Repeatable:
+    /// and the other display flags refine the layout that results. Repeatable;
     /// the profiles stack in line order, and a layout two of them set errors.
     /// The profiles come from every `.vxlconfig`'s `palette.show.profiles`, the
     /// user's `~/.vxlconfig` first and then each directory from the git root
@@ -37,8 +37,7 @@ pub struct PaletteShow {
     #[command(flatten)]
     property_flags: PropertyFlags,
 
-    /// How to arrange the value collections, and the serialization to emit.
-    /// Defaults to `text-rows`.
+    /// How to lay out the value collections. Defaults to `text-rows`.
     #[arg(
         value_name = "layout",
         long,
@@ -46,8 +45,7 @@ pub struct PaletteShow {
     )]
     layout: Option<PaletteShowLayout>,
 
-    /// How the text layouts label each value collection. Defaults to `concat`,
-    /// full dot-joined paths.
+    /// How the text layouts label each value collection. Defaults to `concat`.
     #[arg(
         value_name = "label",
         long,
@@ -55,13 +53,13 @@ pub struct PaletteShow {
     )]
     label: Option<PaletteShowLabel>,
 
-    /// The markdown level of the shallowest heading a heading-emitting
-    /// render prints. Headings start at `#` when omitted.
+    /// The Markdown level of the shallowest heading a heading-emitting render
+    /// prints. Defaults to `1`, a `#` heading.
     #[arg(value_name = "header-level", long)]
     header_level: Option<NonZeroU8>,
 
     /// How the `md-tables` and `box-tables` layouts shape their tables.
-    /// Defaults to `nested`, one table per palette group under headings.
+    /// Defaults to `nested`.
     #[arg(
         value_name = "table-shape",
         long,

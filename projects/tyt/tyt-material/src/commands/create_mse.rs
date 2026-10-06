@@ -2,44 +2,44 @@ use crate::{Dependencies, Error, Result};
 use clap::Parser;
 use std::path::{Path, PathBuf};
 
-/// Creates an MSE png from material texture maps. The output png packs:
-///   R = metalness
-///   G = smoothness (1 - roughness), or roughness when `--output-rough` is set
-///   B = emissive (emissive alpha)
-/// Optionally copies the albedo texture alongside.
+/// Creates an MSE PNG from material texture maps, optionally copying the
+/// albedo texture alongside.
+///
+/// The PNG packs metalness in R, smoothness (1 - roughness) in G, or roughness
+/// under `--output-rough`, and emissive alpha in B.
 ///
 /// By default, metalness and roughness are read from separate textures
 /// (`*metalness.png` and `*roughness.png`). Pass `--combine-metal-rough` to
-/// read both from a single legacy texture (R = metal, A = roughness).
+/// read both from a single legacy texture (R = metalness, A = roughness).
 #[derive(Clone, Debug, Parser)]
 pub struct CreateMse {
-    /// The output base path. Output files will be `{out_base}-mse.png` and
-    /// `{out_base}-albedo.png`.
-    #[arg(value_name = "out-base")]
+    /// Output base name. The output files are `<output-base>-mse.png` and
+    /// `<output-base>-albedo.png`.
+    #[arg(value_name = "output-base")]
     out_base: String,
 
     /// Search prefix for texture files. When set, searches for
-    /// `{prefix}-metalness.png`, `{prefix}-roughness.png`,
-    /// `{prefix}-emission.png`, `{prefix}-albedo.png`.
+    /// `<prefix>-metalness.png`, `<prefix>-roughness.png`,
+    /// `<prefix>-emission.png`, and `<prefix>-albedo.png`.
     #[arg(value_name = "prefix", long)]
     prefix: Option<String>,
 
-    /// Explicit path to the metal texture. Cannot be used with
+    /// Explicit path to the metalness texture. Cannot be combined with
     /// `--combine-metal-rough`.
     #[arg(value_name = "metal", long, conflicts_with = "combine_metal_rough")]
     metal: Option<PathBuf>,
 
-    /// Explicit path to the rough texture. Cannot be used with
+    /// Explicit path to the roughness texture. Cannot be combined with
     /// `--combine-metal-rough`.
     #[arg(value_name = "rough", long, conflicts_with = "combine_metal_rough")]
     rough: Option<PathBuf>,
 
-    /// Read metalness and roughness from a single combined texture
-    /// (legacy mode: R = metal, A = roughness).
+    /// Reads metalness and roughness from a single combined texture
+    /// (legacy mode: R = metalness, A = roughness).
     #[arg(value_name = "combine-metal-rough", long)]
     combine_metal_rough: bool,
 
-    /// Explicit path to the combined metal_rough texture. Only valid with
+    /// Explicit path to the combined metalness-roughness texture. Requires
     /// `--combine-metal-rough`.
     #[arg(value_name = "metal-rough", long, requires = "combine_metal_rough")]
     metal_rough: Option<PathBuf>,
@@ -52,23 +52,23 @@ pub struct CreateMse {
     #[arg(value_name = "albedo", long)]
     albedo: Option<PathBuf>,
 
-    /// Skip the metalness channel (R will be black).
+    /// Skips the metalness channel, leaving R black.
     #[arg(value_name = "ignore-metal", long)]
     ignore_metal: bool,
 
-    /// Skip the roughness channel (G will be black).
+    /// Skips the roughness channel, leaving G black.
     #[arg(value_name = "ignore-rough", long)]
     ignore_rough: bool,
 
-    /// Skip the emissive channel (B will be black).
+    /// Skips the emissive channel, leaving B black.
     #[arg(value_name = "ignore-emissive", long)]
     ignore_emissive: bool,
 
-    /// Skip the albedo pass-through copy.
+    /// Skips the albedo pass-through copy.
     #[arg(value_name = "ignore-albedo", long)]
     ignore_albedo: bool,
 
-    /// Output roughness directly into the G channel instead of converting it
+    /// Outputs roughness directly into the G channel instead of converting it
     /// to smoothness (1 - roughness).
     #[arg(value_name = "output-rough", long)]
     output_rough: bool,

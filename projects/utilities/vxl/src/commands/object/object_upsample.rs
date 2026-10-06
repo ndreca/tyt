@@ -7,7 +7,7 @@ use voxcore::BVoxObject;
 use voxsmith::operations::object::{ResampleFactor, upsample_objects};
 
 /// Splits each voxel of the objects into a block of a factor per axis: a
-/// `10 x 10 x 10` object becomes `20 x 20 x 20` at factor 2. The origin
+/// `10 x 10 x 10` object becomes `20 x 20 x 20` at factor `2`. The origin
 /// scales with the grid. `node set scale` keeps the object's size in the
 /// scene.
 #[derive(Clone, Debug, Parser)]
@@ -22,7 +22,7 @@ pub struct ObjectUpsample {
     #[command(flatten)]
     selection: RequiredSelection<BVoxObject>,
 
-    /// How many voxels each voxel becomes per axis, at least 2.
+    /// How many voxels each voxel becomes per axis, at least `2`.
     #[arg(value_name = "factor", long, value_parser = parse_resample_factor)]
     factor: ResampleFactor,
 }

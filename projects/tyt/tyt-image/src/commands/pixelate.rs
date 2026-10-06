@@ -4,12 +4,12 @@ use clap::Parser;
 /// Pixelates (point-resizes) an image.
 #[derive(Clone, Debug, Parser)]
 pub struct Pixelate {
-    /// Base name for the input image (`{base}.png`).
+    /// Base name for the input image (`<base>.png`).
     #[arg(value_name = "base")]
     base: String,
 
-    /// Output base name. Defaults to `{base}-px`.
-    #[arg(value_name = "out-base")]
+    /// Output base name. Defaults to `<base>-px`.
+    #[arg(value_name = "output-base")]
     out_base: Option<String>,
 
     /// Target height in pixels.

@@ -8,7 +8,7 @@ use voxconv::{
 };
 use voxsmith::operations::vox_doc::{VoxDocShowDocument, VoxDocShowLayout, vox_doc_show};
 
-/// Reports what a document contains, surfacing the format internals.
+/// Prints what a document contains, surfacing the format internals.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "show")]
 pub struct VoxDocShow {

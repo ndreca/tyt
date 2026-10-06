@@ -1,7 +1,7 @@
 use crate::{Dependencies, Result, commands::PaletteCommand};
 use clap::Parser;
 
-/// Palette operations.
+/// Lists, shows, edits, and quantizes palettes.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "palette")]
 pub struct Palette {

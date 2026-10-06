@@ -22,11 +22,10 @@ impl CliValue for PaletteListLayout {
 
     fn help(self) -> &'static str {
         match self {
-            PaletteListLayout::BoxHierarchy => "Indented tree, one palette per branch",
+            PaletteListLayout::BoxHierarchy => "A box-glyph tree, one branch per palette",
 
             PaletteListLayout::BoxTables => {
-                "A `palettes` line over one aligned record table drawn with box glyphs, one row \
-                 per palette"
+                "A `palettes` line over one aligned box-glyph record table, one row per palette"
             }
 
             PaletteListLayout::JsonCompact => "Compact, single-line JSON",

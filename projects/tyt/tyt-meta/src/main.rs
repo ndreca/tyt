@@ -3,7 +3,7 @@ use std::process;
 use ty_clap::{Completion, DependenciesImpl as ClapDependenciesImpl};
 use tyt_meta::{DependenciesImpl, TytMeta};
 
-/// Meta-tools for scaffolding new tyt sub-crates and commands.
+/// Scaffolds new tyt sub-crates and commands.
 #[derive(Clone, Debug, Parser)]
 #[command(version)]
 struct Cli {

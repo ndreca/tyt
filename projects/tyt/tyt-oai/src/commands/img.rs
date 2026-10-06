@@ -28,8 +28,8 @@ const CONV_FILE_NAME: &str = "oai.img.json";
 #[derive(Clone, Debug, Parser)]
 #[command(name = "img")]
 pub struct Img {
-    /// The next user message in the conversation. If omitted, it is read from
-    /// stdin (e.g. `cat prompt.md | tyt oai img`).
+    /// The next user message in the conversation. When omitted, it is read
+    /// from stdin (e.g. `cat prompt.md | tyt oai img`).
     #[arg(value_name = "message")]
     message: Option<String>,
 
@@ -43,8 +43,8 @@ pub struct Img {
     #[arg(value_name = "model", long, default_value_t = MODEL.to_owned())]
     model: String,
 
-    /// An image to send with the message, given relative to the current
-    /// directory. It is stored in the conversation relative to the OpenAI image
+    /// An image to send with the message, relative to the current directory.
+    /// It is stored in the conversation relative to the OpenAI image
     /// conversation file.
     #[arg(value_name = "input-image", long = "input-image")]
     input_image: Option<PathBuf>,
@@ -55,7 +55,7 @@ pub struct Img {
     #[arg(value_name = "system-prompt", long = "system-prompt")]
     system_prompt: Vec<String>,
 
-    /// Respond conversationally without generating an image.
+    /// Responds conversationally without generating an image.
     #[arg(
         value_name = "no-gen",
         long = "no-gen",

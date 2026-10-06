@@ -4,21 +4,21 @@ use clap::Parser;
 /// Extracts six cube face images from a c6x1 cube strip.
 #[derive(Clone, Debug, Parser)]
 pub struct C6x1ToFaces {
-    /// Base name for the input strip (`{base}.png`).
+    /// Base name for the input strip (`<base>.png`).
     #[arg(value_name = "base")]
     base: String,
 
-    /// Output base name. Defaults to `{base}-cube`.
-    #[arg(value_name = "out-base")]
+    /// Output base name. Defaults to `<base>-cube`.
+    #[arg(value_name = "output-base")]
     out_base: Option<String>,
 
-    /// Use nearest-neighbor filtering on the final `--output-size` resize.
+    /// Uses nearest-neighbor filtering on the final `--output-size` resize.
     #[arg(value_name = "point", long)]
     point: bool,
 
-    /// Final side length for each output face. When set, faces are resized to
-    /// this dimension. Combine with `--point` for nearest-neighbor filtering
-    /// that preserves hard edges.
+    /// Final side length in pixels for each output face. When set, the faces
+    /// are resized to this size. Combine with `--point` for nearest-neighbor
+    /// filtering that preserves hard edges.
     #[arg(value_name = "output-size", long)]
     output_size: Option<u32>,
 }

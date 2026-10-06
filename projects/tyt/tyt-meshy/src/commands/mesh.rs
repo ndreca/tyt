@@ -6,11 +6,13 @@ use crate::{
 use clap::{ArgAction, Parser, value_parser};
 use std::path::PathBuf;
 
-/// Generates a 3D mesh from an image using the Meshy [Image to 3D](https://docs.meshy.ai/en/api/image-to-3d) API.
+/// Generates a 3D mesh from an image using Meshy's Image to 3D API.
 ///
 /// On a successful create, writes `<output-base>.meshy.mesh.json` and prints the
 /// task id. With `--wait`, blocks until the task completes and downloads its
-/// files; otherwise fetch them later with `tyt meshy poll`.
+/// result files; otherwise fetch them later with `poll`.
+///
+/// See https://docs.meshy.ai/en/api/image-to-3d.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "mesh")]
 pub struct Mesh {
@@ -23,17 +25,16 @@ pub struct Mesh {
     #[arg(value_name = "output-base")]
     output_base: Option<PathBuf>,
 
-    /// The generation pipeline. `lowpoly` ignores `--model` and the remesh
-    /// options.
+    /// The generation pipeline. `lowpoly` cannot be combined with `--model` or
+    /// the remesh options.
     #[arg(value_name = "model-type", long = "model-type", value_enum, default_value_t = ModelType::Standard)]
     model_type: ModelType,
 
-    /// The model to use. Ignored with `--model-type lowpoly`.
+    /// The model to use. Cannot be combined with `--model-type lowpoly`.
     #[arg(value_name = "model", long, value_enum)]
     model: Option<Model>,
 
-    /// Whether to texture the model. Defaults to true; pass `--texture=false`
-    /// to skip texturing.
+    /// Textures the model. `--texture=false` skips texturing.
     #[arg(
         value_name = "texture",
         long,
@@ -45,8 +46,8 @@ pub struct Mesh {
     )]
     texture: bool,
 
-    /// Generate PBR maps (metallic, roughness, normal) alongside the base color.
-    /// Requires `--texture`.
+    /// Generates PBR maps (metallic, roughness, normal) alongside the base
+    /// color. Requires `--texture`.
     #[arg(
         value_name = "texture-gen-pbr",
         long = "texture-gen-pbr",
@@ -57,8 +58,7 @@ pub struct Mesh {
     )]
     texture_gen_pbr: Option<bool>,
 
-    /// The base color texture quality. `hd` requires Meshy 6. Requires
-    /// `--texture`.
+    /// The base color texture quality. Requires `--texture`.
     #[arg(value_name = "texture-quality", long = "texture-quality", value_enum)]
     texture_quality: Option<TextureQuality>,
 
@@ -77,7 +77,7 @@ pub struct Mesh {
     #[arg(value_name = "texture-image", long = "texture-image")]
     texture_image: Option<PathBuf>,
 
-    /// Whether to run the remesh phase. Ignored with `--model-type lowpoly`.
+    /// Runs the remesh phase. Cannot be combined with `--model-type lowpoly`.
     #[arg(
         value_name = "remesh",
         long,
@@ -92,17 +92,18 @@ pub struct Mesh {
     #[arg(value_name = "topology", long, value_enum)]
     topology: Option<Topology>,
 
-    /// The target polygon count (100–300000). Requires `--remesh`; cannot be
+    /// The target polygon count (100-300000). Requires `--remesh`. Cannot be
     /// combined with `--decimation-mode`.
     #[arg(value_name = "target-polycount", long = "target-polycount", value_parser = value_parser!(u32).range(100..=300_000))]
     target_polycount: Option<u32>,
 
-    /// Adaptive decimation level: 1 ultra, 2 high, 3 medium, 4 low. Requires
-    /// `--remesh`; cannot be combined with `--target-polycount`.
+    /// Adaptive decimation level: `1` ultra, `2` high, `3` medium, `4` low.
+    /// Requires `--remesh`. Cannot be combined with `--target-polycount`.
     #[arg(value_name = "decimation-mode", long = "decimation-mode", value_parser = value_parser!(u8).range(1..=4))]
     decimation_mode: Option<u8>,
 
-    /// Also save the GLB captured before the remesh phase. Requires `--remesh`.
+    /// Also saves the glTF binary (`.glb`) captured before the remesh phase.
+    /// Requires `--remesh`.
     #[arg(
         value_name = "save-pre-remeshed-model",
         long = "save-pre-remeshed-model",
@@ -113,8 +114,8 @@ pub struct Mesh {
     )]
     save_pre_remeshed_model: Option<bool>,
 
-    /// Optimize the input image for better results. Only supported on Meshy 6;
-    /// defaults to true there.
+    /// Optimizes the input image for better results. Only supported on Meshy 6,
+    /// where it defaults to `true`.
     #[arg(
         value_name = "image-enhancement",
         long = "image-enhancement",
@@ -125,8 +126,8 @@ pub struct Mesh {
     )]
     image_enhancement: Option<bool>,
 
-    /// Keep the input's highlights and shadows baked into the base color
-    /// texture. Only supported on Meshy 6; defaults to false there.
+    /// Keeps the input's highlights and shadows baked into the base color
+    /// texture. Only supported on Meshy 6, where it defaults to `false`.
     #[arg(
         value_name = "keep-lighting",
         long = "keep-lighting",
@@ -137,12 +138,12 @@ pub struct Mesh {
     )]
     keep_lighting: Option<bool>,
 
-    /// A 3D file format to generate. Repeatable; defaults to `usdz`.
+    /// A 3D file format to generate. Defaults to `usdz`. Repeatable.
     #[arg(value_name = "target-format", long = "target-format", value_enum)]
     target_format: Vec<TargetFormat>,
 
-    /// Render the four cardinal-view thumbnails (front, right, back, left)
-    /// instead of just one. Adds roughly 3 seconds of latency.
+    /// Renders the four cardinal-view thumbnails (front, right, back, left)
+    /// instead of just one. Adds roughly three seconds of latency.
     #[arg(
         value_name = "multi-view-thumbnails",
         long = "multi-view-thumbnails",

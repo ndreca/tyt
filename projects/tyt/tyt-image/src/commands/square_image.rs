@@ -1,15 +1,15 @@
 use crate::{Dependencies, Result};
 use clap::Parser;
 
-/// Pads an image to a square canvas with transparent background.
+/// Pads an image to a square canvas with a transparent background.
 #[derive(Clone, Debug, Parser)]
 pub struct SquareImage {
-    /// Base name for the input image (`{base}.png`).
+    /// Base name for the input image (`<base>.png`).
     #[arg(value_name = "base")]
     base: String,
 
-    /// Output base name. Defaults to `{base}-square`.
-    #[arg(value_name = "out-base")]
+    /// Output base name. Defaults to `<base>-square`.
+    #[arg(value_name = "output-base")]
     out_base: Option<String>,
 }
 

@@ -19,28 +19,27 @@ use treeselect::TreeSelection;
 /// `usize` indices.
 type GridNodeId = U32Id<BTreeGridNode>;
 
-/// Prints the FBX object hierarchy as a tree with box-drawing glyphs,
-/// showing each object's name and type.
+/// Prints the FBX object hierarchy as a box-glyph tree, showing each object's
+/// name and type.
 #[derive(Clone, Debug, Parser)]
 pub struct Hierarchy {
-    /// The input FBX file to inspect.
+    /// The input FBX file.
     #[arg(value_name = "input-fbx")]
     input_fbx: PathBuf,
 
-    /// Optional gitignore-style patterns selecting object hierarchy paths. When
-    /// set, only matched objects and their ancestors are printed, or only
-    /// matched objects when `--collapse-ancestors` is used. A bare name matches
-    /// at any depth, a slashed pattern anchors to a scene root; `**/name/**`
-    /// selects a whole subtree. With none given the whole hierarchy prints.
-    #[arg(value_name = "select")]
+    /// Gitignore-style patterns selecting object hierarchy paths. When given,
+    /// only matched objects and their ancestors print, or only matched objects
+    /// under `--collapse-ancestors`. A bare name matches at any depth, a
+    /// slashed pattern anchors to a scene root, and `**/name/**` selects a
+    /// whole subtree. With none given, the whole hierarchy prints.
+    #[arg(value_name = "pattern")]
     select: Vec<String>,
 
-    /// If set, prepend each object's transform (position, rotation, scale)
-    /// as a nested subtree. Accepts up to three positional values:
-    /// `[<space>] [<rot-unit>] [<precision>]`. `space` is `local` (default)
-    /// or `world`. `rot-unit` is `rad` (default) or `deg`.
-    /// `precision` is the decimal precision used to align vector components
-    /// (default 2).
+    /// Prepends each object's transform (position, rotation, scale) as a
+    /// nested subtree. Takes up to three values
+    /// `[<space>] [<rot-unit>] [<precision>]`: `space` is `local` (default) or
+    /// `world`, `rot-unit` is `rad` (default) or `deg`, and `precision` is the
+    /// decimal places (default `2`).
     #[arg(
         long = "show-transforms",
         value_names = ["space", "rot-unit", "precision"],
@@ -48,13 +47,12 @@ pub struct Hierarchy {
     )]
     show_transforms: Option<Vec<String>>,
 
-    /// If set, append an axis-aligned bounding-box subtree for each object,
-    /// aggregating the object's own mesh with all descendant meshes.
-    /// Accepts up to three positional values:
-    /// `[<space>] [<precision>] [<scale>]`. `space` is `local` (default) or
-    /// `world`. `precision` is the decimal precision (default 2). `scale` is
-    /// `no-scale` (default) or `scale`; when `scale`, the object's local
-    /// scale is baked into local-space output (no effect in world space).
+    /// Appends an axis-aligned bounding-box subtree for each object,
+    /// aggregating the object's own mesh with all descendant meshes. Takes up
+    /// to three values `[<space>] [<precision>] [<scale>]`: `space` is `local`
+    /// (default) or `world`, `precision` is the decimal places (default `2`),
+    /// and `scale` is `no-scale` (default) or `scale`, which bakes the object's
+    /// local scale into local-space output (no effect in world space).
     #[arg(
         long = "show-bounds",
         value_names = ["space", "precision", "scale"],
@@ -62,10 +60,10 @@ pub struct Hierarchy {
     )]
     show_bounds: Option<Vec<String>>,
 
-    /// If set, append an AABB-extents subtree (`max - min`) for each object,
-    /// aggregating the object's own mesh with all descendant meshes.
-    /// Accepts up to three positional values:
-    /// `[<space>] [<precision>] [<scale>]`. Same semantics as `--show-bounds`.
+    /// Appends an AABB-extents subtree (`max - min`) for each object,
+    /// aggregating the object's own mesh with all descendant meshes. Takes up
+    /// to three values `[<space>] [<precision>] [<scale>]`, read as
+    /// `--show-bounds` reads them.
     #[arg(
         long = "show-extents",
         value_names = ["space", "precision", "scale"],
@@ -73,17 +71,15 @@ pub struct Hierarchy {
     )]
     show_extents: Option<Vec<String>>,
 
-    /// When set with `--select`, the ancestor chain above each matched
-    /// object is hidden and replaced with an `(ANCESTORS)` marker printed
-    /// directly above the matched object, omitted when the matched object
-    /// is a scene root. Has no effect when `--select` is omitted.
+    /// Hides the ancestor chain above each match behind an `(ANCESTORS)`
+    /// marker printed directly above it, omitted for a scene root. Ignored
+    /// without a `pattern`.
     #[arg(value_name = "collapse-ancestors", long = "collapse-ancestors")]
     collapse_ancestors: bool,
 
-    /// When set with `--select`, the descendants of each matched object
-    /// are hidden and replaced with a `(DESCENDANTS)` marker printed as a
-    /// child subtree of the matched object, omitted when the matched
-    /// object has no descendants. Has no effect when `--select` is omitted.
+    /// Hides the descendants of each match behind a `(DESCENDANTS)` marker
+    /// printed as its child, omitted when it has none. Ignored without a
+    /// `pattern`.
     #[arg(value_name = "collapse-descendants", long = "collapse-descendants")]
     collapse_descendants: bool,
 }

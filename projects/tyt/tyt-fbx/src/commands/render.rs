@@ -14,20 +14,20 @@ use std::{
 const FBX_RENDER_PY: Script = embed_blender_script!("fbx_render.py");
 
 /// Renders the meshes in an FBX file from a specified camera position. The
-/// result is written to an image file, displayed inline in the terminal (Kitty
-/// / iTerm2 / Sixel / ANSI fallback), or both.
+/// result is written to an image file, displayed inline in the terminal (Kitty,
+/// iTerm2, Sixel, or ANSI fallback), or both.
 #[derive(Clone, Debug, Parser)]
 pub struct Render {
-    /// The input FBX file to render.
+    /// The input FBX file.
     #[arg(value_name = "input-fbx")]
     input_fbx: PathBuf,
 
-    /// Path to write the rendered PNG to. If omitted, the image is rendered to
+    /// The output PNG file to write. When omitted, the image is rendered to
     /// the terminal only.
     #[arg(value_name = "output-image", conflicts_with = "output_image_flag")]
     output_image_arg: Option<PathBuf>,
 
-    /// Path to write the rendered PNG to. If omitted, the image is rendered to
+    /// The output PNG file to write. When omitted, the image is rendered to
     /// the terminal only.
     #[arg(
         value_name = "output-image",
@@ -37,7 +37,7 @@ pub struct Render {
     )]
     output_image_flag: Option<PathBuf>,
 
-    /// Also display the rendered image in the terminal. Implied when
+    /// Also displays the rendered image in the terminal. Implied when
     /// `output-image` is omitted.
     #[arg(value_name = "terminal", long)]
     terminal: bool,
@@ -50,13 +50,13 @@ pub struct Render {
     #[arg(value_name = "resolution-y", long, default_value_t = 1080)]
     resolution_y: u32,
 
-    /// Camera focal length in millimeters. Only valid with
-    /// `--projection perspective`. Mutually exclusive with `--fov`.
+    /// Camera focal length in millimeters. Cannot be combined with
+    /// `--projection orthographic` or `--fov`.
     #[arg(value_name = "focal-length", long, conflicts_with = "fov")]
     focal_length: Option<f64>,
 
-    /// Horizontal field of view in degrees. Only valid with
-    /// `--projection perspective`. Mutually exclusive with `--focal-length`.
+    /// Horizontal field of view in degrees. Cannot be combined with
+    /// `--projection orthographic` or `--focal-length`.
     #[arg(value_name = "fov", long)]
     fov: Option<f64>,
 
@@ -69,9 +69,8 @@ pub struct Render {
     )]
     projection: Projection,
 
-    /// Orthographic scale (world-units visible across the frame). Only valid
-    /// with `--projection orthographic`. Defaults to the scene-bounds diagonal
-    /// when omitted.
+    /// Orthographic scale (world units visible across the frame). Requires
+    /// `--projection orthographic`. Defaults to the scene-bounds diagonal.
     #[arg(value_name = "ortho-scale", long)]
     ortho_scale: Option<f64>,
 
@@ -87,14 +86,11 @@ pub struct Render {
     #[arg(value_name = "renderer", long, value_enum, default_value_t = Renderer::Eevee)]
     renderer: Renderer,
 
-    /// Render samples (AA / path-tracing samples depending on renderer).
+    /// Render samples (AA or path-tracing samples, depending on the renderer).
     #[arg(value_name = "samples", long, default_value_t = 64)]
     samples: u32,
 
-    /// Lighting preset. `environment` (default) uses even world-background
-    /// illumination; `three-point` / `studio` add key/fill/rim area lights;
-    /// `flat` adds a single camera-aligned sun; `none` leaves the scene's
-    /// existing lights untouched.
+    /// Lighting preset.
     #[arg(
         value_name = "lighting",
         long,

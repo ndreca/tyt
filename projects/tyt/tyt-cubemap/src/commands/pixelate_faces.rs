@@ -4,19 +4,19 @@ use clap::Parser;
 /// Pixelates (point-resizes) six cube face images.
 #[derive(Clone, Debug, Parser)]
 pub struct PixelateFaces {
-    /// Base name for input face files (`{base}-left.png`, etc.).
+    /// Base name for the input face files (`<base>-left.png`, etc.).
     #[arg(value_name = "base")]
     base: String,
 
-    /// Output base name. Defaults to `{base}-px`.
-    #[arg(value_name = "out-base")]
+    /// Output base name. Defaults to `<base>-px`.
+    #[arg(value_name = "output-base")]
     out_base: Option<String>,
 
     /// Target height in pixels for each face.
     #[arg(value_name = "size", short, long, default_value_t = 256)]
     size: u32,
 
-    /// Final output height in pixels for each face. When set, faces are
+    /// Final output height in pixels for each face. When set, the faces are
     /// point-resized up to this height after pixelation, preserving hard edges
     /// at a larger resolution.
     #[arg(value_name = "output-size", long)]

@@ -26,10 +26,10 @@ pub struct PaletteEdit {
     #[command(flatten)]
     output: VoxjOutput,
 
-    /// Which palettes to edit: an id, an `a-b` range, or `*` for every
-    /// palette. Repeatable; the union selects each palette once.
+    /// Which palettes to edit: an integer, an inclusive `a-b` range, or `*` for
+    /// every palette. Repeatable; the union selects each palette once.
     #[arg(
-        value_name = "palettes",
+        value_name = "palette",
         long,
         value_parser = parse_id_selector::<BVoxPalette>,
         default_value = "*"
@@ -40,7 +40,7 @@ pub struct PaletteEdit {
     /// the profile's values join the program ahead of every `--value` and
     /// `--values-from` binding, with its `valuesFrom` imports first. A
     /// `--write-property` flag replaces the profile's write of that property.
-    /// Repeatable: the profiles stack in line order, and a property two of
+    /// Repeatable; the profiles stack in line order, and a property two of
     /// them write errors. The profiles come from every `.vxlconfig`'s
     /// `palette.edit.profiles`, the user's `~/.vxlconfig` first and then each
     /// directory from the git root down to the working directory. A name reads
@@ -54,7 +54,7 @@ pub struct PaletteEdit {
     /// Evaluates the expression at the program's end and writes it to the
     /// property. A plain value lands on every material, and a swatch array
     /// lands one entry per material. A property the palette lacks is added on
-    /// a new value pool. Repeatable. A property written twice errors.
+    /// a new value pool. A property written twice errors. Repeatable.
     #[arg(
         value_names = ["dst-property", "src-expr"],
         long,

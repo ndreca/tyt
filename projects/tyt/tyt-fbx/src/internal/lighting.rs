@@ -7,7 +7,7 @@ pub enum Lighting {
     /// directional shadows.
     Environment,
 
-    /// Key / fill / rim area lights. Strong contrast.
+    /// Key, fill, and rim area lights. Strong contrast.
     ThreePoint,
 
     /// Softer three-point variant with reduced energy for flatter tonal range.
@@ -16,8 +16,8 @@ pub enum Lighting {
     /// Single camera-aligned sun light for even, low-contrast illumination.
     Flat,
 
-    /// Do not add any lights. Relies on whatever lights (if any) exist in the
-    /// imported FBX.
+    /// Add no lights, relying on whatever lights exist in the imported FBX
+    /// file.
     None,
 }
 

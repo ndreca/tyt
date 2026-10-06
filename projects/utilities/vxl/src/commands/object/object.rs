@@ -1,7 +1,7 @@
 use crate::{Dependencies, Result, commands::ObjectCommand};
 use clap::Parser;
 
-/// Edits objects into Voxel JSON, meshes them into glTF, or renders them to
+/// Edits objects into Voxel Json, meshes them into glTF, or renders them to
 /// the terminal or to PNG.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "object")]

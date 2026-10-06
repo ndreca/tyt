@@ -6,13 +6,14 @@ use std::{collections::HashMap, path::PathBuf};
 #[derive(Clone, Debug, Parser)]
 #[command(name = "rename-node")]
 pub struct RenameNode {
-    /// The input `.vmax` directory.
+    /// The input `.vmax` package directory.
     #[arg(value_name = "input-vmax")]
     input_vmax: PathBuf,
 
     /// Gitignore-style pattern selecting hierarchy paths, with more passed via
     /// `--select`. A bare name matches at any depth, a slashed pattern anchors
-    /// to a scene root; `**/name/**` selects a whole subtree.
+    /// to a scene root, a trailing `/` matches groups only, a leading `!`
+    /// deselects, and `**/name/**` selects a whole subtree.
     #[arg(value_name = "pattern")]
     pattern: String,
 
@@ -20,7 +21,7 @@ pub struct RenameNode {
     #[arg(value_name = "new-name")]
     new_name: String,
 
-    /// Additional selection patterns unioned with the positional pattern.
+    /// Additional patterns unioned with the positional `pattern`. Repeatable.
     #[arg(value_name = "select", long)]
     select: Vec<String>,
 }
@@ -55,8 +56,8 @@ impl RenameNode {
             segments.join("/")
         };
 
-        // Build all candidate paths. A group is a directory, so selecting one
-        // pulls in its whole subtree.
+        // Build all candidate paths. A group is a directory, so a trailing `/`
+        // pattern matches it, while its subtree needs `name/**`.
         let mut candidates: Vec<(String, &str, bool)> = Vec::new();
         for node in &nodes {
             let path = build_path(&node.name, node.parent_id.as_deref());

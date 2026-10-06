@@ -26,7 +26,7 @@ Each `--library <library>` adds a [library](#libraries) the model reads, such
 as vxl's [`materials`](#the-materials-library).
 
 `vxl sdf-doc voxelize` samples the document on a [voxel grid](#coordinates) and
-writes a voxj document:
+writes a `.voxj` document:
 
 1. `--voxel-size <meters>` sets the edge of a cell and defaults to 1 meter
 2. `--resolution <reference> <n>` sets the voxel size to a reference side of the

@@ -6,13 +6,13 @@ pub enum Quality {
     /// Let the model choose the quality.
     Auto,
 
-    /// Low quality — fastest and cheapest.
+    /// Low quality. Fastest and cheapest.
     Low,
 
     /// Medium quality.
     Medium,
 
-    /// High quality — slowest and most detailed.
+    /// High quality. Slowest and most detailed.
     High,
 }
 

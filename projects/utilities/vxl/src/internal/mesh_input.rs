@@ -14,7 +14,8 @@ pub struct MeshInput {
     #[arg(value_name = "input")]
     pub path: PathBuf,
 
-    /// Source format of the input. Inferred from its extension when omitted.
+    /// Source format of the input. Defaults to the format its extension
+    /// implies.
     #[arg(value_name = "from", long, value_parser = cli_value_parser::<ReadFormat>())]
     from: Option<ReadFormat>,
 }

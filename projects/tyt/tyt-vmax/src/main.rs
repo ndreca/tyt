@@ -3,7 +3,7 @@ use std::process;
 use ty_clap::{Completion, DependenciesImpl as ClapDependenciesImpl};
 use tyt_vmax::{DependenciesImpl, TytVMax};
 
-/// Commands for working with Voxel Max.
+/// Works with Voxel Max packages.
 #[derive(Clone, Debug, Parser)]
 #[command(version)]
 struct Cli {

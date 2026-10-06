@@ -4,7 +4,7 @@ use crate::{
 };
 use clap::Subcommand;
 
-/// Operations on FBX files.
+/// Works with FBX files.
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 pub enum TytFbx {

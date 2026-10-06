@@ -14,10 +14,9 @@ pub struct PaletteList {
     #[command(flatten)]
     input: VoxelInput,
 
-    /// Palette-id filters, each a single id `1`, an inclusive range `1-5`, or
-    /// `*` for every palette, unioned over all values. Given none, every
-    /// palette is listed.
-    #[arg(value_name = "filter", value_parser = parse_id_selector::<BVoxPalette>)]
+    /// Palette ids: an integer, an inclusive `a-b` range, or `*` for every
+    /// palette, unioned. With none given, every palette is listed.
+    #[arg(value_name = "palette", value_parser = parse_id_selector::<BVoxPalette>)]
     filters: Vec<IdSelector<BVoxPalette>>,
 
     /// How to lay out the listing.
@@ -29,7 +28,7 @@ pub struct PaletteList {
     )]
     layout: PaletteListLayout,
 
-    /// Show each palette's property keys. `--show-properties false` drops them.
+    /// Shows each palette's property keys. `--show-properties false` omits them.
     #[arg(
         value_name = "show-properties",
         long,
@@ -40,7 +39,7 @@ pub struct PaletteList {
     )]
     show_properties: bool,
 
-    /// Show each palette's material count. `--show-materials false` drops it.
+    /// Shows each palette's material count. `--show-materials false` omits it.
     #[arg(
         value_name = "show-materials",
         long,
@@ -51,8 +50,8 @@ pub struct PaletteList {
     )]
     show_materials: bool,
 
-    /// Show the objects that reference each palette. `--show-objects false`
-    /// drops them.
+    /// Shows the objects that reference each palette. `--show-objects false`
+    /// omits them.
     #[arg(
         value_name = "show-objects",
         long,

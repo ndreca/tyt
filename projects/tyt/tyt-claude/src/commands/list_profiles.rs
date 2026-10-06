@@ -1,7 +1,7 @@
 use crate::{Dependencies, Result};
 use clap::Parser;
 
-/// Lists all Claude profiles found by walking the `.tytusrconfig` /
+/// Lists all Claude profiles found by walking the `.tytusrconfig` and
 /// `.tytconfig` cascade up from the current directory through `~/.tytconfig`.
 /// The active profile is marked with `*`.
 #[derive(Clone, Debug, Parser)]

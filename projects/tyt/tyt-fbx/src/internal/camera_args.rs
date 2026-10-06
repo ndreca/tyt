@@ -26,11 +26,11 @@ use std::{
     ArgGroup::new("auto_frame").multiple(true),
 ))]
 pub struct CameraArgs {
-    /// Gitignore-style patterns selecting the objects the camera targets,
-    /// repeat `--subject` to pass several. The matched objects' combined
-    /// world bounds drive auto-frame distance, look-at, and orbit pivot. A
-    /// bare name matches at any depth, a slashed pattern anchors to a scene
-    /// root; `**/name/**` selects a whole subtree.
+    /// Gitignore-style patterns selecting the objects the camera targets. The
+    /// matched objects' combined world bounds drive auto-frame distance,
+    /// look-at, and orbit pivot. A bare name matches at any depth, a slashed
+    /// pattern anchors to a scene root, and `**/name/**` selects a whole
+    /// subtree. Repeatable.
     #[arg(value_name = "subject", long, group = "auto_frame")]
     pub subject: Vec<String>,
 
@@ -43,7 +43,7 @@ pub struct CameraArgs {
     )]
     pub orbit_h: Option<f64>,
 
-    /// Vertical orbit (elevates/lowers the camera while still facing the
+    /// Vertical orbit (elevates or lowers the camera while still facing the
     /// subject). Unit from `--rot-unit`.
     #[arg(
         value_name = "orbit-v",
@@ -115,7 +115,7 @@ pub struct CameraArgs {
     )]
     pub cam_pos_z: Option<f64>,
 
-    /// Sets the euler rotation of the camera around the x-axis. Unit from
+    /// Sets the Euler rotation of the camera around the x-axis. Unit from
     /// `--rot-unit`.
     #[arg(
         value_name = "x",
@@ -125,7 +125,7 @@ pub struct CameraArgs {
     )]
     pub cam_rot_x: Option<f64>,
 
-    /// Sets the euler rotation of the camera around the y-axis. Unit from
+    /// Sets the Euler rotation of the camera around the y-axis. Unit from
     /// `--rot-unit`.
     #[arg(
         value_name = "y",
@@ -135,7 +135,7 @@ pub struct CameraArgs {
     )]
     pub cam_rot_y: Option<f64>,
 
-    /// Sets the euler rotation of the camera around the z-axis. Unit from
+    /// Sets the Euler rotation of the camera around the z-axis. Unit from
     /// `--rot-unit`.
     #[arg(
         value_name = "z",
@@ -156,7 +156,7 @@ pub struct CameraArgs {
     )]
     pub cam_pos: Option<Vec<f64>>,
 
-    /// Sets all three components of the camera's euler rotation. Unit from
+    /// Sets all three components of the camera's Euler rotation. Unit from
     /// `--rot-unit`.
     #[arg(
         value_names = ["x", "y", "z"],
@@ -168,9 +168,8 @@ pub struct CameraArgs {
     )]
     pub cam_rot: Option<Vec<f64>>,
 
-    /// Sets the camera's full pose (position + euler rotation). Takes 6
-    /// values in pos-x/y/z, rot-x/y/z order. Rotation unit from
-    /// `--rot-unit`.
+    /// Sets the camera's full pose (position + Euler rotation). Takes six
+    /// values in pos-x/y/z, rot-x/y/z order. Rotation unit from `--rot-unit`.
     #[arg(
         value_names = ["px", "py", "pz", "rx", "ry", "rz"],
         long = "cam-xfm",
@@ -184,22 +183,20 @@ pub struct CameraArgs {
     )]
     pub cam_xfm: Option<Vec<f64>>,
 
-    /// Unit used for every rotation-valued input (`--orbit-h`,
+    /// The unit used for every rotation-valued input (`--orbit-h`,
     /// `--orbit-v`, `--yaw`, `--pitch`, `--roll`, `--cam-rot-*`,
-    /// `--cam-rot`, and the rotation portion of `--cam-xfm`). Does NOT
+    /// `--cam-rot`, and the rotation portion of `--cam-xfm`). Does not
     /// affect the `--print-camera` output.
     #[arg(value_name = "rot-unit", long = "rot-unit", default_value = "rad")]
     pub rot_unit: RotUnit,
 
-    /// Emits the resolved camera pose on stdout. Accepts up to three
-    /// positional values: `[<format>] [<unit>] [<precision>]`.
-    /// `format` is one of `pose` (JSON), `pose-args` (paste-able
-    /// `--cam-pos` / `--cam-rot` args), or `target-args` (paste-able
-    /// `--orbit-*` / `--yaw` / ... args). Default adapts: `target-args`
-    /// when auto-framed, `pose-args` when explicit pose.
-    /// `unit` is `rad` (default) or `deg`.
-    /// `precision` is the number of decimal digits in emitted numbers
-    /// (default `2`).
+    /// Prints the resolved camera pose to stdout. Takes up to three values
+    /// `[<format>] [<unit>] [<precision>]`: `format` is `pose` (JSON),
+    /// `pose-args` (paste-able `--cam-pos` and `--cam-rot` args), or
+    /// `target-args` (paste-able `--orbit-*`, `--yaw`, and similar args),
+    /// defaulting to `target-args` when auto-framed and `pose-args` when the
+    /// pose is explicit; `unit` is `rad` (default) or `deg`; and `precision`
+    /// is the decimal places (default `2`).
     #[arg(
         value_names = ["format", "unit", "precision"],
         long = "print-camera",

@@ -6,7 +6,7 @@ use vxl::{
     commands::{IntegrationAgentsLink, IntegrationSkill},
 };
 
-/// A command-line tool for working with voxels.
+/// Works with voxels.
 #[derive(Clone, Debug, Parser)]
 #[command(version)]
 struct Cli {

@@ -3,8 +3,8 @@ use clap::ValueEnum;
 /// What a Meshy command prints: thumbnails, text, or nothing.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
 pub enum OutputMode {
-    /// Render every thumbnail a finished task produced — the four cardinal
-    /// views, or just the single default thumbnail when that is all there is —
+    /// Render every thumbnail a finished task produced (the four cardinal
+    /// views, or the single default thumbnail when that is all there is),
     /// printing the task's `id:` and `status:` as text while it runs.
     AllThumbnails,
 

@@ -8,14 +8,14 @@ use voxsmith::utilities::{IdSelector, select_nodes};
 /// parent end of an edge.
 #[derive(Clone, Debug, Args)]
 pub struct ParentSelection {
-    /// Choose the parent node by hierarchy-path glob, matched as a node
-    /// command's `--select` matches. Repeatable; unions with
-    /// `--select-parent-index`.
+    /// Chooses the parent node by gitignore-style hierarchy-path pattern,
+    /// matched as `node list` matches node paths; a matched path selects that
+    /// node alone. Repeatable; unions with `--select-parent-index`.
     #[arg(value_name = "select-parent", long)]
     select_parent: Vec<String>,
 
-    /// Choose the parent node by id: an integer, an `a-b` range, or `*` for
-    /// every node. Repeatable; unions with `--select-parent`.
+    /// Chooses the parent node by id: an integer, an inclusive `a-b` range, or
+    /// `*` for every node. Repeatable; unions with `--select-parent`.
     #[arg(
         value_name = "select-parent-index",
         long,

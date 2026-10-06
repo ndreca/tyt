@@ -4,8 +4,8 @@ use clap::ValueEnum;
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
 pub enum ContinueKind {
     /// Continue the most recent conversation in place via `previous_response_id`,
-    /// appending the new turns to its existing subarray. Fails if that response
-    /// is no longer cached by OpenAI.
+    /// appending the new turns to its existing subarray. The run fails if that
+    /// response is no longer cached by OpenAI.
     PreviousResponseId,
 
     /// Start a new conversation seeded with the full prior history, including

@@ -5,25 +5,26 @@ use std::path::Path;
 /// Converts six cube face images into a single equirectangular panorama.
 #[derive(Clone, Debug, Parser)]
 pub struct FacesToEquirect {
-    /// Base name for input face files (`{base}-left.png`, etc.).
+    /// Base name for the input face files (`<base>-left.png`, etc.).
     #[arg(value_name = "base")]
     base: String,
 
-    /// Output base name. Defaults to `{base}-equirect`.
-    #[arg(value_name = "out-base")]
+    /// Output base name. Defaults to `<base>-equirect`.
+    #[arg(value_name = "output-base")]
     out_base: Option<String>,
 
-    /// Use nearest-neighbor filtering on the final `--output-size` resize.
+    /// Uses nearest-neighbor filtering on the final `--output-size` resize.
     #[arg(value_name = "point", long)]
     point: bool,
 
-    /// Use nearest-neighbor (`interp=near`) on the v360 reprojection itself.
+    /// Uses nearest-neighbor filtering (`interp=near`) on the `v360` reprojection
+    /// itself.
     #[arg(value_name = "point-reprojection", long)]
     point_reprojection: bool,
 
-    /// Pixelate (point-resize) the faces to the given height before converting.
-    /// Implies `--point-reprojection` so the downscaled pixel edges survive the
-    /// reprojection.
+    /// Pixelates (point-resizes) the faces to the given height in pixels before
+    /// converting. Implies `--point-reprojection` so the downscaled pixel edges
+    /// survive the reprojection.
     #[arg(value_name = "pixelate", long)]
     pixelate: Option<u32>,
 

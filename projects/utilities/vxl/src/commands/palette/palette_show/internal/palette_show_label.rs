@@ -23,7 +23,7 @@ impl CliValue for PaletteShowLabel {
             PaletteShowLabel::Concat => "Full dot-joined paths, like `0.\"baseColor\".a`",
 
             PaletteShowLabel::Header => {
-                "Nested markdown headings over value collections labeled by their leaf segment \
+                "Nested Markdown headings over value collections labeled by their leaf segment \
                  alone"
             }
         }

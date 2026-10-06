@@ -5,7 +5,8 @@ use std::{io::Error as IOError, path::PathBuf};
 /// The root an integration works under.
 #[derive(Clone, Debug, Args)]
 pub struct IntegrationRoot {
-    /// Work under the home directory for every project instead of the git root.
+    /// Works under the home directory for every project instead of the git
+    /// root.
     #[arg(value_name = "user", long)]
     user: bool,
 }

@@ -21,25 +21,25 @@ type GridNodeId = U32Id<BTreeGridNode>;
 /// the width the standard formatter can represent.
 const MAX_PRECISION: usize = 255;
 
-/// Prints the Voxel Max hierarchy as a tree, optionally filtered to selected
-/// nodes and their subtrees.
+/// Prints the Voxel Max hierarchy as a box-glyph tree, optionally filtered to
+/// selected nodes and their subtrees.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "hierarchy")]
 pub struct Hierarchy {
-    /// The input `.vmax` directory to inspect.
+    /// The input `.vmax` package directory.
     #[arg(value_name = "input-vmax")]
     input_vmax: PathBuf,
 
-    /// Optional gitignore-style patterns selecting hierarchy paths. When set,
-    /// only matched nodes and their ancestors print, and a matched group brings
-    /// in its whole subtree. A bare name matches at any depth, a slashed
-    /// pattern anchors to a root, a trailing `/` matches groups only, and a
-    /// leading `!` deselects. With none given the whole hierarchy prints.
-    #[arg(value_name = "select")]
+    /// Gitignore-style patterns selecting hierarchy paths. When given, only
+    /// matched nodes and their ancestors print, and a matched group brings in
+    /// its whole subtree. A bare name matches at any depth, a slashed pattern
+    /// anchors to a scene root, a trailing `/` matches groups only, and a
+    /// leading `!` deselects. With none given, the whole hierarchy prints.
+    #[arg(value_name = "pattern")]
     select: Vec<String>,
 
-    /// Hide the ancestor chain above each match behind an `ancestors` marker.
-    /// Requires a pattern.
+    /// Hides the ancestor chain above each match behind an `ancestors` marker.
+    /// Requires a `pattern`.
     #[arg(
         value_name = "collapse-ancestors",
         long = "collapse-ancestors",
@@ -47,8 +47,8 @@ pub struct Hierarchy {
     )]
     collapse_ancestors: bool,
 
-    /// Hide the descendants of each match behind a `descendants` marker.
-    /// Requires a pattern.
+    /// Hides the descendants of each match behind a `descendants` marker.
+    /// Requires a `pattern`.
     #[arg(
         value_name = "collapse-descendants",
         long = "collapse-descendants",
@@ -56,18 +56,17 @@ pub struct Hierarchy {
     )]
     collapse_descendants: bool,
 
-    /// Append each node's transform, with rotation as euler angles, as a
-    /// nested subtree. An optional `=space,rot-unit,precision` packs the view,
-    /// each part optional:
-    /// 1. `space`: `local` (default) or `world`.
-    /// 2. `rot-unit`: `rad` (default) or `deg`.
-    /// 3. `precision`: decimal places, default 2.
+    /// Prepends each node's transform, with rotation as Euler angles, as a
+    /// nested subtree. An optional `=<space>,<rot-unit>,<precision>` sets the
+    /// view, each part optional: `space` is `local` (default) or `world`,
+    /// `rot-unit` is `rad` (default) or `deg`, and `precision` is the decimal
+    /// places (default `2`).
     #[arg(value_name = "view", long = "show-transforms", num_args = 0..=1, require_equals = true)]
     show_transforms: Option<Vec<String>>,
 
-    /// Append each node's authored voxel bounds as a `min`/`max` subtree, for
-    /// nodes that have them. An optional `=precision` sets the decimal places
-    /// (default 2).
+    /// Appends each node's authored voxel bounds as a `min`/`max` subtree, for
+    /// nodes that have them. An optional `=<precision>` sets the decimal places
+    /// (default `2`).
     #[arg(value_name = "precision", long = "show-bounds", num_args = 0..=1, require_equals = true)]
     show_bounds: Option<Vec<String>>,
 }

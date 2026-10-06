@@ -92,7 +92,7 @@ interface ViewEntry {
    *  Errors under `orthographic`. */
   fov?: number;
 
-  /** Mirrors `--view-scale`, the world units across the shorter image axis
+  /** Mirrors `--view-scale`, the world units across the shorter image side
    *  under `orthographic`; omitted, `fit`. Errors under `perspective`. */
   scale?: number;
 

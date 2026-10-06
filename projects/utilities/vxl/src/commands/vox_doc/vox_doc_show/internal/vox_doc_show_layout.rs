@@ -21,8 +21,8 @@ impl CliValue for VoxDocShowLayout {
     fn help(self) -> &'static str {
         match self {
             VoxDocShowLayout::BoxTables => {
-                "A file-name line over `document`, `palettes`, and `objects` record tables drawn \
-                 with box glyphs"
+                "A file-name line over `document`, `palettes`, and `objects` box-glyph record \
+                 tables"
             }
 
             VoxDocShowLayout::JsonCompact => "Compact, single-line JSON",
@@ -30,7 +30,7 @@ impl CliValue for VoxDocShowLayout {
             VoxDocShowLayout::JsonPretty => "Pretty-printed, multi-line JSON",
 
             VoxDocShowLayout::MdTables => {
-                "A file-name title over `Document`, `Palettes`, and `Objects` record tables"
+                "A file-name heading over `Document`, `Palettes`, and `Objects` record tables"
             }
         }
     }

@@ -3,8 +3,10 @@ use clap::ValueEnum;
 /// Unit used for rotation-valued CLI inputs.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
 pub enum RotUnit {
+    /// Radians.
     Rad,
 
+    /// Degrees.
     Deg,
 }
 

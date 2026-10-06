@@ -1,6 +1,6 @@
 # vxl
 
-A command-line tool for working with voxels.
+Works with voxels.
 
 ## Install
 
@@ -86,7 +86,7 @@ session run the code it writes.
 ## Editing
 
 The `object`, `node`, `palette edit`, and `palette quantize` commands edit a
-document. Each reads any format voxconv reads and writes Voxel JSON beside the
+document. Each reads any format voxconv reads and writes Voxel Json beside the
 input by default. `object mesh` writes a mesh instead. `node list` only prints
 the scene graph. `--select` takes a hierarchy-path glob. `--select-index` takes
 an id, an `a-b` range, or `*`. Both repeat and pick what the command acts on.
@@ -218,7 +218,7 @@ vxl node link scene.voxj --select house/door --select-parent garage
 ## Models
 
 `sdf-doc build` records a voxel model written in TypeScript as an `.sdfj`
-document. `sdf-doc voxelize` samples the document into Voxel JSON. The
+document. `sdf-doc voxelize` samples the document into Voxel Json. The
 [modeling API](docs/modeling-api.md) lists every call a model file can make.
 [Modeling with Claude Code](#modeling-with-claude-code) sets up the skill that
 runs these commands for an agent.

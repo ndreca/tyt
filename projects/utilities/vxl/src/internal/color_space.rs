@@ -14,7 +14,7 @@ impl CliValue for ColorSpace {
 
     fn help(self) -> &'static str {
         match self {
-            ColorSpace::Oklab => "OKLab perceptual distance",
+            ColorSpace::Oklab => "Oklab perceptual distance",
             ColorSpace::Lab => "CIELAB distance",
             ColorSpace::Srgb => "sRGB distance",
         }

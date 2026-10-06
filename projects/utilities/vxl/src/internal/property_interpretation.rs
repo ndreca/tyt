@@ -21,14 +21,16 @@ impl CliValue for PropertyInterpretation {
     fn help(self) -> &'static str {
         match self {
             PropertyInterpretation::Auto => {
-                "baseColor and emissiveColor as linear-color, any other property as numeric"
+                "`baseColor` and `emissiveColor` as `linear-color`, any other property as `numeric`"
             }
 
-            PropertyInterpretation::LinearColor => "A 3- or 4-float vector of linear light",
+            PropertyInterpretation::LinearColor => "A three- or four-float vector of linear light",
 
             PropertyInterpretation::Numeric => "Raw components of any float, int, or vector",
 
-            PropertyInterpretation::SrgbColor => "A 3- or 4-float vector of sRGB-encoded color",
+            PropertyInterpretation::SrgbColor => {
+                "A three- or four-float vector of sRGB-encoded color"
+            }
         }
     }
 }

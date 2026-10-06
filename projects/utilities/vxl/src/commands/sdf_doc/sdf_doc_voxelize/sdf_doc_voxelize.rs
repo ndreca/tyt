@@ -14,11 +14,11 @@ use voxsmith::{
     utilities::{FillMode, FlattenMode, GridResolution, VoxelFrame},
 };
 
-/// Samples an `.sdfj` document on a voxel grid into a voxj document.
+/// Samples an `.sdfj` document on a voxel grid into a Voxel Json document.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "voxelize")]
 pub struct SdfDocVoxelize {
-    /// The `.sdfj` document to sample.
+    /// The input `.sdfj` document.
     #[arg(value_name = "input")]
     input: PathBuf,
 
@@ -30,16 +30,16 @@ pub struct SdfDocVoxelize {
     #[command(flatten)]
     resolution_options: GridResolutionOptions,
 
-    /// The frame each part's grid is built in, `world` when omitted.
+    /// The frame each part's object grid is built in. Defaults to `world`.
     #[arg(value_name = "frame", long, value_parser = cli_value_parser::<VoxelFrame>())]
     frame: Option<VoxelFrame>,
 
-    /// How much of each part the part's object keeps, `solid` when omitted.
+    /// How much of each part the part's object keeps. Defaults to `solid`.
     #[arg(value_name = "fill-mode", long, value_parser = cli_value_parser::<FillMode>())]
     fill_mode: Option<FillMode>,
 
-    /// How much of the part hierarchy the document flattens, `none` when
-    /// omitted. Flattening needs `--frame world`.
+    /// How much of the part hierarchy the document flattens. Flattening
+    /// requires `--frame world`. Defaults to `none`.
     #[arg(
         value_name = "flatten",
         long,
@@ -49,7 +49,7 @@ pub struct SdfDocVoxelize {
 
     /// Prints a line for the model, each part, each step, and each piece, and
     /// writes the lines to the output's stem with `-report.txt` beside it.
-    /// `--report false` turns the report off.
+    /// `--report false` skips the report. Defaults to `true`.
     #[arg(
         value_name = "report",
         long,

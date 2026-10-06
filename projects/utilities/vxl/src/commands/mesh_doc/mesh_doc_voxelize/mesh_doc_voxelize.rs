@@ -33,18 +33,16 @@ pub struct MeshDocVoxelize {
     #[command(flatten)]
     resolution_options: GridResolutionOptions,
 
-    /// The frame each object's grid is built in, `world` when omitted.
+    /// The frame each object's grid is built in. Defaults to `world`.
     #[arg(value_name = "frame", long, value_parser = cli_value_parser::<VoxelFrame>())]
     frame: Option<VoxelFrame>,
 
-    /// What happens to a placing node's scale, `bake` when omitted. Under
-    /// `keep` the voxel size is in unscaled units and world references are
-    /// rejected.
+    /// What happens to a placing node's scale. Defaults to `bake`.
     #[arg(value_name = "scale", long, value_parser = cli_value_parser::<VoxelScale>())]
     scale: Option<VoxelScale>,
 
-    /// How much of the hierarchy the document flattens, `none` when omitted.
-    /// Flattening needs `--frame world` and `--scale bake`.
+    /// How much of the hierarchy the document flattens. Flattening requires
+    /// `--frame world` and `--scale bake`. Defaults to `none`.
     #[arg(
         value_name = "flatten",
         long,
@@ -53,14 +51,12 @@ pub struct MeshDocVoxelize {
     flatten: Option<FlattenMode>,
 
     /// How the mesh fills the grid, independent of `--material-mode`. `solid`
-    /// when omitted.
+    /// needs a watertight mesh. Defaults to `solid`.
     #[arg(value_name = "fill-mode", long, value_parser = cli_value_parser::<FillMode>())]
     fill_mode: Option<FillMode>,
 
-    /// Whether a cell is occupied by its center lying inside the surface or by
-    /// any triangle passing through it, independent of `--fill-mode`.
-    /// `center-inside`, the default, expects a closed mesh; `triangle-cover`
-    /// handles an open one.
+    /// How the surface is found, independent of `--fill-mode`. Defaults to
+    /// `center-inside`.
     #[arg(
         value_name = "surface-mode",
         long,
@@ -69,7 +65,7 @@ pub struct MeshDocVoxelize {
     surface_mode: Option<SurfaceMode>,
 
     /// Where each voxel's color comes from, independent of `--fill-mode`.
-    /// `auto` when omitted.
+    /// Defaults to `auto`.
     #[arg(
         value_name = "material-mode",
         long,
@@ -77,18 +73,16 @@ pub struct MeshDocVoxelize {
     )]
     material_mode: Option<MaterialMode>,
 
-    /// Fill color as a `#RRGGBBAA` hex, or `none`, the default. Under
+    /// Fill color as a `#RRGGBBAA` hex color, or `none`. Under
     /// `--material-mode flat` it paints every voxel, white when `none`. Under
     /// `--fill-mode solid` it paints a body's interior, the nearest surface
     /// color when `none`. Rejected on a sampling-mode surface, which samples
-    /// every voxel.
+    /// every voxel. Defaults to `none`.
     #[arg(value_name = "fill-color", long)]
     fill_color: Option<NoneOr<Rgba>>,
 
     /// What a source material value outside its property's range does, such
-    /// as a `metallic` above `1`. `error`, the default, reports the property
-    /// and refuses the mesh. `clamp` clamps it onto the range and voxelizes
-    /// on.
+    /// as a `metallic` above `1`. Defaults to `error`.
     #[arg(
         value_name = "out-of-range-property",
         long,

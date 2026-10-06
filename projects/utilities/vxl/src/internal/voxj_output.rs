@@ -18,7 +18,7 @@ pub struct VoxjOutput {
     #[command(flatten)]
     encoding_options: VoxjEncodingOptions,
 
-    /// Emit the user-defined `ext` extension block. `--ext false` omits it.
+    /// Emits the user-defined `ext` extension block. `--ext false` omits it.
     #[arg(
         value_name = "ext",
         long,
@@ -29,8 +29,7 @@ pub struct VoxjOutput {
     )]
     ext: bool,
 
-    /// When to record each object's editor build volume. `auto` records it only
-    /// when an object has margin around its live voxels.
+    /// When to record each object's build volume.
     #[arg(
         value_name = "edit-state",
         long,

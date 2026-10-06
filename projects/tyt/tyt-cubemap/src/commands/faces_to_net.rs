@@ -5,26 +5,25 @@ use std::path::Path;
 /// Converts six cube face images into a cube net cross layout.
 #[derive(Clone, Debug, Parser)]
 pub struct FacesToNet {
-    /// Base name for input face files (`{base}-left.png`, etc.).
+    /// Base name for the input face files (`<base>-left.png`, etc.).
     #[arg(value_name = "base")]
     base: String,
 
-    /// Output base name. Defaults to `{base}-cube-net`.
-    #[arg(value_name = "out-base")]
+    /// Output base name. Defaults to `<base>-cube-net`.
+    #[arg(value_name = "output-base")]
     out_base: Option<String>,
 
-    /// Pad the output to a square canvas.
+    /// Pads the output to a square canvas.
     #[arg(value_name = "square", long)]
     square: bool,
 
-    /// Use point (nearest-neighbor) interpolation when resizing to
-    /// `--output-size`.
+    /// Uses nearest-neighbor filtering on the final `--output-size` resize.
     #[arg(value_name = "point", long)]
     point: bool,
 
-    /// Final side length for each face in the output net. When set, the net is
-    /// resized to this resolution. Combine with `--point` for nearest-neighbor
-    /// filtering that preserves hard edges.
+    /// Final side length in pixels for each face in the output net. When set,
+    /// the net is resized to this size. Combine with `--point` for
+    /// nearest-neighbor filtering that preserves hard edges.
     #[arg(value_name = "output-size", long)]
     output_size: Option<u32>,
 }

@@ -1,3 +1,3 @@
 # tyt-oai - OAI
 
-Commands for working with the OpenAI API.
+Works with the OpenAI API.

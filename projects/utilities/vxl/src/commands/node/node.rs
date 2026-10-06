@@ -1,7 +1,7 @@
 use crate::{Dependencies, Result, commands::NodeCommand};
 use clap::Parser;
 
-/// Lists nodes or edits them into Voxel JSON.
+/// Lists nodes or edits them into Voxel Json.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "node")]
 pub struct Node {

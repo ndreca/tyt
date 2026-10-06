@@ -14,9 +14,9 @@ impl CliValue for TyAxis3 {
 
     fn help(self) -> &'static str {
         match self {
-            TyAxis3::X => "The x axis",
-            TyAxis3::Y => "The y axis, up",
-            TyAxis3::Z => "The z axis, toward the viewer",
+            TyAxis3::X => "The x-axis",
+            TyAxis3::Y => "The y-axis, up",
+            TyAxis3::Z => "The z-axis, toward the viewer",
         }
     }
 }

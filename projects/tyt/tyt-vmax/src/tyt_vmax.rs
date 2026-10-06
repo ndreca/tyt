@@ -4,7 +4,7 @@ use crate::{
 };
 use clap::Subcommand;
 
-/// Commands for working with Voxel Max.
+/// Works with Voxel Max packages.
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 pub enum TytVMax {

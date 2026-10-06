@@ -4,7 +4,7 @@ use crate::{
 };
 use clap::Subcommand;
 
-/// A command-line tool for working with voxels.
+/// Works with voxels.
 // The command line parses once, so the variants' sizes never matter.
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, Subcommand)]

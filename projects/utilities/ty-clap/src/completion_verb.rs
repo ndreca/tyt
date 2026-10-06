@@ -11,10 +11,10 @@ The completions go under the home directory:
   powershell  $XDG_DATA_HOME/powershell/completions/<bin>.ps1
   zsh         ~/.zsh/completions/_<bin>
 
-XDG_DATA_HOME defaults to ~/.local/share and XDG_CONFIG_HOME to ~/.config. A
-new bash or fish shell loads the file. bash needs bash-completion 2. For elvish,
-powershell, and zsh, the install prints a line to add to the shell's startup
-file once. Installing again replaces the file.";
+`XDG_DATA_HOME` defaults to `~/.local/share` and `XDG_CONFIG_HOME` to
+`~/.config`. A new Bash or Fish shell loads the file. Bash needs
+bash-completion 2. For Elvish, PowerShell, and Zsh, the install prints a line
+to add to the shell's startup file once. Installing again replaces the file.";
 
 /// The commands on one shell's completions.
 #[derive(Clone, Debug, Subcommand)]

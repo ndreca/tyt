@@ -4,7 +4,7 @@ use crate::{
 };
 use clap::Subcommand;
 
-/// Operations on the filesystem
+/// Works with the filesystem.
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 pub enum TytFS {

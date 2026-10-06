@@ -4,14 +4,13 @@ use std::{ffi::OsString, process};
 
 /// Runs `claude` with `CLAUDE_CONFIG_DIR` set to the active profile's path.
 ///
-/// Active profile resolution order:
-/// 1. `--profile <name>` if supplied;
-/// 2. otherwise the cascade-resolved `claude.active` from `.tytusrconfig`,
-///    `.tytconfig`, or `~/.tytconfig` (most-local wins).
+/// The active profile is `--profile <name>` when given, otherwise the
+/// cascade-resolved `claude.active` from `.tytusrconfig`, `.tytconfig`, or
+/// `~/.tytconfig`, the most local winning.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "run", trailing_var_arg = true)]
 pub struct Run {
-    /// Override the active profile for this invocation only.
+    /// Overrides the active profile for this invocation only.
     #[arg(value_name = "name", short = 'p', long = "profile")]
     pub profile: Option<String>,
 

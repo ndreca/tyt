@@ -3,7 +3,7 @@ use std::process;
 use ty_clap::{Completion, DependenciesImpl as ClapDependenciesImpl};
 use tyt_fs::{DependenciesImpl, TytFS};
 
-/// Operations on the filesystem.
+/// Works with the filesystem.
 #[derive(Clone, Debug, Parser)]
 #[command(version)]
 struct Cli {

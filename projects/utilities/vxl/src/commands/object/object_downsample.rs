@@ -7,7 +7,7 @@ use voxcore::BVoxObject;
 use voxsmith::operations::object::{KeepRule, ResampleFactor, downsample_objects};
 
 /// Merges objects' voxels into blocks of a factor per axis: a `10 x 10 x 10`
-/// object becomes `5 x 5 x 5` at factor 2. The blocks tile the node's
+/// object becomes `5 x 5 x 5` at factor `2`. The blocks tile the node's
 /// lattice, which grows the grid to cover an origin the factor does not
 /// divide. `node set scale` keeps the object's size in the scene.
 #[derive(Clone, Debug, Parser)]
@@ -22,7 +22,7 @@ pub struct ObjectDownsample {
     #[command(flatten)]
     selection: RequiredSelection<BVoxObject>,
 
-    /// How many voxels per axis merge into one, at least 2.
+    /// How many voxels per axis merge into one, at least `2`.
     #[arg(value_name = "factor", long, value_parser = parse_resample_factor)]
     factor: ResampleFactor,
 

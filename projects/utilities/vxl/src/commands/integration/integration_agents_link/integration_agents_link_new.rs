@@ -6,12 +6,12 @@ use clap::Parser;
 use std::{io::Error as IOError, path::Path};
 
 const NEW_HELP: &str = "\
-Claude Code reads .claude. The link points Claude Code at .agents, the
-directory coding agents share. Codex reads .agents/skills itself and needs no
+Claude Code reads `.claude`. The link points Claude Code at `.agents`, the
+directory coding agents share. Codex reads `.agents/skills` itself and needs no
 link.
 
-On a real .claude directory the link fails and the directory stays.
-`vxl integration agents-link move` moves its contents into .agents first.";
+On a real `.claude` directory the link fails and the directory stays.
+`integration agents-link move` moves its contents into `.agents` first.";
 
 /// Links a missing `.claude` to `.agents`.
 #[derive(Clone, Debug, Parser)]

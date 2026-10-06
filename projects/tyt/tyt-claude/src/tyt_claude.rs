@@ -4,7 +4,7 @@ use crate::{
 };
 use clap::Subcommand;
 
-/// Operations for working with claude
+/// Works with Claude Code profiles.
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 pub enum TytClaude {

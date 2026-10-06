@@ -8,14 +8,14 @@ use voxsmith::utilities::{IdSelector, select_objects};
 /// that narrows its work to some of a document's objects.
 #[derive(Clone, Debug, Args)]
 pub struct ObjectSelection {
-    /// Choose objects by hierarchy-path glob, matched as `node list` matches
-    /// node paths, so a node path selects its subtree. Repeatable; unions with
-    /// `--select-index`.
+    /// Chooses objects by gitignore-style hierarchy-path pattern, matched as
+    /// `node list` matches node paths, so a node path selects its subtree.
+    /// Repeatable; unions with `--select-index`.
     #[arg(value_name = "select", long)]
     select: Vec<String>,
 
-    /// Choose objects by id: an integer, an `a-b` range, or `*` for every
-    /// object. Repeatable; unions with `--select`.
+    /// Chooses objects by id: an integer, an inclusive `a-b` range, or `*` for
+    /// every object. Repeatable; unions with `--select`.
     #[arg(value_name = "select-index", long, value_parser = parse_id_selector::<BVoxObject>)]
     select_index: Vec<IdSelector<BVoxObject>>,
 }

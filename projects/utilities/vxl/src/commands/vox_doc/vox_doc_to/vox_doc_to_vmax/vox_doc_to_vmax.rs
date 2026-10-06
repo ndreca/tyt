@@ -32,7 +32,7 @@ pub struct VoxDocToVmax {
     #[command(flatten)]
     input: VoxelInput,
 
-    /// The output `.vmax` package directory to create. Defaults to the input
+    /// The output `.vmax` package directory to write. Defaults to the input
     /// path with a `.vmax` extension.
     #[arg(value_name = "output")]
     output: Option<PathBuf>,
@@ -46,8 +46,8 @@ pub struct VoxDocToVmax {
     )]
     color_format: VMaxColorFormat,
 
-    /// Which scene camera the rebuilt document opens with. Omitted, the input's
-    /// `vmax` ext camera is kept when present, else the empty default.
+    /// Which scene camera the rebuilt document opens with. When omitted, the
+    /// input's `vmax` ext camera is kept when present, else the empty default.
     #[arg(value_name = "camera", long)]
     camera: Option<CameraView>,
 

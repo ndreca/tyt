@@ -1,7 +1,7 @@
 use crate::{Dependencies, ObjectSelection, Result, VoxelInput, VoxjOutput, commands::convert};
 use clap::Parser;
 
-/// Converts a voxel file to the Voxel JSON format.
+/// Converts a voxel file to the Voxel Json format.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "voxj")]
 pub struct VoxDocToVoxj {

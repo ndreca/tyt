@@ -3,7 +3,7 @@ use std::process;
 use ty_clap::{Completion, DependenciesImpl as ClapDependenciesImpl};
 use tyt_material::{DependenciesImpl, TytMaterial};
 
-/// Operations on material textures.
+/// Works with material textures.
 #[derive(Clone, Debug, Parser)]
 #[command(version)]
 struct Cli {

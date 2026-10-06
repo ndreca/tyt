@@ -6,7 +6,7 @@ pub enum TextureQuality {
     /// Normal-quality base color texture.
     Normal,
 
-    /// HD (4096×4096) base color texture. Only supported on Meshy 6.
+    /// HD (4096 x 4096) base color texture. Only supported on Meshy 6.
     Hd,
 }
 

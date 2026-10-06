@@ -23,9 +23,11 @@ impl CliValue for NodeListLayout {
                  its nodes"
             }
 
-            NodeListLayout::JsonCompact => "The scene graph as single-line JSON records",
+            NodeListLayout::JsonCompact => "The scene graph as compact, single-line JSON records",
 
-            NodeListLayout::JsonPretty => "The scene graph as indented JSON records",
+            NodeListLayout::JsonPretty => {
+                "The scene graph as pretty-printed, multi-line JSON records"
+            }
         }
     }
 }

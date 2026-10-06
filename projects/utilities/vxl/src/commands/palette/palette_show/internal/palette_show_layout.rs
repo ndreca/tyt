@@ -38,13 +38,15 @@ impl CliValue for PaletteShowLayout {
             }
 
             PaletteShowLayout::JsonCompact => {
-                "The value collection tree as single-line JSON records"
+                "The value collection tree as compact, single-line JSON records"
             }
 
-            PaletteShowLayout::JsonPretty => "The value collection tree as indented JSON records",
+            PaletteShowLayout::JsonPretty => {
+                "The value collection tree as pretty-printed, multi-line JSON records"
+            }
 
             PaletteShowLayout::MdTables => {
-                "The value collections as aligned markdown tables led by a `#` column of 0-based \
+                "The value collections as aligned Markdown tables led by a `#` column of 0-based \
                  material indices; `--table-shape` picks per-palette tables under headings or one \
                  flat comparison table"
             }

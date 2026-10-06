@@ -1,7 +1,7 @@
 use crate::{Dependencies, Result, commands};
 use clap::Subcommand;
 
-/// Operations on cubemap images.
+/// Works with cubemap images.
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 pub enum TytCubemap {

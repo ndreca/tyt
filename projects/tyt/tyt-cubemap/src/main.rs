@@ -3,7 +3,7 @@ use std::process;
 use ty_clap::{Completion, DependenciesImpl as ClapDependenciesImpl};
 use tyt_cubemap::{DependenciesImpl, TytCubemap};
 
-/// Operations on cubemap images.
+/// Works with cubemap images.
 #[derive(Clone, Debug, Parser)]
 #[command(version)]
 struct Cli {

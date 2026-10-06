@@ -28,8 +28,8 @@ impl Args for PropertyFlags {
                     .action(ArgAction::Append)
                     .help(
                         "Appends a profile's selectors at the flag's position, with its \
-                         `propertiesFrom` imports ahead of them. The profile's layout stays \
-                         behind. Repeatable",
+                         `propertiesFrom` imports first. The profile's layout stays behind. \
+                         Repeatable",
                     ),
             )
             .arg(
@@ -40,14 +40,13 @@ impl Args for PropertyFlags {
                     .action(ArgAction::Append)
                     .help(
                         "A selector naming a value collection, four fields: `<palette> \
-                         <property> <presentation> <reading>`. The palette is an id, an `a-b` \
-                         range, or `*`; \
-                         the property a key with an optional `.r`/`.g`/`.b`/`.a` or \
-                         `.x`/`.y`/`.z`/`.w` component, or `*`; the presentation one of `auto`, \
-                         `swatch`, `swatch-value`, `value`; the reading one of `auto`, \
-                         `linear-float`, `plain`, `srgb-float`, `srgb-hex`. Defaults to `'*' \
-                         '*' auto auto` when neither a flag nor a profile selects anything. \
-                         Repeatable",
+                         <property> <presentation> <reading>`. The palette is an integer, an \
+                         inclusive `a-b` range, or `*`; the property a key with an optional \
+                         `.r`/`.g`/`.b`/`.a` or `.x`/`.y`/`.z`/`.w` component, or `*`; the \
+                         presentation `auto`, `swatch`, `swatch-value`, or `value`; the reading \
+                         `auto`, `linear-float`, `plain`, `srgb-float`, or `srgb-hex`. Defaults \
+                         to `'*' '*' auto auto` when neither a flag nor a profile selects \
+                         anything. Repeatable",
                     ),
             )
     }

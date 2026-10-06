@@ -2,10 +2,11 @@ use crate::{Dependencies, Error, Result, find_files};
 use clap::Parser;
 use std::path::PathBuf;
 
-/// Moves files to a scratch directory defined in the .tytconfig file.
+/// Moves files to a scratch directory defined in the `.tytconfig` file.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "move-to-scratch")]
 pub struct MoveToScratch {
+    /// Gitignore-style patterns selecting the files to move.
     #[arg(value_name = "pattern", required = true)]
     patterns: Vec<String>,
 }

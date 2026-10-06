@@ -1,3 +1,3 @@
 # tyt-fs - FS
 
-Operations on the filesystem.
+Works with the filesystem.

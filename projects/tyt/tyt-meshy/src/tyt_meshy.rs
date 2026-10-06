@@ -4,7 +4,7 @@ use crate::{
 };
 use clap::Subcommand;
 
-/// Commands for working with the Meshy API
+/// Works with the Meshy API.
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 pub enum TytMeshy {

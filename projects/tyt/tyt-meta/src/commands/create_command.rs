@@ -10,8 +10,8 @@ use std::path::Path;
 /// Scaffolds a new sub-crate or adds a command to an existing one.
 ///
 /// Without `--parent`, creates a brand-new sub-crate with all boilerplate and
-/// adds it to the workspace. By default the crate is named `tyt-{command}`,
-/// placed at `projects/tyt/tyt-{command}`, and wired into the top-level `tyt`
+/// adds it to the workspace. By default the crate is named `tyt-<command>`,
+/// placed at `projects/tyt/tyt-<command>`, and wired into the top-level `tyt`
 /// binary. Pass `--dir` to place it under a different `projects/` group and
 /// `--prefix false` to drop the `tyt-` name prefix, which produces a standalone
 /// crate that is added to the workspace but not the `tyt` binary.
@@ -30,21 +30,21 @@ use std::path::Path;
 #[derive(Clone, Debug, Parser)]
 #[command(name = "create-command")]
 pub struct CreateCommand {
-    /// PascalCase type name (e.g., `FooBar`). Parent groups are prepended, so
+    /// PascalCase type name (e.g. `FooBar`). Parent groups are prepended, so
     /// `Show` under `palette` lands as `PaletteShow`.
     #[arg(value_name = "name")]
     pub name: String,
 
-    /// kebab-case CLI name (e.g., `foo-bar`).
+    /// kebab-case CLI name (e.g. `foo-bar`).
     #[arg(value_name = "command")]
     pub command: String,
 
-    /// Description for doc comments, Cargo.toml, and README.
+    /// Description for doc comments, `Cargo.toml`, and `README.md`.
     #[arg(value_name = "description")]
     pub description: String,
 
     /// Parent command path, from crate suffix inward (e.g. `fbx` for
-    /// `tyt-fbx`). Repeat to nest under command groups (e.g.
+    /// `tyt-fbx`). Repeatable; each repeat nests one group deeper (e.g.
     /// `-p voxj -p from`).
     #[arg(value_name = "parent", short, long)]
     pub parent: Vec<String>,
@@ -55,10 +55,9 @@ pub struct CreateCommand {
     #[arg(value_name = "dir", long)]
     pub dir: Option<String>,
 
-    /// Whether to apply the `tyt-` crate and `Tyt` enum name prefix. Set
-    /// `--prefix false` for a standalone crate not wired into the `tyt` binary.
-    /// Defaults to true when creating; inferred from disk when adding with
-    /// `--parent`.
+    /// Applies the `tyt-` crate and `Tyt` enum name prefix. `--prefix false`
+    /// makes a standalone crate not wired into the `tyt` binary. Defaults to
+    /// `true` when creating; inferred from disk when adding with `--parent`.
     #[arg(value_name = "prefix", long, action = ArgAction::Set)]
     pub prefix: Option<bool>,
 }

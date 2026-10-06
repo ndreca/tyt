@@ -109,7 +109,7 @@ vxl object render room.voxj
    leaves `--profile review` off
 3. A view placed by position takes `--view-frame`, `--view-position`, and a
    rotation flag such as `--view-look-at`
-4. `--select` renders the matched parts alone. `--view-select <view> <glob>`
+4. `--select` renders the matched parts alone. `--view-select <view> <select>`
    keeps the whole model and frames the view on the matched parts
 
 ## Exporting a mesh

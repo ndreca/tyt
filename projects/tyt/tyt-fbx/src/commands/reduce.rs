@@ -5,7 +5,7 @@ use std::{ffi::OsStr, path::PathBuf};
 /// The Blender script that joins every mesh into one.
 const FBX_REDUCE_TO_SINGLE_MESH_PY: Script = embed_blender_script!("fbx_reduce_to_single_mesh.py");
 
-/// Collapses all mesh objects in the input FBX into a single joined mesh.
+/// Collapses all mesh objects in the input FBX file into a single joined mesh.
 /// Clears parenting while keeping world transforms, deletes now-unused empties,
 /// joins all meshes, and renames the result to `output-mesh-name`.
 #[derive(Clone, Debug, Parser)]
@@ -14,11 +14,11 @@ pub struct Reduce {
     #[arg(value_name = "input-fbx")]
     input_fbx: PathBuf,
 
-    /// The name for the output mesh object and datablock.
+    /// The name of the output mesh object and datablock.
     #[arg(value_name = "output-mesh-name")]
     output_mesh_name: String,
 
-    /// The output FBX file to write. If not provided, the input file will be
+    /// The output FBX file to write. When omitted, the input file is
     /// overwritten.
     #[arg(value_name = "output-fbx")]
     output_fbx: Option<PathBuf>,

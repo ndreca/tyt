@@ -8,16 +8,17 @@ use std::path::{Path, PathBuf};
 /// Polls a previously created Meshy task and, once it has completed, writes its result files.
 ///
 /// Reads a `<output-base>.meshy.mesh.json` or `<output-base>.meshy.texture.json`
-/// written by `tyt meshy mesh` or `tyt meshy texture`, polls the task named by
+/// written by `mesh` or `texture`, polls the task named by
 /// its `taskId` (using its `taskKind` to select the API), and on completion
 /// rewrites the file in place with the final `output` and downloads the result
 /// files alongside it.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "poll")]
 pub struct Poll {
-    /// The `<output-base>.meshy.mesh.json` or `<output-base>.meshy.texture.json`
-    /// file to poll, relative to the current directory.
-    #[arg(value_name = "meshy-json-path")]
+    /// The input `<output-base>.meshy.mesh.json` or
+    /// `<output-base>.meshy.texture.json` file, relative to the current
+    /// directory.
+    #[arg(value_name = "meshy-json")]
     meshy_json_path: PathBuf,
 
     /// How much to print.

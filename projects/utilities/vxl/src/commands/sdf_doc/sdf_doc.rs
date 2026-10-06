@@ -1,7 +1,7 @@
 use crate::{Dependencies, Result, commands::SdfDocCommand};
 use clap::Parser;
 
-/// Works with SDF documents.
+/// Works with whole SDF Json documents.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "sdf-doc")]
 pub struct SdfDoc {

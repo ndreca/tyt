@@ -3,8 +3,8 @@ use std::process;
 use ty_clap::{Completion, DependenciesImpl as ClapDependenciesImpl};
 use tyt::{DependenciesImpl, Tyt};
 
-/// Tyleo's tools — a collection of command-line utilities for working with
-/// files, images, materials, and more.
+/// Tyleo's tools: command-line utilities for working with files, images,
+/// materials, voxels, and more.
 #[derive(Clone, Debug, Parser)]
 #[command(version)]
 struct Cli {

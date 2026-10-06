@@ -23,7 +23,8 @@ impl CliValue for ValidateLayout {
             ValidateLayout::JsonPretty => "Pretty-printed, multi-line JSON",
 
             ValidateLayout::MdTables => {
-                "A file-name heading over one line per check and a closing pass/fail summary"
+                "A file-name heading over one line per check and a closing summary of whether \
+                 every check passed"
             }
         }
     }

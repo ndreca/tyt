@@ -13,7 +13,7 @@ impl CliValue for FillMode {
 
     fn help(self) -> &'static str {
         match self {
-            FillMode::Solid => "Fill the body's whole volume. A mesh has to be watertight",
+            FillMode::Solid => "Fill the body's whole volume",
 
             FillMode::Surface => "Keep only a hollow shell of the voxels on the body's surface",
         }

@@ -120,7 +120,7 @@ mesh. A document with no objects errors. See
 
     The halo's reach as a fraction of the shorter image side. Zero errors.
 
-11. `--bloom-threshold <level>`
+11. `--bloom-threshold <threshold>`
     - Default: `1`
     - Repeatable: no
 
@@ -230,7 +230,7 @@ mesh. A document with no objects errors. See
     - Default: `fit`
     - Repeatable: yes
 
-    The world units across the shorter image axis under `orthographic`. It
+    The world units across the shorter image side under `orthographic`. It
     errors under `perspective`.
 
 26. `--view-select <view> <glob>`

@@ -1,10 +1,11 @@
 use crate::{Dependencies, Result, find_files};
 use clap::Parser;
 
-/// Finds files using .gitignore style syntax
+/// Finds files using gitignore-style patterns.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "find")]
 pub struct Find {
+    /// Gitignore-style patterns selecting files.
     #[arg(value_name = "pattern", required = true)]
     patterns: Vec<String>,
 }

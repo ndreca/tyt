@@ -8,7 +8,7 @@ use voxsmith::operations::node::{
     node_list,
 };
 
-/// Prints the scene graph as a box-glyph tree or as JSON records, marking
+/// Lists the scene graph's nodes as a box-glyph tree or as JSON records, marking
 /// instanced nodes and listing unplaced nodes and orphan objects.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "list")]
@@ -16,14 +16,15 @@ pub struct NodeList {
     #[command(flatten)]
     input: VoxelInput,
 
-    /// Gitignore-style patterns matched against node and object paths. When set,
-    /// only matched nodes and objects and their ancestors print. A plain pattern
-    /// selects, a leading `!` deselects, a trailing `/` matches nodes only, and
-    /// the last matching pattern wins. Repeat to pass several.
+    /// Gitignore-style patterns matched against node and object paths. When
+    /// given, only matched nodes and objects and their ancestors print. A plain
+    /// pattern selects, a leading `!` deselects, a trailing `/` matches nodes
+    /// only, and the last matching pattern wins. With none given, the whole
+    /// scene graph prints.
     #[arg(value_name = "pattern")]
     patterns: Vec<String>,
 
-    /// How to render the scene graph, and the serialization to emit.
+    /// How to lay out the scene graph.
     #[arg(
         value_name = "layout",
         long,
@@ -32,12 +33,12 @@ pub struct NodeList {
     )]
     layout: NodeListLayout,
 
-    /// Collapse repeat instances: expand a shared node's first placement and
-    /// print each later placement as a non-expanded stub.
+    /// Collapses repeat instances: expands a shared node's first placement and
+    /// prints each later placement as a non-expanded stub.
     #[arg(value_name = "collapse-instances", long = "collapse-instances")]
     collapse_instances: bool,
 
-    /// Hide the ancestor chain above each match behind an `ancestors` marker.
+    /// Hides the ancestor chain above each match behind an `ancestors` marker.
     /// Requires a `pattern`.
     #[arg(
         value_name = "collapse-ancestors",
@@ -46,7 +47,7 @@ pub struct NodeList {
     )]
     collapse_ancestors: bool,
 
-    /// Hide the descendants of each match behind a `descendants` marker.
+    /// Hides the descendants of each match behind a `descendants` marker.
     /// Requires a `pattern`.
     #[arg(
         value_name = "collapse-descendants",
@@ -55,10 +56,10 @@ pub struct NodeList {
     )]
     collapse_descendants: bool,
 
-    /// Prepend each node's transform as a nested subtree. Up to three positional
-    /// values `[space] [rot-unit] [precision]`: `space` is `local` (default) or
-    /// `world`, `rot-unit` is `rad` (default) or `deg`, `precision` is the
-    /// decimal places (default `2`).
+    /// Prepends each node's transform as a nested subtree. Takes up to three
+    /// values `[<space>] [<rot-unit>] [<precision>]`: `space` is `local`
+    /// (default) or `world`, `rot-unit` is `rad` (default) or `deg`, and
+    /// `precision` is the decimal places (default `2`).
     #[arg(
         value_names = ["space", "rot-unit", "precision"],
         long = "show-transforms",
@@ -66,9 +67,9 @@ pub struct NodeList {
     )]
     show_transforms: Option<Vec<String>>,
 
-    /// Append each object's edit-grid origin, its build-volume min corner
-    /// relative to the placing node. Up to two positional values
-    /// `[space] [precision]`: `space` is `local` (default) or `world`,
+    /// Appends each object's edit-grid origin, its build-volume min corner
+    /// relative to the placing node. Takes up to two values
+    /// `[<space>] [<precision>]`: `space` is `local` (default) or `world`, and
     /// `precision` is the decimal places (default `2`).
     #[arg(
         value_names = ["space", "precision"],
@@ -77,19 +78,20 @@ pub struct NodeList {
     )]
     show_edit_origins: Option<Vec<String>>,
 
-    /// Append each object's edit-grid bounds as a `min`/`max` subtree, relative
-    /// to the placing node. Optional `[precision]` decimal places (default `2`).
+    /// Appends each object's edit-grid bounds as a `min`/`max` subtree, relative
+    /// to the placing node. Takes an optional `[<precision>]`, the decimal
+    /// places (default `2`).
     #[arg(value_names = ["precision"], long = "show-edit-bounds", num_args = 0..=1)]
     show_edit_bounds: Option<Vec<String>>,
 
-    /// Append each object's edit-grid extents (`max - min`). Optional
-    /// `[precision]` decimal places (default `2`).
+    /// Appends each object's edit-grid extents (`max - min`). Takes an optional
+    /// `[<precision>]`, the decimal places (default `2`).
     #[arg(value_names = ["precision"], long = "show-edit-extents", num_args = 0..=1)]
     show_edit_extents: Option<Vec<String>>,
 
-    /// Append each object's runtime-grid origin, its tight live-box min corner
-    /// relative to the placing node, with the same `[space] [precision]`
-    /// arguments as `--show-edit-origins`.
+    /// Appends each object's runtime-grid origin, its tight live-box min corner
+    /// relative to the placing node. Takes up to two values
+    /// `[<space>] [<precision>]`, read as `--show-edit-origins` reads them.
     #[arg(
         value_names = ["space", "precision"],
         long = "show-runtime-origins",
@@ -97,22 +99,23 @@ pub struct NodeList {
     )]
     show_runtime_origins: Option<Vec<String>>,
 
-    /// Append each object's runtime-grid bounds as a `min`/`max` subtree,
-    /// relative to the placing node. Optional `[precision]` (default `2`).
+    /// Appends each object's runtime-grid bounds as a `min`/`max` subtree,
+    /// relative to the placing node. Takes an optional `[<precision>]`, the
+    /// decimal places (default `2`).
     #[arg(value_names = ["precision"], long = "show-runtime-bounds", num_args = 0..=1)]
     show_runtime_bounds: Option<Vec<String>>,
 
-    /// Append each object's runtime-grid extents (`max - min`). Optional
-    /// `[precision]` decimal places (default `2`).
+    /// Appends each object's runtime-grid extents (`max - min`). Takes an
+    /// optional `[<precision>]`, the decimal places (default `2`).
     #[arg(value_names = ["precision"], long = "show-runtime-extents", num_args = 0..=1)]
     show_runtime_extents: Option<Vec<String>>,
 
-    /// Append each object's filled (live) voxel count as a `voxel-count` leaf.
+    /// Appends each object's filled (live) voxel count as a `voxel-count` leaf.
     #[arg(value_name = "show-voxel-counts", long = "show-voxel-counts")]
     show_voxel_counts: bool,
 
-    /// Append each object's layers as a nested subtree, one child per layer
-    /// showing its palette index and material count.
+    /// Appends each object's layers as a nested subtree, one child per layer
+    /// showing its palette id and material count.
     #[arg(value_name = "show-layers", long = "show-layers")]
     show_layers: bool,
 }

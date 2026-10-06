@@ -4,19 +4,20 @@ use clap::Parser;
 /// Converts a c6x1 cube strip into an equirectangular panorama.
 #[derive(Clone, Debug, Parser)]
 pub struct C6x1ToEquirect {
-    /// Base name for the input strip (`{base}.png`).
+    /// Base name for the input strip (`<base>.png`).
     #[arg(value_name = "base")]
     base: String,
 
-    /// Output base name. Defaults to `{base}-equirect`.
-    #[arg(value_name = "out-base")]
+    /// Output base name. Defaults to `<base>-equirect`.
+    #[arg(value_name = "output-base")]
     out_base: Option<String>,
 
-    /// Use nearest-neighbor filtering on the final `--output-size` resize.
+    /// Uses nearest-neighbor filtering on the final `--output-size` resize.
     #[arg(value_name = "point", long)]
     point: bool,
 
-    /// Use nearest-neighbor (`interp=near`) on the v360 reprojection itself.
+    /// Uses nearest-neighbor filtering (`interp=near`) on the `v360` reprojection
+    /// itself.
     #[arg(value_name = "point-reprojection", long)]
     point_reprojection: bool,
 

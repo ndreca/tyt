@@ -16,8 +16,8 @@ const FBX_RENAME_OBJECTS_PY: Script = embed_blender_script!("fbx_rename_objects.
 /// new name for each matched object is composed as
 /// `{prefix}{name-or-old}{suffix}{suffix-num}`, where any omitted piece is
 /// treated as empty and `name-or-old` is `--name` when set, otherwise the
-/// object's existing name. Matches any object type: MESH, ARMATURE, EMPTY,
-/// LIGHT, CAMERA, and so on.
+/// object's existing name. Matches any object type: `MESH`, `ARMATURE`,
+/// `EMPTY`, `LIGHT`, `CAMERA`, and so on.
 #[derive(Clone, Debug, Parser)]
 pub struct Rename {
     /// The input FBX file.
@@ -26,21 +26,23 @@ pub struct Rename {
 
     /// Gitignore-style pattern selecting object hierarchy paths, with more
     /// passed via `--select`. A bare name matches at any depth, a slashed
-    /// pattern anchors to a scene root; `**/name/**` selects a whole subtree.
+    /// pattern anchors to a scene root, and `**/name/**` selects a whole
+    /// subtree.
     #[arg(value_name = "pattern")]
     pattern: String,
 
-    /// Additional selection patterns unioned with the positional pattern.
+    /// Additional patterns unioned with the positional `pattern`. Repeatable.
     #[arg(value_name = "select", long)]
     select: Vec<String>,
 
-    /// The output FBX file to write. If not provided, the input file will be
+    /// The output FBX file to write. When omitted, the input file is
     /// overwritten.
     #[arg(value_name = "output-fbx")]
     output_fbx: Option<PathBuf>,
 
-    /// Replaces the existing object name with this value as the `base` in the
-    /// composed new name. If omitted, each object's current name is used.
+    /// Replaces the existing object name with this value as `name-or-old` in
+    /// the composed new name. When omitted, each object's current name is
+    /// used.
     #[arg(value_name = "name", long = "name")]
     name: Option<String>,
 
@@ -52,11 +54,11 @@ pub struct Rename {
     #[arg(value_name = "suffix", long = "suffix")]
     suffix: Option<String>,
 
-    /// Appends a numeric suffix to each matched object. Takes 0-2 values:
-    /// `[start] [pad]`. `start` (u32, default 0) is the first number used.
-    /// `pad` (bool, default false) zero-pads every number to the width of
-    /// the largest number produced when true. Digits only - no implicit
-    /// separator; use `--suffix "-"` for `name-0, name-1, ...`.
+    /// Appends a numeric suffix to each matched object. Takes up to two values
+    /// `[<start>] [<pad>]`: `start` (`u32`, default `0`) is the first number
+    /// used, and `pad` (`bool`, default `false`) zero-pads every number to the
+    /// width of the largest number produced when true. Digits only, with no
+    /// implicit separator; use `--suffix "-"` for `name-0, name-1, ...`.
     #[arg(
         value_names = ["start", "pad"],
         long = "suffix-num",

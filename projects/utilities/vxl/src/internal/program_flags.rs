@@ -39,8 +39,8 @@ impl Args for ProgramFlags {
                     .action(ArgAction::Append)
                     .help(
                         "Appends a profile's bindings to the program at the flag's position, \
-                         the profile's `valuesFrom` imports first. Every other element the \
-                         profile holds stays behind. Repeatable",
+                         with its `valuesFrom` imports first. Every other element the profile \
+                         holds stays behind. Repeatable",
                     ),
             )
     }

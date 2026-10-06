@@ -16,11 +16,11 @@ pub struct QuantizeArgs {
     #[arg(value_name = "max-materials", long)]
     max_materials: Option<NonZeroUsize>,
 
-    /// The property to cluster on, `baseColor` when omitted.
+    /// The property to cluster on. Defaults to `baseColor`.
     #[arg(value_name = "property", long)]
     property: Option<String>,
 
-    /// How the property's values read as points, `auto` when omitted.
+    /// How the property's values read as points. Defaults to `auto`.
     #[arg(
         value_name = "interpret-property",
         long,
@@ -28,18 +28,18 @@ pub struct QuantizeArgs {
     )]
     interpret_property: Option<PropertyInterpretation>,
 
-    /// How a 4-component color's alpha takes part, `partition` when omitted.
-    /// Any other reading errors on it.
+    /// How a four-component color's alpha takes part. Any other reading errors
+    /// on it. Defaults to `partition`.
     #[arg(value_name = "alpha", long, value_parser = cli_value_parser::<AlphaMode>())]
     alpha: Option<AlphaMode>,
 
-    /// Merge materials only when they agree on this property. Repeatable; `*`
-    /// stands for every property other than `--property`. Replaces the
-    /// profile's partitions.
+    /// Merges materials only when they agree on this property. `*` stands for
+    /// every property other than `--property`. Replaces the profile's
+    /// partitions. Repeatable.
     #[arg(value_name = "partition", long)]
     partition: Vec<String>,
 
-    /// Clustering algorithm, `median-cut` when omitted.
+    /// Clustering algorithm. Defaults to `median-cut`.
     #[arg(
         value_name = "method",
         long,
@@ -47,13 +47,13 @@ pub struct QuantizeArgs {
     )]
     method: Option<ReductionMethod>,
 
-    /// The space a color reading measures distance in, `oklab` when omitted. A
-    /// numeric reading errors on it.
+    /// The space a color reading measures distance in. A numeric reading errors
+    /// on it. Defaults to `oklab`.
     #[arg(value_name = "space", long, value_parser = cli_value_parser::<ColorSpace>())]
     space: Option<ColorSpace>,
 
-    /// Error diffusion applied when snapping samples to representatives,
-    /// `none` when omitted.
+    /// Error diffusion applied when snapping samples to representatives.
+    /// Defaults to `none`.
     #[arg(value_name = "dither", long, value_parser = cli_value_parser::<Dither>())]
     dither: Option<Dither>,
 }

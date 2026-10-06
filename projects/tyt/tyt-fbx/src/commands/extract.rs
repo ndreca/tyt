@@ -18,28 +18,28 @@ const FBX_EXTRACT_MESH_PY: Script = embed_blender_script!("fbx_extract_mesh.py")
 /// mesh must match.
 #[derive(Clone, Debug, Parser)]
 pub struct Extract {
-    /// The input FBX file to extract from.
+    /// The input FBX file.
     #[arg(value_name = "input-fbx")]
     input_fbx: PathBuf,
 
     /// Gitignore-style pattern selecting mesh hierarchy paths, with more passed
     /// via `--select`. A bare name matches at any depth, a slashed pattern
-    /// anchors to a scene root; `**/name/**` selects a whole subtree. Exactly
-    /// one mesh must match.
+    /// anchors to a scene root, and `**/name/**` selects a whole subtree.
+    /// Exactly one mesh must match.
     #[arg(value_name = "pattern")]
     pattern: String,
 
-    /// Additional selection patterns unioned with the positional pattern.
+    /// Additional patterns unioned with the positional `pattern`. Repeatable.
     #[arg(value_name = "select", long)]
     select: Vec<String>,
 
-    /// The output FBX file to write the extracted data to. If not provided,
-    /// the input file will be overwritten.
+    /// The output FBX file to write. When omitted, the input file is
+    /// overwritten.
     #[arg(value_name = "output-fbx")]
     output_fbx: Option<PathBuf>,
 
-    /// The name of the output mesh to write. If not provided, the matched
-    /// mesh name will be used.
+    /// The name of the output mesh object and datablock. When omitted, the
+    /// matched mesh's name is used.
     #[arg(
         value_name = "output-mesh-name",
         short = 'o',
@@ -48,8 +48,8 @@ pub struct Extract {
     )]
     output_mesh_name_flag: Option<String>,
 
-    /// The name of the output mesh to write. If not provided, the matched
-    /// mesh name will be used.
+    /// The name of the output mesh object and datablock. When omitted, the
+    /// matched mesh's name is used.
     #[arg(
         value_name = "output-mesh-name",
         conflicts_with = "output_mesh_name_flag"

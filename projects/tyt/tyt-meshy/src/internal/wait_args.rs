@@ -3,9 +3,9 @@ use clap::{Args, value_parser};
 /// The shared `--wait` option for commands that can block on a Meshy task.
 #[derive(Clone, Debug, Args)]
 pub struct WaitArgs {
-    /// Block until the task completes and download its result files. Takes an
-    /// optional poll interval and timeout, in seconds (e.g. `--wait 5 600`);
-    /// they default to 10 and 300.
+    /// Blocks until the task completes and downloads its result files. Takes an
+    /// optional poll interval and timeout, in seconds (e.g. `--wait 5 600`).
+    /// They default to `10` and `300`.
     #[arg(
         value_names = ["interval", "timeout"],
         long,

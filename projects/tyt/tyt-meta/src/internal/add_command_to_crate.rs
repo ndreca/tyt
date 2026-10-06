@@ -261,11 +261,12 @@ fn ensure_group(
     }
 
     // Brand-new group: scaffold the directory, then register it upward.
+    let about = format!("Groups the `{segment}` commands.");
     let description = format!("The `{segment}` command group.");
     deps.create_dir_all(&dir)?;
     deps.write(
         &struct_path,
-        &group_struct_template(&group_pascal, segment, &description),
+        &group_struct_template(&group_pascal, segment, &about),
     )?;
     deps.write(
         &enum_path,

@@ -1,6 +1,6 @@
 # tyt-vmax
 
-Commands for working with [Voxel Max](https://www.voxelmax.com/) `.vmax` directories.
+Works with [Voxel Max](https://www.voxelmax.com/) packages.
 
 ## Usage
 
@@ -31,18 +31,22 @@ Run `vmax <command> --help` for full details on any subcommand:
 
 ```
 > vmax --help
+Works with Voxel Max packages
+
 Usage: vmax <command>
 
 Commands:
-  integration  Prints files for other tools
-  hierarchy    Prints the Voxel Max hierarchy as a tree, optionally filtered to selected nodes and their subtrees
-  pack         Packs a .vmax directory by stripping history files
+  integration  Sets up other tools to work with vmax
+  from-voxj    Converts a Voxel Json document into a `.vmax` package directory
+  hierarchy    Prints the Voxel Max hierarchy as a box-glyph tree, optionally filtered to selected nodes and their subtrees
+  pack         Packs a `.vmax` package directory by stripping history, renumbering the surviving contents, palettes, and thumbnails, and deleting files no longer referenced by `scene.json`
   rename-node  Renames nodes in the Voxel Max scene hierarchy matching a selection pattern
-  to-voxj      Converts a .vmax package to a Voxel Json (.voxj / .voxjz) document
+  to-voxj      Converts a `.vmax` package directory to a Voxel Json document, written to stdout
   help         Print this message or the help of the given subcommand(s)
 
 Options:
-  -h, --help  Print help
+  -h, --help     Print help
+  -V, --version  Print version
 ```
 
 ## Building from source

@@ -5,8 +5,8 @@ use clap::Parser;
 use voxcore::BVoxHierarchyNode;
 use voxsmith::operations::node::unlink_nodes;
 
-/// Removes nodes from a parent node's children, or from the roots. A node left
-/// with no parents stays in the document unplaced.
+/// Removes nodes from one parent node, or from the roots, leaving a node with no
+/// parents unplaced. Errors when the edge does not exist.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "unlink")]
 pub struct NodeUnlink {

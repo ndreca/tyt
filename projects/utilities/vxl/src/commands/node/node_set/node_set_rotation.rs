@@ -24,7 +24,8 @@ pub struct NodeSetRotation {
     selection: RequiredSelection<BVoxHierarchyNode>,
 
     /// Euler angles about the fixed x, y, then z axes, as
-    /// `node list --show-transforms` prints them.
+    /// `node list --show-transforms` prints them, in `--unit` units. That
+    /// listing prints `rad` by default.
     #[arg(
         value_names = ["x", "y", "z"],
         long,

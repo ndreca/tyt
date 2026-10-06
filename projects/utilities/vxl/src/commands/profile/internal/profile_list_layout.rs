@@ -39,12 +39,12 @@ impl CliValue for ProfileListLayout {
             ProfileListLayout::JsonPretty => "Pretty-printed, multi-line JSON",
 
             ProfileListLayout::MdLists => {
-                "A `# profiles` heading over one section per origin, each a numbered markdown \
+                "A `# profiles` heading over one section per origin, each a numbered Markdown \
                  list of its profiles"
             }
 
             ProfileListLayout::MdTables => {
-                "One markdown table, a column per origin over its profiles"
+                "One Markdown table, a column per origin over its profiles"
             }
 
             ProfileListLayout::TextRows => "One row per origin, its profiles beside it",

@@ -4,7 +4,7 @@ use clap::ValueEnum;
 /// document.
 #[derive(Clone, Copy, Debug, ValueEnum)]
 pub enum VoxjOptimize {
-    /// Try every non-raw encoding pairing and keep the smallest.
+    /// Search every non-raw encoding pairing and keep the smallest.
     #[value(name = "size")]
     Size,
 

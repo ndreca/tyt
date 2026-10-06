@@ -13,19 +13,19 @@ use std::path::PathBuf;
 #[derive(Clone, Debug, Parser)]
 #[command(name = "build")]
 pub struct SdfDocBuild {
-    /// The model's TypeScript file.
+    /// The input TypeScript model file.
     #[arg(value_name = "model")]
     model: PathBuf,
 
-    /// The `.sdfj` document to write. Defaults to the model's path with an
-    /// `.sdfj` extension.
+    /// The output `.sdfj` document to write. Defaults to the model's path with
+    /// an `.sdfj` extension.
     #[arg(value_name = "output")]
     output: Option<PathBuf>,
 
-    /// A library the model reads through `lib` and `mat`. The flag repeats, and
-    /// a later library wins a name. The flag replaces the profile's
-    /// `libraries`. vxl defines `materials`, and each `.vxlconfig` can define
-    /// more at `sdfDoc.build.libraries`.
+    /// A library the model reads through `lib` and `mat`. The flag replaces the
+    /// profile's `libraries`. vxl defines `materials`, and each `.vxlconfig`
+    /// can define more at `sdfDoc.build.libraries`. Repeatable; a later library
+    /// wins a name.
     #[arg(value_name = "library", long)]
     library: Vec<String>,
 

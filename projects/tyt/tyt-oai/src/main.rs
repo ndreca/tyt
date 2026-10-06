@@ -3,7 +3,7 @@ use std::process;
 use ty_clap::{Completion, DependenciesImpl as ClapDependenciesImpl};
 use tyt_oai::{DependenciesImpl, TytOAI};
 
-/// Commands for working with the OpenAI API.
+/// Works with the OpenAI API.
 #[derive(Clone, Debug, Parser)]
 #[command(version)]
 struct Cli {

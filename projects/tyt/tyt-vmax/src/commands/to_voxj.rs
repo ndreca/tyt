@@ -5,24 +5,25 @@ use crate::{
 use clap::Parser;
 use std::path::PathBuf;
 
-/// Converts a `.vmax` package to a Voxel Json document, written to stdout.
+/// Converts a `.vmax` package directory to a Voxel Json document, written to
+/// stdout.
 ///
-/// `--format` chooses the output form (compact `.voxj`, `.voxjz` zip, or
-/// pretty-printed `.voxj`). The block encodings come from `--position-encoding`
-/// and `--sample-encoding`, or from `--optimize` (which picks them
-/// automatically and may not be combined with the explicit encoding flags).
+/// `--format` chooses the output container and printing form. The block
+/// encodings come from `--position-encoding` and `--sample-encoding`, or from
+/// `--optimize` (which picks them automatically and cannot be combined with
+/// the explicit encoding flags).
 #[derive(Clone, Debug, Parser)]
 #[command(name = "to-voxj")]
 pub struct ToVoxj {
-    /// The input `.vmax` directory to convert.
+    /// The input `.vmax` package directory.
     #[arg(value_name = "input-vmax")]
     input_vmax: PathBuf,
 
-    /// Output form: `json` (compact), `zip` (`.voxjz`), or `pretty`.
+    /// Output container and printing form.
     #[arg(value_name = "format", long, default_value = "json")]
     format: VoxjFormat,
 
-    /// Position-block encoding. Ignored when `--optimize` is given.
+    /// Position-block encoding. Cannot be combined with `--optimize`.
     #[arg(
         value_name = "position-encoding",
         long,
@@ -31,7 +32,7 @@ pub struct ToVoxj {
     )]
     position_encoding: VoxjPositionEncoding,
 
-    /// Sample-block encoding. Ignored when `--optimize` is given.
+    /// Sample-block encoding. Cannot be combined with `--optimize`.
     #[arg(
         value_name = "sample-encoding",
         long,
@@ -40,8 +41,8 @@ pub struct ToVoxj {
     )]
     sample_encoding: VoxjSampleEncoding,
 
-    /// Automatically choose encodings: `size`, `fast`, or `pretty`. Cannot be
-    /// combined with `--position-encoding`/`--sample-encoding`.
+    /// Chooses the encodings automatically. Cannot be combined with
+    /// `--position-encoding` or `--sample-encoding`.
     #[arg(value_name = "optimize", long)]
     optimize: Option<VoxjOptimize>,
 }

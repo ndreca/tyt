@@ -23,10 +23,10 @@ pub struct PaletteQuantize {
     #[command(flatten)]
     output: VoxjOutput,
 
-    /// Which palettes to quantize: an id, an `a-b` range, or `*` for every
-    /// palette. Repeatable; the union selects each palette once.
+    /// Which palettes to quantize: an integer, an inclusive `a-b` range, or `*`
+    /// for every palette. Repeatable; the union selects each palette once.
     #[arg(
-        value_name = "palettes",
+        value_name = "palette",
         long,
         value_parser = parse_id_selector::<BVoxPalette>,
         default_value = "*"

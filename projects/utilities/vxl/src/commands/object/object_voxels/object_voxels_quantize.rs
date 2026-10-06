@@ -21,14 +21,14 @@ pub struct ObjectVoxelsQuantize {
     #[command(flatten)]
     selection: ObjectSelection,
 
-    /// Quantize each selected object's layers by id: an integer, an `a-b`
-    /// range, or `*` for every layer. Repeatable. A named layer an object lacks
-    /// errors. Without it, every layer whose palette binds `--property` is
-    /// quantized.
+    /// Quantizes each selected object's layers by id: an integer, an inclusive
+    /// `a-b` range, or `*` for every layer. A named layer an object lacks
+    /// errors. When omitted, every layer whose palette binds `--property` is
+    /// quantized. Repeatable.
     #[arg(value_name = "layer-index", long, value_parser = parse_id_selector::<BVoxLayer>)]
     layer_index: Vec<IdSelector<BVoxLayer>>,
 
-    /// Cluster every selected layer on one palette together, where otherwise
+    /// Clusters every selected layer on one palette together, where otherwise
     /// each object clusters apart.
     #[arg(
         value_name = "shared",

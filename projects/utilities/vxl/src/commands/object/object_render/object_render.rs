@@ -37,67 +37,68 @@ pub struct ObjectRender {
     #[command(flatten)]
     input: VoxelInput,
 
-    /// Where the views go, `terminal` or `png`, defaulting to `terminal`. In
-    /// the terminal the views show one below another, each scaled to fit,
-    /// through the Kitty or iTerm2 graphics protocol or as ANSI half blocks
-    /// where neither is supported. As PNG, one view writes the stem with
-    /// `.png` beside the input, and several write the stem, a hyphen, and
-    /// the view's name. Each PNG's path prints on its own line.
+    /// Where the views go. In the terminal the views show one below another,
+    /// each scaled to fit, through the Kitty or iTerm2 graphics protocol or as
+    /// ANSI half blocks where neither is supported. As PNG, one view writes the
+    /// stem with `.png` beside the input, and several write the stem, a
+    /// hyphen, and the view's name. Each PNG's path prints on its own line.
+    /// Defaults to `terminal`.
     #[arg(value_name = "to", long, value_parser = cli_value_parser::<OutputKind>())]
     to: Option<OutputKind>,
 
-    /// The stem the PNGs are named by under `--to png`, defaulting to the
+    /// The stem the PNGs are named by under `--to png`. Defaults to the
     /// input's.
     #[arg(value_name = "file-stem", long)]
     file_stem: Option<String>,
 
-    /// The image width in pixels, defaulting to `1024`.
+    /// The image width in pixels. Defaults to `1024`.
     #[arg(value_name = "width", long)]
     width: Option<NonZeroU32>,
 
-    /// The image height in pixels, defaulting to `1024`.
+    /// The image height in pixels. Defaults to `1024`.
     #[arg(value_name = "height", long)]
     height: Option<NonZeroU32>,
 
-    /// What fills the pixels no ray hits, `transparent` or a `#RRGGBB` color,
-    /// defaulting to `#FFFFFF`.
+    /// What fills the pixels no ray hits, `transparent` or a `#RRGGBB` hex
+    /// color. Defaults to `#FFFFFF`.
     #[arg(value_name = "background", long)]
     background: Option<Background>,
 
-    /// The occlusion the render shades with, defaulting to `corner`.
+    /// The occlusion the render shades with. Defaults to `corner`.
     #[arg(value_name = "occlusion", long, value_parser = cli_value_parser::<RenderOcclusion>())]
     occlusion: Option<RenderOcclusion>,
 
-    /// A uniform scale on the document's meters, defaulting to `1.0`. A point
-    /// or spot light's falloff runs in meters after it applies.
+    /// A uniform scale on the document's meters. A point or spot light's
+    /// falloff runs in meters after it applies. Defaults to `1.0`.
     #[arg(value_name = "scene-scale", long)]
     scene_scale: Option<PositiveF64>,
 
     /// The factor scaling the bloom halo over the emissive term, zero or
-    /// more and defaulting to `0`, which skips the pass. The built-in
-    /// `glow` and `review` profiles set `1`.
+    /// more. Defaults to `0`, which skips the pass. The built-in `glow` and
+    /// `review` profiles set `1`.
     #[arg(value_name = "strength", long)]
     bloom_strength: Option<NonNegativeF64>,
 
     /// The bloom halo's reach as a fraction of the shorter image side,
-    /// greater than zero and defaulting to `0.03`.
+    /// greater than zero. Defaults to `0.03`.
     #[arg(value_name = "fraction", long)]
     bloom_radius: Option<PositiveF64>,
 
     /// The level in linear light an emission's brightest channel must exceed
-    /// to bloom, zero or more. The default of `1` keeps a material at glTF's
-    /// default emissive strength from blooming.
-    #[arg(value_name = "level", long)]
+    /// to bloom, zero or more. Defaults to `1`, which keeps a material at
+    /// glTF's default emissive strength from blooming.
+    #[arg(value_name = "threshold", long)]
     bloom_threshold: Option<NonNegativeF64>,
 
     /// Applies a profile whole, expanding it into its flags with its
     /// `viewsFrom` and `lightsFrom` imports first. An explicit flag replaces
-    /// the profile element it collides with. Repeatable: the profiles stack,
+    /// the profile element it collides with. Repeatable; the profiles stack,
     /// views merging by name and the lights as one rig. An element two of
-    /// them set errors. The profiles are the built-ins under every
+    /// them set errors. The profiles come from the built-ins, then every
     /// `.vxlconfig`'s `object.render.profiles`, the user's `~/.vxlconfig`
     /// first and then each directory from the git root down to the working
-    /// directory, a name reading from the last file supplying it.
+    /// directory. A name reads from the last file supplying it, else from the
+    /// built-ins.
     #[arg(value_name = "profile", long, action = ArgAction::Append)]
     profile: Vec<String>,
 
@@ -112,7 +113,7 @@ pub struct ObjectRender {
     lights_from: Vec<String>,
 
     /// The frame the named view's `--view-position` and rotation are read
-    /// in, `world`, `subject`, or `node`. Repeatable.
+    /// in: `world`, `subject`, or `node`. Repeatable.
     #[arg(
         value_names = ["view", "frame"],
         long,
@@ -122,8 +123,8 @@ pub struct ObjectRender {
     view_frame: Vec<String>,
 
     /// The node path the named view's `node` frame reads its position and
-    /// rotation in: a glob over hierarchy node paths that matches exactly
-    /// one. Repeatable.
+    /// rotation in: a gitignore-style hierarchy-path pattern that matches
+    /// exactly one node. Repeatable.
     #[arg(
         value_names = ["view", "path"],
         long,
@@ -200,8 +201,8 @@ pub struct ObjectRender {
     )]
     view_orbit: Vec<String>,
 
-    /// The named view's projection, `perspective` or `orthographic`,
-    /// defaulting to `perspective`. Repeatable.
+    /// The named view's projection, `perspective` or `orthographic`. Defaults
+    /// to `perspective`. Repeatable.
     #[arg(
         value_names = ["view", "projection"],
         long,
@@ -211,7 +212,7 @@ pub struct ObjectRender {
     view_projection: Vec<String>,
 
     /// The named view's vertical field of view in degrees under
-    /// `perspective`, defaulting to `35`. Repeatable.
+    /// `perspective`. Defaults to `35`. Repeatable.
     #[arg(
         value_names = ["view", "degrees"],
         long,
@@ -220,8 +221,8 @@ pub struct ObjectRender {
     )]
     view_fov: Vec<String>,
 
-    /// The world units across the shorter image axis under `orthographic`,
-    /// or `fit`, defaulting to `fit`. Repeatable.
+    /// The world units across the shorter image side under `orthographic`,
+    /// or `fit`. Defaults to `fit`. Repeatable.
     #[arg(
         value_names = ["view", "scale"],
         long,
@@ -231,8 +232,8 @@ pub struct ObjectRender {
     view_scale: Vec<String>,
 
     /// Narrows the named view's subject, which its `subject` frame and orbit
-    /// are about, to the rendered objects a hierarchy-path glob matches.
-    /// Repeatable, unioning the globs.
+    /// are about, to the rendered objects a gitignore-style hierarchy-path
+    /// pattern matches. Repeatable; unions the patterns.
     #[arg(
         value_names = ["view", "select"],
         long,
@@ -264,8 +265,8 @@ pub struct ObjectRender {
     light_frame: Vec<String>,
 
     /// The node path the indexed light's `node` frame reads its transform
-    /// in: a glob over hierarchy node paths that matches exactly one.
-    /// Repeatable.
+    /// in: a gitignore-style hierarchy-path pattern that matches exactly one
+    /// node. Repeatable.
     #[arg(
         value_names = ["light-index", "path"],
         long,
@@ -344,7 +345,7 @@ pub struct ObjectRender {
     light_orbit: Vec<String>,
 
     /// The indexed light's shadow granularity, `none`, `per-pixel`,
-    /// `per-face`, or `per-corner`, defaulting to `per-corner`. Repeatable.
+    /// `per-face`, or `per-corner`. Defaults to `per-corner`. Repeatable.
     #[arg(
         value_names = ["light-index", "shadow"],
         long,
@@ -354,7 +355,7 @@ pub struct ObjectRender {
     light_shadow: Vec<String>,
 
     /// The indexed directional, point, or spot light's color as a `#RRGGBB`
-    /// hex, defaulting to white. Repeatable.
+    /// hex color. Defaults to `#FFFFFF`. Repeatable.
     #[arg(
         value_names = ["light-index", "color"],
         long,
@@ -363,7 +364,7 @@ pub struct ObjectRender {
     )]
     light_color: Vec<String>,
 
-    /// The strength scaling the indexed light's color, defaulting to `1`.
+    /// The strength scaling the indexed light's color. Defaults to `1`.
     /// Repeatable.
     #[arg(
         value_names = ["light-index", "strength"],
@@ -374,7 +375,7 @@ pub struct ObjectRender {
     light_strength: Vec<String>,
 
     /// The distance the indexed point or spot light reaches, in meters.
-    /// Without it, the light has no cutoff. Repeatable.
+    /// When omitted, the light has no cutoff. Repeatable.
     #[arg(
         value_names = ["light-index", "meters"],
         long,
@@ -383,10 +384,9 @@ pub struct ObjectRender {
     )]
     light_range: Vec<String>,
 
-    /// The indexed spot light's inner and outer cone half-angles in degrees,
-    /// defaulting to `0` and `45`. Full strength holds inside the inner
-    /// angle and fades to nothing at the outer, which is at most `90`.
-    /// Repeatable.
+    /// The indexed spot light's inner and outer cone half-angles in degrees.
+    /// Full strength holds inside the inner angle and fades to nothing at the
+    /// outer, which is at most `90`. Defaults to `0` and `45`. Repeatable.
     #[arg(
         value_names = ["light-index", "inner", "outer"],
         long,
@@ -395,8 +395,8 @@ pub struct ObjectRender {
     )]
     light_cone: Vec<String>,
 
-    /// The indexed hemisphere light's color from above as a `#RRGGBB` hex,
-    /// defaulting to white. Repeatable.
+    /// The indexed hemisphere light's color from above as a `#RRGGBB` hex
+    /// color. Defaults to `#FFFFFF`. Repeatable.
     #[arg(
         value_names = ["light-index", "color"],
         long,
@@ -405,8 +405,8 @@ pub struct ObjectRender {
     )]
     light_sky: Vec<String>,
 
-    /// The indexed hemisphere light's color from below as a `#RRGGBB` hex,
-    /// defaulting to white. Repeatable.
+    /// The indexed hemisphere light's color from below as a `#RRGGBB` hex
+    /// color. Defaults to `#FFFFFF`. Repeatable.
     #[arg(
         value_names = ["light-index", "color"],
         long,

@@ -6,11 +6,12 @@ use clap::Parser;
 use std::path::Path;
 
 const INSTALL_HELP: &str = "\
-The skill goes in .<target>/skills/<skill>/SKILL.md at the git root, or under
-the home directory with --user. Codex reads agents and Claude Code reads claude.
-`vxl integration agents-link` links .claude to .agents so both read one copy.
+The skill goes in `.<target>/skills/<skill>/SKILL.md` at the git root, or under
+the home directory with `--user`. Codex reads `agents` and Claude Code reads
+`claude`. `integration agents-link` links `.claude` to `.agents` so both read
+one copy.
 
-Installing again upgrades the skill by replacing the SKILL.md.";
+Installing again upgrades the skill by replacing the `SKILL.md`.";
 
 /// Installs the skill where an agent loads it.
 #[derive(Clone, Debug, Parser)]

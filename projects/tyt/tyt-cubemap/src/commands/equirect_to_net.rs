@@ -5,33 +5,34 @@ use std::path::Path;
 /// Converts an equirectangular panorama into a cube net cross layout.
 #[derive(Clone, Debug, Parser)]
 pub struct EquirectToNet {
-    /// Base name for the input equirectangular image (`{base}.png`).
+    /// Base name for the input equirectangular image (`<base>.png`).
     #[arg(value_name = "base")]
     base: String,
 
-    /// Output base name. Defaults to `{base}-cube-net`.
-    #[arg(value_name = "out-base")]
+    /// Output base name. Defaults to `<base>-cube-net`.
+    #[arg(value_name = "output-base")]
     out_base: Option<String>,
 
-    /// Side length in pixels for each cube face.
+    /// Side length in pixels for each face.
     #[arg(value_name = "size", short, long, default_value_t = 512)]
     size: u32,
 
-    /// Pad the output to a square canvas.
+    /// Pads the output to a square canvas.
     #[arg(value_name = "square", long)]
     square: bool,
 
-    /// Use nearest-neighbor filtering on the final `--output-size` resize.
+    /// Uses nearest-neighbor filtering on the final `--output-size` resize.
     #[arg(value_name = "point", long)]
     point: bool,
 
-    /// Use nearest-neighbor (`interp=near`) on the v360 reprojection itself.
+    /// Uses nearest-neighbor filtering (`interp=near`) on the `v360` reprojection
+    /// itself.
     #[arg(value_name = "point-reprojection", long)]
     point_reprojection: bool,
 
-    /// Final side length for each face in the output net. When set, the net is
-    /// resized to this resolution. Combine with `--point` for nearest-neighbor
-    /// filtering that preserves hard edges.
+    /// Final side length in pixels for each face in the output net. When set,
+    /// the net is resized from `--size` to this size. Combine with `--point`
+    /// for nearest-neighbor filtering that preserves hard edges.
     #[arg(value_name = "output-size", long)]
     output_size: Option<u32>,
 }

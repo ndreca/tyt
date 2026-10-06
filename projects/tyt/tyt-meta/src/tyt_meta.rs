@@ -1,7 +1,7 @@
 use crate::{Dependencies, Result, commands::CreateCommand};
 use clap::Subcommand;
 
-/// Meta-tools for scaffolding new tyt sub-crates and commands.
+/// Scaffolds new tyt sub-crates and commands.
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 pub enum TytMeta {

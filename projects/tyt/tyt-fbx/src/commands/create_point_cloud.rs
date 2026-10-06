@@ -29,22 +29,22 @@ pub struct CreatePointCloud {
     #[arg(value_name = "num-points")]
     num_points: usize,
 
-    /// Sample points on the mesh surface instead of inside the volume.
+    /// Samples points on the mesh surface instead of inside the volume.
     #[arg(value_name = "surface", long)]
     surface: bool,
 
-    /// Maximum iterations for volume rejection sampling (default: num_points *
-    /// 1000).
+    /// Maximum iterations for volume rejection sampling. Defaults to
+    /// `<num-points> * 1000`.
     #[arg(value_name = "max-iterations", long)]
     max_iterations: Option<usize>,
 
-    /// Uniform scale factor applied to every output point position (e.g. 0.01
-    /// to convert centimeters to meters).
+    /// Uniform scale factor applied to every output point position (e.g.
+    /// `0.01` to convert centimeters to meters).
     #[arg(value_name = "scale", long)]
     scale: Option<f64>,
 
     /// Paths to texture images. Each texture produces a color layer by
-    /// sampling at the surface UV of each point.
+    /// sampling at the surface UV of each point. Repeatable.
     #[arg(value_name = "texture", long)]
     texture: Vec<PathBuf>,
 }

@@ -8,23 +8,23 @@ use std::io::Result as IOResult;
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "shell")]
 pub enum Completion {
-    /// Bash completions.
+    /// Prints and installs Bash completions.
     #[command(name = "bash", subcommand)]
     Bash(CompletionVerb),
 
-    /// Elvish completions.
+    /// Prints and installs Elvish completions.
     #[command(name = "elvish", subcommand)]
     Elvish(CompletionVerb),
 
-    /// Fish completions.
+    /// Prints and installs Fish completions.
     #[command(name = "fish", subcommand)]
     Fish(CompletionVerb),
 
-    /// PowerShell completions.
+    /// Prints and installs PowerShell completions.
     #[command(name = "powershell", subcommand)]
     PowerShell(CompletionVerb),
 
-    /// Zsh completions.
+    /// Prints and installs Zsh completions.
     #[command(name = "zsh", subcommand)]
     Zsh(CompletionVerb),
 }

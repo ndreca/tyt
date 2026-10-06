@@ -1,7 +1,7 @@
 use crate::{Dependencies, Result, commands::Img};
 use clap::Subcommand;
 
-/// Commands for working with the OpenAI API.
+/// Works with the OpenAI API.
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 pub enum TytOAI {

@@ -3,7 +3,7 @@ use clap::Parser;
 use std::path::PathBuf;
 use voxconv::WriteFormat;
 
-/// Converts a voxel file to the Qubicle format.
+/// Converts a voxel file to the Qubicle Construction Library format.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "qbcl")]
 pub struct VoxDocToQbcl {

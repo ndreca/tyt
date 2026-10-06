@@ -9,11 +9,11 @@ use clap::Parser;
 use std::{io::Error as IOError, path::Path};
 
 const MOVE_HELP: &str = "\
-Claude Code reads .claude. The link points Claude Code at .agents, the
-directory coding agents share. Codex reads .agents/skills itself and needs no
+Claude Code reads `.claude`. The link points Claude Code at `.agents`, the
+directory coding agents share. Codex reads `.agents/skills` itself and needs no
 link.
 
-Everything in .claude moves into .agents before the link replaces the
+Everything in `.claude` moves into `.agents` before the link replaces the
 directory. When a name sits in both directories, the move fails before anything
 changes.";
 

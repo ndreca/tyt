@@ -18,8 +18,16 @@ impl CliValue for VMaxColorFormat {
 
     fn help(self) -> &'static str {
         match self {
-            VMaxColorFormat::Png => "Store colors as a `palette*.png` image",
-            VMaxColorFormat::Plist => "Store colors in the `palette*.settings.vmaxpsb` sidecar",
+            VMaxColorFormat::Png => {
+                "Store colors as a `256 x 1` `palette*.png` image and leave the \
+                 `palette*.settings.vmaxpsb` sidecar without a `colors` table"
+            }
+
+            VMaxColorFormat::Plist => {
+                "Store colors in the `palette*.settings.vmaxpsb` sidecar's `colors` table and \
+                 write no `palette*.png`. The `pal` reference still names the absent image"
+            }
+
             VMaxColorFormat::All => "Store colors in both the image and the sidecar",
         }
     }

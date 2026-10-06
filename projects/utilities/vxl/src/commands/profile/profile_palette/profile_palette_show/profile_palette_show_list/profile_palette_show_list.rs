@@ -19,8 +19,8 @@ pub struct ProfilePaletteShowList {
     )]
     layout: ProfileListLayout,
 
-    /// Show each profile's description. `--show-descriptions false` drops
-    /// them.
+    /// Shows each profile's description. `--show-descriptions false` omits
+    /// the descriptions.
     #[arg(
         value_name = "show-descriptions",
         long,

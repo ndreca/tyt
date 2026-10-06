@@ -5,21 +5,18 @@ use clap::ValueEnum;
 /// settings sidecar, but uses only one at a time.
 #[derive(Clone, Copy, Debug, ValueEnum)]
 pub enum ColorFormat {
-    /// Write the colors as a 256x1 `palette*.png` image and leave the material
-    /// `palette*.settings.vmaxpsb` without a `colors` table. This matches a
-    /// Voxel Max package that ships a color image.
+    /// Store colors as a `256 x 1` `palette*.png` image and leave the
+    /// `palette*.settings.vmaxpsb` sidecar without a `colors` table.
     #[value(name = "png")]
     Png,
 
-    /// Write the colors into the `palette*.settings.vmaxpsb` `colors` table and
-    /// emit no `palette*.png`. The `pal` reference still names the (absent)
-    /// image. This matches a Voxel Max package that keeps its colors in the
-    /// plist.
+    /// Store colors in the `palette*.settings.vmaxpsb` sidecar's `colors` table
+    /// and write no `palette*.png`. The `pal` reference still names the absent
+    /// image.
     #[value(name = "plist")]
     Plist,
 
-    /// Write the colors into both the `palette*.png` image and the material
-    /// `palette*.settings.vmaxpsb` `colors` table.
+    /// Store colors in both the image and the sidecar.
     #[value(name = "all")]
     All,
 }

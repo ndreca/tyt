@@ -1,8 +1,9 @@
 use crate::{Dependencies, Error, Result, Scope, normalize_separators};
 use clap::Parser;
 
-/// Marks `<name>` as the active claude profile in the chosen `.tytconfig` /
-/// `.tytusrconfig` file. The name must be defined somewhere in the cascade.
+/// Marks the named profile as the active Claude profile in the chosen
+/// `.tytconfig` or `.tytusrconfig` file. The name must be defined somewhere in
+/// the cascade.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "set-profile")]
 pub struct SetProfile {
