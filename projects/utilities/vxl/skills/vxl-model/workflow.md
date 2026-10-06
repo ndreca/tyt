@@ -7,13 +7,13 @@ four PNGs. The modeling API below lists every call a model file can make.
 ## A pass
 
 ```sh
-vxl sdf-doc build chair.ts --library materials && vxl sdf-doc voxelize chair.sdfj --voxel-size 0.025 --report && vxl object render chair.voxj --profile review --to png
+vxl sdf-doc build table.ts --library materials && vxl sdf-doc voxelize table.sdfj --voxel-size 0.025 --report && vxl object render table.voxj --profile review --to png
 ```
 
-The pass writes `chair.sdfj`, `chair.voxj`, and the review views
-`chair-front.png`, `chair-right.png`, `chair-top.png`, and `chair-hero.png`
-beside the model file. A voxelize without the build reads a stale `.sdfj`
-document.
+The pass writes `table.sdfj`, `table.voxj`, `table-report.txt`, and the review
+views `table-front.png`, `table-right.png`, `table-top.png`, and
+`table-hero.png` beside the model file. A voxelize without the build reads a
+stale `.sdfj` document.
 
 ## Building a model
 
@@ -79,8 +79,8 @@ A close-up, another angle, or a view inside a room comes from flags on the
 render command:
 
 ```sh
-# chair-hero.png from behind and to the left, beside the other review views
-vxl object render chair.voxj
+# table-hero.png from behind and to the left, beside the other review views
+vxl object render table.voxj
   --profile review
   --view-orbit hero 225 20 fit
   --to png
@@ -103,7 +103,8 @@ vxl object render room.voxj
 ```
 
 1. `--view-orbit` places a view by an azimuth and an elevation in degrees and a
-   distance in meters or `fit`. A new view name adds a PNG
+   distance in meters or `fit`. A new view name adds a PNG, and
+   `--view-look-at` beside it sets the point the view circles
 2. A view placed by position takes `--view-frame`, `--view-position`, and a
    rotation flag such as `--view-look-at`
 3. `--select` renders the matched parts alone. `--view-select <view> <glob>`
@@ -115,18 +116,18 @@ A prompt that asks for a mesh, a glTF, or a `.glb` file gets one from the
 `.voxj` document after the last pass:
 
 ```sh
-# chair.glb with the materials baked into textures
-vxl object mesh chair.voxj
+# table.glb with the materials baked into textures
+vxl object mesh table.voxj
   --profile pbr
 
-# chair.glb with the gems, ice, and water kept transparent
-vxl object mesh chair.voxj
+# table.glb with the gems, ice, and water kept transparent
+vxl object mesh table.voxj
   --profile glass
 ```
 
 1. `glass` replaces `pbr` for a model with a transparent material. The gems,
    `ice`, `water`, and any material with `transmission` or a `baseColor` alpha
    below 1 are transparent
-2. `--to gltf` writes a text `chair.gltf` with the textures embedded
+2. `--to gltf` writes a text `table.gltf` with the textures embedded
 
 The mesh keeps the model's size in meters and its parts as nodes.

@@ -85,12 +85,13 @@ mesh. A document with no objects errors. See
    The image height. Zero errors.
 
 6. `--background <transparent | #RRGGBB>`
-   - Default: `transparent`
+   - Default: `#FFFFFF`
    - Repeatable: no
 
    What lies behind the scene. A color fills the pixels no ray hits at full
-   alpha and shows through transparent voxels. A shell reads a bare `#` as a
-   comment, so quote the color.
+   alpha and shows through transparent voxels. The default stays opaque
+   because an image reader that drops alpha shows a transparent background as
+   black. A shell reads a bare `#` as a comment, so quote the color.
 
 7. `--occlusion <none | corner>`
    - Default: `corner`
@@ -193,7 +194,8 @@ mesh. A document with no objects errors. See
     - Repeatable: yes
 
     Aims the named view's -Z at a point in its frame, with the frame's +Y up.
-    A target at the view's position errors.
+    A target at the view's position errors. Beside `--view-orbit`, the point
+    sets the orbit's center in world space.
 
 21. `--view-angles <view> <azimuth> <elevation>`
     - Repeatable: yes
@@ -205,11 +207,11 @@ mesh. A document with no objects errors. See
 22. `--view-orbit <view> <azimuth> <elevation> <distance | fit>`
     - Repeatable: yes
 
-    Places the named view on a sphere about the subject's center, facing it,
-    at an azimuth and elevation in degrees and a distance in meters or `fit`,
-    the bounding-sphere rule under [Views](contract.md#views). It sets the
-    whole transform, so it errors beside `--view-frame`, `--view-position`,
-    or a rotation flag.
+    Places the named view on a sphere about the subject's center or the
+    `--view-look-at` point, facing it, at an azimuth and elevation in degrees
+    and a distance in meters or `fit`, the bounding-sphere rule under
+    [Views](contract.md#views). It sets the whole transform, so it errors
+    beside `--view-frame`, `--view-position`, or any other rotation flag.
 
 23. `--view-projection <view> <perspective | orthographic>`
     - Default: `perspective`

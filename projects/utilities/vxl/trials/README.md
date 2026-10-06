@@ -12,8 +12,8 @@ the builder and the docs in place of the skill. `$VOXEL_TRIALS`,
 `~/voxel-trials` by default, holds a round:
 
 1. `<directory>` and `<directory>-2`, the slots the two runs of a prompt work in
-2. `_harness/snapshot.sh`, the hook that copies each pass's renders and model
-   file into `_runs/<run>/passes`
+2. `_harness/snapshot.sh`, the hook that copies each pass's renders, model
+   file, and report into `_runs/<run>/passes`
 3. `_runs`, the round's `round.json` and one record per run
 4. `findings`, the round's ranked findings and the images they show
 5. `gallery`, the page `build-gallery.py` writes

@@ -351,6 +351,7 @@ mod tests {
                 azimuth,
                 elevation: 0.0,
                 distance: FitOrFixed::Fit,
+                center: None,
             },
             projection: ViewProjection::Perspective { fov: 35.0 },
             select: Vec::new(),

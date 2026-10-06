@@ -4,7 +4,8 @@ import { Shape3d } from "./shape3d.ts";
 
 /** The region inside any of `shapes`. */
 export function union<S extends Shape3d | Shape2d>(...shapes: S[]): S {
-  return combine("union", "shapes[0]", shapes[0], (path, shape) => ({
+  const first = nonEmpty("union", shapes)[0];
+  return combine("union", "shapes[0]", first, (path, shape) => ({
     kind: "union",
     shapes: sameShapes(`${path} shapes`, shapes, shape),
   }));
@@ -12,7 +13,8 @@ export function union<S extends Shape3d | Shape2d>(...shapes: S[]): S {
 
 /** The region inside all of `shapes`. */
 export function intersect<S extends Shape3d | Shape2d>(...shapes: S[]): S {
-  return combine("intersect", "shapes[0]", shapes[0], (path, shape) => ({
+  const first = nonEmpty("intersect", shapes)[0];
+  return combine("intersect", "shapes[0]", first, (path, shape) => ({
     kind: "intersect",
     shapes: sameShapes(`${path} shapes`, shapes, shape),
   }));
@@ -35,7 +37,8 @@ export function smoothUnion<S extends Shape3d | Shape2d>(
   radius: number,
   ...shapes: S[]
 ): S {
-  return combine("smoothUnion", "shapes[0]", shapes[0], (path, shape) => ({
+  const first = nonEmpty("smoothUnion", shapes)[0];
+  return combine("smoothUnion", "shapes[0]", first, (path, shape) => ({
     kind: "smoothUnion",
     radius: check.finite(`${path} radius`, radius),
     shapes: sameShapes(`${path} shapes`, shapes, shape),
@@ -47,7 +50,8 @@ export function smoothIntersect<S extends Shape3d | Shape2d>(
   radius: number,
   ...shapes: S[]
 ): S {
-  return combine("smoothIntersect", "shapes[0]", shapes[0], (path, shape) => ({
+  const first = nonEmpty("smoothIntersect", shapes)[0];
+  return combine("smoothIntersect", "shapes[0]", first, (path, shape) => ({
     kind: "smoothIntersect",
     radius: check.finite(`${path} radius`, radius),
     shapes: sameShapes(`${path} shapes`, shapes, shape),
@@ -91,6 +95,13 @@ function combine<S extends Shape3d | Shape2d>(
     return new Shape2d(fields(call, Shape2d)) as S;
   }
   return check.fail(`${call} ${firstKey}`, "a Shape3d or a Shape2d", first);
+}
+
+/** `shapes`, which errors when it holds no shape. */
+function nonEmpty<S>(call: string, shapes: S[]): S[] {
+  return shapes.length > 0
+    ? shapes
+    : check.fail(`${call} shapes`, "at least one shape", shapes);
 }
 
 /** A copy of `shapes`, each an instance of `shape`. */

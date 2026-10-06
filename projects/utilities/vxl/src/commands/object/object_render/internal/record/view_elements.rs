@@ -78,12 +78,18 @@ impl ViewElements {
         claim(&mut self.rotation, rotation, flag, &self.name, "rotation")
     }
 
-    /// Sets the whole transform to the orbit `flag` gives.
+    /// Sets the whole transform to the orbit `flag` gives. A look-at beside it
+    /// sets the orbit's center.
     pub(crate) fn set_orbit(&mut self, flag: &str, orbit: PoseTransform) -> Result<()> {
-        if self.is_posed() {
+        let looks_at = matches!(
+            self.rotation,
+            None | Some(Rotation::LookAt { target: Some(_) })
+        );
+
+        if self.frame.is_some() || self.node.is_some() || self.position.is_some() || !looks_at {
             return Err(Error::usage(format!(
                 "{flag} sets view `{}`'s transform, which --view-frame, --view-node, \
-                 --view-position, or a rotation flag sets already",
+                 --view-position, or a rotation flag besides --view-look-at sets already",
                 self.name
             )));
         }
@@ -126,7 +132,13 @@ impl ViewElements {
         let posed = self.is_posed();
         let name = self.name;
 
-        let transform = if let Some(orbit) = self.orbit {
+        let transform = if let Some(mut orbit) = self.orbit {
+            if let (PoseTransform::Orbit { center, .. }, Some(Rotation::LookAt { target })) =
+                (&mut orbit, self.rotation)
+            {
+                *center = target;
+            }
+
             orbit
         } else if !posed {
             entry

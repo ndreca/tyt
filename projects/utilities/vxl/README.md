@@ -246,12 +246,13 @@ document. `sdf-doc voxelize` samples the document into Voxel JSON. The
 runs these commands for an agent.
 
 ```sh
-# Records chair.ts as chair.sdfj with the built-in materials.
-vxl sdf-doc build chair.ts --library materials
+# Records table.ts as table.sdfj with the built-in materials.
+vxl sdf-doc build table.ts --library materials
 
-# Writes chair.voxj at 2.5 cm per voxel and prints the report.
-vxl sdf-doc voxelize chair.sdfj --voxel-size 0.025 --report
+# Writes table.voxj at 2.5 cm per voxel, then prints the report and writes it to
+# table-report.txt.
+vxl sdf-doc voxelize table.sdfj --voxel-size 0.025 --report
 
-# Writes chair.glb with the materials baked into textures.
-vxl object mesh chair.voxj --profile pbr
+# Writes table.glb with the materials baked into textures.
+vxl object mesh table.voxj --profile pbr
 ```

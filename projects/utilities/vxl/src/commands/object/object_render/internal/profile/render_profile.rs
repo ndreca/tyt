@@ -158,6 +158,7 @@ mod tests {
                 azimuth: 45.0,
                 elevation: 30.0,
                 distance: None,
+                center: None,
             })
         );
         assert_eq!(hero.fov, Some(PositiveF64(50.0)));

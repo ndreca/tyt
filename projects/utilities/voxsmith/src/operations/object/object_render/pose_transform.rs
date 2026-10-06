@@ -22,7 +22,7 @@ pub enum PoseTransform {
         rotation: Rotation,
     },
 
-    /// A position on a sphere about the subject's center, facing it.
+    /// A position on a sphere about a center, facing it.
     Orbit {
         /// Degrees from +Z toward +X.
         azimuth: f64,
@@ -30,8 +30,13 @@ pub enum PoseTransform {
         /// Degrees from the azimuth's direction toward +Y.
         elevation: f64,
 
-        /// The sphere's radius.
+        /// The sphere's radius. A `fit` takes in the whole subject from the
+        /// center.
         distance: FitOrFixed,
+
+        /// The world point the sphere is about, defaulting to the subject's
+        /// center.
+        center: Option<TyVector3F64>,
     },
 
     /// One hierarchy node path's world transform, scale included, so the

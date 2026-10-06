@@ -16,7 +16,7 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
-use ty_math::{TyAngleUnit, TyQuaternionF64, TyVector3F64};
+use ty_math::{TyAngleUnit, TyQuaternionF64, TySrgbU8, TyVector3F64};
 use voxconv::load;
 use voxcore::{BVoxObject, VoxExt, VoxMain};
 use voxsmith::{
@@ -60,7 +60,7 @@ pub struct ObjectRender {
     height: Option<NonZeroU32>,
 
     /// What fills the pixels no ray hits, `transparent` or a `#RRGGBB` color,
-    /// defaulting to `transparent`.
+    /// defaulting to `#FFFFFF`.
     #[arg(value_name = "background", long)]
     background: Option<Background>,
 
@@ -165,7 +165,8 @@ pub struct ObjectRender {
     view_euler: Vec<String>,
 
     /// Aims the named view's -Z at a point in its frame, with its frame's +Y
-    /// up. Repeatable.
+    /// up. Beside `--view-orbit`, the point sets the orbit's center in world
+    /// space. Repeatable.
     #[arg(
         value_names = ["view", "x", "y", "z"],
         long,
@@ -187,9 +188,10 @@ pub struct ObjectRender {
     )]
     view_angles: Vec<String>,
 
-    /// Places the named view on a sphere about the subject's center, facing
-    /// it, at an azimuth and elevation in degrees and a distance in meters or
-    /// `fit`. Replaces the frame, position, and rotation. Repeatable.
+    /// Places the named view on a sphere about the subject's center or the
+    /// `--view-look-at` point, facing it, at an azimuth and elevation in
+    /// degrees and a distance in meters or `fit`. Replaces the frame,
+    /// position, and rotation. Repeatable.
     #[arg(
         value_names = ["view", "azimuth", "elevation", "distance"],
         long,
@@ -545,7 +547,7 @@ impl ObjectRender {
             background: self
                 .background
                 .or(stack.background)
-                .and_then(Background::color),
+                .map_or(Some(TySrgbU8::new(255, 255, 255)), Background::color),
             occlusion: self
                 .occlusion
                 .or(stack.occlusion.map(|occlusion| occlusion.0))
@@ -639,6 +641,7 @@ impl ObjectRender {
                 azimuth: parse_flag_f64(flag, azimuth)?,
                 elevation: parse_flag_f64(flag, elevation)?,
                 distance: parse_fit_or_fixed(flag, distance)?,
+                center: None,
             };
 
             views.view(flag, name)?.set_orbit(flag, orbit)?;
@@ -1055,7 +1058,7 @@ mod tests {
         let record = record(&[]);
 
         assert_eq!((record.width, record.height), (1024, 1024));
-        assert_eq!(record.background, None);
+        assert_eq!(record.background, Some(TySrgbU8::new(255, 255, 255)));
         assert_eq!(record.occlusion, RenderOcclusion::Corner);
         assert_eq!(record.voxel_size, 1.0);
         assert_eq!(record.bloom, RenderBloom::default());
@@ -1068,6 +1071,7 @@ mod tests {
                 azimuth: 45.0,
                 elevation: 30.0,
                 distance: FitOrFixed::Fit,
+                center: None,
             }
         );
         assert_eq!(hero.projection, ViewProjection::Perspective { fov: 35.0 });
@@ -1094,6 +1098,9 @@ mod tests {
 
     #[test]
     fn the_image_flags_lower_into_the_record() {
+        let transparent = record(&["--background", "transparent"]);
+        assert_eq!(transparent.background, None);
+
         let record = record(&[
             "--width",
             "8",
@@ -1200,7 +1207,7 @@ mod tests {
     }
 
     #[test]
-    fn review_renders_hero_and_three_orthographic_sides_under_studio_and_a_bloom_over_white() {
+    fn review_renders_hero_and_three_orthographic_sides_under_studio_and_a_bloom() {
         let review = record(&["--profile", "review"]);
 
         let projections: Vec<_> = review
@@ -1222,7 +1229,6 @@ mod tests {
         );
         assert_eq!(review.lights, record(&["--lights-from", "studio"]).lights);
         assert_eq!(review.bloom, record(&["--profile", "glow"]).bloom);
-        assert_eq!(review.background, Some(TySrgbU8::new(255, 255, 255)));
     }
 
     #[test]
@@ -1472,6 +1478,7 @@ mod tests {
                 azimuth: 10.0,
                 elevation: 20.0,
                 distance: FitOrFixed::Fit,
+                center: None,
             }
         );
 
@@ -1501,6 +1508,45 @@ mod tests {
 
         let near = error_of(&["--view-orbit", "cam", "0", "0", "near"]);
         assert!(near.contains("`fit` or a positive number"), "{near}");
+
+        let centered = record(&[
+            "--view-orbit",
+            "cam",
+            "30",
+            "20",
+            "0.3",
+            "--view-look-at",
+            "cam",
+            "0",
+            "0.12",
+            "0",
+        ]);
+        assert_eq!(
+            view(&centered).transform,
+            PoseTransform::Orbit {
+                azimuth: 30.0,
+                elevation: 20.0,
+                distance: FitOrFixed::Fixed(0.3),
+                center: Some(TyVector3F64::new(0.0, 0.12, 0.0)),
+            }
+        );
+
+        let turned = error_of(&[
+            "--view-orbit",
+            "cam",
+            "0",
+            "0",
+            "fit",
+            "--view-euler",
+            "cam",
+            "0",
+            "0",
+            "0",
+        ]);
+        assert!(
+            turned.contains("or a rotation flag besides --view-look-at sets already"),
+            "{turned}"
+        );
     }
 
     #[test]
@@ -2278,6 +2324,7 @@ mod tests {
                         azimuth: 0.0,
                         elevation: 0.0,
                         distance: FitOrFixed::Fit,
+                        center: None,
                     },
                     projection: ViewProjection::Perspective { fov: 35.0 },
                     select: Vec::new(),

@@ -172,7 +172,8 @@ for. Each shape is a tagged union over the frame its values are read in:
 1. `world` is the document's frame
 2. `subject` has world axes centered on the subject's bounds
 3. `camera` is the view being rendered, so a light in it follows every view
-4. `orbit` is a position on a sphere about the subject's center, facing it
+4. `orbit` is a position on a sphere about the subject's center or a world
+   point, facing it
 5. `node` is one hierarchy node path's world transform, scale included, so a
    camera can ride a player. The entry carries a `path`, a glob over node
    paths under the shared
@@ -218,7 +219,8 @@ bounds give a center and a diagonal. The camera sits on its orbit at the
 distance, or orthographic scale, that fits the bounding sphere of that
 diagonal into the shorter image axis with a small margin. A sphere fits
 regardless of orientation, so every fitted view of one subject sits at one
-distance.
+distance. An orbit about a world point fits the smallest box centered on the
+point that holds the subject.
 
 ## Bloom
 

@@ -80,7 +80,7 @@ Deno.test("a boolean's shapes share one dimension", () => {
 
 Deno.test("a boolean without a first shape errors", () => {
   assert.throws(() => union(), {
-    message: "union shapes[0] must be a Shape3d or a Shape2d, not undefined",
+    message: "union shapes must be at least one shape, not []",
   });
   assert.throws(() => smoothSubtract(0.1, 3 as never), {
     message: "smoothSubtract base must be a Shape3d or a Shape2d, not 3",

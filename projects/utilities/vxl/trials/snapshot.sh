@@ -1,7 +1,7 @@
 #!/bin/sh
-# PostToolUse hook: after a Bash call that renders, copies the slot's new PNGs
-# and model files into _runs/<run>/passes/<n>. A render with no voxelize since
-# the last snapshot adds its PNGs to that pass.
+# PostToolUse hook: after a Bash call that renders, copies the slot's new PNGs,
+# model files, and reports into _runs/<run>/passes/<n>. A render with no
+# voxelize since the last snapshot adds its PNGs to that pass.
 command=$(jq -r '.tool_input.command // ""')
 slot=${CLAUDE_PROJECT_DIR:-$PWD}
 out=$(dirname "$slot")/_runs/$(basename "$slot")
@@ -15,7 +15,7 @@ n=$(ls -d "$out"/passes/[0-9]* 2> /dev/null | wc -l | tr -d ' ')
 pass=$out/passes/$(printf '%02d' "$n")
 mkdir -p "$pass"
 (cd "$slot" && printf '%s\n' "$pngs" | while read -r f; do cp "$f" "$pass/"; done)
-(cd "$slot" && find . -path ./.claude -prune -o -name '*.ts' -print | while read -r f; do cp "$f" "$pass/"; done)
+(cd "$slot" && find . -path ./.claude -prune -o \( -name '*.ts' -o -name '*-report.txt' \) -print | while read -r f; do cp "$f" "$pass/"; done)
 rm -f "$out/voxelized"
 touch "$out/snapshot-marker"
 exit 0

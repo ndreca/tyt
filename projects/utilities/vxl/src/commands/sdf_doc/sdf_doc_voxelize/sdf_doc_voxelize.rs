@@ -1,5 +1,5 @@
 use crate::{
-    CliValue, Dependencies, Error, Result, VoxjEncodingOptions, cli_value_parser,
+    CliValue, Dependencies, Error, Result, VoxjEncodingOptions, WriteFile, cli_value_parser,
     commands::{GridResolutionOptions, SdfDocVoxelizeProfile, load_sdf_doc_voxelize_profile_set},
 };
 use clap::{ArgAction, Parser};
@@ -47,7 +47,8 @@ pub struct SdfDocVoxelize {
     )]
     flatten: Option<FlattenMode>,
 
-    /// Prints a line for the model, each part, each step, and each piece.
+    /// Prints a line for the model, each part, each step, and each piece, and
+    /// writes the lines to the output's stem with `-report.txt` beside it.
     /// `--report false` turns the report off.
     #[arg(
         value_name = "report",
@@ -138,10 +139,19 @@ impl SdfDocVoxelize {
                 .file_name()
                 .expect("an output path names a file")
                 .to_string_lossy();
+            let stem = output
+                .file_stem()
+                .expect("an output path names a file")
+                .to_string_lossy();
 
-            dependencies.write_stdout(
-                report(&main, &world, settings.vox_main.fill_mode, &name)?.as_bytes(),
+            let report = report(&main, &world, settings.vox_main.fill_mode, &name)?;
+
+            WriteFile::write_file(
+                &dependencies,
+                &output.with_file_name(format!("{stem}-report.txt")),
+                report.as_bytes(),
             )?;
+            dependencies.write_stdout(report.as_bytes())?;
         }
 
         Ok(())

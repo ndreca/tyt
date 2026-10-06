@@ -12,10 +12,10 @@ sets exactly what each call computes.
 ## Running
 
 ```sh
-# chair.sdfj, then chair.voxj at 2.5 cm per voxel
-vxl sdf-doc build chair.ts
+# table.sdfj, then table.voxj at 2.5 cm per voxel
+vxl sdf-doc build table.ts
   --library materials
-vxl sdf-doc voxelize chair.sdfj
+vxl sdf-doc voxelize table.sdfj
   --voxel-size 0.025
   --report
 ```
@@ -37,7 +37,7 @@ writes a voxj document:
 4. `--frame local` voxelizes each [part](#parts) once, and every place shares
    the part's object. The default `--frame world` samples every part on one
    lattice and writes an object for each place
-5. `--report` prints the [report](#report)
+5. `--report` prints the [report](#report) and writes it to `table-report.txt`
 
 ### Profiles
 
@@ -716,18 +716,17 @@ export default [stool];
 ## Report
 
 `--report` prints a line for the model, then a line per step in list order. The
-[example](#example) chair reports:
+[example](#example) table reports:
 
 ```
-chair.voxj  1922 voxels of 0.025 m  1 piece  20x41x20  [-0.25, 0, -0.25] .. [0.25, 1.025, 0.25]
-  add    legs      400 cells  400 kept  336 exposed  20x17x20  [-0.25, 0, -0.25] .. [0.25, 0.425, 0.25]
-  add    seat      800 cells  800 kept  772 exposed  20x2x20   [-0.25, 0.425, -0.25] .. [0.25, 0.475, 0.25]
-  add    posts     234 cells  234 kept  208 exposed  20x13x3   [-0.25, 0.475, -0.25] .. [0.25, 0.8, -0.175]
-  add    spindles   52 cells   52 kept   52 exposed  10x13x1   [-0.125, 0.475, -0.225] .. [0.125, 0.8, -0.2]
-  add    rail      360 cells  252 kept  184 exposed  20x6x3    [-0.25, 0.8, -0.25] .. [0.25, 0.95, -0.175]
-  paint  gilt       60 cells   58 kept   56 exposed  20x1x3    [-0.25, 0.925, -0.25] .. [0.25, 0.95, -0.175]
-  add    finials    30 cells   30 kept   24 exposed  20x4x3    [-0.25, 0.925, -0.25] .. [0.25, 1.025, -0.175]
-  add    jewels     96 cells   96 kept   36 exposed  14x4x4    [-0.175, 0.825, -0.225] .. [0.175, 0.925, -0.125]
+table.voxj  2768 voxels of 0.025 m  1 piece  22x22x22  [-0.275, 0, -0.275] .. [0.275, 0.55, 0.275]
+  add    legs       480 cells  360 kept  292 exposed  20x20x20  [-0.25, 0, -0.25] .. [0.25, 0.5, 0.25]
+  add    aprons     384 cells  312 kept  308 exposed  16x6x18   [-0.2, 0.35, -0.225] .. [0.2, 0.5, 0.225]
+  add    sides      384 cells  384 kept  356 exposed  18x6x16   [-0.225, 0.35, -0.2] .. [0.225, 0.5, 0.2]
+  add    shelf      648 cells  648 kept  640 exposed  18x2x18   [-0.225, 0.1, -0.225] .. [0.225, 0.15, 0.225]
+  add    top        968 cells  800 kept  672 exposed  22x2x22   [-0.275, 0.5, -0.275] .. [0.275, 0.55, 0.275]
+  paint  gilt       168 cells  168 kept  168 exposed  22x2x22   [-0.275, 0.5, -0.275] .. [0.275, 0.55, 0.275]
+  add    sapphires   96 cells   96 kept   48 exposed  14x4x4    [-0.175, 0.375, 0.175] .. [0.175, 0.475, 0.275]
 ```
 
 1. A step's cells are the cells it wrote as it ran: every cell an `add` or a
@@ -746,9 +745,9 @@ chair.voxj  1922 voxels of 0.025 m  1 piece  20x41x20  [-0.25, 0, -0.25] .. [0.2
    lines to the shell the document holds. The other fields read the cells before
    the fill.
 
-The rail keeps 252 of its 360 cells because the gilt and the jewels take the
-rest. The jewels keep all 96 cells and show 36 of them because half of each
-jewel sits inside the rail. The spindles come out one cell thick.
+The top keeps 800 of its 968 cells because the gilt takes the rest. The
+sapphires keep all 96 cells and show 48 of them because half of each sapphire
+sits inside the apron.
 
 With parts, each place of a part gets a part line. The part's steps and child
 parts follow, indented one level past the part line. A part line counts the
@@ -860,43 +859,43 @@ add("boulder", sphere([0, 0.125, 0], 0.15).displace({ amplitude: 0.0375, scale: 
 ## Example
 
 ```ts
-// An oak chair facing +z with three rubies set in its top rail, sized for
-// --voxel-size 0.025. Building each board around the origin and moving it
-// into place centers its grain.
-const oak = (axis: Axis, seed: number) => grain(mat.oak, { axis, seed });
+// A walnut side table facing +z with three sapphires set in its front apron,
+// sized for --voxel-size 0.025. Building each board around the origin and
+// moving it into place centers its grain.
+const walnut = (axis: Axis, seed: number) => grain(mat.walnut, { axis, seed });
 
 const leg = lathe([
   [0.0375, 0],
   [0.03, 0.15],
-  [0.045, 0.225],
-  [0.03, 0.425],
+  [0.045, 0.3],
+  [0.03, 0.5],
 ]).translate([0.2, 0, 0.2]);
-const post = box([-0.0375, 0, -0.0375], [0.0375, 0.325, 0.0375]).translate([
-  0.2125, 0.475, -0.2125,
+const apron = box([-0.2, -0.075, -0.025], [0.2, 0.075, 0.025]).translate([
+  0, 0.425, 0.2,
 ]);
-const spindle = box([-0.125, 0.475, -0.225], [-0.1, 0.8, -0.2]).repeat(
-  [0.075, 0, 0],
-  [4, 1, 1],
-);
-const rail = box([-0.25, -0.075, -0.0375], [0.25, 0.075, 0.0375], {
+const side = box([-0.025, -0.075, -0.2], [0.025, 0.075, 0.2]).translate([
+  0.2, 0.425, 0,
+]);
+const shelf = box([-0.225, 0.1, -0.225], [0.225, 0.15, 0.225]);
+const top = box([-0.275, -0.025, -0.275], [0.275, 0.025, 0.275], {
   round: 0.025,
-}).translate([0, 0.875, -0.2125]);
-const seat = box([-0.25, -0.025, -0.25], [0.25, 0.025, 0.25]).translate([
-  0, 0.45, 0,
-]);
-const finial = sphere([0.2125, 0.975, -0.2125], 0.0375).mirror("x");
-const jewels = union(
-  ...[-0.125, 0, 0.125].map((x) => octahedron([x, 0.875, -0.175], 0.075)),
+}).translate([0, 0.525, 0]);
+const rim = subtract(
+  top.shell(0.025),
+  box([-0.25, 0.5, -0.25], [0.25, 0.55, 0.25]),
+);
+const sapphires = octahedron([-0.125, 0.425, 0.225], 0.075).repeat(
+  [0.125, 0, 0],
+  [3, 1, 1],
 );
 
 export default [
-  add("legs", leg.mirror("xz"), oak("y", 1)),
-  add("seat", seat, oak("x", 2)),
-  add("posts", post.mirror("x"), oak("y", 3)),
-  add("spindles", spindle, oak("y", 4)),
-  add("rail", rail, oak("x", 5)),
-  paint("gilt", intersect(rail.shell(0.025), halfSpace("+y", 0.925)), mat.gold),
-  add("finials", finial, mat.gold),
-  add("jewels", jewels, mat.ruby),
+  add("legs", leg.mirror("xz"), walnut("y", 1)),
+  add("aprons", apron.mirror("z"), walnut("x", 2)),
+  add("sides", side.mirror("x"), walnut("z", 3)),
+  add("shelf", shelf, walnut("x", 4)),
+  add("top", top, walnut("x", 5)),
+  paint("gilt", rim, mat.gold),
+  add("sapphires", sapphires, mat.sapphire),
 ];
 ```

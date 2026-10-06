@@ -43,7 +43,7 @@ interface Profile {
   /** Mirrors `--height`. */
   height?: number;
 
-  /** Mirrors `--background`; omitted, transparent. */
+  /** Mirrors `--background`; omitted, `#FFFFFF`. */
   background?: "transparent" | string;
 
   /** Mirrors `--occlusion`; omitted, `corner`. */
@@ -153,9 +153,10 @@ type LightEntry =
 type PoseTransform =
   | { kind: "world"; position: Vec3; rotation: Rotation }
   | { kind: "subject"; position: Vec3; rotation: Rotation }
-  /** Degrees. `distance` omitted, `fit`. */
+  /** Degrees. `distance` omitted, `fit`. `center` mirrors
+   *  `--view-look-at`; omitted, the subject's center. */
   | { kind: "orbit"; azimuth: number; elevation: number;
-      distance?: number | "fit" }
+      distance?: number | "fit"; center?: Vec3 }
   /** `path` mirrors `--view-node`. */
   | { kind: "node"; path: string; position: Vec3; rotation: Rotation };
 
@@ -233,6 +234,7 @@ a profile writes its names and values.
                 "azimuth": 45,
                 "elevation": 30,
                 "distance": "<fit | meters>",
+                "center": [0, 1, 0],
               },
               "projection": "perspective",
               "fov": 35,
@@ -437,14 +439,13 @@ when a profile loads, so the built-ins take the same schema by construction:
     "viewsFrom": ["hero", "front", "right", "back", "left"],
   },
   "review": {
-    "description": "The hero view and orthographic front, right, and top views with a bloom over white",
+    "description": "The hero view and orthographic front, right, and top views with a bloom",
     "viewsFrom": ["hero", "front", "right", "top"],
     "views": {
       "front": { "projection": "orthographic" },
       "right": { "projection": "orthographic" },
       "top": { "projection": "orthographic" },
     },
-    "background": "#FFFFFF",
     "bloomStrength": 1,
     "bloomRadius": 0.03,
     "bloomThreshold": 1,
@@ -506,9 +507,7 @@ run. `top` and `bottom` look along the up axis, where -Z is up, so the front
 sits at the bottom of the image. `turnaround` imports five of them and holds
 nothing else. `review` imports `hero`, `front`, `right`, and `top` and makes
 the three sides orthographic for checking proportions. `review` also takes
-`glow`'s bloom to show how each emissive material glows. Its views draw on
-opaque white because an image reader that drops alpha shows a transparent
-background as black.
+`glow`'s bloom to show how each emissive material glows.
 
 `studio` is one key light in the `camera` frame, from the upper left of
 whoever is looking, over a hemisphere light. A light in the `camera` frame

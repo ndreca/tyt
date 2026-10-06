@@ -105,13 +105,14 @@ Trials then show which operations Claude reaches for and where the loop fails.
         library's `grass` turns less saturated for the rest of finding 31
      2. Skill lines answer findings 12, 37, 52, and 56
      3. Finding 50 joins phase 2's candidates
-- [x] **S14. Rounds 2 and 3.** Run the prompts again with S13's changes and log
+- [x] **S14. Rounds 2 to 4.** Run the prompts again with S13's changes and log
       the round beside round 1. A finding S13 answered reopens when round 2
       still shows it. [Round 2](trials-round-2.md) reopens 27 of the 36 findings
       S13 answered. [Round 3](trials-round-3.md) runs the prompts after a
       shorter skill and fixes to vxl and the harness. It clears 9 of the 13
-      findings those changes answered.
-- [ ] **S15. Phase 2 design.** Write the phase 2 steps from the three rounds and
+      findings those changes answered. [Round 4](trials-round-4.md) clears 2 of
+      the 5 findings its changes answered.
+- [ ] **S15. Phase 2 design.** Write the phase 2 steps from the four rounds and
       revise the README.
 
 ## Phase 2: follow-ups

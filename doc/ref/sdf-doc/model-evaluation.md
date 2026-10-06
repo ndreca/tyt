@@ -34,7 +34,8 @@ follows.
    follows the last step.
 6. The [palette](#materials) collects the materials the final cells hold. vxl
    writes the [voxj document](#the-voxj-document). `--report` prints the
-   [report](#the-report).
+   [report](#the-report) and writes it beside the document as
+   `<stem>-report.txt`.
 
 ## Settings
 

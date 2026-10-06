@@ -20,13 +20,16 @@ pub enum PoseTransformEntry {
         rotation: RotationEntry,
     },
 
-    /// Angles in degrees. `distance` defaults to `fit`.
+    /// Angles in degrees. `distance` defaults to `fit`, and `center` to the
+    /// subject's center.
     Orbit {
         azimuth: f64,
 
         elevation: f64,
 
         distance: Option<DistanceEntry>,
+
+        center: Option<[f64; 3]>,
     },
 
     /// `path` mirrors `--view-node`.
@@ -57,10 +60,12 @@ impl PoseTransformEntry {
                 azimuth,
                 elevation,
                 distance,
+                center,
             } => PoseTransform::Orbit {
                 azimuth,
                 elevation,
                 distance: distance.map_or(FitOrFixed::Fit, |distance| distance.0),
+                center: center.map(TyVector3F64::from_array),
             },
 
             PoseTransformEntry::Node {
