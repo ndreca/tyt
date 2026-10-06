@@ -534,7 +534,8 @@ mod tests {
                 ),
                 at_size(1.0)
             ),
-            "model: grid must hold at most 134217728 cells, not 1000000000"
+            "model: grid over [0, 0, 0] .. [1000, 1000, 1000] must hold at most 134217728 cells, \
+             not 1000000000"
         );
         assert_eq!(
             error(

@@ -1,6 +1,6 @@
 use crate::{
     Error, Result,
-    operations::sdf_doc::{FACE_OFFSETS, SdfCell, SdfGrid, SdfSampling, has_open_face},
+    operations::sdf_doc::{FACE_OFFSETS, SdfCell, SdfGrid, SdfSampling, has_open_face, meters},
     utilities::{FillMode, VoxelFrame},
 };
 use sdfcore::{SdfMain, SdfState, SdfStep};
@@ -43,6 +43,17 @@ pub fn report(
 
     let covered: HashSet<TyVector3I32> = place_cells.iter().flatten().copied().collect();
     let pieces = face_pieces(&covered);
+
+    // A model in one piece leaves no part detached and lists no pieces.
+    let piece_of: HashMap<TyVector3I32, usize> = match pieces.len() {
+        0 | 1 => HashMap::new(),
+        _ => pieces
+            .iter()
+            .enumerate()
+            .flat_map(|(index, piece)| piece.iter().map(move |cell| (*cell, index)))
+            .collect(),
+    };
+    let detached = detached_places(sampling, &place_cells, &piece_of, pieces.len());
 
     // The voxel counts read the cells the document holds.
     let (place_voxels, voxels) = match fill_mode {
@@ -133,6 +144,7 @@ pub fn report(
         sampling,
         place_cells: &place_cells,
         place_voxels: &place_voxels,
+        detached: &detached,
         lines: &mut lines,
     };
 
@@ -145,12 +157,6 @@ pub fn report(
     }
 
     if pieces.len() > 1 {
-        let piece_of: HashMap<TyVector3I32, usize> = pieces
-            .iter()
-            .enumerate()
-            .flat_map(|(index, piece)| piece.iter().map(move |cell| (*cell, index)))
-            .collect();
-
         let mut sources: Vec<Vec<String>> = vec![Vec::new(); pieces.len()];
 
         for (place_index, place) in sampling.places.iter().enumerate() {
@@ -242,6 +248,9 @@ struct ReportWriter<'a> {
     /// Each place's cells the document holds.
     place_voxels: &'a [HashSet<TyVector3I32>],
 
+    /// Whether each place reads detached.
+    detached: &'a [bool],
+
     lines: &'a mut Vec<ReportLine>,
 }
 
@@ -251,19 +260,6 @@ impl ReportWriter<'_> {
     fn place(&mut self, place_index: usize, depth: usize) {
         let place = &self.sampling.places[place_index];
         let cells = &self.place_cells[place_index];
-
-        let detached = place.parent.is_some_and(|parent| {
-            let parent_cells = &self.place_cells[parent];
-
-            !cells.is_empty()
-                && !parent_cells.is_empty()
-                && !cells.iter().any(|cell| {
-                    parent_cells.contains(cell)
-                        || FACE_OFFSETS
-                            .iter()
-                            .any(|face| parent_cells.contains(&(*cell + *face)))
-                })
-        });
 
         self.lines.push(ReportLine {
             kind: LineKind::Part,
@@ -281,7 +277,7 @@ impl ReportWriter<'_> {
                     )),
                 ],
                 extent_fields(cells.iter().copied(), self.sampling.voxel_size),
-                vec![detached.then(|| Field::Text("detached".to_owned()))],
+                vec![self.detached[place_index].then(|| Field::Text("detached".to_owned()))],
             ]
             .concat(),
         });
@@ -387,18 +383,6 @@ fn extent_fields(cells: impl Iterator<Item = TyVector3I32>, voxel_size: f64) -> 
     ]
 }
 
-/// `value` rounded to six decimals with trailing zeros dropped and `-0` read as
-/// `0`.
-fn meters(value: f64) -> String {
-    let text = format!("{value:.6}");
-    let text = text.trim_end_matches('0').trim_end_matches('.');
-
-    match text {
-        "-0" => "0".to_owned(),
-        _ => text.to_owned(),
-    }
-}
-
 /// The live cells of `grid` by lattice index.
 fn live_cells(grid: &SdfGrid) -> impl Iterator<Item = TyVector3I32> + '_ {
     grid_cells(grid)
@@ -431,6 +415,60 @@ fn grid_cells(grid: &SdfGrid) -> impl Iterator<Item = (TyVector3I32, &SdfCell)> 
 
         (grid.min + offset, cell)
     })
+}
+
+/// Whether each place of `sampling` reads detached: the place and its parent
+/// have live cells, yet no piece holding the cells of the place or a part below
+/// it holds a cell of the parent. `piece_of` holds the piece of every cell in
+/// `place_cells` once the model splits into `piece_count` pieces.
+fn detached_places(
+    sampling: &SdfSampling,
+    place_cells: &[HashSet<TyVector3I32>],
+    piece_of: &HashMap<TyVector3I32, usize>,
+    piece_count: usize,
+) -> Vec<bool> {
+    let place_count = sampling.places.len();
+
+    if piece_count < 2 {
+        return vec![false; place_count];
+    }
+
+    let mut children = vec![Vec::new(); place_count];
+
+    for (index, place) in sampling.places.iter().enumerate() {
+        if let Some(parent) = place.parent {
+            children[parent].push(index);
+        }
+    }
+
+    let place_pieces: Vec<HashSet<usize>> = place_cells
+        .iter()
+        .map(|cells| cells.iter().map(|cell| piece_of[cell]).collect())
+        .collect();
+
+    (0..place_count)
+        .map(|index| {
+            let Some(parent) = sampling.places[index].parent else {
+                return false;
+            };
+
+            if place_cells[index].is_empty() || place_cells[parent].is_empty() {
+                return false;
+            }
+
+            let mut below = vec![index];
+            let mut stack = vec![index];
+
+            while let Some(place) = stack.pop() {
+                below.extend(&children[place]);
+                stack.extend(&children[place]);
+            }
+
+            below
+                .iter()
+                .all(|&place| place_pieces[place].is_disjoint(&place_pieces[parent]))
+        })
+        .collect()
 }
 
 /// The face-connected groups of `cells`, from the largest. Among groups of one
@@ -635,6 +673,65 @@ model.voxj  37 voxels of 1 m  2 pieces  7x3x4  [0, 0, 0] .. [7, 3, 4]
     add  pebble  1 cell  1 kept  1 exposed  1x1x1  [6, 0, 0] .. [7, 1, 1]
   piece 1  36 voxels  4x3x4  [0, 0, 0] .. [4, 3, 4]  from body, lid
   piece 2   1 voxel   1x1x1  [6, 0, 0] .. [7, 1, 1]  from pebble
+"
+        );
+    }
+
+    #[test]
+    fn a_part_resting_on_a_sibling_reads_attached() {
+        // The pebble sits on the lid and clears the body.
+        let mut state = parts_main().state().clone();
+        state.shapes3d[U32Id::from_u32(2).to_usize_id()] = SdfShape3d::Box {
+            min: TyVector3F64::new(1.0, 3.0, 1.0),
+            max: TyVector3F64::new(2.0, 4.0, 2.0),
+            round: None,
+        };
+        state.nodes[U32Id::from_u32(1).to_usize_id()].pivot =
+            Some(TyVector3F64::new(1.0, 3.0, 1.0));
+
+        assert_eq!(
+            report_on(&SdfMain::new(state).unwrap(), 1.0, FillMode::Solid),
+            "\
+model.voxj  37 voxels of 1 m  1 piece  4x4x4  [0, 0, 0] .. [4, 4, 4]
+  add  body  32 cells  32 kept  32 exposed  4x2x4  [0, 0, 0] .. [4, 2, 4]
+  part  lid  4 voxels  2x1x2  [1, 2, 1] .. [3, 3, 3]
+    add  lid  4 cells  4 kept  4 exposed  2x1x2  [1, 2, 1] .. [3, 3, 3]
+  part  pebble  1 voxel  1x1x1  [1, 3, 1] .. [2, 4, 2]
+    add  pebble  1 cell  1 kept  1 exposed  1x1x1  [1, 3, 1] .. [2, 4, 2]
+"
+        );
+    }
+
+    #[test]
+    fn parts_floating_together_off_their_parent_read_detached() {
+        // The lid hovers a cell above the body, and the pebble sits on the lid.
+        let mut state = parts_main().state().clone();
+        state.shapes3d[U32Id::from_u32(1).to_usize_id()] = SdfShape3d::Box {
+            min: TyVector3F64::new(1.0, 3.0, 1.0),
+            max: TyVector3F64::new(3.0, 4.0, 3.0),
+            round: None,
+        };
+        state.shapes3d[U32Id::from_u32(2).to_usize_id()] = SdfShape3d::Box {
+            min: TyVector3F64::new(1.0, 4.0, 1.0),
+            max: TyVector3F64::new(2.0, 5.0, 2.0),
+            round: None,
+        };
+        state.nodes[U32Id::from_u32(0).to_usize_id()].pivot =
+            Some(TyVector3F64::new(2.0, 3.0, 2.0));
+        state.nodes[U32Id::from_u32(1).to_usize_id()].pivot =
+            Some(TyVector3F64::new(1.0, 4.0, 1.0));
+
+        assert_eq!(
+            report_on(&SdfMain::new(state).unwrap(), 1.0, FillMode::Solid),
+            "\
+model.voxj  37 voxels of 1 m  2 pieces  4x5x4  [0, 0, 0] .. [4, 5, 4]
+  add  body  32 cells  32 kept  32 exposed  4x2x4  [0, 0, 0] .. [4, 2, 4]
+  part  lid  4 voxels  2x1x2  [1, 3, 1] .. [3, 4, 3]  detached
+    add  lid  4 cells  4 kept  4 exposed  2x1x2  [1, 3, 1] .. [3, 4, 3]
+  part  pebble  1 voxel  1x1x1  [1, 4, 1] .. [2, 5, 2]  detached
+    add  pebble  1 cell  1 kept  1 exposed  1x1x1  [1, 4, 1] .. [2, 5, 2]
+  piece 1  32 voxels  4x2x4  [0, 0, 0] .. [4, 2, 4]  from body
+  piece 2   5 voxels  2x2x2  [1, 3, 1] .. [3, 5, 3]  from lid, pebble
 "
         );
     }

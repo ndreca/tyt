@@ -402,7 +402,7 @@ function show(num, runNo, name) {
   const passes = run.passImages;
   document.getElementById("viewer-passes-label").hidden = !passes.length;
   document.getElementById("viewer-passes").innerHTML = passes.map((p, i) =>
-    `<button type="button" data-pass="${esc(p)}" aria-label="Hero after pass ${i + 1}"><img loading="lazy" src="runs/${esc(run.dir)}/passes/${esc(p)}.webp" alt=""><span>Pass ${i + 1}</span></button>`
+    `<button type="button" data-pass="${i}" aria-label="Hero after pass ${i + 1}"><img loading="lazy" src="${esc(p)}" alt=""><span>Pass ${i + 1}</span></button>`
   ).join("");
   document.getElementById("viewer-meta").textContent = `${run.passes} passes, ${run.minutes} min, ${run.turns} turns, ${run.pieces} piece${run.pieces === 1 ? "" : "s"}`;
   setStage(src(run, name), `${extraLabel(name)} view`);
@@ -431,7 +431,7 @@ document.getElementById("viewer-passes").addEventListener("click", e => {
   const b = e.target.closest("[data-pass]");
   if (!b || !open) return;
   document.querySelectorAll("#viewer-views .thumb").forEach(t => t.setAttribute("aria-current", "false"));
-  setStage(`runs/${open.run.dir}/passes/${b.dataset.pass}.webp`, "hero view after an earlier pass");
+  setStage(open.run.passImages[b.dataset.pass], "hero view after an earlier pass");
 });
 document.getElementById("viewer-close").addEventListener("click", () => dialog.close());
 dialog.addEventListener("click", e => { if (e.target === dialog) dialog.close(); });

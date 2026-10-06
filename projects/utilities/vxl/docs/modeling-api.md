@@ -751,8 +751,8 @@ sits inside the apron.
 
 With parts, each place of a part gets a part line. The part's steps and child
 parts follow, indented one level past the part line. A part line counts the
-part's live cells. A part reads `detached` when none of its cells meets a parent
-cell in the same position or across a face. The model's line and the pieces
+part's live cells. A part reads `detached` when neither it nor a part below it
+shares a face-connected piece with its parent. The model's line and the pieces
 count the cells the parts cover together. A part reading `0 voxels` writes its
 node with no object. The report for a model in more than one face-connected
 piece ends with a line per piece. The piece lines run from the largest piece

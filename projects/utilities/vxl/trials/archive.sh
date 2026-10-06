@@ -1,6 +1,7 @@
 #!/bin/sh
 # Moves the round in $VOXEL_TRIALS aside to rounds/<round>, with each session's
-# full transcript. Each slot keeps its .claude folder for the next round.
+# full transcript and any memory it wrote. Each slot keeps its .claude folder for
+# the next round.
 # Usage: archive.sh <round>
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
@@ -22,6 +23,9 @@ for dir in $(jq -r '.[].dir' "$here/prompts.json"); do
     project=$HOME/.claude/projects/$(printf '%s' "$slot" | sed 's/[^A-Za-z0-9]/-/g')
     [ -f "$project/$id.jsonl" ] && cp "$project/$id.jsonl" "$root/_runs/$run/session.jsonl"
     [ -d "$project/$id" ] && cp -R "$project/$id" "$root/_runs/$run/session"
+    if [ -n "$(ls -A "$project/memory" 2>/dev/null)" ]; then
+      mv "$project/memory" "$root/_runs/$run/memory"
+    fi
   done
 done
 

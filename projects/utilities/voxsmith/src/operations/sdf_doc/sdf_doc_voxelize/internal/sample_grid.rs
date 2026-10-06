@@ -2,7 +2,7 @@ use crate::{
     Error, Result,
     operations::sdf_doc::{
         Bounds3d, LatticeShapes, SdfCell, SdfEvaluation, SdfGrid, SdfShapes, SdfStepRecord,
-        ShapeSource, pattern_material, side_direction, whole_count,
+        ShapeSource, meters, pattern_material, side_direction, whole_count,
     },
 };
 use branded_id::{IdVec, U32Id};
@@ -69,8 +69,21 @@ pub fn sample_grid(
             let count = extent.x * extent.y * extent.z;
 
             if count > MOST_CELLS {
+                let corner = |cells: TyVector3F64| {
+                    let position = cells * voxel_size;
+
+                    format!(
+                        "[{}, {}, {}]",
+                        meters(position.x),
+                        meters(position.y),
+                        meters(position.z)
+                    )
+                };
+
                 return Err(Error::invalid(format!(
-                    "{path}: grid must hold at most {MOST_CELLS} cells, not {count}"
+                    "{path}: grid over {} .. {} must hold at most {MOST_CELLS} cells, not {count}",
+                    corner(range.min),
+                    corner(range.max)
                 )));
             }
 

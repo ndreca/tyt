@@ -8,7 +8,7 @@ holds findings.json and the images it references. Each finding lists its
 evidence by the ids analysis_items.py prints. Every item has to sit in some
 finding.
 """
-import json, os, re, shutil, statistics, subprocess, sys
+import base64, json, os, re, shutil, statistics, subprocess, sys
 
 from analysis_items import items
 
@@ -50,9 +50,11 @@ def size_label(value):
 
 
 def copy_images(run):
-    """Copies a run's final renders and shrinks each pass's hero render."""
+    """Copies a run's final renders and shrinks each pass's hero render into a
+    data URI. The pass renders ride in the page because a published page holds
+    at most 511 files."""
     out = os.path.join(gallery, "runs", run)
-    os.makedirs(os.path.join(out, "passes"))
+    os.makedirs(out)
     views, extras = [], []
     for name in sorted(os.listdir(slot_dir(run))):
         if not name.endswith(".png"):
@@ -67,12 +69,12 @@ def copy_images(run):
     for snapshot in sorted(os.listdir(passes_dir)) if os.path.isdir(passes_dir) else []:
         heroes = sorted(f for f in os.listdir(os.path.join(passes_dir, snapshot)) if f.endswith("-hero.png"))
         if heroes:
-            subprocess.run(
+            webp = subprocess.run(
                 ["magick", os.path.join(passes_dir, snapshot, heroes[0]), "-resize", "360x360",
-                 "-quality", "82", os.path.join(out, "passes", snapshot + ".webp")],
-                check=True,
-            )
-            passes.append(snapshot)
+                 "-quality", "82", "webp:-"],
+                check=True, capture_output=True,
+            ).stdout
+            passes.append("data:image/webp;base64," + base64.b64encode(webp).decode())
     order = ["hero", "front", "right", "top"]
     return sorted(views, key=order.index), extras, passes
 

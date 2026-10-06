@@ -52,7 +52,8 @@ sh projects/utilities/vxl/trials/archive.sh 2026-10-04
    analysis items behind it. The build errors when an item sits in no finding.
    `analysis_items.py` prints the items with their ids
 5. `archive.sh <round>` moves the round to `rounds/<round>` and copies each
-   session's full transcript beside its record
+   session's full transcript beside its record. It moves any memory a session
+   wrote there too because the next session in the slot would load it
 
 `run-trial.sh <run>` runs one session by hand, and `wait-trial.sh <run>` waits
 for it. `summarize-transcript.py <run>` prints a run's transcript without its

@@ -583,9 +583,9 @@ A pattern length left out takes its default count of cells times `g`.
    cells the step wrote.
 3. A part line's count, size, and bounds cover the part's live cells at that
    place. A part with live cells reads `detached` when its parent has live cells
-   and none of the part's cells meets a parent cell, either in the same position
-   or across a face. The model's line and the pieces cover the cells the placed
-   parts cover together.
+   and no piece holding the cells of the part or a part below it holds a parent
+   cell. The model's line and the pieces cover the cells the placed parts cover
+   together.
 4. Pieces are the face-connected groups of the cells the placed parts cover. The
    report numbers the pieces from the largest. Among pieces of one size, the
    piece whose first cell comes first in a raster scan with x outermost takes
