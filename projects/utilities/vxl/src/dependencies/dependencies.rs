@@ -1,6 +1,6 @@
 use crate::{
-    CreateTempDir, DisplayImage, ListDir, ReadFile, ResolvePrefsPaths, RunProgram, TerminalColumns,
-    WriteFile, WriteStdout,
+    CreateTempDir, DisplayImage, ListDir, ReadFile, ReadPathKind, ResolvePrefsPaths, RunProgram,
+    TerminalColumns, WriteFile, WriteStdout,
 };
 use meshconv::{
     Dependencies as MeshconvDependencies, ListDir as MeshListDir, ReadFile as MeshReadFile,
@@ -26,6 +26,7 @@ pub trait Dependencies:
     + ResolvePrefsPaths
     + CreateTempDir
     + RunProgram
+    + ReadPathKind
     + VoxconvDependencies
     + MeshconvDependencies
     + MeshReadFile
@@ -47,6 +48,8 @@ impl<
         + ResolvePrefsPaths
         + CreateTempDir
         + RunProgram
+        + ReadPathKind
+        + ReadPathKind
         + VoxconvDependencies
         + MeshconvDependencies
         + MeshReadFile

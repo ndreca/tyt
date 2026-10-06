@@ -1,5 +1,6 @@
 // Public API
 
+mod integration;
 mod mesh_doc;
 mod node;
 mod object;
@@ -8,6 +9,7 @@ mod profile;
 mod sdf_doc;
 mod vox_doc;
 
+pub use integration::*;
 pub use mesh_doc::*;
 pub use node::*;
 pub use object::*;

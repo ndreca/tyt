@@ -1,6 +1,6 @@
 use crate::{
-    CreateTempDir, DirectoryEntry, DisplayImage, ListDir, ReadFile, ResolvePrefsPaths, RunProgram,
-    TerminalColumns, WriteFile, WriteStdout,
+    CreateTempDir, DirectoryEntry, DisplayImage, ListDir, PathKind, ReadFile, ReadPathKind,
+    ResolvePrefsPaths, RunProgram, TerminalColumns, WriteFile, WriteStdout,
 };
 use crossterm::{
     event::{poll, read},
@@ -23,7 +23,7 @@ use std::mem;
 use std::{
     ffi::OsString,
     fs,
-    io::{self, Error as IOError, IsTerminal, Result as IOResult, Write},
+    io::{self, Error as IOError, ErrorKind, IsTerminal, Result as IOResult, Write},
     path::Path,
     process::Command,
     time::Duration,
@@ -120,6 +120,28 @@ impl CreateTempDir for DependenciesImpl {
 impl RunProgram for DependenciesImpl {
     fn run_program(&self, program: &str, args: &[OsString]) -> IOResult<Option<i32>> {
         Ok(Command::new(program).args(args).status()?.code())
+    }
+}
+
+impl ReadPathKind for DependenciesImpl {
+    fn read_path_kind(&self, path: &Path) -> IOResult<PathKind> {
+        let file_type = match fs::symlink_metadata(path) {
+            Ok(metadata) => metadata.file_type(),
+
+            Err(e) if e.kind() == ErrorKind::NotFound => return Ok(PathKind::Missing),
+
+            Err(e) => return Err(e),
+        };
+
+        if file_type.is_symlink() {
+            Ok(PathKind::Symlink {
+                target: fs::read_link(path)?,
+            })
+        } else if file_type.is_dir() {
+            Ok(PathKind::Directory)
+        } else {
+            Ok(PathKind::File)
+        }
     }
 }
 

@@ -9,6 +9,14 @@ pub enum AgentSkill {
 }
 
 impl AgentSkill {
+    /// The skill's name, used as its directory and its command-line value.
+    pub fn name(self) -> String {
+        self.to_possible_value()
+            .expect("every skill has a command-line value")
+            .get_name()
+            .to_owned()
+    }
+
     /// The skill's `SKILL.md`. The frontmatter records the vxl version that
     /// printed the skill.
     pub fn skill_md(self) -> String {
@@ -26,15 +34,12 @@ impl AgentSkill {
                 ],
             ),
         };
-        let name = self
-            .to_possible_value()
-            .expect("every skill has a command-line value");
         let version = env!("CARGO_PKG_VERSION");
         let body = sections.join("\n");
         format!(
             "---\nname: {}\ndescription: {description}\nmetadata:\n  vxl-version: \"{version}\"\n\
              ---\n\n{body}",
-            name.get_name(),
+            self.name(),
         )
     }
 }

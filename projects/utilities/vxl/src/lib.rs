@@ -2,7 +2,7 @@
 
 // Public API
 
-/// The subcommands [`Vxl`] dispatches to.
+/// The subcommands [`Vxl`] and the `vxl integration` group dispatch to.
 pub mod commands;
 pub mod dependencies;
 

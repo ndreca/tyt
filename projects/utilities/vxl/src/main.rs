@@ -1,7 +1,7 @@
-use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
+use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::Shell;
 use std::{io, process};
-use vxl::{AgentSkill, DependenciesImpl, Error, Vxl};
+use vxl::{DependenciesImpl, Error, Vxl, commands::IntegrationSkill};
 
 const COMPLETION_INSTALL_HELP: &str = "\
 Installing:
@@ -25,7 +25,7 @@ struct Cli {
 
 #[derive(Clone, Debug, Subcommand)]
 enum Command {
-    /// Prints files for other tools.
+    /// Sets up other tools to work with vxl.
     #[command(name = "integration", subcommand)]
     Integration(Integration),
 
@@ -33,7 +33,7 @@ enum Command {
     Vxl(Box<Vxl>),
 }
 
-/// The commands that print a file for another tool.
+/// The commands that set up other tools to work with vxl.
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 enum Integration {
@@ -41,9 +41,9 @@ enum Integration {
     #[command(name = "completion", subcommand)]
     Completion(Completion),
 
-    /// Prints agent skills.
-    #[command(name = "skill", subcommand)]
-    Skill(Skill),
+    /// Lists, prints, and installs agent skills.
+    #[command(name = "skill")]
+    Skill(IntegrationSkill),
 }
 
 /// The commands for shell completions.
@@ -59,67 +59,29 @@ enum Completion {
     },
 }
 
-/// The commands for agent skills.
-#[derive(Clone, Debug, Subcommand)]
-#[command(subcommand_value_name = "command")]
-enum Skill {
-    /// Prints a skill as a `SKILL.md`.
-    #[command(name = "print", after_help = skill_install_help())]
-    Print {
-        /// The skill to print.
-        #[arg(value_name = "skill")]
-        skill: AgentSkill,
-    },
-}
-
 fn main() {
     let cli = Cli::parse();
-    match cli.command {
+    let result = match cli.command {
         Command::Integration(Integration::Completion(Completion::Print { shell })) => {
             clap_complete::generate(shell, &mut Cli::command(), "vxl", &mut io::stdout());
+            Ok(())
         }
 
-        Command::Integration(Integration::Skill(Skill::Print { skill })) => {
-            print!("{}", skill.skill_md());
-        }
+        Command::Integration(Integration::Skill(skill)) => skill.execute(DependenciesImpl),
 
-        Command::Vxl(cmd) => {
-            if let Err(e) = cmd.execute(DependenciesImpl) {
-                match e {
-                    Error::Usage(clap_error) => clap_error.exit(),
+        Command::Vxl(cmd) => cmd.execute(DependenciesImpl),
+    };
 
-                    e => {
-                        eprintln!("error: {e}");
-                        process::exit(1);
-                    }
-                }
+    if let Err(e) = result {
+        match e {
+            Error::Usage(clap_error) => clap_error.exit(),
+
+            e => {
+                eprintln!("error: {e}");
+                process::exit(1);
             }
         }
     }
-}
-
-fn skill_install_help() -> String {
-    let installs: Vec<_> = AgentSkill::value_variants()
-        .iter()
-        .map(|skill| {
-            let value = skill
-                .to_possible_value()
-                .expect("every skill has a command-line value");
-            let name = value.get_name();
-            format!(
-                "  mkdir -p .claude/skills/{name}\n  \
-                 vxl integration skill print {name} > .claude/skills/{name}/SKILL.md"
-            )
-        })
-        .collect();
-    format!(
-        "Installing in the current project for Claude Code:\n{}\n\n\
-         With ~/.claude/skills in place of .claude/skills, the commands install the\n\
-         skill for every project. A new Claude Code session loads a skill when a\n\
-         prompt asks for what the skill does. The prompt \"make a voxel chair\"\n\
-         asks for vxl-model. Upgrading vxl takes a reprint.",
-        installs.join("\n\n")
-    )
 }
 
 #[cfg(test)]
