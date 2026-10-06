@@ -30,19 +30,6 @@ The `bin` feature builds the `vxl` binary. The same command upgrades vxl.
 [Bun](https://bun.sh) or [Deno](https://deno.com) instead. The skill's passes
 run under Node.
 
-### Shell completions
-
-`vxl integration completion <shell> install` writes completions for bash,
-elvish, fish, powershell, or zsh where the shell loads them:
-
-```sh
-vxl integration completion zsh install
-```
-
-For elvish, powershell, and zsh the install also prints one line to add to the
-shell's startup file. `vxl integration completion <shell> print` prints the
-completions to stdout instead.
-
 ### Agent skill
 
 The `vxl-model` skill teaches [Claude Code](https://claude.com/claude-code) and
@@ -60,6 +47,19 @@ for every project instead. `vxl integration agents-link new` links `.claude` to
 exists, `vxl integration agents-link move` moves its contents into `.agents`
 before linking. The skill teaches the API of the vxl that installed it.
 Upgrading vxl takes a reinstall.
+
+### Shell completions
+
+`vxl integration completion <shell> install` writes completions for bash,
+elvish, fish, powershell, or zsh where the shell loads them:
+
+```sh
+vxl integration completion zsh install
+```
+
+For elvish, powershell, and zsh the install also prints one line to add to the
+shell's startup file. `vxl integration completion <shell> print` prints the
+completions to stdout instead.
 
 ## Modeling with Claude Code
 
