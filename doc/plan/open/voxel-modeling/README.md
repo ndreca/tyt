@@ -132,23 +132,26 @@ vxl object render chair.voxj
 ## Skill
 
 A skill teaches Claude the loop because nothing else tells Claude the builder
-exists. vxl prints the skill as one `SKILL.md`:
+exists. vxl installs the skill as one `SKILL.md`:
 
 ```sh
-mkdir -p .claude/skills/vxl-model
-vxl integration skill print vxl-model > .claude/skills/vxl-model/SKILL.md
+vxl integration skill vxl-model install claude
 ```
 
 `SKILL.md` holds the workflow, then the modeling API with its example model. One
-file loses nothing because Claude reads the whole API every pass. A skill under
-`~/.claude/skills/` serves every project. `SKILL.md` records the vxl version
-that printed it. Upgrading vxl takes a reprint.
+file loses nothing because Claude reads the whole API every pass. `install
+claude` writes `.claude/skills/vxl-model/SKILL.md`, and `install agents` writes
+it under the `.agents` that Codex reads. The install works at the git root, or
+under the home directory for every project with `--user`.
+`vxl integration agents-link` links `.claude` to `.agents` so both agents share
+one folder. `SKILL.md` records the vxl version that installed it. Upgrading vxl
+takes a reinstall.
 
-`vxl integration` gathers the commands that print a file for another tool.
-`vxl integration completion print <shell>` takes over from `vxl completion`.
-Every other binary in the workspace follows. `--help` lists the shells and
-skills each command takes. The help also shows the commands that install the
-printed files.
+`vxl integration` gathers the commands that set up other tools to work with vxl.
+`vxl integration completion <shell> print` takes over from `vxl completion`.
+`install` writes the completions where the shell loads them. Every binary in the
+workspace takes its completion commands from ty-clap. `--help` lists the shells
+and skills each command takes.
 
 The skill walks Claude through the workflow: pick a voxel size, write real sizes
 in meters, block out with boxes, voxelize at the chosen size, review, fix the
@@ -214,11 +217,13 @@ skips the build voxelizes a stale `.sdfj`.
     its label, with bounds in the meters a model writes. JSON would double each
     pass's tokens, and a table's header would hold the labels away from the
     values.
-14. vxl ships the skill and prints it to stdout. The caller picks where the
-    skill lands. The printed skill teaches the API of the vxl that printed it.
+14. vxl ships the skill. `vxl integration skill vxl-model install <target>`
+    writes it under `.claude/skills` or `.agents/skills`. `print` prints it to
+    stdout. The installed skill teaches the API of the vxl that installed it.
 15. In every binary of the workspace, `integration` gathers the commands that
-    print a file for another tool. `integration completion print` takes over
-    from `completion`. `vxl integration skill print` prints the skill.
+    set up other tools. `integration completion <shell> print` takes over from
+    `completion`. `integration completion <shell> install` writes the
+    completions where the shell loads them. ty-clap holds both for every binary.
 16. The SDF crates follow the voxel and mesh families. The family keeps that
     structure even with `.sdfj` as its one format. The crates stay thin because
     voxsmith does the work.

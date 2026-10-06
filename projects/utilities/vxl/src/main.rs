@@ -1,22 +1,10 @@
 use clap::{CommandFactory, Parser, Subcommand};
-use clap_complete::Shell;
-use std::{io, process};
+use std::process;
+use ty_clap::{Completion, DependenciesImpl as ClapDependenciesImpl};
 use vxl::{
     DependenciesImpl, Error, Vxl,
     commands::{IntegrationAgentsLink, IntegrationSkill},
 };
-
-const COMPLETION_INSTALL_HELP: &str = "\
-Installing:
-  bash        vxl integration completion print bash > ~/.local/share/bash-completion/completions/vxl
-  elvish      echo 'eval (vxl integration completion print elvish | slurp)' >> ~/.config/elvish/rc.elv
-  fish        vxl integration completion print fish > ~/.config/fish/completions/vxl.fish
-  powershell  Add-Content $PROFILE 'vxl integration completion print powershell | Out-String | Invoke-Expression'
-  zsh         vxl integration completion print zsh > ~/.zsh/completions/_vxl
-
-Each target directory has to exist. zsh also needs
-fpath=(~/.zsh/completions $fpath) before compinit in ~/.zshrc. A new shell then
-completes vxl on Tab.";
 
 /// A command-line tool for working with voxels.
 #[derive(Clone, Debug, Parser)]
@@ -40,11 +28,11 @@ enum Command {
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 enum Integration {
-    /// Links `.claude/skills` to `.agents/skills` for Claude Code.
+    /// Links `.claude` to `.agents` for Claude Code.
     #[command(name = "agents-link")]
     AgentsLink(IntegrationAgentsLink),
 
-    /// Prints shell completions.
+    /// Prints and installs shell completions.
     #[command(name = "completion", subcommand)]
     Completion(Completion),
 
@@ -53,26 +41,12 @@ enum Integration {
     Skill(IntegrationSkill),
 }
 
-/// The commands for shell completions.
-#[derive(Clone, Debug, Subcommand)]
-#[command(subcommand_value_name = "command")]
-enum Completion {
-    /// Prints the completions for a shell.
-    #[command(name = "print", after_help = COMPLETION_INSTALL_HELP)]
-    Print {
-        /// The shell to print completions for.
-        #[arg(value_name = "shell")]
-        shell: Shell,
-    },
-}
-
 fn main() {
     let cli = Cli::parse();
     let result = match cli.command {
-        Command::Integration(Integration::Completion(Completion::Print { shell })) => {
-            clap_complete::generate(shell, &mut Cli::command(), "vxl", &mut io::stdout());
-            Ok(())
-        }
+        Command::Integration(Integration::Completion(completion)) => completion
+            .execute(&ClapDependenciesImpl, Cli::command(), "vxl")
+            .map_err(Error::IO),
 
         Command::Integration(Integration::AgentsLink(agents_link)) => {
             agents_link.execute(DependenciesImpl)

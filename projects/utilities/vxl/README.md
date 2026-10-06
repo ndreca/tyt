@@ -32,56 +32,34 @@ run under Node.
 
 ### Shell completions
 
-`vxl integration completion print <shell>` prints completions to stdout:
+`vxl integration completion <shell> install` writes completions for bash,
+elvish, fish, powershell, or zsh where the shell loads them:
 
 ```sh
-# Bash (bash-completion v2 user-local)
-mkdir -p ~/.local/share/bash-completion/completions
-vxl integration completion print bash > ~/.local/share/bash-completion/completions/vxl
-
-# Zsh
-mkdir -p ~/.zsh/completions
-vxl integration completion print zsh > ~/.zsh/completions/_vxl
-# Then ensure this is in your .zshrc *before* compinit:
-#   fpath=("$HOME/.zsh/completions" $fpath)
-
-# Zsh (Oh My Zsh)
-mkdir -p ~/.oh-my-zsh/custom/completions
-vxl integration completion print zsh > ~/.oh-my-zsh/custom/completions/_vxl
-# If completions don't show up, ensure this is in your .zshrc *before* compinit:
-#   fpath=("$HOME/.oh-my-zsh/custom/completions" $fpath)
-
-# Fish
-mkdir -p ~/.config/fish/completions
-vxl integration completion print fish > ~/.config/fish/completions/vxl.fish
-
-# PowerShell
-# recommended: keep completions in a separate file and dot-source it from your $PROFILE
-$dir = Join-Path $HOME ".config\powershell"
-New-Item -ItemType Directory -Force -Path $dir | Out-Null
-
-vxl integration completion print powershell | Set-Content -Encoding UTF8 (Join-Path $dir "vxl-completions.ps1")
-
-if (!(Test-Path $PROFILE)) { New-Item -ItemType File -Force -Path $PROFILE | Out-Null }
-$line = ". `"$dir\vxl-completions.ps1`""
-if (-not (Select-String -Quiet -Path $PROFILE -Pattern [regex]::Escape($line))) {
-  Add-Content -Path $PROFILE -Value $line
-}
+vxl integration completion zsh install
 ```
 
-### Claude Code skill
+For elvish, powershell, and zsh the install also prints one line to add to the
+shell's startup file. `vxl integration completion <shell> print` prints the
+completions to stdout instead.
 
-The `vxl-model` skill teaches [Claude Code](https://claude.com/claude-code) to
-build voxel models with vxl:
+### Agent skill
+
+The `vxl-model` skill teaches [Claude Code](https://claude.com/claude-code) and
+[Codex](https://developers.openai.com/codex) to build voxel models with vxl.
+`install` takes the skills directory to write: `claude` for Claude Code's
+`.claude/skills`, or `agents` for the `.agents/skills` that Codex reads:
 
 ```sh
-# Installs the skill for every project.
-mkdir -p ~/.claude/skills/vxl-model
-vxl integration skill print vxl-model > ~/.claude/skills/vxl-model/SKILL.md
+vxl integration skill vxl-model install claude
 ```
 
-A project's `.claude/skills` folder holds the skill for that project alone. The
-skill teaches the API of the vxl that printed it. Upgrading vxl takes a reprint.
+The install works at the git root. `--user` installs under the home directory
+for every project instead. `vxl integration agents-link new` links `.claude` to
+`.agents` so Claude Code and Codex share one folder. When `.claude` already
+exists, `vxl integration agents-link move` moves its contents into `.agents`
+before linking. The skill teaches the API of the vxl that installed it.
+Upgrading vxl takes a reinstall.
 
 ## Modeling with Claude Code
 

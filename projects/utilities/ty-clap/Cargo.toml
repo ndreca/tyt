@@ -1,0 +1,21 @@
+[package]
+name = "ty-clap"
+version = "0.1.0"
+edition = "2024"
+license-file = "LICENSE"
+repository = "https://github.com/tyleo/tyt"
+description = "Shared clap commands for command-line binaries, such as shell completions."
+
+[package.metadata.workspaces]
+independent = true
+
+[dependencies]
+clap = { version = "4.5.58", features = ["derive"] }
+clap_complete = "4.5"
+
+[dev-dependencies]
+tempfile = "3.27"
+
+[features]
+default = ["impl"]
+impl = []

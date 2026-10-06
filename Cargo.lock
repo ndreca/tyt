@@ -1916,6 +1916,15 @@ name = "treeselect"
 version = "0.2.0"
 
 [[package]]
+name = "ty-clap"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "clap_complete",
+ "tempfile",
+]
+
+[[package]]
 name = "ty-math"
 version = "0.4.0"
 dependencies = [
@@ -1945,7 +1954,7 @@ name = "tyt"
 version = "0.5.0"
 dependencies = [
  "clap",
- "clap_complete",
+ "ty-clap",
  "tyt-claude",
  "tyt-common",
  "tyt-cubemap",
@@ -1965,8 +1974,8 @@ name = "tyt-claude"
 version = "0.3.0"
 dependencies = [
  "clap",
- "clap_complete",
  "serde",
+ "ty-clap",
  "ty-preferences",
  "tyt-common",
  "tyt-injection",
@@ -1981,7 +1990,7 @@ name = "tyt-cubemap"
 version = "0.3.0"
 dependencies = [
  "clap",
- "clap_complete",
+ "ty-clap",
  "tyt-common",
  "tyt-injection",
 ]
@@ -1992,9 +2001,9 @@ version = "0.4.0"
 dependencies = [
  "branded-id",
  "clap",
- "clap_complete",
  "treegrid",
  "treeselect",
+ "ty-clap",
  "ty-math",
  "tyt-common",
  "tyt-injection",
@@ -2005,8 +2014,8 @@ name = "tyt-fs"
 version = "0.4.0"
 dependencies = [
  "clap",
- "clap_complete",
  "serde",
+ "ty-clap",
  "ty-preferences",
  "tyt-common",
  "tyt-injection",
@@ -2017,7 +2026,7 @@ name = "tyt-image"
 version = "0.3.0"
 dependencies = [
  "clap",
- "clap_complete",
+ "ty-clap",
  "tyt-common",
  "tyt-injection",
 ]
@@ -2046,7 +2055,7 @@ name = "tyt-material"
 version = "0.4.0"
 dependencies = [
  "clap",
- "clap_complete",
+ "ty-clap",
  "tyt-common",
  "tyt-injection",
 ]
@@ -2056,8 +2065,8 @@ name = "tyt-meshy"
 version = "0.3.0"
 dependencies = [
  "clap",
- "clap_complete",
  "serde",
+ "ty-clap",
  "ty-preferences",
  "tyt-common",
  "tyt-injection",
@@ -2068,7 +2077,7 @@ name = "tyt-meta"
 version = "0.4.0"
 dependencies = [
  "clap",
- "clap_complete",
+ "ty-clap",
  "tyt-common",
  "tyt-injection",
 ]
@@ -2078,8 +2087,8 @@ name = "tyt-oai"
 version = "0.3.0"
 dependencies = [
  "clap",
- "clap_complete",
  "serde",
+ "ty-clap",
  "ty-preferences",
  "tyt-common",
  "tyt-injection",
@@ -2091,9 +2100,9 @@ version = "0.4.0"
 dependencies = [
  "branded-id",
  "clap",
- "clap_complete",
  "treegrid",
  "treeselect",
+ "ty-clap",
  "ty-math",
  "tyt-common",
  "tyt-injection",
@@ -2338,7 +2347,6 @@ version = "0.5.0"
 dependencies = [
  "branded-id",
  "clap",
- "clap_complete",
  "crossterm",
  "image",
  "jsonc-parser",
@@ -2353,6 +2361,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "ty-clap",
  "ty-math",
  "ty-preferences",
  "viuer",

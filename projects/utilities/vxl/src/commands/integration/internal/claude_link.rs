@@ -1,13 +1,12 @@
 use std::path::PathBuf;
 
-/// The state of `.claude/skills`, which Claude Code reads in place of
-/// `.agents/skills`.
+/// The state of `.claude`, which Claude Code reads in place of `.agents`.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ClaudeSkillsLink {
+pub enum ClaudeLink {
     /// Nothing.
     Missing,
 
-    /// A symlink to `.agents/skills`.
+    /// A symlink to `.agents`.
     Linked,
 
     /// A symlink to anywhere else.

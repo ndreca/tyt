@@ -17,9 +17,9 @@ fi
 # Claude Code loads a user-level skill in place of a slot's skill of the same
 # name.
 user_skill=$HOME/.claude/skills/vxl-model/SKILL.md
-if [ -e "$user_skill" ] && ! vxl integration skill print vxl-model | cmp -s - "$user_skill"; then
+if [ -e "$user_skill" ] && ! vxl integration skill vxl-model print | cmp -s - "$user_skill"; then
   echo "$user_skill differs from the installed vxl's skill and would replace each slot's" >&2
-  echo "Print the installed vxl's skill over it or move it aside first" >&2
+  echo "Reinstall it with \`vxl integration skill vxl-model install claude --user\` or move it aside first" >&2
   exit 1
 fi
 
@@ -33,7 +33,7 @@ for dir in $(jq -r '.[].dir' "$here/prompts.json"); do
     rm -rf "$slot/.claude/skills"
     mkdir -p "$slot/.claude/skills/vxl-model"
     find "$slot" -mindepth 1 -maxdepth 1 ! -name .claude -exec rm -rf {} +
-    vxl integration skill print vxl-model > "$slot/.claude/skills/vxl-model/SKILL.md"
+    vxl integration skill vxl-model print > "$slot/.claude/skills/vxl-model/SKILL.md"
     sed "s|@SNAPSHOT@|$root/_harness/snapshot.sh|" "$here/settings.json" > "$slot/.claude/settings.json"
     if ! jq -e --arg p "$slot" '.projects[$p].hasTrustDialogAccepted == true' "$HOME/.claude.json" > /dev/null; then
       untrusted=$((untrusted + 1))

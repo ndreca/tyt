@@ -23,6 +23,7 @@ members = [
     "projects/utilities/sdfj-builder",
     "projects/utilities/treegrid",
     "projects/utilities/treeselect",
+    "projects/utilities/ty-clap",
     "projects/utilities/ty-math",
     "projects/utilities/ty-math-serde",
     "projects/utilities/ty-preferences",
@@ -84,6 +85,7 @@ sdfconv = { path = "projects/utilities/sdfconv" }
 sdfcore = { path = "projects/utilities/sdfcore" }
 treegrid = { path = "projects/utilities/treegrid" }
 treeselect = { path = "projects/utilities/treeselect" }
+ty-clap = { path = "projects/utilities/ty-clap" }
 ty-math = { path = "projects/utilities/ty-math" }
 ty-math-serde = { path = "projects/utilities/ty-math-serde" }
 ty-preferences = { path = "projects/utilities/ty-preferences" }

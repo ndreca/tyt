@@ -1,20 +1,19 @@
 use crate::{
     CreateDirAll, CreateDirLink, Dependencies, ReadPathKind, Result, WriteStdout,
-    commands::{
-        CLAUDE_DIR, ClaudeSkillsLink, IntegrationRoot, SKILLS_DIR, link_claude_skills,
-        read_claude_skills_link,
-    },
+    commands::{CLAUDE_DIR, ClaudeLink, IntegrationRoot, link_claude, read_claude_link},
 };
 use clap::Parser;
 use std::{io::Error as IOError, path::Path};
 
 const NEW_HELP: &str = "\
-Claude Code reads skills only from .claude/skills, so the link lets it load the
-skills in .agents/skills. Codex reads .agents/skills itself and needs no link.
-On a real .claude/skills directory the link fails and the directory stays.
-`vxl integration agents-link move` moves its skills into .agents/skills first.";
+Claude Code reads .claude. The link points Claude Code at .agents, the
+directory coding agents share. Codex reads .agents/skills itself and needs no
+link.
 
-/// Links a missing `.claude/skills` to `.agents/skills`.
+On a real .claude directory the link fails and the directory stays.
+`vxl integration agents-link move` moves its contents into .agents first.";
+
+/// Links a missing `.claude` to `.agents`.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "new", after_help = NEW_HELP)]
 pub struct IntegrationAgentsLinkNew {
@@ -35,42 +34,39 @@ fn link_new(
     dependencies: &(impl CreateDirAll + CreateDirLink + ReadPathKind + WriteStdout),
     root: &Path,
 ) -> Result<()> {
-    let claude_skills = root.join(CLAUDE_DIR).join(SKILLS_DIR);
+    let claude = root.join(CLAUDE_DIR);
 
-    let problem = match read_claude_skills_link(dependencies, root)? {
-        ClaudeSkillsLink::Missing => None,
+    let problem = match read_claude_link(dependencies, root)? {
+        ClaudeLink::Missing => None,
 
-        ClaudeSkillsLink::Linked => {
-            let line = format!(
-                "{} already links to .agents/skills\n",
-                claude_skills.display()
-            );
+        ClaudeLink::Linked => {
+            let line = format!("{} already links to .agents\n", claude.display());
 
             return Ok(dependencies.write_stdout(line.as_bytes())?);
         }
 
-        ClaudeSkillsLink::LinkedElsewhere { target } => Some(format!(
-            "{} links to {}, not .agents/skills",
-            claude_skills.display(),
+        ClaudeLink::LinkedElsewhere { target } => Some(format!(
+            "{} links to {}, not .agents",
+            claude.display(),
             target.display()
         )),
 
-        ClaudeSkillsLink::Directory => Some(format!(
-            "{} is a directory; `vxl integration agents-link move` moves its skills into \
-             .agents/skills and links it",
-            claude_skills.display()
+        ClaudeLink::Directory => Some(format!(
+            "{} is a directory; `vxl integration agents-link move` moves its contents into \
+             .agents and links it",
+            claude.display()
         )),
 
-        ClaudeSkillsLink::File => Some(format!("{} is a file", claude_skills.display())),
+        ClaudeLink::File => Some(format!("{} is a file", claude.display())),
     };
 
     if let Some(problem) = problem {
         return Err(IOError::other(problem).into());
     }
 
-    let link = link_claude_skills(dependencies, root)?;
+    let link = link_claude(dependencies, root)?;
 
-    let line = format!("linked {} to .agents/skills\n", link.display());
+    let line = format!("linked {} to .agents\n", link.display());
 
     Ok(dependencies.write_stdout(line.as_bytes())?)
 }
@@ -96,48 +92,41 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
-    fn new_creates_agents_skills_and_a_relative_link_to_it() {
+    fn new_creates_agents_and_a_relative_link_to_it() {
         let root = TempDir::new().unwrap();
 
         let stdout = new(&root).unwrap();
 
-        let link = root.path().join(".claude/skills");
-        assert_eq!(
-            fs::read_link(&link).unwrap(),
-            Path::new("../.agents/skills")
-        );
-        assert!(root.path().join(".agents/skills").is_dir());
-        assert_eq!(
-            stdout,
-            format!("linked {} to .agents/skills\n", link.display())
-        );
+        let link = root.path().join(".claude");
+        assert_eq!(fs::read_link(&link).unwrap(), Path::new(".agents"));
+        assert!(root.path().join(".agents").is_dir());
+        assert_eq!(stdout, format!("linked {} to .agents\n", link.display()));
     }
 
     #[cfg(unix)]
     #[test]
     fn new_leaves_an_existing_link_and_says_so() {
         let root = TempDir::new().unwrap();
-        fs::create_dir_all(root.path().join(".claude")).unwrap();
-        symlink("../.agents/skills", root.path().join(".claude/skills")).unwrap();
+        fs::create_dir(root.path().join(".agents")).unwrap();
+        symlink(".agents", root.path().join(".claude")).unwrap();
 
         let stdout = new(&root).unwrap();
 
-        assert!(stdout.ends_with(".claude/skills already links to .agents/skills\n"));
-        assert!(!root.path().join(".agents").exists());
+        assert!(stdout.ends_with(".claude already links to .agents\n"));
     }
 
     #[test]
     fn new_fails_on_a_directory_and_points_to_move() {
         let root = TempDir::new().unwrap();
-        fs::create_dir_all(root.path().join(".claude/skills/mine")).unwrap();
+        fs::create_dir_all(root.path().join(".claude/skills")).unwrap();
 
         let error = new(&root).unwrap_err();
 
         assert!(error.ends_with(
-            ".claude/skills is a directory; `vxl integration agents-link move` moves its \
-             skills into .agents/skills and links it"
+            ".claude is a directory; `vxl integration agents-link move` moves its contents \
+             into .agents and links it"
         ));
-        assert!(root.path().join(".claude/skills/mine").is_dir());
+        assert!(root.path().join(".claude/skills").is_dir());
         assert!(!root.path().join(".agents").exists());
     }
 
@@ -145,22 +134,20 @@ mod tests {
     #[test]
     fn new_fails_on_a_link_elsewhere() {
         let root = TempDir::new().unwrap();
-        fs::create_dir_all(root.path().join(".claude")).unwrap();
-        symlink("../skills", root.path().join(".claude/skills")).unwrap();
+        symlink("elsewhere", root.path().join(".claude")).unwrap();
 
         let error = new(&root).unwrap_err();
 
-        assert!(error.ends_with(".claude/skills links to ../skills, not .agents/skills"));
+        assert!(error.ends_with(".claude links to elsewhere, not .agents"));
     }
 
     #[test]
     fn new_fails_on_a_file() {
         let root = TempDir::new().unwrap();
-        fs::create_dir_all(root.path().join(".claude")).unwrap();
-        fs::write(root.path().join(".claude/skills"), "").unwrap();
+        fs::write(root.path().join(".claude"), "").unwrap();
 
         let error = new(&root).unwrap_err();
 
-        assert!(error.ends_with(".claude/skills is a file"));
+        assert!(error.ends_with(".claude is a file"));
     }
 }

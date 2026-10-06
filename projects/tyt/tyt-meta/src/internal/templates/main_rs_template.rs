@@ -1,11 +1,10 @@
 /// Renders a new crate's `src/main.rs` that runs `root_enum` beside the
-/// `integration completion print` command.
+/// `integration completion` commands.
 pub fn main_rs_template(module: &str, root_enum: &str, command: &str, description: &str) -> String {
     format!(
         r#"use clap::{{CommandFactory, Parser, Subcommand}};
-use clap_complete::Shell;
-use std::{{io, process}};
-use tyt_common::completion_install_help;
+use std::process;
+use ty_clap::{{Completion, DependenciesImpl as ClapDependenciesImpl}};
 use {module}::{{DependenciesImpl, {root_enum}}};
 
 /// {description}
@@ -18,7 +17,7 @@ struct Cli {{
 
 #[derive(Clone, Debug, Subcommand)]
 enum Command {{
-    /// Prints files for other tools.
+    /// Sets up other tools to work with {command}.
     #[command(name = "integration", subcommand)]
     Integration(Integration),
 
@@ -26,38 +25,23 @@ enum Command {{
     {root_enum}({root_enum}),
 }}
 
-/// The commands that print a file for another tool.
+/// The commands that set up other tools to work with {command}.
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 enum Integration {{
-    /// Prints shell completions.
+    /// Prints and installs shell completions.
     #[command(name = "completion", subcommand)]
     Completion(Completion),
-}}
-
-/// The commands for shell completions.
-#[derive(Clone, Debug, Subcommand)]
-#[command(subcommand_value_name = "command")]
-enum Completion {{
-    /// Prints the completions for a shell.
-    #[command(name = "print", after_help = completion_install_help("{command}"))]
-    Print {{
-        /// The shell to print completions for.
-        #[arg(value_name = "shell")]
-        shell: Shell,
-    }},
 }}
 
 fn main() {{
     let cli = Cli::parse();
     match cli.command {{
-        Command::Integration(Integration::Completion(Completion::Print {{ shell }})) => {{
-            clap_complete::generate(
-                shell,
-                &mut Cli::command(),
-                "{command}",
-                &mut io::stdout(),
-            );
+        Command::Integration(Integration::Completion(completion)) => {{
+            if let Err(e) = completion.execute(&ClapDependenciesImpl, Cli::command(), "{command}") {{
+                eprintln!("error: {{e}}");
+                process::exit(1);
+            }}
         }}
 
         Command::{root_enum}(cmd) => {{

@@ -1,7 +1,6 @@
 use clap::{CommandFactory, Parser, Subcommand};
-use clap_complete::Shell;
-use std::{io, process};
-use tyt_common::completion_install_help;
+use std::process;
+use ty_clap::{Completion, DependenciesImpl as ClapDependenciesImpl};
 use tyt_material::{DependenciesImpl, TytMaterial};
 
 /// Operations on material textures.
@@ -14,7 +13,7 @@ struct Cli {
 
 #[derive(Clone, Debug, Subcommand)]
 enum Command {
-    /// Prints files for other tools.
+    /// Sets up other tools to work with material.
     #[command(name = "integration", subcommand)]
     Integration(Integration),
 
@@ -22,33 +21,23 @@ enum Command {
     TytMaterial(TytMaterial),
 }
 
-/// The commands that print a file for another tool.
+/// The commands that set up other tools to work with material.
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 enum Integration {
-    /// Prints shell completions.
+    /// Prints and installs shell completions.
     #[command(name = "completion", subcommand)]
     Completion(Completion),
-}
-
-/// The commands for shell completions.
-#[derive(Clone, Debug, Subcommand)]
-#[command(subcommand_value_name = "command")]
-enum Completion {
-    /// Prints the completions for a shell.
-    #[command(name = "print", after_help = completion_install_help("material"))]
-    Print {
-        /// The shell to print completions for.
-        #[arg(value_name = "shell")]
-        shell: Shell,
-    },
 }
 
 fn main() {
     let cli = Cli::parse();
     match cli.command {
-        Command::Integration(Integration::Completion(Completion::Print { shell })) => {
-            clap_complete::generate(shell, &mut Cli::command(), "material", &mut io::stdout());
+        Command::Integration(Integration::Completion(completion)) => {
+            if let Err(e) = completion.execute(&ClapDependenciesImpl, Cli::command(), "material") {
+                eprintln!("error: {e}");
+                process::exit(1);
+            }
         }
 
         Command::TytMaterial(material) => {

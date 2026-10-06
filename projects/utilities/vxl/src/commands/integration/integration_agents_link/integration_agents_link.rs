@@ -1,7 +1,7 @@
 use crate::{Dependencies, Result, commands::IntegrationAgentsLinkCommand};
 use clap::Parser;
 
-/// Operations on the `.claude/skills` link to `.agents/skills`.
+/// Operations on the `.claude` link to `.agents`.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "agents-link")]
 pub struct IntegrationAgentsLink {

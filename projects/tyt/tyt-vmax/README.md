@@ -19,7 +19,7 @@ vmax rename-node my-scene.vmax "Cube*" "Box"                   # Rename matching
 vmax to-voxj my-scene.vmax > my-scene.voxj                     # Convert to Voxel Json
 vmax to-voxj my-scene.vmax --format zip > my-scene.voxjz       # Convert to compressed Voxel Json
 vmax to-voxj my-scene.vmax --optimize size > my-scene.voxj     # Pick the smallest encodings
-vmax integration completion print zsh                          # Print shell completions
+vmax integration completion zsh install                        # Install shell completions
 ```
 
 `to-voxj` writes the document to stdout. `--format` selects the form (`json`,

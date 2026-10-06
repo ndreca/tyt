@@ -2,23 +2,23 @@ use crate::{
     CreateDirAll, CreateDirLink, Dependencies, ListDir, PathKind, ReadPathKind, RemoveDir,
     RenamePath, Result, WriteStdout,
     commands::{
-        AGENTS_DIR, CLAUDE_DIR, ClaudeSkillsLink, IntegrationRoot, SKILLS_DIR, link_claude_skills,
-        read_claude_skills_link,
+        AGENTS_DIR, CLAUDE_DIR, ClaudeLink, IntegrationRoot, link_claude, read_claude_link,
     },
 };
 use clap::Parser;
 use std::{io::Error as IOError, path::Path};
 
 const MOVE_HELP: &str = "\
-Claude Code reads skills only from .claude/skills, so the link lets it load the
-skills in .agents/skills. Codex reads .agents/skills itself and needs no link.
+Claude Code reads .claude. The link points Claude Code at .agents, the
+directory coding agents share. Codex reads .agents/skills itself and needs no
+link.
 
-Everything in .claude/skills moves into .agents/skills before the link replaces
-the directory. When a name sits in both directories, the move fails before
-anything changes.";
+Everything in .claude moves into .agents before the link replaces the
+directory. When a name sits in both directories, the move fails before anything
+changes.";
 
-/// Moves the skills in a `.claude/skills` directory into `.agents/skills`, then
-/// links `.claude/skills` there.
+/// Moves everything in a `.claude` directory into `.agents`, then links
+/// `.claude` there.
 #[derive(Clone, Debug, Parser)]
 #[command(name = "move", after_help = MOVE_HELP)]
 pub struct IntegrationAgentsLinkMove {
@@ -47,48 +47,45 @@ fn link_move(
      ),
     root: &Path,
 ) -> Result<()> {
-    let claude_skills = root.join(CLAUDE_DIR).join(SKILLS_DIR);
+    let claude = root.join(CLAUDE_DIR);
 
-    let problem = match read_claude_skills_link(dependencies, root)? {
-        ClaudeSkillsLink::Directory => None,
+    let problem = match read_claude_link(dependencies, root)? {
+        ClaudeLink::Directory => None,
 
-        ClaudeSkillsLink::Linked => {
-            let line = format!(
-                "{} already links to .agents/skills\n",
-                claude_skills.display()
-            );
+        ClaudeLink::Linked => {
+            let line = format!("{} already links to .agents\n", claude.display());
 
             return Ok(dependencies.write_stdout(line.as_bytes())?);
         }
 
-        ClaudeSkillsLink::Missing => Some(format!(
+        ClaudeLink::Missing => Some(format!(
             "{} does not exist; `vxl integration agents-link new` links it",
-            claude_skills.display()
+            claude.display()
         )),
 
-        ClaudeSkillsLink::LinkedElsewhere { target } => Some(format!(
-            "{} links to {}, not .agents/skills",
-            claude_skills.display(),
+        ClaudeLink::LinkedElsewhere { target } => Some(format!(
+            "{} links to {}, not .agents",
+            claude.display(),
             target.display()
         )),
 
-        ClaudeSkillsLink::File => Some(format!("{} is a file", claude_skills.display())),
+        ClaudeLink::File => Some(format!("{} is a file", claude.display())),
     };
 
     if let Some(problem) = problem {
         return Err(IOError::other(problem).into());
     }
 
-    let agents_skills = root.join(AGENTS_DIR).join(SKILLS_DIR);
+    let agents = root.join(AGENTS_DIR);
 
-    let entries = dependencies.list_dir(&claude_skills)?;
+    let entries = dependencies.list_dir(&claude)?;
 
     let mut clashes = Vec::new();
 
     for entry in &entries {
         let name = entry.path.file_name().expect("a listed entry has a name");
 
-        if dependencies.read_path_kind(&agents_skills.join(name))? != PathKind::Missing {
+        if dependencies.read_path_kind(&agents.join(name))? != PathKind::Missing {
             clashes.push(name.to_string_lossy().into_owned());
         }
     }
@@ -98,24 +95,24 @@ fn link_move(
 
         return Err(IOError::other(format!(
             "{} and {} both hold {}",
-            claude_skills.display(),
-            agents_skills.display(),
+            claude.display(),
+            agents.display(),
             clashes.join(", ")
         ))
         .into());
     }
 
-    dependencies.create_dir_all(&agents_skills)?;
+    dependencies.create_dir_all(&agents)?;
 
     for entry in &entries {
         let name = entry.path.file_name().expect("a listed entry has a name");
 
-        dependencies.rename_path(&entry.path, &agents_skills.join(name))?;
+        dependencies.rename_path(&entry.path, &agents.join(name))?;
     }
 
-    dependencies.remove_dir(&claude_skills)?;
+    dependencies.remove_dir(&claude)?;
 
-    let link = link_claude_skills(dependencies, root)?;
+    let link = link_claude(dependencies, root)?;
 
     let noun = if entries.len() == 1 {
         "entry"
@@ -124,9 +121,9 @@ fn link_move(
     };
 
     let line = format!(
-        "moved {} {noun} into {}, then linked {} to .agents/skills\n",
+        "moved {} {noun} into {}, then linked {} to .agents\n",
         entries.len(),
-        agents_skills.display(),
+        agents.display(),
         link.display()
     );
 
@@ -164,28 +161,25 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
-    fn move_moves_every_entry_into_agents_skills_then_links() {
+    fn move_moves_everything_into_agents_then_links() {
         let root = TempDir::new().unwrap();
+        write(&root, ".claude/settings.json", "{}");
         write(&root, ".claude/skills/a/SKILL.md", "a");
-        write(&root, ".claude/skills/b/SKILL.md", "b");
-        write(&root, ".agents/skills/c/SKILL.md", "c");
+        write(&root, ".agents/README.md", "shared");
 
         let stdout = link(&root).unwrap();
 
-        let claude_skills = root.path().join(".claude/skills");
-        assert_eq!(
-            fs::read_link(&claude_skills).unwrap(),
-            Path::new("../.agents/skills")
-        );
-        assert_eq!(read(&root, ".agents/skills/a/SKILL.md"), "a");
-        assert_eq!(read(&root, ".claude/skills/b/SKILL.md"), "b");
-        assert_eq!(read(&root, ".claude/skills/c/SKILL.md"), "c");
+        let claude = root.path().join(".claude");
+        assert_eq!(fs::read_link(&claude).unwrap(), Path::new(".agents"));
+        assert_eq!(read(&root, ".agents/settings.json"), "{}");
+        assert_eq!(read(&root, ".claude/skills/a/SKILL.md"), "a");
+        assert_eq!(read(&root, ".claude/README.md"), "shared");
         assert_eq!(
             stdout,
             format!(
-                "moved 2 entries into {}, then linked {} to .agents/skills\n",
-                root.path().join(".agents/skills").display(),
-                claude_skills.display()
+                "moved 2 entries into {}, then linked {} to .agents\n",
+                root.path().join(".agents").display(),
+                claude.display()
             )
         );
     }
@@ -193,18 +187,17 @@ mod tests {
     #[test]
     fn move_fails_on_names_in_both_directories_before_moving_anything() {
         let root = TempDir::new().unwrap();
+        write(&root, ".claude/settings.json", "claude");
         write(&root, ".claude/skills/a/SKILL.md", "claude a");
-        write(&root, ".claude/skills/b/SKILL.md", "claude b");
-        write(&root, ".claude/skills/c/SKILL.md", "claude c");
-        write(&root, ".agents/skills/c/SKILL.md", "agents c");
-        write(&root, ".agents/skills/a/SKILL.md", "agents a");
+        write(&root, ".claude/plugins/p", "claude p");
+        write(&root, ".agents/skills/b/SKILL.md", "agents b");
+        write(&root, ".agents/plugins/q", "agents q");
 
         let error = link(&root).unwrap_err();
 
-        assert!(error.ends_with(".agents/skills both hold a, c"));
-        assert_eq!(read(&root, ".claude/skills/a/SKILL.md"), "claude a");
-        assert_eq!(read(&root, ".claude/skills/b/SKILL.md"), "claude b");
-        assert!(!root.path().join(".agents/skills/b").exists());
+        assert!(error.ends_with(".agents both hold plugins, skills"));
+        assert_eq!(read(&root, ".claude/settings.json"), "claude");
+        assert!(!root.path().join(".agents/settings.json").exists());
     }
 
     #[test]
@@ -213,9 +206,9 @@ mod tests {
 
         let error = link(&root).unwrap_err();
 
-        assert!(error.ends_with(
-            ".claude/skills does not exist; `vxl integration agents-link new` links it"
-        ));
+        assert!(
+            error.ends_with(".claude does not exist; `vxl integration agents-link new` links it")
+        );
         assert!(!root.path().join(".agents").exists());
     }
 
@@ -223,11 +216,11 @@ mod tests {
     #[test]
     fn move_leaves_an_existing_link_and_says_so() {
         let root = TempDir::new().unwrap();
-        fs::create_dir_all(root.path().join(".claude")).unwrap();
-        symlink("../.agents/skills", root.path().join(".claude/skills")).unwrap();
+        fs::create_dir(root.path().join(".agents")).unwrap();
+        symlink(".agents", root.path().join(".claude")).unwrap();
 
         let stdout = link(&root).unwrap();
 
-        assert!(stdout.ends_with(".claude/skills already links to .agents/skills\n"));
+        assert!(stdout.ends_with(".claude already links to .agents\n"));
     }
 }

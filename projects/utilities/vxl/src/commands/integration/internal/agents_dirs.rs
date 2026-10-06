@@ -1,4 +1,4 @@
-/// The directory under a project or home root that every coding agent shares.
+/// The directory under a project or home root that coding agents share.
 pub const AGENTS_DIR: &str = ".agents";
 
 /// Claude Code's directory under a project or home root.

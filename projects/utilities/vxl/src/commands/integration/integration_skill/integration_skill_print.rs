@@ -1,21 +1,17 @@
 use crate::{AgentSkill, Dependencies, Result};
 use clap::Parser;
 
-/// Prints a skill as a `SKILL.md`.
+/// Prints the skill as a `SKILL.md`.
 #[derive(Clone, Debug, Parser)]
 #[command(
     name = "print",
-    after_help = "`vxl integration skill install` writes the skill where agents load it."
+    after_help = "`install` writes the skill where an agent loads it."
 )]
-pub struct IntegrationSkillPrint {
-    /// The skill to print.
-    #[arg(value_name = "skill")]
-    skill: AgentSkill,
-}
+pub struct IntegrationSkillPrint {}
 
 impl IntegrationSkillPrint {
-    /// Runs the command.
-    pub fn execute(self, dependencies: impl Dependencies) -> Result<()> {
-        Ok(dependencies.write_stdout(self.skill.skill_md().as_bytes())?)
+    /// Runs the command on `skill`.
+    pub fn execute(self, skill: AgentSkill, dependencies: impl Dependencies) -> Result<()> {
+        Ok(dependencies.write_stdout(skill.skill_md().as_bytes())?)
     }
 }
