@@ -211,7 +211,7 @@ fn span(check: ArgumentCheck, from: f64, to: f64) -> StdResult<(), String> {
     )
 }
 
-/// Errors unless a rect's corner cut `corner` reads above zero and at most
+/// Errors unless a rect's corner cut `corner` reads zero or more and at most
 /// `most`.
 fn corner_cut(
     check: ArgumentCheck,
@@ -219,7 +219,7 @@ fn corner_cut(
     corner: f64,
     most: f64,
 ) -> StdResult<(), String> {
-    check.above_zero(argument, corner)?;
+    check.at_least_zero(argument, corner)?;
     check.at_most(
         argument,
         corner,
@@ -349,6 +349,12 @@ mod tests {
         };
 
         assert!(check_shape2d(&rect(Some(0.25), None)).is_ok());
+        assert!(check_shape2d(&rect(Some(0.0), None)).is_ok());
+        assert!(check_shape2d(&rect(None, Some(0.0))).is_ok());
+        assert_eq!(
+            check_shape2d(&rect(None, Some(-0.1))),
+            Err("rect round must be zero or more, not -0.1".to_string())
+        );
         let flipped = SdfShape2d::Rect {
             min: TyVector2F64::new(1.0, 0.5),
             max: TyVector2F64::ZERO,

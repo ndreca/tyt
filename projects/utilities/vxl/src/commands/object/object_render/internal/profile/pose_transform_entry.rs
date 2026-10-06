@@ -21,7 +21,7 @@ pub enum PoseTransformEntry {
     },
 
     /// Angles in degrees. `distance` defaults to `fit`, and `center` to the
-    /// subject's center.
+    /// subject's center. A `center` takes a `distance` in meters.
     Orbit {
         azimuth: f64,
 

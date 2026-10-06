@@ -629,8 +629,9 @@ it belongs to by its path of part names.
 4. vxl reads the document by the
    [sdfj format](../../../projects/sdf-formats/sdfj/docs/sdf-json-file-format.md#rules)
    and checks every entry's arguments.
-   - Radii, widths, thicknesses, sizes, scales, chamfers, periods, and `spread`
-     are above zero, except that a `cone` end may take 0.
+   - Radii, widths, thicknesses, sizes, scales, periods, and `spread` are above
+     zero, except that a `cone` end may take 0. A `round` and a `chamfer` are
+     zero or more.
    - Counts, `octaves`, and `depth` are whole numbers above zero. An `ngon`'s
      `sides` is at least 3 and a `star`'s `points` at least 2. A seed is a
      whole number from `-2^31` to `2^31 - 1`.

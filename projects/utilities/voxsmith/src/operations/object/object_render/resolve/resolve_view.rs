@@ -9,9 +9,9 @@ use ty_math::{TyAngleUnit, TyBoundsF64, TyPoseF64, TyTransformF64, TyVector3Ext,
 use voxrender::{RenderProjection, RenderView, fit_distance, fit_scale};
 
 /// Resolves a view's `transform` and `projection` to world space. Errors if a
-/// `subject` frame, an orbit without a center, or a `fit` has no subject, a
-/// `node` frame's glob matches no node path or several, or a look-at aims at
-/// the view's own position.
+/// `subject` frame, an orbit without a center, or a `fit` has no subject, an
+/// orbit about a center takes a `fit`, a `node` frame's glob matches no node
+/// path or several, or a look-at aims at the view's own position.
 ///
 /// # Arguments
 /// * `element` - the view, which errors report.
@@ -33,20 +33,14 @@ pub fn resolve_view(
             .ok_or_else(|| Error::render_record(element.clone(), "frames a subject with no voxel"))
     };
 
-    // An orbit about a point off the subject's center fits a box about that
-    // point that holds the subject.
-    let framed = || -> Result<TyBoundsF64> {
-        let bounds = subject()?;
-
-        Ok(match transform {
-            PoseTransform::Orbit {
-                center: Some(center),
-                ..
-            } => TyBoundsF64::new(*center, (bounds.center - *center).abs() + bounds.extents),
-
-            _ => *bounds,
-        })
-    };
+    // A fit frames the whole subject and shrinks a close-up about a point.
+    let centered = matches!(
+        transform,
+        PoseTransform::Orbit {
+            center: Some(_),
+            ..
+        }
+    );
 
     let (position, rotation) = match transform {
         PoseTransform::World { position, rotation } => {
@@ -78,8 +72,16 @@ pub fn resolve_view(
             let distance = match (*distance, *projection) {
                 (FitOrFixed::Fixed(distance), _) => distance,
 
+                (FitOrFixed::Fit, _) if centered => {
+                    return Err(Error::render_record(
+                        element.clone(),
+                        "orbits a point at a `fit` distance, and an orbit about a point takes \
+                         its distance in meters",
+                    ));
+                }
+
                 (FitOrFixed::Fit, ViewProjection::Perspective { fov }) => fit_distance(
-                    &framed()?,
+                    subject()?,
                     TyAngleUnit::Degrees.to_radians(fov),
                     width,
                     height,
@@ -87,7 +89,7 @@ pub fn resolve_view(
 
                 // Parallel rays frame by scale alone. The camera sits one
                 // scale out, past the sphere.
-                (FitOrFixed::Fit, ViewProjection::Orthographic { .. }) => fit_scale(&framed()?),
+                (FitOrFixed::Fit, ViewProjection::Orthographic { .. }) => fit_scale(subject()?),
             };
 
             (center + direction * distance, look_rotation(-direction))
@@ -114,8 +116,18 @@ pub fn resolve_view(
 
         ViewProjection::Orthographic {
             scale: FitOrFixed::Fit,
+        } if centered => {
+            return Err(Error::render_record(
+                element.clone(),
+                "orbits a point under a `fit` scale, and an orbit about a point takes its \
+                 scale in meters",
+            ));
+        }
+
+        ViewProjection::Orthographic {
+            scale: FitOrFixed::Fit,
         } => RenderProjection::Orthographic {
-            scale: fit_scale(&framed()?),
+            scale: fit_scale(subject()?),
         },
     };
 
@@ -244,7 +256,7 @@ mod tests {
     }
 
     #[test]
-    fn an_orbit_about_a_center_fits_the_whole_subject_from_it() {
+    fn an_orbit_about_a_center_takes_its_distance_and_scale_in_meters() {
         let center = TyVector3F64::new(1.0, 3.0, 3.0);
         let orbit = |distance| PoseTransform::Orbit {
             azimuth: 90.0,
@@ -252,15 +264,21 @@ mod tests {
             distance,
             center: Some(center),
         };
+        let resolve = |distance, projection| {
+            resolve_view(
+                &element(),
+                &orbit(distance),
+                &projection,
+                Some(&subject()),
+                &no_frames(),
+                10,
+                10,
+            )
+        };
 
-        let fixed = resolve_view(
-            &element(),
-            &orbit(FitOrFixed::Fixed(2.0)),
-            &ViewProjection::Perspective { fov: 35.0 },
-            None,
-            &no_frames(),
-            10,
-            10,
+        let fixed = resolve(
+            FitOrFixed::Fixed(2.0),
+            ViewProjection::Perspective { fov: 35.0 },
         )
         .unwrap();
         assert!(close(fixed.pose.position, center + TyVector3F64::X * 2.0));
@@ -269,23 +287,20 @@ mod tests {
             -TyVector3F64::X
         ));
 
-        // The subject reaches 2 below the center, so the fit frames a box of
-        // extents 1, 2, 1 about it.
-        let fit = resolve_view(
-            &element(),
-            &orbit(FitOrFixed::Fit),
-            &ViewProjection::Perspective { fov: 90.0 },
-            Some(&subject()),
-            &no_frames(),
-            10,
-            10,
+        let fit = resolve(FitOrFixed::Fit, ViewProjection::Perspective { fov: 35.0 })
+            .unwrap_err()
+            .to_string();
+        assert!(fit.contains("takes its distance in meters"), "{fit}");
+
+        let scale = resolve(
+            FitOrFixed::Fixed(2.0),
+            ViewProjection::Orthographic {
+                scale: FitOrFixed::Fit,
+            },
         )
-        .unwrap();
-        let distance = 6f64.sqrt() * (1.0 + FIT_MARGIN) / 45f64.to_radians().sin();
-        assert!(close(
-            fit.pose.position,
-            center + TyVector3F64::X * distance
-        ));
+        .unwrap_err()
+        .to_string();
+        assert!(scale.contains("takes its scale in meters"), "{scale}");
     }
 
     #[test]

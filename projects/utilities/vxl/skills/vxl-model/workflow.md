@@ -18,8 +18,8 @@ stale `.sdfj` document.
 ## Building a model
 
 The smallest feature sets the voxel size. Every feature the prompt names spans
-at least 2 voxels. Six strings across a 5 cm neck take voxels of about 4 mm, and
-the guitar then runs about 250 voxels long. Models several hundred voxels across
+at least 2 voxels. A birdcage's 6 mm bars take voxels of about 3 mm, and the 60
+cm cage then stands about 200 voxels tall. Models several hundred voxels across
 voxelize in minutes. A large scene under a voxel budget keeps its real size with
 `--fill-mode surface` or a coarser voxel.
 
@@ -71,7 +71,7 @@ the prompt. Color goes wrong in a few known ways:
    `emissiveStrength` or a darker `baseColor`
 
 The model is done when every view shows the prompt with no flaw a review can
-name.
+name and every extra piece and `0 kept` step in the report is intended.
 
 ## Other views
 
@@ -103,11 +103,13 @@ vxl object render room.voxj
 ```
 
 1. `--view-orbit` places a view by an azimuth and an elevation in degrees and a
-   distance in meters or `fit`. A new view name adds a PNG, and
-   `--view-look-at` beside it sets the point the view circles
-2. A view placed by position takes `--view-frame`, `--view-position`, and a
+   distance in meters or `fit`. `--view-look-at` beside it sets a point to
+   circle at a distance in meters
+2. A new view name adds a PNG beside the profile's views. A close-up alone
+   leaves `--profile review` off
+3. A view placed by position takes `--view-frame`, `--view-position`, and a
    rotation flag such as `--view-look-at`
-3. `--select` renders the matched parts alone. `--view-select <view> <glob>`
+4. `--select` renders the matched parts alone. `--view-select <view> <glob>`
    keeps the whole model and frames the view on the matched parts
 
 ## Exporting a mesh

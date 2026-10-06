@@ -166,7 +166,7 @@ pub struct ObjectRender {
 
     /// Aims the named view's -Z at a point in its frame, with its frame's +Y
     /// up. Beside `--view-orbit`, the point sets the orbit's center in world
-    /// space. Repeatable.
+    /// space, and the orbit takes its distance in meters. Repeatable.
     #[arg(
         value_names = ["view", "x", "y", "z"],
         long,

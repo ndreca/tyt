@@ -41,7 +41,7 @@ pub fn check_shape3d(
             match round {
                 Some(round) => {
                     let most = (*max - *min).abs().min_element() / 2.0;
-                    check.above_zero("round", *round)?;
+                    check.at_least_zero("round", *round)?;
                     check.at_most(
                         "round",
                         *round,
@@ -95,7 +95,7 @@ pub fn check_shape3d(
             match round {
                 Some(round) => {
                     let most = radius.min(a.distance(*b) / 2.0);
-                    check.above_zero("round", *round)?;
+                    check.at_least_zero("round", *round)?;
                     check.at_most(
                         "round",
                         *round,
@@ -422,6 +422,32 @@ mod tests {
                 "box round must be at most half the shortest side, 0.024999999999999994, not 0.026"
                     .to_string()
             )
+        );
+    }
+
+    #[test]
+    fn a_round_of_zero_leaves_the_edges_square() {
+        let cuboid = |round| SdfShape3d::Box {
+            min: TyVector3F64::ZERO,
+            max: TyVector3F64::ONE,
+            round: Some(round),
+        };
+        let cylinder = |round| SdfShape3d::Cylinder {
+            a: TyVector3F64::ZERO,
+            b: TyVector3F64::Y,
+            radius: 0.5,
+            round: Some(round),
+        };
+
+        assert!(check(cuboid(0.0)).is_ok());
+        assert!(check(cylinder(0.0)).is_ok());
+        assert_eq!(
+            check(cuboid(-0.1)),
+            Err("box round must be zero or more, not -0.1".to_string())
+        );
+        assert_eq!(
+            check(cylinder(-0.1)),
+            Err("cylinder round must be zero or more, not -0.1".to_string())
         );
     }
 

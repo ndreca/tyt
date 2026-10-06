@@ -195,7 +195,8 @@ mesh. A document with no objects errors. See
 
     Aims the named view's -Z at a point in its frame, with the frame's +Y up.
     A target at the view's position errors. Beside `--view-orbit`, the point
-    sets the orbit's center in world space.
+    sets the orbit's center in world space, and the orbit takes its distance
+    in meters.
 
 21. `--view-angles <view> <azimuth> <elevation>`
     - Repeatable: yes

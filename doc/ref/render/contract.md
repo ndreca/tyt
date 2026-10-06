@@ -219,8 +219,8 @@ bounds give a center and a diagonal. The camera sits on its orbit at the
 distance, or orthographic scale, that fits the bounding sphere of that
 diagonal into the shorter image axis with a small margin. A sphere fits
 regardless of orientation, so every fitted view of one subject sits at one
-distance. An orbit about a world point fits the smallest box centered on the
-point that holds the subject.
+distance. An orbit about a world point takes its distance and orthographic
+scale in meters.
 
 ## Bloom
 

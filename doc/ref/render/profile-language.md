@@ -154,7 +154,8 @@ type PoseTransform =
   | { kind: "world"; position: Vec3; rotation: Rotation }
   | { kind: "subject"; position: Vec3; rotation: Rotation }
   /** Degrees. `distance` omitted, `fit`. `center` mirrors
-   *  `--view-look-at`; omitted, the subject's center. */
+   *  `--view-look-at` and takes a `distance` in meters; omitted, the
+   *  subject's center. */
   | { kind: "orbit"; azimuth: number; elevation: number;
       distance?: number | "fit"; center?: Vec3 }
   /** `path` mirrors `--view-node`. */

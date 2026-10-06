@@ -30,12 +30,11 @@ pub enum PoseTransform {
         /// Degrees from the azimuth's direction toward +Y.
         elevation: f64,
 
-        /// The sphere's radius. A `fit` takes in the whole subject from the
-        /// center.
+        /// The sphere's radius. A `fit` takes in the whole subject.
         distance: FitOrFixed,
 
         /// The world point the sphere is about, defaulting to the subject's
-        /// center.
+        /// center. A point takes a distance and orthographic scale in meters.
         center: Option<TyVector3F64>,
     },
 
