@@ -123,59 +123,23 @@ fn written_by_vxl(bytes: &[u8], skill: AgentSkill) -> bool {
 #[cfg(test)]
 mod tests {
     use crate::{
-        AgentSkill, DependenciesImpl, PathKind, ReadFile, ReadPathKind, WriteFile, WriteStdout,
+        AgentSkill, CapturedStdout,
         commands::integration::integration_skill::integration_skill_install::install_skill,
     };
     #[cfg(unix)]
     use std::os::unix::fs::symlink;
-    use std::{
-        cell::RefCell,
-        fs,
-        io::Result as IOResult,
-        path::{Path, PathBuf},
-    };
+    use std::{fs, path::PathBuf};
     use tempfile::TempDir;
-
-    /// Real files and a captured standard output.
-    #[derive(Default)]
-    struct StandIn {
-        stdout: RefCell<Vec<u8>>,
-    }
-
-    impl ReadFile for StandIn {
-        fn read_file(&self, path: &Path) -> IOResult<Vec<u8>> {
-            ReadFile::read_file(&DependenciesImpl, path)
-        }
-    }
-
-    impl ReadPathKind for StandIn {
-        fn read_path_kind(&self, path: &Path) -> IOResult<PathKind> {
-            DependenciesImpl.read_path_kind(path)
-        }
-    }
-
-    impl WriteFile for StandIn {
-        fn write_file(&self, path: &Path, bytes: &[u8]) -> IOResult<()> {
-            WriteFile::write_file(&DependenciesImpl, path, bytes)
-        }
-    }
-
-    impl WriteStdout for StandIn {
-        fn write_stdout(&self, contents: &[u8]) -> IOResult<()> {
-            self.stdout.borrow_mut().extend_from_slice(contents);
-
-            Ok(())
-        }
-    }
 
     const SKILL_MD: &str = ".agents/skills/vxl-model/SKILL.md";
 
     fn install(root: &TempDir) -> Result<String, String> {
-        let stand_in = StandIn::default();
+        let dependencies = CapturedStdout::default();
 
-        install_skill(&stand_in, AgentSkill::VxlModel, root.path()).map_err(|e| e.to_string())?;
+        install_skill(&dependencies, AgentSkill::VxlModel, root.path())
+            .map_err(|e| e.to_string())?;
 
-        Ok(String::from_utf8(stand_in.stdout.take()).unwrap())
+        Ok(dependencies.stdout())
     }
 
     fn read(root: &TempDir, path: &str) -> String {

@@ -1,6 +1,7 @@
 use crate::{
-    CreateTempDir, DirectoryEntry, DisplayImage, ListDir, PathKind, ReadFile, ReadPathKind,
-    ResolvePrefsPaths, RunProgram, TerminalColumns, WriteFile, WriteStdout,
+    CreateDirAll, CreateDirLink, CreateTempDir, DirectoryEntry, DisplayImage, ListDir, PathKind,
+    ReadFile, ReadPathKind, RemoveDir, RenamePath, ResolvePrefsPaths, RunProgram, TerminalColumns,
+    WriteFile, WriteStdout,
 };
 use crossterm::{
     event::{poll, read},
@@ -18,8 +19,8 @@ use sdfconv::{
     DependenciesImpl as SdfconvDependenciesImpl, ForwardDependencies as ForwardSdfDependencies,
     ReadFile as SdfReadFile,
 };
-#[cfg(unix)]
-use std::mem;
+#[cfg(windows)]
+use std::os::windows::fs::symlink_dir;
 use std::{
     ffi::OsString,
     fs,
@@ -28,6 +29,8 @@ use std::{
     process::Command,
     time::Duration,
 };
+#[cfg(unix)]
+use std::{mem, os::unix::fs::symlink};
 use tempfile::{Builder, TempDir};
 use ty_preferences::{
     Dependencies as PreferencesDependencies, DependenciesImpl as PreferencesDependenciesImpl,
@@ -142,6 +145,63 @@ impl ReadPathKind for DependenciesImpl {
         } else {
             Ok(PathKind::File)
         }
+    }
+}
+
+impl CreateDirAll for DependenciesImpl {
+    fn create_dir_all(&self, path: &Path) -> IOResult<()> {
+        fs::create_dir_all(path)
+    }
+}
+
+impl CreateDirLink for DependenciesImpl {
+    #[cfg(unix)]
+    fn create_dir_link(&self, target: &Path, link: &Path) -> IOResult<()> {
+        if let Some(parent) = link.parent() {
+            fs::create_dir_all(parent)?;
+        }
+
+        symlink(target, link)
+    }
+
+    /// Windows lets only an administrator or Developer Mode create a symlink.
+    /// Anyone else gets `ERROR_PRIVILEGE_NOT_HELD`.
+    #[cfg(windows)]
+    fn create_dir_link(&self, target: &Path, link: &Path) -> IOResult<()> {
+        const ERROR_PRIVILEGE_NOT_HELD: i32 = 1314;
+
+        if let Some(parent) = link.parent() {
+            fs::create_dir_all(parent)?;
+        }
+
+        symlink_dir(target, link).map_err(|e| match e.raw_os_error() {
+            Some(ERROR_PRIVILEGE_NOT_HELD) => IOError::new(
+                e.kind(),
+                "creating a symlink needs Developer Mode or an administrator",
+            ),
+
+            _ => e,
+        })
+    }
+
+    #[cfg(not(any(unix, windows)))]
+    fn create_dir_link(&self, _target: &Path, _link: &Path) -> IOResult<()> {
+        Err(IOError::new(
+            ErrorKind::Unsupported,
+            "this platform has no directory symlinks",
+        ))
+    }
+}
+
+impl RenamePath for DependenciesImpl {
+    fn rename_path(&self, from: &Path, to: &Path) -> IOResult<()> {
+        fs::rename(from, to)
+    }
+}
+
+impl RemoveDir for DependenciesImpl {
+    fn remove_dir(&self, path: &Path) -> IOResult<()> {
+        fs::remove_dir(path)
     }
 }
 

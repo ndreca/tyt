@@ -1,7 +1,10 @@
 use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::Shell;
 use std::{io, process};
-use vxl::{DependenciesImpl, Error, Vxl, commands::IntegrationSkill};
+use vxl::{
+    DependenciesImpl, Error, Vxl,
+    commands::{IntegrationAgentsLink, IntegrationSkill},
+};
 
 const COMPLETION_INSTALL_HELP: &str = "\
 Installing:
@@ -37,6 +40,10 @@ enum Command {
 #[derive(Clone, Debug, Subcommand)]
 #[command(subcommand_value_name = "command")]
 enum Integration {
+    /// Links `.claude/skills` to `.agents/skills` for Claude Code.
+    #[command(name = "agents-link")]
+    AgentsLink(IntegrationAgentsLink),
+
     /// Prints shell completions.
     #[command(name = "completion", subcommand)]
     Completion(Completion),
@@ -65,6 +72,10 @@ fn main() {
         Command::Integration(Integration::Completion(Completion::Print { shell })) => {
             clap_complete::generate(shell, &mut Cli::command(), "vxl", &mut io::stdout());
             Ok(())
+        }
+
+        Command::Integration(Integration::AgentsLink(agents_link)) => {
+            agents_link.execute(DependenciesImpl)
         }
 
         Command::Integration(Integration::Skill(skill)) => skill.execute(DependenciesImpl),
