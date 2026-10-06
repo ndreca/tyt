@@ -168,23 +168,28 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ## Releasing
 
-Releases use [`cargo-workspaces`](https://github.com/pksunkara/cargo-workspaces) (`cargo install cargo-workspaces` once) and `jq`. Every crate marks itself `independent` in its manifest, so only the crates that changed get bumped. `tyt` is always force-bumped so its published `Cargo.lock` refreshes. Otherwise `cargo install tyt` keeps pinning the old sub-crate versions.
+A release publishes the crates you name and only the workspace crates they need. `scripts/release.sh` picks them and needs `jq`, `perl`, and `curl`.
 
-`branded-id` lives outside the workspace in its submodule, so the release commands skip it. Publish a new version from its own repository first when the release needs it, and drop the workspace's `[patch.crates-io]` entry for it.
+`branded-id` lives outside the workspace in its submodule, so the script skips it. Publish a new version from its own repository first when the release needs it, and drop the workspace's `[patch.crates-io]` entry for it.
 
-1. Pick the bump. Use `minor` when any change breaks a public API, since cargo treats `0.2.2` to `0.2.3` as compatible. Otherwise use `patch`
-
-2. Bump the changed crates without committing:
+1. Print the plan for the crates to release:
 
    ```sh
-   cargo workspaces version --force tyt minor --no-git-commit --yes
+   scripts/release.sh plan tyt vxl
    ```
 
-3. Fix the requirements the bump left behind. `cargo-workspaces` skips some dependency entries, such as a multi-line inline table or a repeat in `[dev-dependencies]`. A stale requirement either fails the lockfile update or silently resolves to the old crates.io release. Raise each one to its crate's new version, refresh the lockfile, and list the crates.io copies of workspace crates, which has to print nothing:
+   The plan walks the named crates' workspace dependencies and bumps three kinds of crate: the named ones, the ones whose packaged files changed since their `crate@version` tag, and the ones that depend on a crate taking a breaking bump. A crate without a tag is new and ships at its current version
+
+2. Pick the bumps. Each bump is breaking by default, taking `0.2.3` to `0.3.0`, since cargo treats `0.2.3` to `0.2.4` as compatible. List the crates whose changes keep their API, such as documentation fixes, with `--patch`. A patch bump leaves its dependents alone, so the plan shrinks:
 
    ```sh
-   cargo update -w
-   cargo metadata --format-version 1 | jq -r '(.packages | map(select(.source == null) | .name)) as $ws | .packages[] | select(.source != null and (.name | IN($ws[]))) | "\(.name) \(.version)"'
+   scripts/release.sh plan --patch sdfcore,voxj tyt vxl
+   ```
+
+3. Apply the plan. The script sets the versions, raises every requirement on a crate taking a breaking bump, refreshes the lockfile, and fails if a workspace crate still resolves from crates.io:
+
+   ```sh
+   scripts/release.sh bump --patch sdfcore,voxj tyt vxl
    ```
 
 4. Run the tests, commit, tag each new `crate@version`, and push:
@@ -196,15 +201,14 @@ Releases use [`cargo-workspaces`](https://github.com/pksunkara/cargo-workspaces)
    git push origin main $(git tag --points-at HEAD | sed 's#^#refs/tags/#')
    ```
 
-5. Publish in dependency order. The command skips published versions:
+5. Publish the named crates and the dependencies crates.io lacks, one at a time in dependency order. `--dry-run` prints the order first:
 
    ```sh
-   cargo workspaces publish --publish-as-is --yes
+   scripts/release.sh publish --dry-run tyt vxl
+   scripts/release.sh publish tyt vxl
    ```
 
-   crates.io accepts a burst of about 30 updates, then about one a minute, and answers `429 Too Many Requests` past that. Wait for the time the error gives and rerun the command until it succeeds
-
-A crate new to crates.io takes the bump along with the rest. Publishing it by hand first only works when every dependency it needs is already published.
+   crates.io accepts a burst of about 30 uploads, then about one a minute. The script waits out a `429 Too Many Requests` and retries. It skips published versions, so rerun it after any other failure
 
 ## License
 

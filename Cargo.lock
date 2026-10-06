@@ -1626,7 +1626,7 @@ dependencies = [
 
 [[package]]
 name = "sdfcore"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "branded-id",
  "ty-math",
@@ -1634,7 +1634,7 @@ dependencies = [
 
 [[package]]
 name = "sdfj"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -1642,7 +1642,7 @@ dependencies = [
 
 [[package]]
 name = "sdfj-builder"
-version = "0.2.0"
+version = "0.3.0"
 
 [[package]]
 name = "sdfj-codec"
@@ -1951,7 +1951,7 @@ dependencies = [
 
 [[package]]
 name = "tyt"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "clap",
  "ty-clap",
@@ -1971,7 +1971,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-claude"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "clap",
  "serde",
@@ -1983,11 +1983,11 @@ dependencies = [
 
 [[package]]
 name = "tyt-common"
-version = "0.3.0"
+version = "0.4.0"
 
 [[package]]
 name = "tyt-cubemap"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "clap",
  "ty-clap",
@@ -1997,7 +1997,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-fbx"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "branded-id",
  "clap",
@@ -2011,7 +2011,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-fs"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "clap",
  "serde",
@@ -2023,7 +2023,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-image"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "clap",
  "ty-clap",
@@ -2033,7 +2033,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-injection"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "base64",
  "crossterm",
@@ -2052,7 +2052,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-material"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "clap",
  "ty-clap",
@@ -2062,7 +2062,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-meshy"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "clap",
  "serde",
@@ -2074,7 +2074,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-meta"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "clap",
  "ty-clap",
@@ -2084,7 +2084,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-oai"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "clap",
  "serde",
@@ -2096,7 +2096,7 @@ dependencies = [
 
 [[package]]
 name = "tyt-vmax"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "branded-id",
  "clap",
@@ -2273,7 +2273,7 @@ dependencies = [
 
 [[package]]
 name = "voxj"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "base64",
  "flate2",
@@ -2303,7 +2303,7 @@ dependencies = [
 
 [[package]]
 name = "voxrender"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "branded-id",
  "png",
@@ -2314,7 +2314,7 @@ dependencies = [
 
 [[package]]
 name = "voxsmith"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "branded-id",
  "meshdoc",
@@ -2343,7 +2343,7 @@ dependencies = [
 
 [[package]]
 name = "vxl"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "branded-id",
  "clap",
